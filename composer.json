@@ -1,0 +1,16 @@
+{
+    "name": "grupo-proyecto/sis-biomec",
+    "description": "autoloading del sistema de informacion",
+    "autoload": {
+        "psr-4": {
+            "GrupoProyecto\\SisBiomec\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "jesustorrealba18",
+            "email": "jesustorrealbaa14@gmail.com"
+        }
+    ],
+    "require": {}
+}
