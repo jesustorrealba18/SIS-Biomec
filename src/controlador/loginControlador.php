@@ -3,7 +3,6 @@ session_start();
 
 require_once 'src/modelo/login.php';
 
-// Si ya está logueado, mandarlo al inicio
 if (!empty($_SESSION['id'])) {
     header('Location: ?p=inicio');
     exit;
@@ -15,16 +14,27 @@ if (!empty($_POST['usuario']) && !empty($_POST['password'])) {
     $objLogin = new Login();
     $datosUser = $objLogin->validarUsuario($_POST['usuario'], $_POST['password']);
 
-    if ($datosUser) {
-        // Usamos los nombres de columna de tu base de datos
-        $_SESSION['id']     = $datosUser['id_usuario']; 
-        $_SESSION['nombre'] = $datosUser['nombre'];
-        $_SESSION['rol']    = $datosUser['rol']; 
-        
+    if (isset($datosUser['error'])) {
+        switch ($datosUser['error']) {
+            case 'credenciales':
+                $error = "Usuario o contraseña incorrectos";
+                break;
+            case 'inactivo':
+                $error = "Tu cuenta está desactivada. Contacta al administrador.";
+                break;
+            case 'bloqueado':
+                $error = "Cuenta bloqueada temporalmente. Intenta después de " . $datosUser['bloqueado_hasta'];
+                break;
+            default:
+                $error = "Error del sistema. Intenta más tarde.";
+        }
+    } else {
+        $_SESSION['id']     = $datosUser['id_usuario'];
+        $_SESSION['nombre'] = $datosUser['nombres'] . ' ' . $datosUser['apellidos'];
+        $_SESSION['rol']    = $datosUser['roles'];
+
         header('Location: ?p=inicio');
         exit;
-    } else {
-        $error = "Usuario o contraseña incorrectos";
     }
 }
 

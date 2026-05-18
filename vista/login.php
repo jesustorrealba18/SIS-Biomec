@@ -57,12 +57,12 @@
 
         <form action="?p=login" method="POST" class="space-y-6">
             <div>
-                <label class="text-xs font-bold text-gray-400 uppercase ml-1">Usuario</label>
+                <label class="text-xs font-bold text-gray-400 uppercase ml-1">Correo electrónico</label>
                 <div class="relative group mt-2">
                     <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-500 group-focus-within:text-blue-400">
-                        <i class="fas fa-user text-sm"></i>
+                        <i class="fas fa-envelope text-sm"></i>
                     </span>
-                    <input type="text" name="usuario" required placeholder="jesus"
+                    <input type="email" name="usuario" required placeholder="correo@ejemplo.com"
                         class="input-dark w-full rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none">
                 </div>
             </div>

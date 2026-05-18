@@ -92,4 +92,28 @@ trait ValidacionesTrait {
         }
         return true;
     }
+
+    protected function correoValido(string $valor, string $campo): bool {
+        if (!filter_var(trim($valor), FILTER_VALIDATE_EMAIL)) {
+            $this->agregarError($campo, "{$campo} no tiene un formato válido.");
+            return false;
+        }
+        return true;
+    }
+
+    protected function cedula(string $valor, string $campo): bool {
+        if (!preg_match('/^[VEve]-\d{7,8}$/', trim($valor))) {
+            $this->agregarError($campo, "{$campo} no tiene un formato válido. Use V-1234567 o V-12345678.");
+            return false;
+        }
+        return true;
+    }
+
+    protected function telefono(string $valor, string $campo): bool {
+        if (!preg_match('/^[\d\-\+\(\)\s]{7,20}$/', trim($valor))) {
+            $this->agregarError($campo, "{$campo} no tiene un formato de teléfono válido.");
+            return false;
+        }
+        return true;
+    }
 }

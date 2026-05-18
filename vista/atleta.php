@@ -6,7 +6,6 @@
     <title>Atletas | SGRD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- SweetAlert2 para las animaciones de éxito/error -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -18,6 +17,18 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f0d23; }
         ::-webkit-scrollbar-thumb { background: #252345; border-radius: 10px; }
+        .tab-btn { padding: 10px 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+                   letter-spacing: 0.1em; color: #6b7280; border-bottom: 2px solid transparent;
+                   transition: all 0.3s; cursor: pointer; }
+        .tab-btn:hover { color: #c7d2fe; }
+        .tab-btn.active { color: #818cf8; border-bottom-color: #6366f1; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .estado-badge { padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .estado-Activo { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .estado-Inactivo { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .estado-Retirado { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .estado-Transferido { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
     </style>
 </head>
 <body class="flex min-h-screen">
@@ -28,8 +39,6 @@
         <header class="flex justify-between items-center mb-20">
             <h1 class="text-2xl font-bold text-white">Gestión de atletas</h1>
             <div class="flex items-center gap-6">
-
-                <!-- Botón Notificaciones -->
                 <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
                     <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
                         <i class="fas fa-bell text-xl"></i>
@@ -39,8 +48,6 @@
                         Notificaciones
                     </div>
                 </div>
-
-                <!-- Botón Guía de Ayuda -->
                 <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
                     <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
                         <i class="fas fa-question-circle text-xl"></i>
@@ -50,8 +57,6 @@
                         Guía de ayuda
                     </div>
                 </div>
-
-                <!-- Perfil y Botón de Salida -->
                 <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
                     <div class="text-right mr-2">
                         <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre']; ?></p>
@@ -59,23 +64,21 @@
                             Cerrar Sesión <i class="fas fa-sign-out-alt ml-1"></i>
                         </a>
                     </div>
-                    <img src="https://ui-avatars.com/api/?name=<?php echo $_SESSION['nombre']; ?>&background=4f46e5&color=fff" 
+                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($_SESSION['nombre']); ?>&background=4f46e5&color=fff" 
                          class="w-10 h-10 rounded-full border-2 border-indigo-500 shadow-lg shadow-indigo-500/20">
                 </div>
             </div>
         </header>
         
-        <!-- SECCIÓN DE CONTROL (Búsqueda y Nuevo Atleta) -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <div class="flex items-center gap-2 text-sm text-indigo-400">
                 <i class="fas fa-swimmer"></i>
                 <span class="font-medium tracking-wide uppercase text-xs">Módulo de Control de Nadadores</span>
             </div>
-
             <div class="flex items-center gap-3 w-full md:w-auto">
                 <div class="relative flex-1 md:w-80">
                     <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
-                    <input type="text" id="busquedaCedula" placeholder="Buscar por número de cédula..." 
+                    <input type="text" id="busquedaAtleta" placeholder="Buscar por nombre o cédula..." 
                            class="input-dark w-full pl-11 pr-4 py-3 rounded-xl text-sm shadow-inner">
                 </div>
                 <button onclick="abrirModalCrear()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95">
@@ -84,7 +87,6 @@
             </div>
         </div>
 
-        <!-- Tabla de Resultados -->
         <div class="tarjeta overflow-hidden shadow-2xl">
             <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/5">
                 <h3 class="text-white font-semibold">Listado General</h3>
@@ -92,30 +94,47 @@
                     <?php echo count($atletas); ?> Registrados
                 </span>
             </div>
-            
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-[#1c1a3a] text-gray-400 text-xs uppercase tracking-widest">
                         <tr>
                             <th class="p-4">Atleta</th>
                             <th class="p-4">Cédula</th>
-                            <th class="p-4">Edad</th>
-                            <th class="p-4">Fichaje</th>
+                            <th class="p-4">Categoría</th>
+                            <th class="p-4">FEVEDA</th>
+                            <th class="p-4">Estado</th>
                             <th class="p-4 text-right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="text-sm divide-y divide-gray-800">
                         <?php foreach($atletas as $a): ?>
-                        <tr class="hover:bg-white/5 transition-colors group atleta-row" data-cedula="<?php echo $a['cedula']; ?>">
+                        <tr class="hover:bg-white/5 transition-colors group atleta-row" 
+                            data-busqueda="<?php echo strtolower($a['nombres'].' '.$a['apellidos'].' '.$a['cedula']); ?>">
                             <td class="p-4 flex items-center gap-3">
-                                <div class="bg-indigo-500/10 p-2 rounded-lg text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                                <?php if ($a['foto']): ?>
+                                <img src="<?php echo $a['foto']; ?>" class="w-10 h-10 rounded-full object-cover border-2 border-indigo-500/30">
+                                <?php else: ?>
+                                <div class="bg-indigo-500/10 p-2.5 rounded-full text-indigo-400">
                                     <i class="fas fa-user"></i>
                                 </div>
-                                <p class="text-white font-medium"><?php echo $a['nombres']." ".$a['apellidos']; ?></p>
+                                <?php endif; ?>
+                                <div>
+                                    <p class="text-white font-medium"><?php echo htmlspecialchars($a['nombres'].' '.$a['apellidos']); ?></p>
+                                    <p class="text-xs text-gray-500"><?php echo $a['edad']; ?> años · <?php echo $a['sexo'] === 'M' ? 'Masculino' : 'Femenino'; ?></p>
+                                </div>
                             </td>
-                            <td class="p-4 font-mono"><?php echo $a['cedula']; ?></td>
-                            <td class="p-4 text-white"><?php echo $a['edad']; ?> años</td>
-                            <td class="p-4 text-indigo-300"><?php echo $a['fichaje_federativo'] ?: 'N/A'; ?></td>
+                            <td class="p-4 font-mono text-gray-300"><?php echo htmlspecialchars($a['cedula']); ?></td>
+                            <td class="p-4">
+                                <?php if ($a['categoria_nombre']): ?>
+                                <span class="text-xs bg-indigo-500/10 text-indigo-300 px-2 py-1 rounded-lg"><?php echo htmlspecialchars($a['categoria_nombre']); ?></span>
+                                <?php else: ?>
+                                <span class="text-gray-600">S/C</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="p-4 font-mono text-indigo-300"><?php echo $a['numero_feveda'] ? htmlspecialchars($a['numero_feveda']) : '—'; ?></td>
+                            <td class="p-4">
+                                <span class="estado-badge estado-<?php echo $a['estado']; ?>"><?php echo $a['estado']; ?></span>
+                            </td>
                             <td class="p-4 text-right">
                                 <div class="flex justify-end gap-2">
                                     <button onclick='verDetalles(<?php echo json_encode($a); ?>)' class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all" title="Ver Perfil">
@@ -124,8 +143,8 @@
                                     <button onclick='editarAtleta(<?php echo json_encode($a); ?>)' class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button onclick="confirmarEliminar(<?php echo $a['id_atleta']; ?>)" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all" title="Eliminar">
-                                        <i class="fas fa-trash"></i>
+                                    <button onclick="confirmarEliminar(<?php echo $a['id_atleta']; ?>)" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all" title="Desactivar">
+                                        <i class="fas fa-user-slash"></i>
                                     </button>
                                 </div>
                             </td>
@@ -137,10 +156,10 @@
         </div>
     </main>
 
-    <!-- MODAL 1: REGISTRO Y EDICIÓN -->
+    <!-- MODAL: REGISTRO / EDICIÓN -->
     <div id="modalAtleta" class="fixed inset-0 bg-[#0f0d23]/90 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
-        <div class="tarjeta w-full max-w-2xl p-8 shadow-2xl transform transition-all scale-95 duration-300">
-            <div class="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+        <div class="tarjeta w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
                 <div class="flex items-center gap-3">
                     <div class="bg-indigo-600 p-2 rounded-lg text-white"><i class="fas fa-swimmer"></i></div>
                     <h2 class="text-xl font-bold text-white" id="modalTitulo">Registrar Atleta</h2>
@@ -148,71 +167,209 @@
                 <button onclick="cerrarModal()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times text-2xl"></i></button>
             </div>
 
-            <form action="?p=atleta" method="POST" id="formAtleta">
+            <form action="?p=atleta" method="POST" id="formAtleta" enctype="multipart/form-data">
                 <input type="hidden" name="id_atleta" id="id_atleta">
-                <div class="grid grid-cols-2 gap-6">
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Cédula</label>
-                        <input type="text" name="cedula" id="cedula" required class="input-dark w-full p-3 rounded-xl">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Fichaje</label>
-                        <input type="text" name="fichaje_federativo" id="fichaje_federativo" class="input-dark w-full p-3 rounded-xl">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Nombres</label>
-                        <input type="text" name="nombres" id="nombres" required class="input-dark w-full p-3 rounded-xl">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Apellidos</label>
-                        <input type="text" name="apellidos" id="apellidos" required class="input-dark w-full p-3 rounded-xl">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Fecha Nacimiento</label>
-                        <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" required class="input-dark w-full p-3 rounded-xl">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Género</label>
-                        <select name="genero" id="genero" class="input-dark w-full p-3 rounded-xl">
-                            <option value="M">Masculino</option>
-                            <option value="F">Femenino</option>
-                        </select>
-                    </div>
-                    <div class="space-y-2 col-span-2">
-                        <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Lateralidad</label>
-                        <div class="flex gap-4">
-                            <?php foreach(['Derecho', 'Zurdo', 'Ambidiestro'] as $lat): ?>
-                            <label class="flex-1">
-                                <input type="radio" name="lateralidad" value="<?php echo $lat; ?>" class="hidden peer">
-                                <div class="p-3 text-center rounded-xl border border-gray-800 text-gray-500 cursor-pointer peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 transition-all"><?php echo $lat; ?></div>
-                            </label>
-                            <?php endforeach; ?>
+                <input type="hidden" name="foto_actual" id="foto_actual">
+
+                <!-- Tabs -->
+                <div class="flex border-b border-gray-800 mb-6">
+                    <button type="button" onclick="cambiarTab('personal')" class="tab-btn active" data-tab="personal">
+                        <i class="fas fa-user mr-2"></i>Datos Personales
+                    </button>
+                    <button type="button" onclick="cambiarTab('medico')" class="tab-btn" data-tab="medico">
+                        <i class="fas fa-heartbeat mr-2"></i>Datos Médicos
+                    </button>
+                    <button type="button" onclick="cambiarTab('federativo')" class="tab-btn" data-tab="federativo">
+                        <i class="fas fa-trophy mr-2"></i>Datos Federativos
+                    </button>
+                </div>
+
+                <!-- TAB: DATOS PERSONALES -->
+                <div id="tab-personal" class="tab-content active">
+                    <div class="grid grid-cols-2 gap-5">
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Cédula de Identidad</label>
+                            <input type="text" name="cedula" id="cedula" required placeholder="V-12345678"
+                                   data-validar="requerido|cedula" data-nombre="Cédula" class="input-dark w-full p-3 rounded-xl">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Nombres</label>
+                            <input type="text" name="nombres" id="nombres" required
+                                   data-validar="requerido|letras" data-nombre="Nombres" data-min="2" data-max="100" class="input-dark w-full p-3 rounded-xl">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Apellidos</label>
+                            <input type="text" name="apellidos" id="apellidos" required
+                                   data-validar="requerido|letras" data-nombre="Apellidos" data-min="2" data-max="100" class="input-dark w-full p-3 rounded-xl">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Fecha de Nacimiento</label>
+                            <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" required
+                                   data-validar="requerido" data-nombre="Fecha de nacimiento" class="input-dark w-full p-3 rounded-xl">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Sexo</label>
+                            <select name="sexo" id="sexo" required
+                                    data-validar="requerido" data-nombre="Sexo" class="input-dark w-full p-3 rounded-xl">
+                                <option value="">Seleccione...</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Estado</label>
+                            <select name="estado" id="estado" required class="input-dark w-full p-3 rounded-xl">
+                                <option value="Activo">Activo</option>
+                                <option value="Inactivo">Inactivo</option>
+                                <option value="Retirado">Retirado</option>
+                                <option value="Transferido">Transferido</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2 col-span-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Dirección</label>
+                            <input type="text" name="direccion" id="direccion" placeholder="Dirección de residencia"
+                                   data-validar="requerido|texto" data-nombre="Dirección" class="input-dark w-full p-3 rounded-xl">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Teléfono</label>
+                            <input type="text" name="telefono" id="telefono" placeholder="0412-1234567"
+                                   data-validar="requerido|telefono" data-nombre="Teléfono" class="input-dark w-full p-3 rounded-xl">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Correo Electrónico</label>
+                            <input type="email" name="correo" id="correo" placeholder="correo@ejemplo.com"
+                                   data-validar="requerido|correo" data-nombre="Correo electrónico" class="input-dark w-full p-3 rounded-xl">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Fecha Registro Club</label>
+                            <input type="date" name="fecha_registro_club" id="fecha_registro_club"
+                                   data-validar="requerido" data-nombre="Fecha registro club" class="input-dark w-full p-3 rounded-xl">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Fotografía</label>
+                            <div class="flex items-center gap-3">
+                                <div id="fotoPreview" class="w-16 h-16 rounded-full bg-[#0f0d23] border-2 border-gray-800 overflow-hidden flex items-center justify-center shrink-0">
+                                    <i class="fas fa-camera text-gray-600 text-lg"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <input type="file" name="foto" id="foto" accept="image/jpeg,image/png" 
+                                           class="text-sm text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-500/10 file:text-indigo-400 hover:file:bg-indigo-500/20 w-full">
+                                    <p class="text-[10px] text-gray-600 mt-1">JPG/PNG, máx 2MB</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- TAB: DATOS MÉDICOS -->
+                <div id="tab-medico" class="tab-content">
+                    <div class="grid grid-cols-2 gap-5">
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Grupo Sanguíneo</label>
+                            <select name="grupo_sanguineo" id="grupo_sanguineo"
+                                    data-validar="requerido" data-nombre="Grupo sanguíneo" class="input-dark w-full p-3 rounded-xl">
+                                <option value="">Sin especificar</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Seguro Médico</label>
+                            <input type="text" name="seguro_medico" id="seguro_medico" placeholder="Nombre del seguro"
+                                   data-validar="requerido|texto" data-nombre="Seguro médico" class="input-dark w-full p-3 rounded-xl">
+                        </div>
+                        <div class="space-y-2 col-span-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Alergias Conocidas</label>
+                            <textarea name="alergias" id="alergias" rows="2" placeholder="Describa las alergias conocidas..."
+                                      data-validar="requerido|texto" data-nombre="Alergias" class="input-dark w-full p-3 rounded-xl resize-none"></textarea>
+                        </div>
+                        <div class="space-y-2 col-span-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Condiciones Médicas Preexistentes</label>
+                            <textarea name="condiciones_previas" id="condiciones_previas" rows="2" placeholder="Asma, lesiones crónicas, etc..."
+                                      data-validar="requerido|texto" data-nombre="Condiciones médicas" class="input-dark w-full p-3 rounded-xl resize-none"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-6 p-4 rounded-xl bg-black/20 border border-white/5">
+                        <p class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest mb-4"><i class="fas fa-phone-alt mr-2"></i>Contacto de Emergencia</p>
+                        <div class="grid grid-cols-3 gap-5">
+                            <div class="space-y-2">
+                                <label class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Nombre</label>
+                                <input type="text" name="contacto_emergencia_nombre" id="contacto_emergencia_nombre" placeholder="Nombre completo"
+                                       data-validar="requerido|letras" data-nombre="Contacto emergencia" class="input-dark w-full p-3 rounded-xl">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Teléfono</label>
+                                <input type="text" name="contacto_emergencia_telefono" id="contacto_emergencia_telefono" placeholder="0412-1234567"
+                                       data-validar="requerido|telefono" data-nombre="Teléfono emergencia" class="input-dark w-full p-3 rounded-xl">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Parentesco</label>
+                                <select name="contacto_emergencia_parentesco" id="contacto_emergencia_parentesco"
+                                        data-validar="requerido" data-nombre="Parentesco" class="input-dark w-full p-3 rounded-xl">
+                                    <option value="">Seleccione...</option>
+                                    <option value="Padre">Padre</option>
+                                    <option value="Madre">Madre</option>
+                                    <option value="Hermano/a">Hermano/a</option>
+                                    <option value="Tutor">Tutor</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: DATOS FEDERATIVOS -->
+                <div id="tab-federativo" class="tab-content">
+                    <div class="grid grid-cols-2 gap-5">
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Número de Registro FEVEDA</label>
+                            <input type="text" name="numero_feveda" id="numero_feveda" placeholder="Ej: FED-00123"
+                                   data-validar="requerido|texto" data-nombre="Número FEVEDA" class="input-dark w-full p-3 rounded-xl">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Club de Procedencia</label>
+                            <input type="text" name="club_procedencia" id="club_procedencia" placeholder="Club anterior"
+                                   data-validar="requerido|texto" data-nombre="Club procedencia" class="input-dark w-full p-3 rounded-xl">
+                        </div>
+                        <div class="space-y-2 col-span-2">
+                            <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Categoría Deportiva</label>
+                            <select name="id_categoria" id="id_categoria" required
+                                    data-validar="requerido" data-nombre="Categoría deportiva" class="input-dark w-full p-3 rounded-xl">
+                                <option value="">Seleccione una categoría...</option>
+                                <?php foreach ($categorias as $cat): ?>
+                                <option value="<?php echo $cat['id_categoria']; ?>" data-min="<?php echo $cat['edad_minima']; ?>" data-max="<?php echo $cat['edad_maxima']; ?>">
+                                    <?php echo htmlspecialchars($cat['nombre'] . ' (' . $cat['edad_minima'] . '-' . $cat['edad_maxima'] . ' años)'); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
                 <div class="mt-8 flex gap-3">
-                    <button type="button" onclick="cerrarModal()" class="flex-1 bg-gray-800 text-gray-400 py-4 rounded-xl font-bold">CANCELAR</button>
-                    <button type="submit" class="flex-[2] bg-indigo-600 py-4 rounded-xl font-bold text-white shadow-lg shadow-indigo-500/20 active:scale-95">GUARDAR DATOS</button>
+                    <button type="button" onclick="cerrarModal()" class="flex-1 bg-gray-800 text-gray-400 py-4 rounded-xl font-bold transition-all hover:bg-gray-700">CANCELAR</button>
+                    <button type="submit" class="flex-[2] bg-indigo-600 py-4 rounded-xl font-bold text-white shadow-lg shadow-indigo-500/20 active:scale-95 transition-all hover:bg-indigo-500">GUARDAR DATOS</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL 2: VER DETALLES (VERSIÓN MEJORADA) -->
+    <!-- MODAL: VER DETALLES -->
     <div id="modalVer" class="fixed inset-0 bg-[#060512]/90 backdrop-blur-xl hidden flex items-center justify-center p-4 z-50">
-        <div class="relative bg-[#111026] border border-white/10 w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] transform transition-all">
-            
-            <!-- Luces de fondo decorativas -->
+        <div class="relative bg-[#111026] border border-white/10 w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] max-h-[90vh] overflow-y-auto">
             <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl"></div>
             <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-600/10 rounded-full blur-3xl"></div>
-
-            <button onclick="cerrarModalVer()" class="absolute top-8 right-8 text-gray-500 hover:text-white hover:rotate-90 transition-all duration-300 z-10">
+            <button onclick="cerrarModalVer()" class="absolute top-6 right-6 text-gray-500 hover:text-white hover:rotate-90 transition-all duration-300 z-10">
                 <i class="fas fa-times text-xl"></i>
             </button>
-
-            <div id="detalleContenido" class="relative p-10">
-                <!-- Se llena con JS manteniendo el estilo de tarjeta deportiva -->
-            </div>
+            <div id="detalleContenido" class="relative p-8"></div>
         </div>
     </div>
 
@@ -222,6 +379,7 @@
         const DATOS_FORM = <?php echo json_encode($datosForm); ?>;
     </script>
     <?php endif; ?>
+    <script src="assets/js/validador.js"></script>
     <script src="assets/js/atleta.js"></script>
 </body>
 </html>

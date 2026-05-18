@@ -25,7 +25,7 @@ class AtletaControlador {
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->guardar($_POST);
+            $this->guardar();
             return;
         }
 
@@ -38,9 +38,26 @@ class AtletaControlador {
         exit;
     }
 
-    private function guardar(array $datos): void {
+    private function guardar(): void {
+        $datos = $_POST;
+        $datos['id_usuario'] = $_SESSION['id'] ?? null;
+
         $excluirId = !empty($datos['id_atleta']) ? (int)$datos['id_atleta'] : null;
-        $errores = $this->atleta->validarDatos($datos, $excluirId);
+        $this->atleta->validarDatos($datos, $excluirId);
+
+        $fotoActual = null;
+        if ($excluirId) {
+            $atletaActual = $this->atleta->obtenerPorId($excluirId);
+            $fotoActual = $atletaActual['foto'] ?? null;
+        }
+
+        if (isset($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $datos['foto'] = $this->atleta->procesarFoto($_FILES['foto'], $fotoActual);
+        } else {
+            $datos['foto'] = $fotoActual;
+        }
+
+        $errores = $this->atleta->obtenerErrores();
 
         if (empty($errores)) {
             if ($excluirId) {
@@ -58,6 +75,7 @@ class AtletaControlador {
 
     private function listar(array $errores = [], array $datosForm = []): void {
         $atletas = $this->atleta->listarAtletas();
+        $categorias = $this->atleta->obtenerCategorias();
         require_once 'vista/atleta.php';
     }
 }

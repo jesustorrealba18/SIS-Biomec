@@ -11,9 +11,10 @@ class Conexion {
     private $db   = "gestion_natacion";
     private $pdo;
 
-    public function __construct() {
+    public function __construct($baseDatos = null) {
+        $database = $baseDatos ?? $this->db;
         try {
-            $dsn = "mysql:host=" . $this->host . ";dbname=" . $this->db . ";charset=utf8";
+            $dsn = "mysql:host=" . $this->host . ";dbname=" . $database . ";charset=utf8";
             $this->pdo = new PDO($dsn, $this->user, $this->pass);
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $e) {
