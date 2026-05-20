@@ -1,43 +1,94 @@
 <?php
-require_once 'Model.php';
 
-class Representante extends Model {
-    
-    protected $table = 'representante'; // Nombre de la tabla
+namespace GrupoProyecto\SisBiomec\modelo;
 
-    public $cedula;
-    public $nombres;
-    public $apellidos;
-    public $telefono_principal;
-    public $telefono_emergencia;
-    public $correo;
-    public $parentesco;
-    public $direccion_residencia;
+use PDO;
+use PDOException;
 
-    /**
-     * Método propio para manejar la relación M:N con Atletas.
-     * Inserta en la tabla intermedia y lo registra en la bitácora.
-     */
-public function vincularAtletas($id_representante, $atletas_ids) {
-        $query = "INSERT INTO atleta_representante (id_representante, id_atleta) VALUES (?, ?)";
-        $stmt = $this->conn->prepare($query);
+class Representante extends Conexion {
+    // Importamos el trait de validaciones (Regla del profesor)
+    use ValidacionesTrait;
 
-        foreach ($atletas_ids as $id_atleta) {
-            // Si la inserción falla, disparamos el error directo al controlador
-            if (!$stmt->execute([$id_representante, $id_atleta])) {
-                throw new Exception("Fallo interno al vincular el atleta ID: " . $id_atleta);
-            }
+    public function __construct() {
+        parent::__construct();
+    }
+
+    // El modelo hace las validaciones pesadas, no el controlador
+    public function validarDatos(array $datos, ?string $excluirCedula = null): array {
+        $this->resetearErrores();
+
+        $cedula = $datos['cedula'] ?? '';
+        $nombres = $datos['nombres'] ?? '';
+        $apellidos = $datos['apellidos'] ?? '';
+        $correo = $datos['correo'] ?? '';
+
+        $this->requerido($cedula, 'cedula');
+        $this->soloNumeros($cedula, 'cedula');
+        // Si no estamos editando, validamos que la cédula sea única
+        if (!$excluirCedula) {
+            $this->unico($this->getConex1(), $cedula, 'representante', 'cedula');
         }
 
-        // Si el ciclo terminó sin excepciones, garantizamos que todo fue un éxito
-        $detalles = json_encode([
-            'id_representante' => $id_representante, 
-            'atletas_vinculados' => $atletas_ids
-        ]);
-        
-        $this->registrarBitacora('VINCULAR_ATLETAS', $detalles);
+        $this->requerido($nombres, 'nombres');
+        $this->soloLetras($nombres, 'nombres');
 
-        return true;
+        $this->requerido($apellidos, 'apellidos');
+        $this->soloLetras($apellidos, 'apellidos');
+
+        return $this->obtenerErrores();
+    }
+
+    public function registrarRepresentante(array $datos): bool {
+        $conex = $this->getConex1();
+        try {
+            // Iniciamos transacción por si falla algo
+            $conex->beginTransaction();
+
+            $sql = "INSERT INTO representante (cedula, nombres, apellidos, telefono_principal, telefono_emergencia, correo, parentesco, direccion_residencia) 
+                    VALUES (:cedula, :nombres, :apellidos, :tel1, :tel2, :correo, :parentesco, :direccion)";
+            
+            $stmt = $conex->prepare($sql);
+            $stmt->execute([
+                ':cedula'     => $datos['cedula'],
+                ':nombres'    => $datos['nombres'],
+                ':apellidos'  => $datos['apellidos'],
+                ':tel1'       => $datos['telefono_principal'] ?? '',
+                ':tel2'       => $datos['telefono_emergencia'] ?? '',
+                ':correo'     => $datos['correo'] ?? '',
+                ':parentesco' => $datos['parentesco'] ?? '',
+                ':direccion'  => $datos['direccion_residencia'] ?? ''
+            ]);
+
+            // Si hay atletas seleccionados en el modal, los vinculamos
+            if (!empty($datos['atletas_ids']) && is_array($datos['atletas_ids'])) {
+                $this->vincularAtletas($conex, $datos['cedula'], $datos['atletas_ids']);
+            }
+
+            $conex->commit();
+            return true;
+        } catch (PDOException $e) {
+            $conex->rollBack();
+            return false;
+        }
+    }
+
+    private function vincularAtletas(PDO $conex, string $cedula_representante, array $atletas_ids) {
+        $sql = "INSERT INTO atleta_representante (cedula_representante, id_atleta) VALUES (:cedula, :id_atleta)";
+        $stmt = $conex->prepare($sql);
+        
+        foreach ($atletas_ids as $id_atleta) {
+            $stmt->execute([
+                ':cedula' => $cedula_representante,
+                ':id_atleta' => $id_atleta
+            ]);
+        }
+    }
+
+    public function listarRepresentantes(): array {
+        $conex = $this->getConex1();
+        $sql = "SELECT * FROM representante ORDER BY nombres ASC";
+        $stmt = $conex->query($sql);
+        return $stmt->fetchAll();
     }
 }
 ?>

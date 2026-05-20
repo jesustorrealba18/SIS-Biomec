@@ -1,93 +1,64 @@
 <?php
 
-require_once 'modelo/Representante.php';
-require_once 'utils/Respuesta.php';
+// src/controlador/representanteControlador.php
 
-// 1. TU CLASE ORIENTADA A OBJETOS (Para el API REST)
-class representanteControlador {
-    private $conn;
-
-    public function __construct($db) {
-        $this->conn = $db;
-    }
-
-    public function ejecutar($accion) {
-        switch ($accion) {
-            case 'registrar':
-                $this->registrar();
-                break;
-            default:
-                Respuesta::enviar(404, "Acción no válida");
-        }
-    }
-
-    private function registrar() {
-        $data = json_decode(file_get_contents("php://input"));
-        
-        if (empty($data->cedula) || empty($data->nombres)) {
-            Respuesta::enviar(400, "Cédula y nombres son obligatorios");
-            return;
-        }
-
-        try {
-            // Iniciamos la transacción ACID
-            $this->conn->beginTransaction();
-
-            $rep = new Representante($this->conn);
-            $rep->cedula = $data->cedula;
-            $rep->nombres = $data->nombres;
-            $rep->apellidos = $data->apellidos;
-            $rep->telefono_principal = $data->telefonoP;
-            $rep->telefono_emergencia = $data->telefonoE;
-            $rep->correo = $data->email;
-            $rep->parentesco = $data->parentesco;
-            $rep->direccion_residencia = $data->direccion;
-
-            // 1. Guardamos al padre (Devuelve el ID)
-            $nuevo_representante_id = $rep->saveReturnID(); 
-
-            if (!$nuevo_representante_id) {
-                throw new Exception("No se pudo crear el representante.");
-            }
-
-            // 2. Vinculamos a los hijos delegando la tarea al Modelo
-            if (!empty($data->atletas_ids) && is_array($data->atletas_ids)) {
-                
-                // ¡Magia OOP! El controlador no sabe de SQL, solo manda a vincular
-                if (!$rep->vincularAtletas($nuevo_representante_id, $data->atletas_ids)) {
-                    throw new Exception("Error al procesar la vinculación de atletas.");
-                }
-            }
-
-            // 3. Confirmamos la base de datos
-            $this->conn->commit();
-            Respuesta::enviar(201, "Representante registrado y atletas vinculados con éxito.");
-
-        } catch (Exception $e) {
-            $this->conn->rollBack();
-            Respuesta::enviar(500, "Error en la transacción: " . $e->getMessage());
-        }
-    }
+// 1. Filtro de Reglas Básicas (El pivote ataja a los intrusos)
+session_start();
+if (empty($_SESSION['id'])) { 
+    header('Location: ?p=login'); 
+    exit; 
 }
 
-// =========================================================================
-// 2. LA MAGIA PARA NO USAR ARCHIVOS PUENTE
-// =========================================================================
+// Traemos el Modelo que sí es una clase y hace el trabajo pesado
+use GrupoProyecto\SisBiomec\modelo\Representante;
+$objRepresentante = new Representante();
 
-if (isset($_GET['p']) && $_GET['p'] === 'representante') {
+// 2. Pivote para acciones POST (Guardar / Actualizar desde AJAX/Fetch)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
     
-    // Iniciar la sesión antes de validarla
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+    // Verificamos si es una actualización (si trae ID) o un registro nuevo
+    $excluirCedula = !empty($_POST['cedula_original']) ? $_POST['cedula_original'] : null;
+    
+    // El pivote NO valida, le pasa la pelota al Modelo
+    $errores = $objRepresentante->validarDatos($_POST, $excluirCedula);
+
+    if (!empty($errores)) {
+        // Si el modelo dice que hay errores, el pivote los devuelve al Frontend
+        echo json_encode(['status' => 'warning', 'errores' => $errores]);
+        exit;
     }
-    
-    // Validamos que la sesión exista (Seguridad visual)
-    if (empty($_SESSION['id'])) { 
-        header('Location: ?p=login'); 
-        exit; 
+
+    // Si todo está bien, el pivote le ordena al Modelo que guarde en la BD
+    if ($excluirCedula) {
+        // Lógica de actualizar (si la tuvieran armada en el modelo)
+        // $resultado = $objRepresentante->actualizarRepresentante($_POST);
+    } else {
+        $resultado = $objRepresentante->registrarRepresentante($_POST);
     }
+
+    if ($resultado) {
+        echo json_encode(['status' => 'success', 'message' => 'Operación exitosa.']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Error en la base de datos.']);
+    }
+    exit; // Cortamos ejecución, el pivote no hace más nada
+}
+
+// 3. Pivote para acciones GET (Eliminar por URL o Cargar la Vista)
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     
-    // Cargamos directamente la vista
+    // Si mandaron a eliminar
+    if (isset($_GET['eliminar'])) {
+        // $objRepresentante->eliminarRepresentante($_GET['eliminar']);
+        header('Location: ?p=representante&msg=eliminado');
+        exit;
+    }
+
+    // Si es una petición GET normal (entrar al módulo), el pivote pide los datos...
+    $representantes = $objRepresentante->listarRepresentantes();
+    
+    // ...y carga la vista inyectándole los datos.
     require_once 'vista/representante.php';
 }
 ?>
