@@ -9,7 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Mismos estilos base de tus compañeros */
         body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Segoe UI', sans-serif; }
         .sidebar { background-color: #161430; width: 260px; border-right: 1px solid #252345; }
         .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 15px; }
@@ -22,17 +21,14 @@
 </head>
 <body class="flex min-h-screen">
 
-    <!-- Menú Lateral -->
     <?php include RAIZ . 'vista/complementos/menu.php'; ?>
 
     <main class="flex-1 p-8 overflow-y-auto">
-
 
         <header class="flex justify-between items-center mb-20">
             <h1 class="text-2xl font-bold text-white">Gestión de Representantes</h1>
             <div class="flex items-center gap-6">
 
-                <!-- Botón Notificaciones -->
                 <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
                     <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
                         <i class="fas fa-bell text-xl"></i>
@@ -43,7 +39,6 @@
                     </div>
                 </div>
 
-                <!-- Botón Guía de Ayuda -->
                 <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
                     <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
                         <i class="fas fa-question-circle text-xl"></i>
@@ -54,7 +49,6 @@
                     </div>
                 </div>
 
-                <!-- Perfil y Botón de Salida -->
                 <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
                     <div class="text-right mr-2">
                         <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre']; ?></p>
@@ -68,7 +62,6 @@
             </div>
         </header>
         
-        <!-- Barra de Control -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <div class="flex items-center gap-2 text-sm text-indigo-400">
                 <i class="fas fa-users"></i>
@@ -87,7 +80,6 @@
             </div>
         </div>
 
-        <!-- Tabla de Datos (Estructura visual idéntica a la tuya)[cite: 19] -->
         <div class="tarjeta overflow-hidden shadow-2xl">
             <div class="overflow-x-auto">
                 <table class="w-full text-left" id="tablaRepresentantes">
@@ -101,7 +93,6 @@
                         </tr>
                     </thead>
                     <tbody class="text-sm divide-y divide-gray-800" id="listaRepresentantes">
-                        <!-- Aquí se inyectarán las filas con JS (Fetch) o PHP -->
                         <tr>
                             <td colspan="5" class="text-center p-4 text-gray-500">Cargando datos...</td>
                         </tr>
@@ -111,8 +102,7 @@
         </div>
     </main>
 
-    <!-- MODAL DE REGISTRO (CON SELECCIÓN MULTIPLE DE ATLETAS) -->
-   <div id="modalRepresentante" class="fixed inset-0 bg-[#0f0d23]/95 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div id="modalRepresentante" class="fixed inset-0 bg-[#0f0d23]/95 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="tarjeta w-full max-w-4xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -122,6 +112,8 @@
             </div>
 
             <form id="formRepresentante" class="space-y-6">
+                <input type="hidden" id="cedula_original" name="cedula_original" value="">
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     
                     <div class="space-y-4">
@@ -129,34 +121,46 @@
                         
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 font-bold ml-1">CÉDULA</label>
-                            <input type="text" id="cedula" name="cedula" required class="input-dark w-full p-3 rounded-xl" placeholder="Ej: 25888999">
+                            <input type="text" id="cedula" name="cedula" 
+                                   data-validar="requerido|numeros" data-nombre="Cédula" data-min="6"
+                                   class="input-dark w-full p-3 rounded-xl" placeholder="Ej: 25888999">
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1">
                                 <label class="text-[11px] text-gray-500 font-bold ml-1">NOMBRES</label>
-                                <input type="text" id="nombres" name="nombres" required class="input-dark w-full p-3 rounded-xl">
+                                <input type="text" id="nombres" name="nombres" 
+                                       data-validar="requerido|letras" data-nombre="Nombres" data-min="2"
+                                       class="input-dark w-full p-3 rounded-xl">
                             </div>
                             <div class="space-y-1">
                                 <label class="text-[11px] text-gray-500 font-bold ml-1">APELLIDOS</label>
-                                <input type="text" id="apellidos" name="apellidos" required class="input-dark w-full p-3 rounded-xl">
+                                <input type="text" id="apellidos" name="apellidos" 
+                                       data-validar="requerido|letras" data-nombre="Apellidos" data-min="2"
+                                       class="input-dark w-full p-3 rounded-xl">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1">
                                 <label class="text-[11px] text-gray-500 font-bold ml-1">TLF. PRINCIPAL</label>
-                                <input type="text" id="telefono_principal" name="telefono_principal" required class="input-dark w-full p-3 rounded-xl">
+                                <input type="text" id="telefono_principal" name="telefono_principal" 
+                                       data-validar="requerido|numeros" data-nombre="Teléfono Principal" data-min="10"
+                                       class="input-dark w-full p-3 rounded-xl">
                             </div>
                             <div class="space-y-1">
                                 <label class="text-[11px] text-gray-500 font-bold ml-1">TLF. EMERGENCIA</label>
-                                <input type="text" id="telefono_emergencia" name="telefono_emergencia" class="input-dark w-full p-3 rounded-xl">
+                                <input type="text" id="telefono_emergencia" name="telefono_emergencia" 
+                                       data-validar="numeros" data-nombre="Teléfono de Emergencia" data-min="10"
+                                       class="input-dark w-full p-3 rounded-xl">
                             </div>
                         </div>
 
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 font-bold ml-1">CORREO ELECTRÓNICO</label>
-                            <input type="email" id="correo" name="correo" class="input-dark w-full p-3 rounded-xl">
+                            <input type="email" id="correo" name="correo" 
+                                   data-nombre="Correo Electrónico"
+                                   class="input-dark w-full p-3 rounded-xl">
                         </div>
                     </div>
 
@@ -165,7 +169,10 @@
 
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 font-bold ml-1">PARENTESCO CON EL ATLETA</label>
-                            <select id="parentesco" name="parentesco" class="input-dark w-full p-3 rounded-xl">
+                            <select id="parentesco" name="parentesco" 
+                                    data-validar="requerido" data-nombre="Parentesco"
+                                    class="input-dark w-full p-3 rounded-xl">
+                                <option value="">Seleccione una opción...</option>
                                 <option value="Padre/Madre">Padre / Madre</option>
                                 <option value="Tío/a">Tío / Tía</option>
                                 <option value="Abuelo/a">Abuelo / Abuela</option>
@@ -175,7 +182,9 @@
 
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 font-bold ml-1">DIRECCIÓN DE RESIDENCIA</label>
-                            <textarea id="direccion_residencia" name="direccion_residencia" rows="2" class="input-dark w-full p-3 rounded-xl resize-none"></textarea>
+                            <textarea id="direccion_residencia" name="direccion_residencia" rows="2" 
+                                      data-validar="requerido" data-nombre="Dirección de Residencia" data-min="5"
+                                      class="input-dark w-full p-3 rounded-xl resize-none"></textarea>
                         </div>
 
                         <div class="space-y-2">
@@ -200,9 +209,8 @@
             </form>
         </div>
     </div>
-    <!-- Fin del modal -->
 
-    <!-- Referencia a utilidades globales -->
+    <script src="assets/js/validador.js"></script>
     <script src="assets/js/alertas.js"></script>
     <script src="assets/js/representante.js"></script>
 </body>

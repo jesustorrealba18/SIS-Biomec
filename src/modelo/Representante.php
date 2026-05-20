@@ -10,7 +10,7 @@ class Representante extends Conexion {
     use ValidacionesTrait;
 
     public function __construct() {
-        parent::__construct();
+        parent::__construct('sis_natacion');
     }
 
     // El modelo hace las validaciones pesadas, no el controlador
@@ -26,7 +26,7 @@ class Representante extends Conexion {
         $this->soloNumeros($cedula, 'cedula');
         // Si no estamos editando, validamos que la cédula sea única
         if (!$excluirCedula) {
-            $this->unico($this->getConex1(), $cedula, 'representante', 'cedula');
+            $this->unico($this->getConex1(), $cedula, 'representantes', 'cedula');
         }
 
         $this->requerido($nombres, 'nombres');
@@ -44,7 +44,7 @@ class Representante extends Conexion {
             // Iniciamos transacción por si falla algo
             $conex->beginTransaction();
 
-            $sql = "INSERT INTO representante (cedula, nombres, apellidos, telefono_principal, telefono_emergencia, correo, parentesco, direccion_residencia) 
+            $sql = "INSERT INTO representantes (cedula, nombres, apellidos, telefono_principal, telefono_emergencia, correo, parentesco, direccion_residencia) 
                     VALUES (:cedula, :nombres, :apellidos, :tel1, :tel2, :correo, :parentesco, :direccion)";
             
             $stmt = $conex->prepare($sql);
@@ -86,7 +86,7 @@ class Representante extends Conexion {
 
     public function listarRepresentantes(): array {
         $conex = $this->getConex1();
-        $sql = "SELECT * FROM representante ORDER BY nombres ASC";
+        $sql = "SELECT * FROM representantes ORDER BY nombres ASC";
         $stmt = $conex->query($sql);
         return $stmt->fetchAll();
     }

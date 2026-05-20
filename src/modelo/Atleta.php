@@ -177,6 +177,25 @@ class Atleta extends Conexion {
         }
     }
 
+    public function listarMenoresSinRepresentante(): array {
+    $conex = $this->getConex1();
+    try {
+        // SQL inteligente: Filtra por edad < 18 y busca huérfanos en la tabla intermedia
+        $sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos 
+                FROM atletas a
+                LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta
+                WHERE TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) < 18
+                  AND ar.id_atleta IS NULL 
+                ORDER BY a.nombres ASC";
+
+        $stmt = $conex->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // En caso de error, retornamos un array vacío para no romper el JSON de JS
+        return [];
+    }
+}
+
     public function registrarAtleta(array $datos): bool {
         $conex = $this->getConex1();
         try {
@@ -331,6 +350,8 @@ class Atleta extends Conexion {
             return false;
         }
     }
+
+
 
     public function procesarFoto(array $archivo, ?string $fotoActual = null): ?string {
         if ($archivo['error'] === UPLOAD_ERR_NO_FILE || !isset($archivo['tmp_name'])) {
