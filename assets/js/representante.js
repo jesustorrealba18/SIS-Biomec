@@ -95,18 +95,131 @@ async function abrirModalRepresentante(idRepresentante = null) {
 }
 
 // =====================================================================
+// FUNCIONES DE CARGA DINÁMICA (RENDERIZADO DEL CLIENTE)
+// =====================================================================
+
+/**
+ * Consulta los representantes al servidor y dibuja la tabla dinámicamente
+ */
+async function cargarTablaRepresentantes() {
+    const tbody = document.getElementById('listaRepresentantes');
+    
+    // Cambiamos el colspan a 6 porque agregamos una columna
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando datos...</span></td></tr>`;
+
+    const representantes = await peticionAjax('listarRepresentantes');
+
+    if (!representantes || representantes.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center p-12 text-gray-500">
+                    <i class="fas fa-users-slash text-4xl mb-3 block text-gray-600 animate-pulse"></i>
+                    <span class="text-xs uppercase tracking-wider block">No hay representantes registrados en el sistema</span>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    let html = '';
+    representantes.forEach(rep => {
+        
+        // 1. Lógica para procesar y dibujar a los atletas como etiquetas bonitas
+        let htmlAtletas = '<span class="text-[10px] text-gray-600 italic">Sin vinculaciones</span>';
+        let textoBusquedaAtletas = ''; // Para alimentar el buscador
+
+        if (rep.atletas_vinculados) {
+            textoBusquedaAtletas = rep.atletas_vinculados.toLowerCase();
+            const listaAtletas = rep.atletas_vinculados.split('|');
+            
+            // Map transforma cada nombre en una etiqueta visual de Tailwind
+            htmlAtletas = listaAtletas.map(nombre => 
+                `<span class="inline-block px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-[10px] font-bold uppercase tracking-wider mb-1 mr-1">
+                    <i class="fas fa-swimmer mr-1"></i> ${nombre}
+                </span>`
+            ).join('');
+        }
+
+        // 2. String de búsqueda repotenciado (Incluye los nombres de los atletas)
+        const busqueda = `${rep.cedula} ${rep.nombres} ${rep.apellidos} ${textoBusquedaAtletas}`.toLowerCase();
+        
+        html += `
+            <tr class="representante-row hover:bg-white/5 transition-colors duration-200" data-busqueda="${busqueda}">
+                <td class="p-4 font-medium text-white">${rep.nombres} ${rep.apellidos}</td>
+                <td class="p-4 font-mono text-xs tracking-wider text-indigo-300">${rep.cedula}</td>
+                <td class="p-4 text-gray-300">${rep.telefono_principal}</td>
+                <td class="p-4">
+                    <span class="px-2.5 py-1 text-[11px] font-bold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-wide">
+                        ${rep.parentesco}
+                    </span>
+                </td>
+                
+                <td class="p-4">
+                    <div class="flex flex-wrap max-w-xs">
+                        ${htmlAtletas}
+                    </div>
+                </td>
+                
+                <td class="p-4 text-right space-x-1">
+                    <button onclick="abrirModalRepresentante(${rep.id_representante})" class="text-indigo-400 hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-500/10 transition duration-200" title="Editar Ficha">
+                        <i class="fas fa-edit text-base"></i>
+                    </button>
+                    <button onclick="eliminarRepresentante(${rep.id_representante})" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition duration-200" title="Eliminar Registro">
+                        <i class="fas fa-trash-alt text-base"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+
+    const inputBusqueda = document.getElementById('busquedaCedula');
+    if (inputBusqueda && inputBusqueda.value.trim() !== '') {
+        inputBusqueda.dispatchEvent(new Event('input'));
+    }
+}
+
+// =====================================================================
+// BARRA DE BÚSQUEDA EN TIEMPO REAL
+// =====================================================================
+const inputBusqueda = document.getElementById('busquedaCedula');
+if (inputBusqueda) {
+    inputBusqueda.addEventListener('input', function(e) {
+        const valor = e.target.value.toLowerCase().trim();
+        const filas = document.querySelectorAll('.representante-row');
+        
+        filas.forEach(fila => {
+            const textoFila = fila.getAttribute('data-busqueda');
+            fila.style.display = textoFila.includes(valor) ? '' : 'none';
+        });
+    });
+}
+
+// =====================================================================
 // EVENTO PRINCIPAL: INICIALIZACIÓN Y GUARDADO
 // =====================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // ¡NUEVO!: Encendemos el motor de validación en tiempo real para este formulario
+    // ¡NUEVO!: motor de validación en tiempo real para este formulario
     Validador.vincularTiempoReal(formRep);
+
+    // 1. Cargar la tabla dinámicamente al abrir la pantalla
+    cargarTablaRepresentantes();
+
+    // 2. Encender validador...
+   try {
+        Validador.vincularTiempoReal(formRep); 
+    } catch (error) {
+        console.warn("Advertencia: No se pudo iniciar el validador en tiempo real.", error);
+    }
 
     formRep.addEventListener('submit', async function (e) {
         e.preventDefault(); 
 
         // DOBLE VALIDACIÓN (Capa Frontend)
+        // Validador.limpiarEstilos(formRep); // Limpia rastros viejos
         const erroresJS = Validador.validarFormulario(formRep);
         
         if (erroresJS) {
@@ -128,7 +241,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resultado.status === 'success') {
                 UI.exito('Transacción Exitosa', resultado.message);
                 cerrarModalRepresentante();
-                setTimeout(() => window.location.reload(), 2000); 
+
+                cargarTablaRepresentantes();
+                // setTimeout(() => window.location.reload(), 2000); 
             } 
             else if (resultado.status === 'warning') {
                 let msjErrores = Object.values(resultado.errores).join("<br>");
@@ -158,7 +273,8 @@ async function eliminarRepresentante(id_representante) {
         
         if (resultado && resultado.status === 'success') {
             UI.exito('Eliminado', 'El registro ha sido removido exitosamente.');
-            setTimeout(() => window.location.reload(), 2000);
+            cargarTablaRepresentantes();
+            // setTimeout(() => window.location.reload(), 2000);
         } else {
             UI.error('Error', resultado?.message || 'No se pudo eliminar el registro.');
         }

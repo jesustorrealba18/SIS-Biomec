@@ -89,14 +89,18 @@
                             <th class="p-4">Cédula</th>
                             <th class="p-4">Teléfono</th>
                             <th class="p-4">Parentesco</th>
+                            <th class="p-4">Atletas Vinculados</th> 
                             <th class="p-4 text-right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="text-sm divide-y divide-gray-800" id="listaRepresentantes">
-                        <tr>
-                            <td colspan="5" class="text-center p-4 text-gray-500">Cargando datos...</td>
-                        </tr>
-                    </tbody>
+                        <tbody class="text-sm divide-y divide-gray-800" id="listaRepresentantes">
+                            <tr>
+                                <td colspan="5" class="text-center p-12 text-gray-500">
+                                    <i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i>
+                                    <span class="text-xs uppercase tracking-wider block">Cargando directorio familiar...</span>
+                                </td>
+                            </tr>
+                        </tbody>
                 </table>
             </div>
         </div>

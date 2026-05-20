@@ -51,6 +51,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // 3. Pivote para acciones GET (UNIFICADO - Consultas, AJAX y Vistas)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+
+    // B) ¡NUEVO! Petición para listar representantes en la tabla
+    if (isset($_GET['accion']) && $_GET['accion'] === 'listarRepresentantes') {
+        header('Content-Type: application/json');
+        echo json_encode($objRepresentante->listarRepresentantes());
+        exit;
+    }
     
     // A) Petición de JavaScript (Fetch) para listar atletas en los checkboxes
     if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {
@@ -68,6 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     // C) Petición GET normal: El usuario entra al directorio
     // El pivote pide los datos al modelo y carga la vista
-    $representantes = $objRepresentante->listarRepresentantes();
+    // $representantes = $objRepresentante->listarRepresentantes();
     require_once 'vista/representante.php';
 }
