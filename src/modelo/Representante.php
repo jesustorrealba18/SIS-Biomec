@@ -137,7 +137,7 @@ class Representante extends Conexion {
                         r.apellidos, 
                         r.telefono_principal, 
                         r.parentesco,
-                        GROUP_CONCAT(CONCAT(a.nombres, ' ', a.apellidos) SEPARATOR '|') as atletas_vinculados
+                        GROUP_CONCAT(CONCAT(a.id_atleta, ':', a.nombres, ' ', a.apellidos) SEPARATOR '|') as atletas_vinculados
                     FROM representantes r
                     LEFT JOIN atleta_representante ar ON r.id_representante = ar.id_representante
                     LEFT JOIN atletas a ON ar.id_atleta = a.id_atleta

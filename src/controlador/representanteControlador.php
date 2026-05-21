@@ -58,6 +58,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode($objRepresentante->listarRepresentantes());
         exit;
     }
+
+    // D) ¡NUEVO! Petición para ver el mini-perfil de un atleta vinculado
+    if (isset($_GET['accion']) && $_GET['accion'] === 'verPerfilAtleta' && isset($_GET['id'])) {
+        header('Content-Type: application/json');
+        // Usamos la función que ya hizo tu líder en su modelo
+        $datosAtleta = $objAtleta->obtenerPorId((int)$_GET['id']);
+        echo json_encode($datosAtleta);
+        exit;
+    }
     
     // A) Petición de JavaScript (Fetch) para listar atletas en los checkboxes
     if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {

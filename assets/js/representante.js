@@ -132,12 +132,20 @@ async function cargarTablaRepresentantes() {
             textoBusquedaAtletas = rep.atletas_vinculados.toLowerCase();
             const listaAtletas = rep.atletas_vinculados.split('|');
             
-            // Map transforma cada nombre en una etiqueta visual de Tailwind
-            htmlAtletas = listaAtletas.map(nombre => 
-                `<span class="inline-block px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md text-[10px] font-bold uppercase tracking-wider mb-1 mr-1">
-                    <i class="fas fa-swimmer mr-1"></i> ${nombre}
-                </span>`
-            ).join('');
+            // Separamos el ID del Nombre que vienen de la Base de Datos
+            htmlAtletas = listaAtletas.map(item => {
+                const partes = item.split(':');
+                const idAtleta = partes[0];
+                const nombreAtleta = partes[1];
+
+                // Convertimos el <span> en un <button> con cursor-pointer y un efecto hover
+                return `
+                <button onclick="verMiniPerfilAtleta(${idAtleta})" type="button" 
+                        class="inline-block px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/20 rounded-md text-[10px] font-bold uppercase tracking-wider mb-1 mr-1 transition-colors cursor-pointer shadow-sm active:scale-95" 
+                        title="Ver perfil de ${nombreAtleta}">
+                    <i class="fas fa-swimmer mr-1"></i> ${nombreAtleta}
+                </button>`;
+            }).join('');
         }
 
         // 2. String de búsqueda repotenciado (Incluye los nombres de los atletas)
@@ -278,5 +286,109 @@ async function eliminarRepresentante(id_representante) {
         } else {
             UI.error('Error', resultado?.message || 'No se pudo eliminar el registro.');
         }
+    }
+}
+
+
+// =====================================================================
+// FUNCIONALIDAD EXTRA: MINI-PERFIL DEL ATLETA (Nativo Tailwind)
+// =====================================================================
+
+function cerrarModalVer() {
+    const modal = document.getElementById('modalVer');
+    if (modal) {
+        modal.classList.add('hidden');
+        // Limpiamos el contenido para no dejar "fantasmas" del atleta anterior
+        document.getElementById('detalleContenido').innerHTML = ''; 
+    }
+}
+
+// Cerramos este modal también si el usuario presiona la tecla Escape
+document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('modalVer');
+    if (e.key === "Escape" && modal && !modal.classList.contains('hidden')) {
+        cerrarModalVer();
+    }
+});
+
+async function verMiniPerfilAtleta(idAtleta) {
+    // 1. Mostramos un loading rápido de SweetAlert mientras viaja al servidor
+    Swal.fire({
+        title: 'Cargando perfil...',
+        background: '#161430',
+        color: '#fff',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading() }
+    });
+
+    // 2. Buscamos los datos del atleta en el servidor
+    const datos = await peticionAjax(`verPerfilAtleta&id=${idAtleta}`);
+    
+    // 3. Cerramos el circulito de carga
+    Swal.close();
+
+    // 4. Si trajo los datos, ejecutamos el renderizado idéntico al de tu líder
+    if (datos) {
+        const fotoHtml = datos.foto
+            ? `<img src="${datos.foto}" class="w-28 h-28 rounded-full mx-auto mb-4 border-4 border-indigo-500/20 shadow-xl object-cover">`
+            : `<div class="w-28 h-28 rounded-full mx-auto mb-4 bg-indigo-500/20 flex items-center justify-center text-4xl text-indigo-400 border-4 border-indigo-500/20"><i class="fas fa-user"></i></div>`;
+
+        const estadoColor = {
+            Activo: 'text-emerald-400',
+            Inactivo: 'text-red-400',
+            Retirado: 'text-amber-400',
+            Transferido: 'text-blue-400'
+        };
+
+        const html = `
+            <div class="text-center mb-8">
+                ${fotoHtml}
+                <h2 class="text-2xl font-bold text-white">${datos.nombres} ${datos.apellidos}</h2>
+                <p class="text-indigo-400 mb-2 font-mono tracking-widest text-sm">${datos.cedula}</p>
+                <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase ${estadoColor[datos.estado] || 'text-gray-400'} bg-white/5">${datos.estado}</span>
+            </div>
+
+            <div class="mb-6">
+                <p class="text-[10px] uppercase text-indigo-400 font-bold tracking-widest mb-3"><i class="fas fa-user mr-2"></i>Datos Personales</p>
+                <div class="grid grid-cols-3 gap-3 text-left bg-black/20 p-4 rounded-2xl border border-white/5">
+                    <div><p class="text-[10px] uppercase text-gray-500">Edad</p><p class="text-white">${datos.edad || '--'} años</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500">Sexo</p><p class="text-white">${datos.sexo === 'M' ? 'Masculino' : 'Femenino'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500">Categoría</p><p class="text-indigo-300">${datos.categoria_nombre || 'S/C'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500">Teléfono</p><p class="text-white">${datos.telefono || '—'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500">Correo</p><p class="text-white text-xs">${datos.correo || '—'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500">Fichaje Club</p><p class="text-white">${datos.fecha_registro_club || '—'}</p></div>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <p class="text-[10px] uppercase text-emerald-400 font-bold tracking-widest mb-3"><i class="fas fa-heartbeat mr-2"></i>Datos Médicos</p>
+                <div class="grid grid-cols-2 gap-3 text-left bg-black/20 p-4 rounded-2xl border border-white/5">
+                    <div><p class="text-[10px] uppercase text-gray-500">Grupo Sanguíneo</p><p class="text-white font-bold">${datos.grupo_sanguineo || '—'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500">Seguro Médico</p><p class="text-white">${datos.seguro_medico || '—'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500">Alergias</p><p class="text-white text-xs">${datos.alergias || 'Ninguna registrada'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500">Condiciones</p><p class="text-white text-xs">${datos.condiciones_previas || 'Ninguna registrada'}</p></div>
+                </div>
+                ${datos.contacto_emergencia_nombre ? `
+                <div class="mt-3 p-3 rounded-xl bg-black/20 border border-white/5">
+                    <p class="text-[10px] uppercase text-amber-400 font-bold mb-2"><i class="fas fa-phone-alt mr-2"></i>Contacto Emergencia</p>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div><p class="text-white text-sm">${datos.contacto_emergencia_nombre}</p><p class="text-[10px] text-gray-500">${datos.contacto_emergencia_parentesco || ''}</p></div>
+                        <div><p class="text-white text-sm">${datos.contacto_emergencia_telefono || '—'}</p></div>
+                    </div>
+                </div>` : ''}
+            </div>
+
+            <div>
+                <p class="text-[10px] uppercase text-purple-400 font-bold tracking-widest mb-3"><i class="fas fa-trophy mr-2"></i>Datos Federativos</p>
+                <div class="grid grid-cols-2 gap-3 text-left bg-black/20 p-4 rounded-2xl border border-white/5">
+                    <div><p class="text-[10px] uppercase text-gray-500">FEVEDA</p><p class="text-indigo-300 font-mono">${datos.numero_feveda || 'S/F'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500">Club Procedencia</p><p class="text-white">${datos.club_procedencia || '—'}</p></div>
+                </div>
+            </div>
+        `;
+        document.getElementById('detalleContenido').innerHTML = html;
+        document.getElementById('modalVer').classList.remove('hidden');
+    } else {
+        UI.error('Error', 'No se pudieron cargar los datos del atleta.');
     }
 }

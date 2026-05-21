@@ -214,6 +214,20 @@
         </div>
     </div>
 
+    <div id="modalVer" class="fixed inset-0 bg-[#060512]/90 backdrop-blur-xl hidden flex items-center justify-center p-4 z-50">
+        <div class="relative bg-[#111026] border border-white/10 w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] max-h-[90vh] overflow-y-auto">
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-600/10 rounded-full blur-3xl"></div>
+            
+<button type="button" onclick="cerrarModalVer()" class="absolute top-6 right-6 text-gray-400 hover:text-white hover:rotate-90 transition-all duration-300 z-[100] cursor-pointer p-2">
+    <i class="fas fa-times text-2xl cursor-pointer"></i>
+</button>
+            
+            <div class="p-8 relative z-10" id="detalleContenido">
+                </div>
+        </div>
+    </div>
+
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/alertas.js"></script>
     <script src="assets/js/representante.js"></script>
