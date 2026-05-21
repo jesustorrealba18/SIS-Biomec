@@ -126,7 +126,7 @@ class Representante extends Conexion {
         }
     }
 
-    public function listarRepresentantes(): array {
+/*     public function listarRepresentantes(): array {
         $conex = $this->getConex1();
         try {
             // Usamos LEFT JOIN para traer a los atletas y GROUP_CONCAT para unirlos en una sola línea separados por un " | "
@@ -150,7 +150,70 @@ class Representante extends Conexion {
             error_log("Error Listando: " . $e->getMessage());
             return [];
         }
+    } */
+
+        // NUEVA FUNCIÓN: Eliminar Híbrido
+    public function eliminarRepresentante(int $id): bool {
+        $conex = $this->getConex1();
+        try {
+            $conex->beginTransaction();
+
+            // 1. Eliminado Lógico: Ocultamos al papá
+            $sqlLogico = "UPDATE representantes SET estado = 'Inactivo' WHERE id_representante = :id";
+            $stmtLogico = $conex->prepare($sqlLogico);
+            $stmtLogico->execute([':id' => $id]);
+
+            // 2. Desvinculación Física: Liberamos a los atletas para que puedan ser adoptados por otro representante
+            $sqlFisico = "DELETE FROM atleta_representante WHERE id_representante = :id";
+            $stmtFisico = $conex->prepare($sqlFisico);
+            $stmtFisico->execute([':id' => $id]);
+
+            $conex->commit();
+            return true;
+        } catch (PDOException $e) {
+            $conex->rollBack();
+            error_log("Error Eliminando: " . $e->getMessage());
+            return false;
+        }
     }
+
+  // MODIFICAR EL MÉTODO DE LISTAR PARA QUE SEA DINÁMICO
+    public function listarRepresentantes(string $estado = 'Activo'): array {
+        $conex = $this->getConex1();
+        try {
+            // El WHERE ahora usa el parámetro :estado dinámicamente
+            $sql = "SELECT 
+                        r.id_representante, r.cedula, r.nombres, r.apellidos, 
+                        r.telefono_principal, r.parentesco, r.estado,
+                        GROUP_CONCAT(CONCAT(a.id_atleta, ':', a.nombres, ' ', a.apellidos) SEPARATOR '|') as atletas_vinculados
+                    FROM representantes r
+                    LEFT JOIN atleta_representante ar ON r.id_representante = ar.id_representante
+                    LEFT JOIN atletas a ON ar.id_atleta = a.id_atleta
+                    WHERE r.estado = :estado 
+                    GROUP BY r.id_representante
+                    ORDER BY r.id_representante DESC";
+                    
+            $stmt = $conex->prepare($sql);
+            $stmt->execute([':estado' => $estado]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    // NUEVO MÉTODO: Reactivar Representante
+    public function reactivarRepresentante(int $id): bool {
+        $conex = $this->getConex1();
+        try {
+            // Simplemente devolvemos el estado a 'Activo'
+            // Nota: Los atletas no se revínculan automáticamente porque pudieron ser asignados a otra persona mientras este estuvo inactivo
+            $sql = "UPDATE representantes SET estado = 'Activo' WHERE id_representante = :id";
+            $stmt = $conex->prepare($sql);
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }      
 
 /**
  * Obtiene los datos de un representante por su ID

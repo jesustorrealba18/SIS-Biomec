@@ -74,6 +74,13 @@
                     <input type="text" id="busquedaCedula" placeholder="Buscar por cédula..." 
                            class="input-dark w-full pl-11 pr-4 py-3 rounded-xl text-sm shadow-inner">
                 </div>
+                <div class="flex items-center gap-2">
+                    <label for="filtroEstado" class="text-xs text-gray-400 uppercase font-bold tracking-wider">Ver:</label>
+                    <select id="filtroEstado" onchange="cargarTablaRepresentantes()" class="input-dark p-2 rounded-xl text-xs bg-[#161430] border border-gray-700 text-white">
+                        <option value="Activo" selected>👤 Directorio Activo</option>
+                        <option value="Inactivo">🗑️ Archivados / Inactivos</option>
+                    </select>
+                </div>                
                 <button onclick="abrirModalRepresentante()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95">
                     <i class="fas fa-plus"></i> Nuevo Representante
                 </button>
