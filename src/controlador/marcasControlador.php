@@ -1,31 +1,101 @@
 <?php
-// src/controlador/representanteControlador.php
-
-// 1. Filtro de Reglas Básicas (El pivote ataja a los intrusos)
+// =====================================================================
+// CONTROLADOR PIVOTE: MARCAS DEPORTIVAS
+// =====================================================================
 session_start();
+
+// 1. Filtro de Seguridad
 if (empty($_SESSION['id'])) { 
     header('Location: ?p=login'); 
     exit; 
 }
 
-// Traemos el Modelo que sí es una clase y hace el trabajo pesado
-use GrupoProyecto\SisBiomec\modelo\Representante;
+// 2. Importamos los Modelos necesarios
+use GrupoProyecto\SisBiomec\modelo\Marca;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
 
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+$objMarca = new Marca();
 
-// ACCIÓN: Enviar la lista resumida de atletas para el buscador predictivo
-    if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletasSelect') {
+// =====================================================================
+// RUTAS GET: Para cargar vistas y pedir datos (Listados)
+// =====================================================================
+
+// =====================================================================
+// RUTAS GET: Para cargar vistas y pedir datos (Listados)
+// =====================================================================
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $accion = $_GET['accion'] ?? '';
+
+    // Ruta A: El Buscador Predictivo pide los atletas
+    if ($accion === 'listarAtletasSelect') {
         header('Content-Type: application/json');
-        // Instancias el modelo de Atleta (asegúrate de hacer el 'use' arriba)
         $objAtleta = new Atleta();
-        
-        // Asumiendo que tu líder tiene una función para listar todos los atletas activos
-        // (Si la función se llama diferente en Atleta.php, cámbiala aquí)
-        echo json_encode($objAtleta->listarAtletas()); 
+        // Llama a la función de tu compañero (ajusta el nombre si es distinto)
+        echo json_encode($objAtleta->listarAtletas());
         exit;
     }
 
-require_once 'vista/marcas.php';
+    // Ruta B: Cargar la tabla principal de marcas
+    if ($accion === 'listarMarcas') {
+        header('Content-Type: application/json');
+        $estado = $_GET['estado'] ?? 'Activo';
+        echo json_encode($objMarca->listarMarcas($estado));
+        exit;
+    }
+
+    // Por defecto: Si no hay acción AJAX, cargamos la pantalla HTML
+    require_once 'vista/marcas.php';
+    exit;
 }
+
+// =====================================================================
+// RUTAS POST: Para Guardar, Actualizar o Eliminar (Transacciones)
+// =====================================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    $accionPost = $_POST['accion'] ?? '';
+
+    // Ruta C: Guardar nueva marca
+    if ($accionPost === 'guardar') {
+        
+        // 1. Validar reglas de negocio usando el Trait
+        $errores = $objMarca->validarDatos($_POST);
+
+        if (!empty($errores)) {
+            // Si falta algún campo obligatorio, rebotamos la petición
+            echo json_encode(['status' => 'warning', 'errores' => $errores]);
+            exit;
+        }
+
+        //2. Enviar los datos validados a la transacción del modelo
+        if ($objMarca->registrarMarca($_POST)) {
+            echo json_encode(['status' => 'success', 'message' => 'Marca registrada exitosamente con sus parciales.']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Ocurrió un error al guardar en la base de datos.']);
+        }
+        exit;
+        //Para ver cual es el problema
+        // try {
+        //     if ($objMarca->registrarMarca($_POST)) {
+        //         echo json_encode(['status' => 'success', 'message' => 'Marca registrada.']);
+        //     }
+        // } catch (\Exception $e) {
+        //     // Esto mandará el error exacto (ej. "Foreign key constraint fails", "Column not found") a tu JavaScript
+        //     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        // }
+        // exit;
+    }
+
+    // Ruta D: Eliminar (Borrado lógico) - Para cuando hagas esa función
+    if ($accionPost === 'eliminar') {
+        $id = (int)($_POST['id_marca'] ?? 0);
+        if ($objMarca->eliminarMarca($id)) {
+            echo json_encode(['status' => 'success']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'No se pudo archivar la marca.']);
+        }
+        exit;
+    }
+}
+

@@ -34,6 +34,24 @@ async function peticionAjax(accion, datos = null) {
 function cerrarModalMarca() {
     modalMarca.classList.add('hidden');
     modalMarca.firstElementChild.classList.add('scale-95', 'opacity-0');
+    
+    // 1. Resetear el formulario tradicional
+    formMarca.reset();
+    
+    // 2. Limpiar el contenedor dinámico de Splits (RF-06)
+    document.getElementById('rejillaSplits').innerHTML = '';
+    document.getElementById('contenedorSplits').classList.add('hidden');
+    document.getElementById('alertaCoherencia').innerHTML = '';
+    
+    // 3. Resetear el Buscador Predictivo de Atletas
+    document.getElementById('id_atleta').value = '';
+    const inputBuscar = document.getElementById('inputBuscarAtleta');
+    if(inputBuscar) {
+        inputBuscar.value = '';
+        inputBuscar.classList.remove('text-emerald-400', 'font-bold');
+        inputBuscar.removeAttribute('readonly');
+        document.getElementById('btnLimpiarAtleta').classList.add('hidden');
+    }
 }
 
 // Cerrar modal con la tecla Escape
@@ -47,6 +65,12 @@ document.addEventListener('keydown', (e) => {
 // ABRIR MODAL (INTELIGENTE: SIRVE PARA REGISTRAR Y EDITAR)
 // =====================================================================
 async function abrirModalMarca(idAtleta = null) {
+
+     // 1. Reiniciamos el formulario a su estado original
+    formMarca.reset(); 
+    try { Validador.limpiarEstilos(formMarca); } catch(e) {}
+
+
     // 1. Mostramos el modal en pantalla
     modalMarca.classList.remove('hidden');
     setTimeout(() => {
@@ -222,3 +246,134 @@ function generarCajasSplits() {
 
 // Ahora SOLO escuchamos a la distancia para disparar la función
 selectDistancia.addEventListener('change', generarCajasSplits);
+
+
+// =====================================================================
+// MOTOR MATEMÁTICO DE TIEMPOS
+// =====================================================================
+
+// Convierte un texto como "01:15.50" a 75.50 segundos puros
+function convertirTiempoASegundos(tiempoTexto) {
+    if (!tiempoTexto) return 0;
+    
+    // Si viene con formato MM:SS.cc
+    if (tiempoTexto.includes(':')) {
+        const partes = tiempoTexto.split(':');
+        const minutos = parseInt(partes[0]) || 0;
+        const segundos = parseFloat(partes[1]) || 0;
+        return (minutos * 60) + segundos;
+    }
+    
+    // Si escribieron solo segundos, ej: "45.30"
+    return parseFloat(tiempoTexto) || 0;
+}
+
+const inputTiempoHumano = document.getElementById('tiempo_final_humano');
+const alertaCoherencia = document.getElementById('alertaCoherencia');
+const inputTiempoSegundos = document.getElementById('tiempo_final_seg'); // El oculto para la BD
+
+function validarCoherenciaMatematica() {
+    // 1. Obtenemos el tiempo final que escribió el entrenador
+    const tiempoFinalSegundos = convertirTiempoASegundos(inputTiempoHumano.value);
+    
+    // Guardamos ese valor en el input oculto para enviarlo limpio a la Base de Datos
+    inputTiempoSegundos.value = tiempoFinalSegundos.toFixed(2);
+
+    // 2. Buscamos todas las cajitas de splits que generamos dinámicamente
+    const cajasSplits = document.querySelectorAll('.split-input');
+    
+    // Si no hay cajas (porque no han seleccionado distancia), salimos
+    if (cajasSplits.length === 0) return true; 
+
+    // 3. Sumamos el valor de todos los splits
+    let sumaParciales = 0;
+    cajasSplits.forEach(caja => {
+        sumaParciales += convertirTiempoASegundos(caja.value);
+    });
+
+    // 4. Calculamos la diferencia matemática absoluta
+    const diferencia = Math.abs(tiempoFinalSegundos - sumaParciales);
+
+    // 5. Evaluamos el Criterio CA-06.2 (Tolerancia estricta de 0.01s)
+    // Usamos 0.015 por los decimales de punto flotante en JS
+    if (tiempoFinalSegundos > 0 && sumaParciales > 0) {
+        if (diferencia > 0.015) {
+            alertaCoherencia.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: Los parciales suman <b>${sumaParciales.toFixed(2)}s</b> y el final es <b>${tiempoFinalSegundos.toFixed(2)}s</b>.`;
+            alertaCoherencia.classList.remove('text-emerald-400');
+            alertaCoherencia.classList.add('text-red-500');
+            return false; // Bloquea el envío
+        } else {
+            alertaCoherencia.innerHTML = `<i class="fas fa-check-circle"></i> Tiempos coherentes. (Suma: ${sumaParciales.toFixed(2)}s)`;
+            alertaCoherencia.classList.remove('text-red-500');
+            alertaCoherencia.classList.add('text-emerald-400');
+            return true; // Permite el envío
+        }
+    }
+    
+    alertaCoherencia.innerHTML = '';
+    return true; // Pasa si aún no han escrito nada
+}
+
+// 6. Ponemos a escuchar al input del tiempo final para que valide al instante
+inputTiempoHumano.addEventListener('input', validarCoherenciaMatematica);
+
+// También debemos escuchar a las cajitas dinámicas. 
+// Como las cajas se crean después, usamos la técnica de Delegación de Eventos:
+document.getElementById('rejillaSplits').addEventListener('input', function(e) {
+    if(e.target && e.target.classList.contains('split-input')) {
+        validarCoherenciaMatematica();
+    }
+});
+
+
+// =====================================================================
+// ENVÍO DEL FORMULARIO (CREATE / UPDATE)
+// =====================================================================
+formMarca.addEventListener('submit', async (e) => {
+    e.preventDefault(); // Evitamos que la página se recargue
+
+    // 1. Filtro de Seguridad: Validamos la coherencia matemática de los Splits
+    // (Esta es la función CA-06.2 que creamos antes)
+    if (typeof validarCoherenciaMatematica === 'function' && !validarCoherenciaMatematica()) {
+        UI.error('Incoherencia Matemática', 'La suma de los parciales no coincide con el tiempo final (Tolerancia: 0.01s).');
+        return;
+    }
+
+    // 2. Recolectamos absolutamente todo el formulario
+    // ¡Magia!: FormData recoge automáticamente el array de splits[25], splits[50], etc.
+    let datosFormulario = new FormData(formMarca);
+    
+    // Le indicamos al controlador qué ruta POST debe tomar
+    datosFormulario.append('accion', 'guardar');
+
+    // Cambiamos el botón a estado de "Cargando"
+    const textoOriginal = btnGuardar.innerHTML;
+    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESANDO...';
+    btnGuardar.disabled = true;
+
+    // 3. Enviamos la petición AJAX al controlador
+    const resultado = await peticionAjax('guardar', datosFormulario);
+
+    // 4. Procesamos la respuesta del servidor
+    if (resultado) {
+        if (resultado.status === 'success') {
+            // Guardado exitoso
+            UI.exito('¡Rendimiento Registrado!', resultado.message);
+            cerrarModalMarca();
+            // cargarTablaMarcas(); // Descomenta esto cuando tengas la función de pintar la tabla
+        } 
+        else if (resultado.status === 'warning') {
+            // Errores de validación (Ej: Faltó un campo)
+            let mensajesError = Object.values(resultado.errores).join('<br>');
+            UI.error('Faltan Datos', mensajesError);
+        } 
+        else {
+            // Error de base de datos
+            UI.error('Error de Sistema', resultado.message);
+        }
+    }
+
+    // Devolvemos el botón a la normalidad
+    btnGuardar.innerHTML = textoOriginal;
+    btnGuardar.disabled = false;
+});
