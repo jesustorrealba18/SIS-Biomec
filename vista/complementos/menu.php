@@ -66,10 +66,16 @@
             <span>Planificación de Cargas</span>
         </div>
 
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
+        <!-- NUEVO: Enlace al módulo de Representantes -->
+        <a href="?p=marcas" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'marcas') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-stopwatch w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'marcas') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Marcas y Tiempos</span>
+        </a>
+
+<!--         <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
             <i class="fas fa-stopwatch w-5 text-center text-indigo-400 group-hover:text-white"></i> 
             <span>Marcas y Tiempos</span>
-        </div>
+        </div> -->
 
         <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
             <i class="fas fa-trophy w-5 text-center text-indigo-400 group-hover:text-white"></i> 
