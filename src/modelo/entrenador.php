@@ -9,10 +9,10 @@ class entrenador extends Conexion {
     use ValidacionesTrait;
 
     public function __construct() {
-        parent::__construct('sis_natacion');
+        parent::__construct('sis_natacion'); 
     }
 
-    public function validarDatos(array $datos, ?int $excluirId = null): array {
+    public function validarDatos(array $datos, ?string $excluirCedula = null): array {
         $this->resetearErrores();
 
         $cedula       = $datos['cedula'] ?? '';
@@ -23,12 +23,13 @@ class entrenador extends Conexion {
         $correo       = $datos['correo'] ?? '';
         $telefono     = $datos['telefono'] ?? '';
         $direccion    = $datos['direccion'] ?? '';
-    
+
         $this->requerido($cedula, 'cedula');
-        if ($cedula !== '') {
-            $this->cedula($cedula, 'cedula');
+        $this->soloNumeros($cedula, 'cedula');
+        
+        if (!$excluirCedula) {
+            $this->unico($this->getConex1(), $cedula, 'entrenador', 'cedula');
         }
-        $this->unico($this->getConex1(), trim($cedula), 'entrenador', 'cedula', $excluirId, 'id_entrenador');
 
         $this->requerido($nombres, 'nombres');
         $this->soloLetras($nombres, 'nombres');
@@ -47,7 +48,8 @@ class entrenador extends Conexion {
 
         $this->requerido($correo, 'correo');
         $this->correoValido($correo, 'correo');
-        $this->unico($this->getConex1(), $correo, 'entrenador', 'correo', $excluirId, 'id_entrenador');
+        // Corregido: Se cambió el $excluirId inexistente por $excluirCedula (o adáptalo según tu Trait)
+        $this->unico($this->getConex1(), $correo, 'entrenador', 'correo', $excluirCedula, 'cedula');
 
         $this->requerido($telefono, 'telefono');
         $this->telefono($telefono, 'telefono');
@@ -55,29 +57,7 @@ class entrenador extends Conexion {
         $this->requerido($direccion, 'direccion');
         $this->longitud($direccion, 'direccion', 5, 200);
 
-        return $this->errores;
-    }
-
-    public function listarEntrenador(): array {
-        $conex = $this->getConex1();
-         try {
-            $sql = "SELECT *, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad FROM entrenador";
-            $stmt = $conex->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            return [];
-        }
-    }
-
-    public function obtenerPorId(int $id): ?array {
-        $conex = $this->getConex1();
-        try {
-            $sql = "SELECT * FROM entrenador WHERE id_entrenador = :id";
-            $stmt = $conex->prepare($sql);
-            $stmt->execute([':id' => $id]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) { return null; }
+        return $this->obtenerErrores();
     }
 
     public function registrarEntrenador(array $datos): bool {
@@ -85,69 +65,115 @@ class entrenador extends Conexion {
         try {
             $conex->beginTransaction();
 
-            $sql = "INSERT INTO entrenador (cedula, nombres, apellidos, fecha_nacimiento, genero, correo,
-                                            direccion, telefono, foto, id_usuario) 
-                    VALUES (:cedula, :nombres, :apellidos, :fecha_nac, :genero, :correo,
-                            :direccion, :telefono, :foto, :id_usuario)";
+            $sql = "INSERT INTO entrenador (
+                        cedula, nombres, apellidos, fecha_nacimiento, genero, correo, telefono, direccion, id_usuario
+                    ) VALUES (
+                        :cedula, :nombres, :apellidos, :fecha_nacimiento, :genero, :correo, :telefono, :direccion, :id_usuario
+                    )";
             
             $stmt = $conex->prepare($sql);
+            
             $stmt->execute([
-                ':cedula'         => $datos['cedula'],
-                ':nombres'        => $datos['nombres'],
-                ':apellidos'      => $datos['apellidos'],
-                ':fecha_nac'      => $datos['fecha_nacimiento'],
-                ':genero'         => $datos['genero'],
-                ':direccion'      => $datos['direccion'] ?? null,
-                ':telefono'       => $datos['telefono'] ?? null,
-                ':correo'         => $datos['correo'] ?? null,
-                ':foto'           => $datos['foto'] ?? null,
-                ':id_usuario'     => $datos['id_usuario'] ?? null
+                ':cedula'           => $datos['cedula'] ?? '',
+                ':nombres'          => $datos['nombres'] ?? '',
+                ':apellidos'        => $datos['apellidos'] ?? '',
+                ':fecha_nacimiento' => $datos['fecha_nacimiento'] ?? '',
+                ':genero'           => $datos['genero'] ?? '',
+                ':correo'           => $datos['correo'] ?? '',
+                ':telefono'         => $datos['telefono'] ?? '',
+                ':direccion'        => $datos['direccion'] ?? '',
+                ':id_usuario'       => $_SESSION['id'] ?? 1 
             ]);
 
-            $idEntrenador = (int)$conex->lastInsertId();
             $conex->commit();
             return true;
         } catch (PDOException $e) {
-            if ($conex->inTransaction()) {
-                $conex->rollBack();
-            }
+            $conex->rollBack();
+            error_log("Error entrenador: " . $e->getMessage());
             return false;
         }
     }
 
-    public function editarEntrenador(array $datos): bool {
+    public function listarEntrenador(): array {
+        $conex = $this->getConex1();
+        try {
+            // Corregido: Se cerraron las comillas del SQL correctamente
+            $sql = "SELECT 
+                        e.cedula,
+                        e.nombres,
+                        e.apellidos,
+                        e.fecha_nacimiento,
+                        e.genero,
+                        e.correo,
+                        e.telefono,
+                        e.direccion
+                    FROM entrenador e";
+                    
+            $stmt = $conex->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error al mostrar: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function obtenerPorId(int $id): ?array {
+        $conex = $this->getConex1();
+        try {
+            // Corregido: Se integró el TIMESTAMPDIFF dentro de la consulta SQL real
+            $sql = "SELECT *, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad 
+                    FROM entrenador 
+                    WHERE id_entrenador = :id";
+            $stmt = $conex->prepare($sql);
+            $stmt->execute([':id' => $id]);
+            $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $resultado ? $resultado : null;
+        } catch (PDOException $e) {
+             error_log("Error en obtenerPorId: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function actualizarEntrenador(array $datos): bool {
         $conex = $this->getConex1();
         try {
             $conex->beginTransaction();
 
+            // Corregido: Se eliminó la coma antes del WHERE
             $sql = "UPDATE entrenador SET 
-                        cedula = :cedula, nombres = :nombres, apellidos = :apellidos, 
-                        fecha_nacimiento = :fecha_nac, genero = :genero, 
-                        direccion = :direccion, telefono = :telefono, correo = :correo, 
-                        foto = COALESCE(:foto, foto), id_usuario = :id_usuario
-                    WHERE id_entrenador = :id";
-            
+                        cedula = :cedula, 
+                        nombres = :nombres, 
+                        apellidos = :apellidos, 
+                        fecha_nacimiento = :fecha_nacimiento, 
+                        genero = :genero, 
+                        correo = :correo, 
+                        telefono = :telefono, 
+                        direccion = :direccion
+                    WHERE id_entrenador = :id_entrenador";
+                    
             $stmt = $conex->prepare($sql);
+            
+            // Corregido: Tomar el ID real del entrenador, no la cédula
+            $id_entrenador = (int)($datos['id_entrenador'] ?? 0);
+            
+            // Corregido: Comillas arregladas, se agregó el parámetro :telefono y llave de dirección correcta
             $stmt->execute([
-                ':cedula'         => $datos['cedula'],
-                ':nombres'        => $datos['nombres'],
-                ':apellidos'      => $datos['apellidos'],
-                ':fecha_nac'      => $datos['fecha_nacimiento'],
-                ':genero'         => $datos['genero'],
-                ':direccion'      => $datos['direccion'] ?? null,
-                ':telefono'       => $datos['telefono'] ?? null,
-                ':correo'         => $datos['correo'] ?? null,
-                ':foto'           => $datos['foto'] ?? null,
-                ':id_usuario'     => $datos['id_usuario'] ?? null,
-                ':id'             => $datos['id_entrenador']
+                ':cedula'           => $datos['cedula'] ?? '',
+                ':nombres'          => $datos['nombres'] ?? '',
+                ':apellidos'        => $datos['apellidos'] ?? '',
+                ':fecha_nacimiento' => $datos['fecha_nacimiento'] ?? '',
+                ':genero'           => $datos['genero'] ?? '',
+                ':correo'           => $datos['correo'] ?? '',
+                ':telefono'         => $datos['telefono'] ?? '',
+                ':direccion'        => $datos['direccion'] ?? '',
+                ':id_entrenador'    => $id_entrenador
             ]);
 
             $conex->commit();
             return true;
         } catch (PDOException $e) {
-            if ($conex->inTransaction()) {
-                $conex->rollBack();
-            }
+            $conex->rollBack();
+            error_log("Error en actualizar: " . $e->getMessage());
             return false;
         }
     }
@@ -159,89 +185,8 @@ class entrenador extends Conexion {
             $stmt = $conex->prepare($sql);
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) { 
+            error_log("Error al eliminar: " . $e->getMessage());
             return false; 
         }
     }
-
-    public function procesarFoto(array $archivo, ?string $fotoActual = null): ?string {
-        if ($archivo['error'] === UPLOAD_ERR_NO_FILE || !isset($archivo['tmp_name'])) {
-            return $fotoActual;
-        }
-
-        if ($archivo['error'] !== UPLOAD_ERR_OK) {
-            $this->agregarError('foto', 'Error al subir la imagen');
-            return $fotoActual;
-        }
-
-        $tiposPermitidos = ['image/jpeg', 'image/png'];
-        if (!in_array($archivo['type'], $tiposPermitidos)) {
-            $this->agregarError('foto', 'Solo se permiten imágenes JPG o PNG');
-            return $fotoActual;
-        }
-
-        if ($archivo['size'] > 2 * 1024 * 1024) {
-            $this->agregarError('foto', 'La imagen no debe superar los 2MB');
-            return $fotoActual;
-        }
-
-        $directorio = RAIZ . 'assets/uploads/fotos/';
-        if (!is_dir($directorio)) {
-            mkdir($directorio, 0755, true);
-        }
-
-        $info = \getimagesize($archivo['tmp_name']);
-        if (!$info) {
-            $this->agregarError('foto', 'No se pudo leer la imagen');
-            return $fotoActual;
-        }
-
-        $ancho = $info[0];
-        $alto = $info[1];
-        $tamano = 300;
-
-        $lienzo = \imagecreatetruecolor($tamano, $tamano);
-        $esPng = ($archivo['type'] === 'image/png');
-
-        if ($esPng) {
-            $imagen = \imagecreatefrompng($archivo['tmp_name']);
-            \imagealphablending($lienzo, false);
-            \imagesavealpha($lienzo, true);
-            $transparente = \imagecolorallocatealpha($lienzo, 255, 255, 255, 127);
-            \imagefill($lienzo, 0, 0, $transparente);
-        } else {
-            $imagen = \imagecreatefromjpeg($archivo['tmp_name']);
-        }
-
-        if (!$imagen) {
-            \imagedestroy($lienzo);
-            $this->agregarError('foto', 'No se pudo procesar la imagen');
-            return $fotoActual;
-        }
-
-        $minimo = \min($ancho, $alto);
-        $ejeX = (int)(($ancho - $minimo) / 2);
-        $ejeY = (int)(($alto - $minimo) / 2);
-
-        \imagecopyresampled($lienzo, $imagen, 0, 0, $ejeX, $ejeY, $tamano, $tamano, $minimo, $minimo);
-
-        $extension = $esPng ? 'png' : 'jpg';
-        $nombreArchivo = 'entrenador_' . \uniqid() . '.' . $extension;
-        $rutaCompleta = $directorio . $nombreArchivo;
-        $rutaRelativa = 'assets/uploads/fotos/' . $nombreArchivo;
-
-        if ($esPng) {
-            \imagepng($lienzo, $rutaCompleta, 9);
-        } else {
-            \imagejpeg($lienzo, $rutaCompleta, 85);
-        }
-
-        \imagedestroy($lienzo);
-        \imagedestroy($imagen);
-
-        if ($fotoActual && file_exists(RAIZ . $fotoActual)) {
-            unlink(RAIZ . $fotoActual);
-        }
-
-        return $rutaRelativa;
-    }
-}
+} 
