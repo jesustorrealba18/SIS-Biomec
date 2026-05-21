@@ -17,15 +17,15 @@ if (is_file($archivoControlador)) {
     $claseControlador = "GrupoProyecto\\SisBiomec\\controlador\\" . ucfirst($pagina) . "Controlador";
 
     if (class_exists($claseControlador, false)) {
-        $dependencias = [
-            'GrupoProyecto\\SisBiomec\\controlador\\AtletaControlador' => [
-                new \GrupoProyecto\SisBiomec\modelo\Atleta()
-            ],
-        ];
-
-        $deps = $dependencias[$claseControlador] ?? [];
-        $controlador = new $claseControlador(...$deps);
-        $controlador->handle();
+       $dependencias = [
+    'GrupoProyecto\\SisBiomec\\controlador\\AtletaControlador' => [
+        new \GrupoProyecto\SisBiomec\modelo\Atleta()
+    ],
+ 
+    'GrupoProyecto\\SisBiomec\\controlador\\EntrenadorControlador' => [
+        new \GrupoProyecto\SisBiomec\modelo\Entrenador()
+    ],
+];
     }
 } else {
     header("HTTP/1.0 404 Not Found");
