@@ -89,14 +89,18 @@
                             <th class="p-4">Cédula</th>
                             <th class="p-4">Teléfono</th>
                             <th class="p-4">Parentesco</th>
+                            <th class="p-4">Atletas Vinculados</th> 
                             <th class="p-4 text-right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="text-sm divide-y divide-gray-800" id="listaRepresentantes">
-                        <tr>
-                            <td colspan="5" class="text-center p-4 text-gray-500">Cargando datos...</td>
-                        </tr>
-                    </tbody>
+                        <tbody class="text-sm divide-y divide-gray-800" id="listaRepresentantes">
+                            <tr>
+                                <td colspan="5" class="text-center p-12 text-gray-500">
+                                    <i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i>
+                                    <span class="text-xs uppercase tracking-wider block">Cargando directorio familiar...</span>
+                                </td>
+                            </tr>
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -112,6 +116,7 @@
             </div>
 
             <form id="formRepresentante" class="space-y-6">
+                
                 <input type="hidden" id="cedula_original" name="cedula_original" value="">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -173,10 +178,10 @@
                                     data-validar="requerido" data-nombre="Parentesco"
                                     class="input-dark w-full p-3 rounded-xl">
                                 <option value="">Seleccione una opción...</option>
-                                <option value="Padre/Madre">Padre / Madre</option>
-                                <option value="Tío/a">Tío / Tía</option>
-                                <option value="Abuelo/a">Abuelo / Abuela</option>
-                                <option value="Representante Legal">Representante Legal</option>
+                                <option value="Padre">Padre</option>
+                                <option value="Madre">Madre</option>
+                                <option value="Tutor">Tutor</option>
+                                <option value="Otro">Otro</option>
                             </select>
                         </div>
 
@@ -207,6 +212,20 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="modalVer" class="fixed inset-0 bg-[#060512]/90 backdrop-blur-xl hidden flex items-center justify-center p-4 z-50">
+        <div class="relative bg-[#111026] border border-white/10 w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] max-h-[90vh] overflow-y-auto">
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-600/10 rounded-full blur-3xl"></div>
+            
+<button type="button" onclick="cerrarModalVer()" class="absolute top-6 right-6 text-gray-400 hover:text-white hover:rotate-90 transition-all duration-300 z-[100] cursor-pointer p-2">
+    <i class="fas fa-times text-2xl cursor-pointer"></i>
+</button>
+            
+            <div class="p-8 relative z-10" id="detalleContenido">
+                </div>
         </div>
     </div>
 

@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Si todo está bien, el pivote le ordena al Modelo que guarde en la BD
     if ($excluirCedula) {
         // Lógica de actualizar (Descomentar cuando esté lista en el modelo)
-        // $resultado = $objRepresentante->actualizarRepresentante($_POST, $excluirCedula);
+        $resultado = $objRepresentante->actualizarRepresentante($_POST, $excluirCedula);
     } else {
         $resultado = $objRepresentante->registrarRepresentante($_POST);
     }
@@ -51,13 +51,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // 3. Pivote para acciones GET (UNIFICADO - Consultas, AJAX y Vistas)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    
-    // A) Petición de JavaScript (Fetch) para listar atletas en los checkboxes
-    if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {
+
+    // B) ¡NUEVO! Petición para listar representantes en la tabla
+    if (isset($_GET['accion']) && $_GET['accion'] === 'listarRepresentantes') {
         header('Content-Type: application/json');
-        echo json_encode($objAtleta->listarMenoresSinRepresentante());
+        echo json_encode($objRepresentante->listarRepresentantes());
         exit;
     }
+
+    // D) ¡NUEVO! Petición para ver el mini-perfil de un atleta vinculado
+    if (isset($_GET['accion']) && $_GET['accion'] === 'verPerfilAtleta' && isset($_GET['id'])) {
+        header('Content-Type: application/json');
+        // Usamos la función que ya hizo tu líder en su modelo
+        $datosAtleta = $objAtleta->obtenerPorId((int)$_GET['id']);
+        echo json_encode($datosAtleta);
+        exit;
+    }
+    
+    // A) Petición de JavaScript (Fetch) para listar atletas en los checkboxes
+    // if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {
+    //     header('Content-Type: application/json');
+    //     echo json_encode($objAtleta->listarMenoresSinRepresentante());
+    //     exit;
+    // }
+        if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {
+                header('Content-Type: application/json');
+                
+                // Aquí pregunta: ¿Me mandaron un ID para editar? Si no, pongo 0 (Registrar)
+                $id_rep = isset($_GET['id_representante']) ? (int)$_GET['id_representante'] : 0;
+                
+                // Le pasamos el número al Modelo y él se encarga de cambiar el SQL internamente
+                echo json_encode($objAtleta->listarMenoresParaRepresentante($id_rep));
+                exit;
+            }
+
+    // ACCIÓN: Petición de JavaScript para rellenar el formulario al Editar
+    if (isset($_GET['accion']) && $_GET['accion'] === 'obtenerRepresentante' && isset($_GET['id'])) {
+        header('Content-Type: application/json');
+        // Buscamos al representante y lo devolvemos en JSON limpio
+        echo json_encode($objRepresentante->obtenerPorId((int)$_GET['id']));
+        exit; // <- ESTO ES VITAL para que no se imprima el <!DOCTYPE html> debajo
+    }
+  
 
     // B) Acción de eliminar (Si decidieran usarlo por URL tradicional)
     if (isset($_GET['eliminar'])) {
@@ -68,6 +103,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     // C) Petición GET normal: El usuario entra al directorio
     // El pivote pide los datos al modelo y carga la vista
-    $representantes = $objRepresentante->listarRepresentantes();
+    // $representantes = $objRepresentante->listarRepresentantes();
     require_once 'vista/representante.php';
 }
