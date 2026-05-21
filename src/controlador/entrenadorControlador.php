@@ -1,50 +1,80 @@
 <?php
-session_start();
-require_once 'modelo/entrenador.php';
 
-if (empty($_SESSION['id'])) { 
-    header('Location: ?p=login'); 
-    exit; 
-}
+namespace GrupoProyecto\SisBiomec\controlador;
 
-$objEntrenador = new Entrenador();
-$mensaje = ""; // Alertas
+use GrupoProyecto\SisBiomec\modelo\entrenador;
 
-// Eliminar
-if (isset($_GET['eliminar'])) {
-    $objEntrenador->eliminarEntrenador($_GET['eliminar']);
-    // Redirigimos con un parámetro de mensaje 'm' para el JS
-    header('Location: ?p=entrenador&m=eliminado'); 
-    exit;
-}
+class EntrenadorControlador {
+    private entrenador $entrenador;
 
-// 2. Lógica de Procesamiento de Formulario (POST)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
-    // CASO: Edición
-    if (!empty($_POST['id_entrenador']) && !empty($_POST['cedula'])) {
-        $resultado = $objEntrenador->editarEntrenador($_POST);
-        // Redirigimos para limpiar el POST y mostrar éxito
-        header('Location: ?p=entrenador&m=editado');
-        exit;
-    } 
-    
-    // CASO: Registro Nuevo
-    else if (!empty($_POST['cedula'])) {
-        $resultado = $objEntrenador->registrarEntrenador($_POST);
-        // Redirigimos para limpiar el POST y mostrar éxito
-        header('Location: ?p=entrenador&m=registrado');
+    public function __construct(entrenador $entrenador) {
+        $this->entrenador = $entrenador;
+    }
+
+    public function handle() {
+        session_start();
+
+        if (empty($_SESSION['id'])) {
+            header('Location: ?p=login');
+            exit;
+        }
+
+        if (isset($_GET['eliminar']) && is_numeric($_GET['eliminar'])) {
+            $this->eliminar((int)$_GET['eliminar']);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->guardar();
+            return;
+        }
+
+        $this->listar();
+    }
+
+    private function eliminar(int $id): void {
+        $this->entrenador->eliminarEntrenador($id);
+        header('Location: ?p=entrenador&m=eliminado');
         exit;
     }
+
+    private function guardar(): void {
+        $datos = $_POST;
+        $datos['id_usuario'] = $_SESSION['id'] ?? null;
+
+        $excluirId = !empty($datos['id_atleta']) ? (int)$datos['id_entrenador'] : null;
+        $this->entrenador->validarDatos($datos, $excluirId);
+
+        $fotoActual = null;
+        if ($excluirId) {
+            $entrenadorActual = $this->entrenador->obtenerPorId($excluirId);
+            $fotoActual = $entrenadorActual['foto'] ?? null;
+        }
+
+        if (isset($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $datos['foto'] = $this->entrenador->procesarFoto($_FILES['foto'], $fotoActual);
+        } else {
+            $datos['foto'] = $fotoActual;
+        }
+
+        $errores = $this->entrenador->obtenerErrores();
+
+        if (empty($errores)) {
+            if ($excluirId) {
+                $this->entrenador->editarEntrenador($datos);
+                header('Location: ?p=entrenador&m=editado');
+            } else {
+                $this->entrenador->registrarEntrenador($datos);
+                header('Location: ?p=entrenador&m=registrado');
+            }
+            exit;
+        }
+
+        $this->listar($errores, $datos);
+    }
+
+    private function listar(array $errores = [], array $datosForm = []): void {
+        $atletas = $this->entrenador->listarEntrenador();
+        require_once 'vista/entrenador.php';
+    }
 }
-
-// 3. Capturar mensajes de la URL (provenientes de las redirecciones anteriores)
-if (isset($_GET['m'])) {
-    $mensaje = $_GET['m'];
-}
-
-// 4. Carga de datos para la vista
-$Entrenador = $objEntrenador->listarEntrenador();
-
-// 5. Llamada a la vista
-require_once 'vista/entrenador.php';

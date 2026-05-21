@@ -6,7 +6,6 @@
     <title>Entrenador | SGRD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- SweetAlert2 para las animaciones de éxito/error -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -29,7 +28,6 @@
             <h1 class="text-2xl font-bold text-white">Gestión de Entrenadores</h1>
             <div class="flex items-center gap-6">
 
-                <!-- Botón Notificaciones -->
                 <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
                     <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
                         <i class="fas fa-bell text-xl"></i>
@@ -40,7 +38,6 @@
                     </div>
                 </div>
 
-                <!-- Botón Guía de Ayuda -->
                 <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
                     <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
                         <i class="fas fa-question-circle text-xl"></i>
@@ -51,7 +48,6 @@
                     </div>
                 </div>
 
-                <!-- Perfil y Botón de Salida -->
                 <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
                     <div class="text-right mr-2">
                         <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre']; ?></p>
@@ -65,7 +61,6 @@
             </div>
         </header>
         
-        <!-- SECCIÓN DE CONTROL (Búsqueda y Nuevo entrenador) -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <div class="flex items-center gap-2 text-sm text-indigo-400">
                 <i class="fas fa-user-tie"></i>
@@ -84,12 +79,11 @@
             </div>
         </div>
 
-        <!-- Tabla de Resultados -->
         <div class="tarjeta overflow-hidden shadow-2xl">
             <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/5">
                 <h3 class="text-white font-semibold">Listado General</h3>
                 <span class="text-xs bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20">
-                    <?php echo count($Entrenador); ?> Registrados
+                    <?php echo count($entrenador); ?> Registrados
                 </span>
             </div>
             
@@ -100,13 +94,12 @@
                             <th class="p-4">Entrenador</th>
                             <th class="p-4">Cédula</th>
                             <th class="p-4">Edad</th>
-                            <th class="p-4">Genero</th>
                             <th class="p-4 text-right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="text-sm divide-y divide-gray-800">
-                        <?php foreach($Entrenador as $a): ?>
-                        <tr class="hover:bg-white/5 transition-colors group atleta-row" data-cedula="<?php echo $a['cedula']; ?>">
+                        <?php foreach($entrenador as $a): ?>
+                        <tr class="hover:bg-white/5 transition-colors group entrenador-row" data-cedula="<?php echo $a['cedula']; ?>">
                             <td class="p-4 flex items-center gap-3">
                                 <div class="bg-indigo-500/10 p-2 rounded-lg text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
                                     <i class="fas fa-user"></i>
@@ -136,7 +129,6 @@
         </div>
     </main>
 
-    <!-- MODAL 1: REGISTRO Y EDICIÓN -->
     <div id="modalEntrenador" class="fixed inset-0 bg-[#0f0d23]/90 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
         <div class="tarjeta w-full max-w-2xl p-8 shadow-2xl transform transition-all scale-95 animate-in zoom-in duration-300">
             <div class="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
@@ -173,7 +165,6 @@
                             <option value="F">Femenino</option>
                         </select>
                     </div>
-                    </div>
                 </div>
                 <div class="mt-8 flex gap-3">
                     <button type="button" onclick="cerrarModal()" class="flex-1 bg-gray-800 text-gray-400 py-4 rounded-xl font-bold">CANCELAR</button>
@@ -183,11 +174,9 @@
         </div>
     </div>
 
-    <!-- MODAL 2: VER DETALLES (VERSIÓN MEJORADA) -->
     <div id="modalVer" class="fixed inset-0 bg-[#060512]/90 backdrop-blur-xl hidden flex items-center justify-center p-4 z-50">
         <div class="relative bg-[#111026] border border-white/10 w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] transform transition-all">
             
-            <!-- Luces de fondo decorativas -->
             <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl"></div>
             <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-600/10 rounded-full blur-3xl"></div>
 
@@ -196,7 +185,6 @@
             </button>
 
             <div id="detalleContenido" class="relative p-10">
-                <!-- Se llena con JS manteniendo el estilo de tarjeta deportiva -->
             </div>
         </div>
     </div>
