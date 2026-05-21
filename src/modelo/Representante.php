@@ -151,6 +151,75 @@ class Representante extends Conexion {
             return [];
         }
     }
+
+/**
+ * Obtiene los datos de un representante por su ID
+ */
+public function obtenerPorId(int $id): ?array {
+    $conex = $this->getConex1();
+    try {
+        $sql = "SELECT * FROM representantes WHERE id_representante = :id";
+        $stmt = $conex->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $resultado ? $resultado : null;
+    } catch (PDOException $e) {
+         error_log("Error en obtenerPorId: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Actualiza los datos del representante y refresca sus vinculaciones
+ */
+public function actualizarRepresentante(array $datos): bool {
+    $conex = $this->getConex1();
+    try {
+        $conex->beginTransaction();
+
+        // 1. Actualizar datos personales en la tabla principal
+        $sql = "UPDATE representantes SET 
+                    cedula = :cedula, nombres = :nombres, apellidos = :apellidos, 
+                    parentesco = :parentesco, telefono_principal = :tel_prin, 
+                    telefono_secundario = :tel_sec, correo = :correo, direccion = :direccion
+                WHERE id_representante = :id_rep";
+                
+        $stmt = $conex->prepare($sql);
+        $id_representante = (int)($datos['cedula_original'] ?? 0);
+        
+        $stmt->execute([
+            ':cedula'     => $datos['cedula'] ?? '',
+            ':nombres'    => $datos['nombres'] ?? '',
+            ':apellidos'  => $datos['apellidos'] ?? '',
+            ':parentesco' => $datos['parentesco'] ?? '',
+            ':tel_prin'   => $datos['telefono_principal'] ?? '',
+            ':tel_sec'    => $datos['telefono_emergencia'] ?? '',
+            ':correo'     => $datos['correo'] ?? '',
+            ':direccion'  => $datos['direccion_residencia'] ?? '',
+            ':id_rep'     => $id_representante
+        ]);
+
+        // 2. Limpiar vinculaciones anteriores para evitar duplicados o conflictos de llaves
+        $sqlDelete = "DELETE FROM atleta_representante WHERE id_representante = :id_rep";
+        $stmtDel = $conex->prepare($sqlDelete);
+        $stmtDel->execute([':id_rep' => $id_representante]);
+
+        // 3. Insertar las nuevas vinculaciones marcadas en el formulario
+        if (!empty($datos['atletas_ids']) && is_array($datos['atletas_ids'])) {
+            $this->vincularAtletas($conex, $id_representante, $datos);
+        }
+
+        $conex->commit();
+        return true;
+    } catch (PDOException $e) {
+        $conex->rollBack();
+        error_log("Error en actualizarRepresentante: " . $e->getMessage());
+        return false;
+    }
+}
+
+
+
 }
 
 ?>

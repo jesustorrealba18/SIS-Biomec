@@ -45,34 +45,45 @@ document.addEventListener('keydown', (e) => {
 /**
  * Abre el modal. Si recibe un ID, precarga los datos para EDITAR. Si no, es REGISTRAR.
  */
+// =====================================================================
+// ABRIR MODAL (INTELIGENTE: SIRVE PARA REGISTRAR Y EDITAR)
+// =====================================================================
 async function abrirModalRepresentante(idRepresentante = null) {
+    // 1. Reiniciamos el formulario a su estado original
     formRep.reset(); 
+    try { Validador.limpiarEstilos(formRep); } catch(e) {}
     
-    // ¡NUEVO!: Limpiamos los bordes rojos/verdes que hayan quedado de una interacción previa
-    Validador.limpiarEstilos(formRep);
+    // 2. Establecemos la bandera oculta (Si hay ID es Edición, si no, es Registro)
+    const inputCedulaOriginal = document.getElementById('cedula_original');
+    if (inputCedulaOriginal) {
+        inputCedulaOriginal.value = idRepresentante || '';
+    }
 
-    // Limpiamos el input oculto por seguridad
-    document.getElementById('cedula_original').value = '';
-
-    // Efecto de aparición suave
+    // 3. Mostramos el modal en pantalla
+    modalRep.classList.remove('hidden');
     setTimeout(() => {
         modalRep.firstElementChild.classList.remove('scale-95', 'opacity-0');
     }, 10);
 
+    // 4. Cargamos los checkboxes de los Atletas Menores
     const contenedor = document.getElementById('contenedorCheckboxes');
-    contenedor.innerHTML = '<p class="text-xs text-gray-500 animate-pulse p-2">Consultando atletas...</p>';
+    contenedor.innerHTML = '<p class="text-xs text-gray-500 animate-pulse p-2">Sincronizando atletas...</p>';
 
-    // Cargamos la lista de atletas disponibles
-    const atletas = await peticionAjax('listarAtletas');
+    // Aquí está la magia: si hay ID, se lo mandamos al Controlador
+    const urlAtletas = idRepresentante ? `listarAtletas&id_representante=${idRepresentante}` : 'listarAtletas';
+    const atletas = await peticionAjax(urlAtletas);
 
     if (atletas && atletas.length > 0) {
         contenedor.innerHTML = ''; 
         atletas.forEach(atleta => {
+            // Si la base de datos dice que ya es su hijo (seleccionado = 1), lo marcamos
+            const marcado = (atleta.seleccionado == 1) ? 'checked' : '';
+            
             const div = document.createElement('div');
             div.className = "flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer transition";
             div.innerHTML = `
                 <input type="checkbox" name="atletas_ids[]" value="${atleta.id_atleta}" 
-                       id="atleta_${atleta.id_atleta}"
+                       id="atleta_${atleta.id_atleta}" ${marcado}
                        class="w-4 h-4 rounded border-gray-700 bg-gray-900 text-indigo-600 focus:ring-indigo-500">
                 <label for="atleta_${atleta.id_atleta}" class="text-xs text-gray-300 cursor-pointer flex-1">
                     ${atleta.nombres} ${atleta.apellidos} 
@@ -82,16 +93,41 @@ async function abrirModalRepresentante(idRepresentante = null) {
             contenedor.appendChild(div);
         });
     } else {
-        contenedor.innerHTML = '<p class="text-xs text-yellow-500 p-2">No hay atletas disponibles.</p>';
+        contenedor.innerHTML = '<p class="text-[11px] text-yellow-500 p-2">No hay atletas menores disponibles.</p>';
     }
 
-    // Si es EDITAR, lógica para precargar...
+    // ==========================================================
+    // 5. MODO EDICIÓN: Llenar los campos personales
+    // ==========================================================
     if (idRepresentante) {
-        document.getElementById('cedula_original').value = idRepresentante;
-        // Lógica de fetch para traer datos...
+        // Cambiamos el texto del botón para que el usuario sepa que está editando
+        btnGuardar.innerHTML = 'ACTUALIZAR DATOS <i class="fas fa-sync-alt ml-2"></i>';
+        
+        // Pedimos los datos personales al Controlador (La ruta nueva que hicimos)
+        const rep = await peticionAjax(`obtenerRepresentante&id=${idRepresentante}`);
+        
+        if (rep) {
+            // Rellenamos los inputs (Asegúrate de que los IDs coincidan con tu HTML)
+            document.getElementById('cedula').value = rep.cedula;
+            document.getElementById('nombres').value = rep.nombres;
+            document.getElementById('apellidos').value = rep.apellidos;
+            document.getElementById('telefono_principal').value = rep.telefono_principal;
+            document.getElementById('parentesco').value = rep.parentesco;
+            
+            // Los campos que cambian de nombre entre HTML y BD
+            if (document.getElementById('telefono_emergencia')) 
+                document.getElementById('telefono_emergencia').value = rep.telefono_secundario || ''; 
+            
+            if (document.getElementById('correo')) 
+                document.getElementById('correo').value = rep.correo || '';
+                
+            if (document.getElementById('direccion_residencia'))
+                document.getElementById('direccion_residencia').value = rep.direccion || ''; 
+        }
+    } else {
+        // Modo Nuevo Registro (Devolvemos el botón a su texto original)
+        btnGuardar.innerHTML = 'GUARDAR Y ASOCIAR <i class="fas fa-save ml-2"></i>';
     }
-
-    modalRep.classList.remove('hidden');
 }
 
 // =====================================================================

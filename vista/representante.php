@@ -116,6 +116,7 @@
             </div>
 
             <form id="formRepresentante" class="space-y-6">
+                
                 <input type="hidden" id="cedula_original" name="cedula_original" value="">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -177,10 +178,10 @@
                                     data-validar="requerido" data-nombre="Parentesco"
                                     class="input-dark w-full p-3 rounded-xl">
                                 <option value="">Seleccione una opción...</option>
-                                <option value="Padre/Madre">Padre / Madre</option>
-                                <option value="Tío/a">Tío / Tía</option>
-                                <option value="Abuelo/a">Abuelo / Abuela</option>
-                                <option value="Representante Legal">Representante Legal</option>
+                                <option value="Padre">Padre</option>
+                                <option value="Madre">Madre</option>
+                                <option value="Tutor">Tutor</option>
+                                <option value="Otro">Otro</option>
                             </select>
                         </div>
 

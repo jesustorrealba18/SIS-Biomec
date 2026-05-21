@@ -177,10 +177,10 @@ class Atleta extends Conexion {
         }
     }
 
-    public function listarMenoresSinRepresentante(): array {
+/*     public function listarMenoresSinRepresentante(): array {
     $conex = $this->getConex1();
     try {
-        // SQL inteligente: Filtra por edad < 18 y busca huérfanos en la tabla intermedia
+       
         $sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos 
                 FROM atletas a
                 LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta
@@ -191,7 +191,29 @@ class Atleta extends Conexion {
         $stmt = $conex->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        // En caso de error, retornamos un array vacío para no romper el JSON de JS
+      
+        return [];
+    }
+} */
+
+
+public function listarMenoresParaRepresentante(int $id_representante = 0): array {
+    $conex = $this->getConex1();
+    try {
+        // La consulta permite traer atletas sin representante O que pertenezcan al representante actual
+        $sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos,
+                       (CASE WHEN ar.id_representante = :id_rep THEN 1 ELSE 0 END) as seleccionado
+                FROM atletas a
+                LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta
+                WHERE (ar.id_atleta IS NULL OR ar.id_representante = :id_rep)
+                  AND TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) < 18
+                ORDER BY a.nombres ASC";
+
+        $stmt = $conex->prepare($sql);
+        $stmt->execute([':id_rep' => $id_representante]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en listarMenoresParaRepresentante: " . $e->getMessage());
         return [];
     }
 }
