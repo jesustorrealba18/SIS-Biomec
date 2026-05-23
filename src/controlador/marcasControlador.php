@@ -44,6 +44,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
+    // Ruta: Capturar detalles completos + Historial gráfico
+    if ($accion === 'obtenerDetalleMarca') {
+        header('Content-Type: application/json');
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        
+        $detalle = $objMarca->obtenerDetallePorId($id);
+        echo json_encode($detalle);
+        exit;
+    }
+
     // Por defecto: Si no hay acción AJAX, cargamos la pantalla HTML
     require_once 'vista/marcas.php';
     exit;

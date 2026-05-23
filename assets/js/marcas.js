@@ -268,6 +268,22 @@ function convertirTiempoASegundos(tiempoTexto) {
     return parseFloat(tiempoTexto) || 0;
 }
 
+// Convierte 75.50 segundos puros a formato "01:15.50"
+function formatearTiempoDesdeSegundos(segundosTotales) {
+    if (!segundosTotales) return '00.00';
+    const num = parseFloat(segundosTotales);
+    
+    // Si es menos de un minuto, solo devolvemos los segundos
+    if (num < 60) return num.toFixed(2);
+    
+    // Si pasa del minuto, calculamos
+    const minutos = Math.floor(num / 60);
+    const segundos = (num % 60).toFixed(2);
+    
+    // padStart asegura que siempre haya 2 dígitos (ej: "01" en vez de "1")
+    return `${minutos.toString().padStart(2, '0')}:${segundos.padStart(5, '0')}`;
+}
+
 const inputTiempoHumano = document.getElementById('tiempo_final_humano');
 const alertaCoherencia = document.getElementById('alertaCoherencia');
 const inputTiempoSegundos = document.getElementById('tiempo_final_seg'); // El oculto para la BD
@@ -360,7 +376,7 @@ formMarca.addEventListener('submit', async (e) => {
             // Guardado exitoso
             UI.exito('¡Rendimiento Registrado!', resultado.message);
             cerrarModalMarca();
-            // cargarTablaMarcas(); // Descomenta esto cuando tengas la función de pintar la tabla
+            cargarTablaMarcas(); // Descomenta esto cuando tengas la función de pintar la tabla
         } 
         else if (resultado.status === 'warning') {
             // Errores de validación (Ej: Faltó un campo)
@@ -376,4 +392,255 @@ formMarca.addEventListener('submit', async (e) => {
     // Devolvemos el botón a la normalidad
     btnGuardar.innerHTML = textoOriginal;
     btnGuardar.disabled = false;
+});
+
+
+// =====================================================================
+// RENDERIZADO DE LA TABLA PRINCIPAL (READ)
+// =====================================================================
+async function cargarTablaMarcas() {
+    // Leemos si el usuario quiere ver las marcas Activas o Inactivas
+    const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
+    
+    // Mostramos un esqueleto o texto de carga mientras esperamos a PHP
+    const tbody = document.getElementById('tbodyMarcas');
+    tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando marcas...</td></tr>';
+
+    // Pedimos los datos al controlador
+    const marcas = await peticionAjax(`listarMarcas&estado=${filtroEstado}`);
+
+    if (!marcas || marcas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500 font-mono text-xs">No hay marcas registradas en esta vista.</td></tr>';
+        return;
+    }
+
+    let html = '';
+    marcas.forEach(marca => {
+        
+        // 1. Convertimos el tiempo al formato humano
+        const tiempoReloj = formatearTiempoDesdeSegundos(marca.tiempo_final_seg);
+
+        // 2. Lógica visual: Si la BD dijo que es PB, armamos una medallita dorada
+        const badgePB = (marca.es_pb == 1) 
+            ? `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold ml-2 uppercase shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="¡Mejor Marca Personal!"><i class="fas fa-star mr-1"></i>PB</span>` 
+            : '';
+
+        // 3. Evaluamos si mostramos el botón de archivar(rojo) o reactivar(verde)
+        const botonAccion = (filtroEstado === 'Activo')
+            ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
+            : `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`;
+
+        // 4. Armamos la fila HTML
+        html += `
+            <tr class="hover:bg-white/5 transition-colors duration-200 border-b border-[#252345]">
+                
+                <td class="p-4">
+                    <div class="font-bold text-white text-sm">${marca.nombre_atleta}</div>
+                    <div class="text-[10px] text-gray-500 font-mono mt-0.5">C.I: ${marca.cedula}</div>
+                </td>
+                
+                <td class="p-4">
+                    <div class="font-bold text-indigo-300 text-sm">${marca.distancia_m}m ${marca.estilo}</div>
+                </td>
+                
+                <td class="p-4 text-xs text-gray-400">
+                    <i class="fas fa-swimming-pool mr-1 text-gray-600"></i> ${marca.tipo_piscina}
+                </td>
+                
+                <td class="p-4 flex items-center">
+                    <span class="font-mono text-emerald-400 font-bold text-lg">${tiempoReloj}</span>
+                    ${badgePB}
+                </td>
+                
+                <td class="p-4">
+                    <span class="bg-gray-800 text-gray-300 text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
+                        ${marca.nivel_evento}
+                    </span>
+                </td>
+                
+                <td class="p-4 text-xs font-mono text-gray-400">
+                    ${marca.fecha}
+                </td>
+                
+                <td class="p-4 text-right space-x-1">
+                    <button onclick="verDetallesMarca(${marca.id_marca})" class="text-indigo-400 hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Análisis de Rendimiento (SWOLF y Splits)">
+                        <i class="fas fa-chart-line text-base"></i>
+                    </button>
+                    
+                    ${botonAccion}
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+
+// =====================================================================
+// VISUALIZADOR CIENTÍFICO Y GRÁFICAS DE RENDIMIENTO (MAESTRO-DETALLE)
+// =====================================================================
+let instanciaGrafica = null; // Control para evitar bugs de renderizado en Chart.js
+
+async function verDetallesMarca(id_marca) {
+    const modalVer = document.getElementById('modalVer');
+    const contenedor = document.getElementById('detalleContenido');
+    
+    // Feedback visual de carga asíncrona
+    contenedor.innerHTML = `
+        <div class="text-center p-12 text-gray-500">
+            <i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-3"></i>
+            <p class="text-xs font-mono uppercase tracking-widest">Sincronizando métricas biomecánicas...</p>
+        </div>
+    `;
+    
+    // Desplegamos el contenedor flotante
+    modalVer.classList.remove('hidden');
+    
+    // Solicitamos el paquete de datos unificado al Controlador
+    const data = await peticionAjax(`obtenerDetalleMarca&id=${id_marca}`);
+    if (!data) {
+        UI.error('Error de Consulta', 'No se pudo estructurar el análisis técnico del registro.');
+        cerrarModalVer();
+        return;
+    }
+
+    // Traducción de formatos numéricos a métricas legibles
+    const tiempoFinalHumano = formatearTiempoDesdeSegundos(data.tiempo_final_seg);
+    const swolfScore = data.swolf_data ? data.swolf_data.swolf : '🚫 N/A';
+    const numBrazadas = data.swolf_data ? data.swolf_data.num_brazadas : 'Sin conteo';
+    const tReaccion = data.tiempo_reaccion_seg ? data.tiempo_reaccion_seg + 's' : '—';
+    const tViraje = data.tiempo_viraje_seg ? data.tiempo_viraje_seg + 's' : '—';
+    
+    // Procesamiento dinámico de la rejilla de splits (RF-06)
+    let tramosHTML = '';
+    if (data.splits && data.splits.length > 0) {
+        data.splits.forEach(split => {
+            tramosHTML += `
+                <div class="bg-[#161430] border border-gray-800 p-3 rounded-xl text-center shadow-inner">
+                    <p class="text-[9px] text-gray-500 uppercase font-black tracking-wider mb-0.5">${split.distancia_parcial_m} Metros</p>
+                    <p class="font-mono text-xs text-emerald-400 font-bold">${parseFloat(split.tiempo_parcial_seg).toFixed(2)}s</p>
+                </div>
+            `;
+        });
+    } else {
+        tramosHTML = '<div class="col-span-4 p-4 text-center text-xs text-gray-600 italic">No se recolectaron parciales en este control.</div>';
+    }
+
+    // Inyección estructural en el nodo del DOM
+    contenedor.innerHTML = `
+        <div class="mb-6">
+            <span class="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold rounded-md uppercase tracking-widest">
+                <i class="fas fa-microscope mr-1"></i> Telemetría Deportiva
+            </span>
+            <h2 class="text-xl font-bold text-white mt-2">${data.nombre_atleta}</h2>
+            <p class="text-xs text-gray-400 font-mono mt-0.5">C.I: ${data.cedula} • Registro: ${data.fecha}</p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div class="bg-black/30 p-3.5 rounded-xl border border-white/5 text-center">
+                <p class="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">Tiempo de Registro</p>
+                <p class="text-base font-mono text-emerald-400 font-black">${tiempoFinalHumano}</p>
+                ${data.es_pb == 1 ? '<span class="text-[9px] text-amber-400 font-bold animate-pulse"><i class="fas fa-trophy mr-1"></i>Récord (PB)</span>' : ''}
+            </div>
+            
+            <div class="bg-black/30 p-3.5 rounded-xl border border-white/5 text-center">
+                <p class="text-[9px] text-amber-400 uppercase font-bold tracking-wider mb-1">Índice SWOLF</p>
+                <p class="text-base font-mono text-amber-400 font-black">${swolfScore}</p>
+                <p class="text-[8px] text-gray-500 uppercase font-medium">Eficiencia Dinámica</p>
+            </div>
+
+            <div class="bg-black/30 p-3.5 rounded-xl border border-white/5 text-center">
+                <p class="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">Ciclos de Brazada</p>
+                <p class="text-base font-mono text-white font-bold">${numBrazadas}</p>
+                <p class="text-[8px] text-gray-500 uppercase">Por Longitud</p>
+            </div>
+
+            <div class="bg-black/30 p-3.5 rounded-xl border border-white/5 text-center">
+                <p class="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">Reacción / Viraje</p>
+                <p class="text-xs font-mono text-gray-300 font-bold mt-1.5">${tReaccion} | ${tViraje}</p>
+                <p class="text-[8px] text-gray-500 uppercase">Bloque / Pared</p>
+            </div>
+        </div>
+
+        <div class="mb-6 bg-black/10 p-4 rounded-xl border border-white/5">
+            <p class="text-[10px] uppercase text-gray-400 font-bold tracking-widest mb-3">
+                <i class="fas fa-chart-bar text-emerald-400 mr-2"></i>Pacing: Desglose de Ritmo por Tramo
+            </p>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                ${tramosHTML}
+            </div>
+        </div>
+
+        <div class="bg-black/20 p-4 rounded-xl border border-white/5">
+            <p class="text-[10px] uppercase text-gray-400 font-bold tracking-widest mb-3">
+                <i class="fas fa-chart-line text-indigo-400 mr-2"></i>Curva Histórica de Progresión (${data.distancia_m}m ${data.estilo} - Piscina ${data.tipo_piscina})
+            </p>
+            <div class="w-full h-44 relative">
+                <canvas id="canvasEvolucion"></canvas>
+            </div>
+        </div>
+    `;
+
+    // Inicialización del Motor Gráfico (Chart.js) si posee historial acumulado
+    if (data.historial_evolucion && data.historial_evolucion.length > 0) {
+        const ejeFechas = data.historial_evolucion.map(h => h.fecha);
+        const ejeTiempos = data.historial_evolucion.map(h => parseFloat(h.tiempo_final_seg));
+
+        // Liberamos memoria destruyendo la instancia previa para evitar parpadeos de caché
+        if (instanciaGrafica) instanciaGrafica.destroy();
+
+        const contextoLienzo = document.getElementById('canvasEvolucion').getContext('2d');
+        instanciaGrafica = new Chart(contextoLienzo, {
+            type: 'line',
+            data: {
+                labels: ejeFechas,
+                datasets: [{
+                    data: ejeTiempos,
+                    borderColor: '#6366f1', // Línea de tendencia Indigo
+                    backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#10b981', // Puntos de quiebre en Esmeralda
+                    pointBorderColor: '#fff',
+                    pointRadius: 3.5,
+                    tension: 0.25 // Curvatura estética suavizada
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                        ticks: { color: '#6b7280', font: { size: 9, family: 'monospace' } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                        ticks: { 
+                            color: '#6b7280', 
+                            font: { size: 9, family: 'monospace' },
+                            callback: function(val) { return val + 's'; }
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+function cerrarModalVer() {
+    document.getElementById('modalVer').classList.add('hidden');
+    if (instanciaGrafica) {
+        instanciaGrafica.destroy();
+        instanciaGrafica = null; // Limpieza física del colector de basura
+    }
+}
+
+// =====================================================================
+// INICIALIZADOR
+// =====================================================================
+// Cuando el documento cargue, mandamos a pintar la tabla automáticamente
+document.addEventListener('DOMContentLoaded', () => {
+    cargarTablaMarcas();
 });

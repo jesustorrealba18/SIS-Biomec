@@ -219,4 +219,62 @@ class Marca extends Conexion {
             return false;
         }
     }
+
+    /**
+     * Extrae el desglose científico de una marca y la cronología evolutiva del atleta
+     */
+    public function obtenerDetallePorId(int $id_marca): ?array {
+        $conex = $this->getConex1();
+        try {
+            // 1. Datos base de la marca e identificación del atleta
+            $sqlBase = "SELECT m.*, CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta, a.cedula 
+                        FROM marcas m 
+                        INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
+                        WHERE m.id_marca = :id_marca";
+            $stmtBase = $conex->prepare($sqlBase);
+            $stmtBase->execute([':id_marca' => $id_marca]);
+            $marca = $stmtBase->fetch(PDO::FETCH_ASSOC);
+
+            if (!$marca) return null;
+
+            // 2. Desglose transaccional de Splits (RF-06) cada 25m
+            $sqlSplits = "SELECT distancia_parcial_m, tiempo_parcial_seg 
+                          FROM marcas_splits 
+                          WHERE id_marca = :id_marca 
+                          ORDER BY parcial_numero ASC";
+            $stmtSplits = $conex->prepare($sqlSplits);
+            $stmtSplits->execute([':id_marca' => $id_marca]);
+            $marca['splits'] = $stmtSplits->fetchAll(PDO::FETCH_ASSOC);
+
+            // 3. Métrica de Eficiencia SWOLF (RF-07) de la tabla externa 1 a 1
+            $sqlSwolf = "SELECT num_brazadas, swolf FROM marcas_swolf WHERE id_marca = :id_marca";
+            $stmtSwolf = $conex->prepare($sqlSwolf);
+            $stmtSwolf->execute([':id_marca' => $id_marca]);
+            $marca['swolf_data'] = $stmtSwolf->fetch(PDO::FETCH_ASSOC) ?: null;
+
+            // 4. Serie temporal para la Gráfica de Evolución (CA-06.4)
+            // Filtra estrictamente por el mismo Atleta, Estilo, Distancia y Tipo de piscina
+            $sqlHistorial = "SELECT fecha, tiempo_final_seg 
+                             FROM marcas 
+                             WHERE id_atleta = :id_atleta 
+                             AND estilo = :estilo 
+                             AND distancia_m = :distancia_m 
+                             AND tipo_piscina = :tipo_piscina 
+                             AND estado = 'Active' 
+                             ORDER BY fecha ASC";
+            $stmtHistorial = $conex->prepare($sqlHistorial);
+            $stmtHistorial->execute([
+                ':id_atleta'     => $marca['id_atleta'],
+                ':estilo'        => $marca['estilo'],
+                ':distancia_m'   => $marca['distancia_m'],
+                ':tipo_piscina'  => $marca['tipo_piscina']
+            ]);
+            $marca['historial_evolucion'] = $stmtHistorial->fetchAll(PDO::FETCH_ASSOC);
+
+            return $marca;
+        } catch (PDOException $e) {
+            error_log("Error en extractor de detalles: " . $e->getMessage());
+            return null;
+        }
+    }
 }
