@@ -260,7 +260,7 @@ class Marca extends Conexion {
                              AND estilo = :estilo 
                              AND distancia_m = :distancia_m 
                              AND tipo_piscina = :tipo_piscina 
-                             AND estado = 'Active' 
+                             AND estado = 'Activo' 
                              ORDER BY fecha ASC";
             $stmtHistorial = $conex->prepare($sqlHistorial);
             $stmtHistorial->execute([
