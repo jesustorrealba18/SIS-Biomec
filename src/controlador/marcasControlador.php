@@ -97,13 +97,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // exit;
     }
 
-    // Ruta D: Eliminar (Borrado lógico) - Para cuando hagas esa función
+    // Ruta D: Archivar (Borrado lógico con justificación)
     if ($accionPost === 'eliminar') {
         $id = (int)($_POST['id_marca'] ?? 0);
-        if ($objMarca->eliminarMarca($id)) {
+        $motivo = $_POST['motivo'] ?? 'Sin justificación'; // Capturamos el motivo
+        
+        if ($objMarca->eliminarMarca($id, $motivo)) {
             echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'No se pudo archivar la marca.']);
+        }
+        exit;
+    }
+
+    // Ruta E: Reactivar registro
+    if ($accionPost === 'reactivar') {
+        $id = (int)($_POST['id_marca'] ?? 0);
+        if ($objMarca->reactivarMarca($id)) {
+            echo json_encode(['status' => 'success']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'No se pudo restaurar la marca.']);
         }
         exit;
     }

@@ -206,13 +206,36 @@ class Marca extends Conexion {
         }
     }
 
-    /**
-     * Hace un Soft Delete (Baja lógica) cambiando el estado del registro
+  /**
+     * Hace un Soft Delete guardando la justificación de auditoría
      */
-    public function eliminarMarca(int $id): bool {
+    public function eliminarMarca(int $id, string $motivo): bool {
         $conex = $this->getConex1();
         try {
-            $sql = "UPDATE marcas SET estado = 'Inactivo' WHERE id_marca = :id";
+            // Pasamos a Inactivo y registramos el por qué
+            $sql = "UPDATE marcas 
+                    SET estado = 'Inactivo', motivo_eliminacion = :motivo 
+                    WHERE id_marca = :id";
+            $stmt = $conex->prepare($sql);
+            return $stmt->execute([
+                ':id' => $id, 
+                ':motivo' => trim($motivo)
+            ]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Reactiva la marca y limpia el historial de eliminación
+     */
+    public function reactivarMarca(int $id): bool {
+        $conex = $this->getConex1();
+        try {
+            // Devolvemos a Activo y borramos el motivo anterior
+            $sql = "UPDATE marcas 
+                    SET estado = 'Activo', motivo_eliminacion = NULL 
+                    WHERE id_marca = :id";
             $stmt = $conex->prepare($sql);
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) {

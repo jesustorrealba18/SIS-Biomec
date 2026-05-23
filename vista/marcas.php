@@ -307,6 +307,7 @@
 
     
     <script src="assets/js/validador.js"></script>
+    <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
     <script src="assets/js/marcas.js"></script>
 </body>

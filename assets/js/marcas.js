@@ -419,6 +419,7 @@ async function cargarTablaMarcas() {
         
         // 1. Convertimos el tiempo al formato humano
         const tiempoReloj = formatearTiempoDesdeSegundos(marca.tiempo_final_seg);
+        const fechaLatina = formatearFecha(marca.fecha); // <--- AQUÍ LA USAS
 
         // 2. Lógica visual: Si la BD dijo que es PB, armamos una medallita dorada
         const badgePB = (marca.es_pb == 1) 
@@ -429,6 +430,13 @@ async function cargarTablaMarcas() {
         const botonAccion = (filtroEstado === 'Activo')
             ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
             : `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`;
+        // === EL TOQUE FINAL DE UX ===
+        // Si estamos viendo la papelera, armamos el texto rojo con el motivo
+        const justificacionHTML = (filtroEstado === 'Inactivo' && marca.motivo_eliminacion)
+            ? `<div class="text-[9px] text-red-400 mt-1 flex items-center gap-1 w-48 leading-tight">
+                <i class="fas fa-exclamation-circle"></i> Anulado: ${marca.motivo_eliminacion}
+               </div>`
+            : '';
 
         // 4. Armamos la fila HTML
         html += `
@@ -456,10 +464,11 @@ async function cargarTablaMarcas() {
                     <span class="bg-gray-800 text-gray-300 text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
                         ${marca.nivel_evento}
                     </span>
+                    ${justificacionHTML}
                 </td>
                 
                 <td class="p-4 text-xs font-mono text-gray-400">
-                    ${marca.fecha}
+                    ${fechaLatina}
                 </td>
                 
                 <td class="p-4 text-right space-x-1">
@@ -534,7 +543,7 @@ async function verDetallesMarca(id_marca) {
                 <i class="fas fa-microscope mr-1"></i> Telemetría Deportiva
             </span>
             <h2 class="text-xl font-bold text-white mt-2">${data.nombre_atleta}</h2>
-            <p class="text-xs text-gray-400 font-mono mt-0.5">C.I: ${data.cedula} • Registro: ${data.fecha}</p>
+            <p class="text-xs text-gray-400 font-mono mt-0.5">C.I: ${data.cedula} • Registro: ${formatearFecha(data.fecha)}</p>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -584,7 +593,7 @@ async function verDetallesMarca(id_marca) {
 
     // Inicialización del Motor Gráfico (Chart.js) si posee historial acumulado
     if (data.historial_evolucion && data.historial_evolucion.length > 0) {
-        const ejeFechas = data.historial_evolucion.map(h => h.fecha);
+        const ejeFechas = data.historial_evolucion.map(h => formatearFecha(h.fecha));
         const ejeTiempos = data.historial_evolucion.map(h => parseFloat(h.tiempo_final_seg));
 
         // Liberamos memoria destruyendo la instancia previa para evitar parpadeos de caché
@@ -634,6 +643,60 @@ function cerrarModalVer() {
     if (instanciaGrafica) {
         instanciaGrafica.destroy();
         instanciaGrafica = null; // Limpieza física del colector de basura
+    }
+}
+
+
+// =====================================================================
+// AUDITORÍA Y ESTADOS: ELIMINAR Y REACTIVAR 
+// =====================================================================
+
+async function eliminarMarca(id_marca) {
+    // 1. Invocamos nuestro método centralizado súper limpio
+    const alerta = await UI.pedirJustificacion(
+        'Archivar Registro de Tiempo',
+        'Indique el motivo exacto de la anulación (Ej: Descalificación, Fallo de cronómetro):',
+        'Indique el motivo exacto de la anulación (Ej: Descalificación, Fallo de cronómetro):'
+    );
+
+    // 2. Evaluamos la respuesta de la alerta
+    if (alerta.isConfirmed && alerta.value) {
+        let datosDelete = new FormData();
+        datosDelete.append('accion', 'eliminar');
+        datosDelete.append('id_marca', id_marca);
+        datosDelete.append('motivo', alerta.value); // alerta.value contiene lo que escribió el usuario
+        
+        const resultado = await peticionAjax('eliminar', datosDelete);
+        
+        if (resultado && resultado.status === 'success') {
+            UI.exito('Archivado', 'El registro y su justificación han sido guardados en el historial.');
+            cargarTablaMarcas();
+        } else {
+            UI.error('Error', resultado?.message || 'No se pudo desactivar el registro.');
+        }
+    }
+}
+
+async function reactivarMarca(id_marca) {
+    // Para reactivar, simplemente usamos el UI.confirmar que ya tenías creado
+    const confirmacion = await UI.confirmar(
+        '¿Restaurar Marca?',
+        'Este registro volverá a ser oficial y visible en los perfiles y estadísticas del atleta.'
+    );
+    
+    if (confirmacion.isConfirmed) {
+        let datosReactivar = new FormData();
+        datosReactivar.append('accion', 'reactivar');
+        datosReactivar.append('id_marca', id_marca);
+        
+        const resultado = await peticionAjax('reactivar', datosReactivar);
+        
+        if (resultado && resultado.status === 'success') {
+            UI.exito('Restaurado', 'El registro vuelve a estar activo.');
+            cargarTablaMarcas();
+        } else {
+            UI.error('Error', 'No se pudo procesar la reactivación.');
+        }
     }
 }
 
