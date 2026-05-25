@@ -11,6 +11,7 @@ if (empty($_SESSION['id'])) {
 }
 
 // 2. Importamos los Modelos necesarios
+use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\Marca;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
 
@@ -101,8 +102,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($accionPost === 'eliminar') {
         $id = (int)($_POST['id_marca'] ?? 0);
         $motivo = $_POST['motivo'] ?? 'Sin justificación'; // Capturamos el motivo
-        
+
+        // 1. El controlador orquesta la base de datos transaccional
         if ($objMarca->eliminarMarca($id, $motivo)) {
+
+            // 2. El controlador orquesta la auditoría (Cero clases instanciadas dentro del modelo)
+            Bitacora::registrar(
+                $_SESSION['id'],            // Quién lo hizo (el usuario logueado)
+                'Módulo Marcas',            // Módulo afectado
+                'DELETE',                   // Tipo de operación
+                $id,                        // ID de la marca anulada
+                'estado / motivo',          // Campos alterados
+                'Activo',                   // Cómo estaba antes
+                'Inactivo - Motivo: ' . $motivo // Cómo quedó ahora
+            );
+
             echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'No se pudo archivar la marca.']);

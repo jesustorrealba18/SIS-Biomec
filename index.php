@@ -1,6 +1,17 @@
 <?php
 
-require_once 'vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
+// require_once 'vendor/autoload.php';
+
+// 2. Inicializar DotEnv y cargar el archivo .env
+try {
+    // Busca el archivo .env en la misma carpeta donde está este index.php (__DIR__)
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
+} catch (Exception $e) {
+    // Si olvidaron crear el archivo .env, el sistema se detiene por seguridad
+    die("Error crítico: No se encontró el archivo de configuración de entorno (.env).");
+}
 
 define('RAIZ', str_replace('\\', '/', __DIR__) . '/');
 
