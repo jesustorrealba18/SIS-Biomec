@@ -656,7 +656,7 @@ async function eliminarMarca(id_marca) {
     const alerta = await UI.pedirJustificacion(
         'Archivar Registro de Tiempo',
         'Indique el motivo exacto de la anulación (Ej: Descalificación, Fallo de cronómetro):',
-        'Indique el motivo exacto de la anulación (Ej: Descalificación, Fallo de cronómetro):'
+        'Escriba la justificación detallada aquí...'
     );
 
     // 2. Evaluamos la respuesta de la alerta
