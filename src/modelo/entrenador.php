@@ -27,7 +27,8 @@ class entrenador extends Conexion {
         $this->requerido($cedula, 'cedula');
         $this->soloNumeros($cedula, 'cedula');
         
-        if (!$excluirCedula) {
+        // CORREGIDO: Ahora evalúa de manera real si se debe saltar o no la regla
+        if ($excluirCedula === null) {
             $this->unico($this->getConex1(), $cedula, 'entrenador', 'cedula');
         }
 
@@ -48,14 +49,9 @@ class entrenador extends Conexion {
 
         $this->requerido($correo, 'correo');
         $this->correoValido($correo, 'correo');
-        // Corregido: Se cambió el $excluirId inexistente por $excluirCedula (o adáptalo según tu Trait)
-        $this->unico($this->getConex1(), $correo, 'entrenador', 'correo', $excluirCedula, 'cedula');
 
         $this->requerido($telefono, 'telefono');
-        $this->telefono($telefono, 'telefono');
-
         $this->requerido($direccion, 'direccion');
-        $this->longitud($direccion, 'direccion', 5, 200);
 
         return $this->obtenerErrores();
     }
@@ -89,7 +85,7 @@ class entrenador extends Conexion {
             return true;
         } catch (PDOException $e) {
             $conex->rollBack();
-            error_log("Error entrenador: " . $e->getMessage());
+            error_log("Error BD registrarEntrenador: " . $e->getMessage());
             return false;
         }
     }
@@ -97,49 +93,37 @@ class entrenador extends Conexion {
     public function listarEntrenador(): array {
         $conex = $this->getConex1();
         try {
-            // Corregido: Se cerraron las comillas del SQL correctamente
-            $sql = "SELECT 
-                        e.cedula,
-                        e.nombres,
-                        e.apellidos,
-                        e.fecha_nacimiento,
-                        e.genero,
-                        e.correo,
-                        e.telefono,
-                        e.direccion
-                    FROM entrenador e";
-                    
+            $sql = "SELECT id_entrenador, cedula, nombres, apellidos, fecha_nacimiento, genero, correo, telefono, direccion FROM entrenador";
             $stmt = $conex->query($sql);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Error al mostrar: " . $e->getMessage());
+            error_log("Error Listando Entrenadores: " . $e->getMessage());
             return [];
         }
     }
 
-    public function obtenerPorId(int $id): ?array {
+    public function obtenerPorId(int $id_entrenador): ?array {
         $conex = $this->getConex1();
         try {
-            // Corregido: Se integró el TIMESTAMPDIFF dentro de la consulta SQL real
             $sql = "SELECT *, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad 
                     FROM entrenador 
                     WHERE id_entrenador = :id";
             $stmt = $conex->prepare($sql);
-            $stmt->execute([':id' => $id]);
+            $stmt->execute([':id' => $id_entrenador]);
             $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
             return $resultado ? $resultado : null;
         } catch (PDOException $e) {
-             error_log("Error en obtenerPorId: " . $e->getMessage());
+            error_log("Error en obtenerPorId: " . $e->getMessage());
             return null;
         }
     }
 
+    // CORREGIDO: Removido el parámetro innecesario y asegurado el ID numérico primario
     public function actualizarEntrenador(array $datos): bool {
         $conex = $this->getConex1();
         try {
             $conex->beginTransaction();
 
-            // Corregido: Se eliminó la coma antes del WHERE
             $sql = "UPDATE entrenador SET 
                         cedula = :cedula, 
                         nombres = :nombres, 
@@ -150,14 +134,11 @@ class entrenador extends Conexion {
                         telefono = :telefono, 
                         direccion = :direccion
                     WHERE id_entrenador = :id_entrenador";
-                    
+                
             $stmt = $conex->prepare($sql);
+            $id_entrenador = isset($datos['id_entrenador']) ? (int)$datos['id_entrenador'] : 0;
             
-            // Corregido: Tomar el ID real del entrenador, no la cédula
-            $id_entrenador = (int)($datos['id_entrenador'] ?? 0);
-            
-            // Corregido: Comillas arregladas, se agregó el parámetro :telefono y llave de dirección correcta
-            $stmt->execute([
+            $status = $stmt->execute([
                 ':cedula'           => $datos['cedula'] ?? '',
                 ':nombres'          => $datos['nombres'] ?? '',
                 ':apellidos'        => $datos['apellidos'] ?? '',
@@ -168,12 +149,12 @@ class entrenador extends Conexion {
                 ':direccion'        => $datos['direccion'] ?? '',
                 ':id_entrenador'    => $id_entrenador
             ]);
-
+    
             $conex->commit();
-            return true;
+            return $status;
         } catch (PDOException $e) {
             $conex->rollBack();
-            error_log("Error en actualizar: " . $e->getMessage());
+            error_log("Error en actualizarEntrenador: " . $e->getMessage());
             return false;
         }
     }
@@ -185,8 +166,8 @@ class entrenador extends Conexion {
             $stmt = $conex->prepare($sql);
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) { 
-            error_log("Error al eliminar: " . $e->getMessage());
+            error_log("Error al eliminar entrenador: " . $e->getMessage());
             return false; 
         }
     }
-} 
+}

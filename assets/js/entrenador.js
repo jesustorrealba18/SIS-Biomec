@@ -1,135 +1,191 @@
-document.getElementById('busquedaCedula').addEventListener('input', function(e) {
-    const valor = e.target.value.toLowerCase();
-    const filas = document.querySelectorAll('.entrenador-row');
+const modalEntrenador = document.getElementById('modalEntrenador');
+const formEntrenador = document.getElementById('formEntrenador');
+const btnGuardar = document.getElementById('btnGuardar');
 
-    filas.forEach(fila => {
-        const cedula = fila.getAttribute('data-cedula').toLowerCase();
-        // Muestra la fila si la cédula coincide con la búsqueda
-        fila.style.display = cedula.includes(valor) ? '' : 'none';
-    });
-});
+const API_URL = 'index.php?p=entrenador'; 
 
-document.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const msg = urlParams.get('m') || (typeof MENSAJE_PHP !== 'undefined' ? MENSAJE_PHP : '');
+async function peticionAjax(accion, datos = null) {
+    const opciones = { method: datos ? 'POST' : 'GET' };
+    if (datos) opciones.body = datos; 
 
-    if (msg) {
-        const configDefault = {
-            background: '#161430',
-            color: '#fff',
-            confirmButtonColor: '#6366f1',
-            timer: 3000,
-            timerProgressBar: true
-        };
-
-        if (msg === "registrado") {
-            Swal.fire({
-                ...configDefault,
-                title: '¡Excelente!',
-                text: 'El entrenador ha sido registrado con éxito.',
-                icon: 'success'
-            });
-        } else if (msg === "editado") {
-            Swal.fire({
-                ...configDefault,
-                title: '¡Actualizado!',
-                text: 'Los datos se modificaron correctamente.',
-                icon: 'success'
-            });
-        } else if (msg === "eliminado") {
-            Swal.fire({
-                ...configDefault,
-                title: '¡Eliminado!',
-                text: 'El registro ha sido removido del sistema.',
-                icon: 'info'
-            });
-        }
-
-        const urlLimpia = window.location.origin + window.location.pathname + "?p=entrenador";
-        window.history.replaceState({}, document.title, urlLimpia);
+    try {
+        const respuesta = await fetch(`${API_URL}&accion=${accion}`, opciones);
+        if (!respuesta.ok) throw new Error('Error de comunicación con el servidor');
+        return await respuesta.json();
+    } catch (error) {
+        console.error("Error Fetch:", error);
+        UI.error('Error del Servidor', 'No se pudo procesar la solicitud.');
+        return null;
     }
-});
-
-const modalForm = document.getElementById('modalEntrenador');
-const modalVer = document.getElementById('modalVer');
-
-function abrirModalCrear() {
-    const form = document.getElementById('formEntrenador');
-    form.reset();
-    document.getElementById('id_entrenador').value = "";
-    document.getElementById('modalTitulo').innerText = "Nuevo Entrenador";
-     modalForm.classList.remove('hidden');
 }
 
-function editarEntrenador(datos) {
-    document.getElementById('id_entrenador').value = datos.id_entrenador;
-    document.getElementById('cedula').value = datos.cedula;
-    document.getElementById('nombres').value = datos.nombres;
-    document.getElementById('apellidos').value = datos.apellidos;
-    document.getElementById('fecha_nacimiento').value = datos.fecha_nacimiento;
-    document.getElementById('genero').value = datos.genero;
-    document.getElementById('modalTitulo').innerText = "Editar Entrenador";
-    modalForm.classList.remove('hidden');
+function cerrarModalEntrenador() {
+    modalEntrenador.classList.add('hidden');
+    modalEntrenador.firstElementChild.classList.add('scale-95', 'opacity-0');
 }
-
-function verDetalles(datos) {
-    const html = `
-        <div class="animate-in fade-in zoom-in duration-300">
-            <img src="https://ui-avatars.com/api/?name=${datos.nombres}+${datos.apellidos}&size=128&background=4f46e5&color=fff" 
-                 class="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-indigo-500/20 shadow-xl">
-            <h2 class="text-2xl font-bold text-white">${datos.nombres} ${datos.apellidos}</h2>
-            <p class="text-indigo-400 mb-6 font-mono tracking-widest">${datos.cedula}</p>
-            
-            <div class="grid grid-cols-2 gap-4 text-left bg-black/20 p-5 rounded-2xl border border-white/5">
-                <div>
-                    <p class="text-[10px] uppercase text-gray-500 font-bold">Edad</p>
-                    <p class="text-white">${datos.edad} años</p>
-                </div>
-                <div>
-                    <p class="text-[10px] uppercase text-gray-500 font-bold">Género</p>
-                    <p class="text-white">${datos.genero === 'M' ? 'Masculino' : 'Femenino'}</p>
-                </div>
-                <div>
-            </div>
-        </div>
-    `;
-    document.getElementById('detalleContenido').innerHTML = html;
-    modalVer.classList.remove('hidden');
-}
-
-// --- 4. CONFIRMACIÓN DE ELIMINACIÓN ---
-function confirmarEliminar(id) {
-    Swal.fire({
-        title: '¿Estás seguro?',
-        text: "Esta acción eliminará permanentemente al entrenador del sistema.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444', // Rojo
-        cancelButtonColor: '#374151',  // Gris oscuro
-        confirmButtonText: '<i class="fas fa-trash mr-2"></i>Sí, eliminar',
-        cancelButtonText: 'Cancelar',
-        background: '#161430',
-        color: '#fff'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = `?p=entrenador&eliminar=${id}&m=eliminado`;
-        }
-    });
-}
-
-function cerrarModal() { 
-    modalForm.classList.add('hidden'); 
-    modalForm.classList.remove('flex');
-}
-
-function cerrarModalVer() { 
-    modalVer.classList.add('hidden'); 
-}
-
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === "Escape") {
-        cerrarModal();
-        cerrarModalVer();
+    if (e.key === "Escape" && !modalEntrenador.classList.contains('hidden')) {
+        cerrarModalEntrenador();
     }
 });
+
+async function abrirModalEntrenador(id_entrenador = null) {
+    formEntrenador.reset(); 
+    try { Validador.limpiarEstilos(formEntrenador); } catch(e) {}
+    
+    const inputAction = document.getElementById('action_type');
+    const inputIdHidden = document.getElementById('id_entrenador');
+    const modalTitulo = document.getElementById('modalTitulo');
+
+    if (id_entrenador) {
+        if (inputAction) inputAction.value = 'actualizar';
+        if (inputIdHidden) inputIdHidden.value = id_entrenador;
+        if (modalTitulo) modalTitulo.textContent = 'Actualizar Datos del Entrenador';
+        
+        btnGuardar.innerHTML = 'Actualizar los datos <i class="fas fa-sync-alt ml-2"></i>';
+        
+        const entrenador = await peticionAjax(`obtenerEntrenador&id=${id_entrenador}`);
+        
+        if (entrenador) {
+            document.getElementById('cedula').value = entrenador.cedula;
+            document.getElementById('nombres').value = entrenador.nombres;
+            document.getElementById('apellidos').value = entrenador.apellidos;
+            document.getElementById('fecha_nacimiento').value = entrenador.fecha_nacimiento;
+            document.getElementById('genero').value = entrenador.genero;
+            document.getElementById('correo').value = entrenador.correo;
+            document.getElementById('telefono').value = entrenador.telefono;
+            document.getElementById('direccion').value = entrenador.direccion;
+        }
+    } else {
+        if (inputAction) inputAction.value = 'registrar';
+        if (inputIdHidden) inputIdHidden.value = '';
+        if (modalTitulo) modalTitulo.textContent = 'Registrar Entrenador';
+        btnGuardar.innerHTML = 'GUARDAR <i class="fas fa-save ml-2"></i>';
+    }
+
+    modalEntrenador.classList.remove('hidden');
+    setTimeout(() => {
+        modalEntrenador.firstElementChild.classList.remove('scale-95', 'opacity-0');
+    }, 10);
+}
+
+async function cargarTablaEntrenador() {
+    const tbody = document.getElementById('listaEntrenador');
+    if (!tbody) return;
+    
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando datos...</span></td></tr>`;
+
+    const entrenadores = await peticionAjax('listarEntrenador');
+
+    if (!entrenadores || entrenadores.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center p-12 text-gray-500">
+                    <i class="fas fa-users-slash text-4xl mb-3 block text-gray-600 animate-pulse"></i>
+                    <span class="text-xs uppercase tracking-wider block">No hay entrenadores registrados en el sistema</span>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    // CORREGIDO: Renderizado de celdas completo acoplado a la Vista
+    tbody.innerHTML = entrenadores.map(ent => `
+        <tr class="entrenador-row border-b border-gray-800/50 hover:bg-[#1c1a3a]/40 transition-colors duration-200" data-busqueda="${ent.cedula} ${ent.nombres} ${ent.apellidos}">
+            <td class="p-4 font-medium text-white flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xs font-bold uppercase">
+                    ${ent.nombres[0]}${ent.apellidos[0]}
+                </div>
+                <div>
+                    <span class="block">${ent.nombres} ${ent.apellidos}</span>
+                    <span class="text-xs text-gray-500">${ent.correo}</span>
+                </div>
+            </td>
+            <td class="p-4 text-gray-300 font-mono text-xs">${ent.cedula}</td>
+            <td class="p-4 text-gray-400">${ent.telefono}</td>
+            <td class="p-4 text-gray-400 max-w-xs truncate">${ent.direccion}</td>
+            <td class="p-4 text-right">
+                <div class="flex justify-end gap-2">
+                    <button onclick="abrirModalEntrenador(${ent.id_entrenador})" class="bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 p-2 rounded-lg transition" title="Editar">
+                        <i class="fas fa-edit text-xs"></i>
+                    </button>
+                    <button onclick="eliminarEntrenador(${ent.id_entrenador})" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-lg transition" title="Eliminar">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+    
+const inputBusqueda = document.getElementById('busquedaCedula');
+if (inputBusqueda) {
+    inputBusqueda.addEventListener('input', function(e) {
+        const valor = e.target.value.toLowerCase().trim();
+        const filas = document.querySelectorAll('.entrenador-row');
+        
+        filas.forEach(fila => {
+            const textoFila = fila.getAttribute('data-busqueda') || '';
+            fila.style.display = textoFila.toLowerCase().includes(valor) ? '' : 'none';
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    try { Validador.vincularTiempoReal(formEntrenador); } catch(e){}
+    cargarTablaEntrenador();
+
+    formEntrenador.addEventListener('submit', async function (e) {
+        e.preventDefault(); 
+
+        const erroresJS = Validador.validarFormulario(formEntrenador);
+        if (erroresJS) {
+            UI.advertencia('Datos Incompletos o Inválidos', erroresJS);
+            return; 
+        }
+
+        const textoOriginal = btnGuardar.innerHTML;
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = 'Procesando... <i class="fas fa-spinner fa-spin ml-2"></i>';
+
+        const datosForm = new FormData(formEntrenador);
+        const resultado = await peticionAjax('guardar', datosForm);
+
+        if (resultado) {
+            if (resultado.status === 'success') {
+                UI.exito('Transacción Exitosa', resultado.message);
+                cerrarModalEntrenador();
+                cargarTablaEntrenador();
+            } 
+            else if (resultado.status === 'warning') {
+                let msjErrores = Object.values(resultado.errores).join("<br>");
+                UI.advertencia('Validación del Servidor', msjErrores);
+            } 
+            else {
+                UI.error('Error de Sistema', resultado.message);
+            }
+        }
+
+        btnGuardar.disabled = false;
+        btnGuardar.innerHTML = textoOriginal;
+    });
+});
+
+async function eliminarEntrenador(id_entrenador) {
+    const confirmacion = confirm("¿Está seguro de eliminar este entrenador? Esta acción no se puede deshacer.");
+    
+    if (confirmacion) {
+        let datosDelete = new FormData();
+        datosDelete.append('id_entrenador', id_entrenador);
+        
+        const resultado = await peticionAjax('eliminar', datosDelete);
+        
+        if (resultado && resultado.status === 'success') {
+            UI.exito('Eliminado', 'El registro ha sido removido exitosamente.');
+            cargarTablaEntrenador();
+        } else {
+            UI.error('Error', resultado?.message || 'No se pudo eliminar el registro.');
+        }
+    }
+}
