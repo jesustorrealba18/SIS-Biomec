@@ -17,6 +17,33 @@ $objAtleta = new Atleta();
 // 2. Pivote para acciones POST (Guardar / Actualizar desde AJAX/Fetch)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
+
+
+     // Si la acción es eliminar (Atrapamos la petición de SweetAlert)
+    if (isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
+        $id = isset($_POST['id_representante']) ? (int)$_POST['id_representante'] : 0;
+
+      
+
+        if ($objRepresentante->eliminarRepresentante($id)) {
+            echo json_encode(['status' => 'success']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'No se pudo desactivar el registro.']);
+        }
+        exit;
+    }
+
+
+
+        if (isset($_POST['accion']) && $_POST['accion'] === 'reactivar') {
+            $id = isset($_POST['id_representante']) ? (int)$_POST['id_representante'] : 0;
+            if ($objRepresentante->reactivarRepresentante($id)) {
+                echo json_encode(['status' => 'success']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'No se pudo reactivar el registro.']);
+            }
+            exit;
+        }    
     
     // Verificamos si es una actualización (si trae ID) o un registro nuevo
     $excluirCedula = !empty($_POST['cedula_original']) ? $_POST['cedula_original'] : null;
@@ -52,12 +79,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // 3. Pivote para acciones GET (UNIFICADO - Consultas, AJAX y Vistas)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
+
+
     // B) ¡NUEVO! Petición para listar representantes en la tabla
-    if (isset($_GET['accion']) && $_GET['accion'] === 'listarRepresentantes') {
-        header('Content-Type: application/json');
-        echo json_encode($objRepresentante->listarRepresentantes());
-        exit;
-    }
+
+
+        if (isset($_GET['accion']) && $_GET['accion'] === 'listarRepresentantes') {
+            header('Content-Type: application/json');
+            // Capturamos el estado que manda JavaScript, si no viene, por defecto es 'Activo'
+            $estado = $_GET['estado'] ?? 'Activo';
+            echo json_encode($objRepresentante->listarRepresentantes($estado));
+            exit;
+        }
+    
 
     // D) ¡NUEVO! Petición para ver el mini-perfil de un atleta vinculado
     if (isset($_GET['accion']) && $_GET['accion'] === 'verPerfilAtleta' && isset($_GET['id'])) {
@@ -92,14 +126,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode($objRepresentante->obtenerPorId((int)$_GET['id']));
         exit; // <- ESTO ES VITAL para que no se imprima el <!DOCTYPE html> debajo
     }
-  
 
-    // B) Acción de eliminar (Si decidieran usarlo por URL tradicional)
-    if (isset($_GET['eliminar'])) {
-        // $objRepresentante->eliminarRepresentante($_GET['eliminar']);
-        header('Location: ?p=representante&msg=eliminado');
-        exit;
-    }
+   
+  
 
     // C) Petición GET normal: El usuario entra al directorio
     // El pivote pide los datos al modelo y carga la vista

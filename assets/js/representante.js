@@ -138,12 +138,18 @@ async function abrirModalRepresentante(idRepresentante = null) {
  * Consulta los representantes al servidor y dibuja la tabla dinámicamente
  */
 async function cargarTablaRepresentantes() {
+    
     const tbody = document.getElementById('listaRepresentantes');
     
     // Cambiamos el colspan a 6 porque agregamos una columna
     tbody.innerHTML = `<tr><td colspan="6" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando datos...</span></td></tr>`;
 
-    const representantes = await peticionAjax('listarRepresentantes');
+    // Buscamos el valor del select de la vista
+const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
+
+// Pasamos el estado en la URL del GET
+const representantes = await peticionAjax(`listarRepresentantes&estado=${filtroEstado}`);
+    // const representantes = await peticionAjax('listarRepresentantes');
 
     if (!representantes || representantes.length === 0) {
         tbody.innerHTML = `
@@ -157,24 +163,22 @@ async function cargarTablaRepresentantes() {
         return;
     }
 
-    let html = '';
+let html = '';
     representantes.forEach(rep => {
         
-        // 1. Lógica para procesar y dibujar a los atletas como etiquetas bonitas
+        // 1. Lógica de los Atletas (Esta ya la tenías, queda igual)
         let htmlAtletas = '<span class="text-[10px] text-gray-600 italic">Sin vinculaciones</span>';
-        let textoBusquedaAtletas = ''; // Para alimentar el buscador
+        let textoBusquedaAtletas = ''; 
 
         if (rep.atletas_vinculados) {
             textoBusquedaAtletas = rep.atletas_vinculados.toLowerCase();
             const listaAtletas = rep.atletas_vinculados.split('|');
             
-            // Separamos el ID del Nombre que vienen de la Base de Datos
             htmlAtletas = listaAtletas.map(item => {
                 const partes = item.split(':');
                 const idAtleta = partes[0];
                 const nombreAtleta = partes[1];
 
-                // Convertimos el <span> en un <button> con cursor-pointer y un efecto hover
                 return `
                 <button onclick="verMiniPerfilAtleta(${idAtleta})" type="button" 
                         class="inline-block px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/20 rounded-md text-[10px] font-bold uppercase tracking-wider mb-1 mr-1 transition-colors cursor-pointer shadow-sm active:scale-95" 
@@ -184,9 +188,32 @@ async function cargarTablaRepresentantes() {
             }).join('');
         }
 
-        // 2. String de búsqueda repotenciado (Incluye los nombres de los atletas)
         const busqueda = `${rep.cedula} ${rep.nombres} ${rep.apellidos} ${textoBusquedaAtletas}`.toLowerCase();
         
+        // =========================================================
+        // EL PASO B EXPLICADO: Decidimos qué botón armar ANTES del HTML
+        // =========================================================
+        let botonAccion = '';
+        
+        if (rep.estado === 'Activo' || !rep.estado) { 
+            // Si está activo, preparamos el botón rojo de Eliminar
+            botonAccion = `
+                <button onclick="eliminarRepresentante(${rep.id_representante})" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition duration-200" title="Archivar/Desactivar Registro">
+                    <i class="fas fa-trash-alt text-base"></i>
+                </button>
+            `;
+        } else {
+            // Si está inactivo, preparamos el botón verde de Reactivar
+            botonAccion = `
+                <button onclick="reactivarRepresentante(${rep.id_representante})" class="text-emerald-400 hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-500/10 transition duration-200" title="Reactivar Cuenta">
+                    <i class="fas fa-user-check text-base"></i>
+                </button>
+            `;
+        }
+
+        // =========================================================
+        // 2. Ahora sí, armamos el HTML limpio inyectando la variable
+        // =========================================================
         html += `
             <tr class="representante-row hover:bg-white/5 transition-colors duration-200" data-busqueda="${busqueda}">
                 <td class="p-4 font-medium text-white">${rep.nombres} ${rep.apellidos}</td>
@@ -208,9 +235,8 @@ async function cargarTablaRepresentantes() {
                     <button onclick="abrirModalRepresentante(${rep.id_representante})" class="text-indigo-400 hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-500/10 transition duration-200" title="Editar Ficha">
                         <i class="fas fa-edit text-base"></i>
                     </button>
-                    <button onclick="eliminarRepresentante(${rep.id_representante})" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition duration-200" title="Eliminar Registro">
-                        <i class="fas fa-trash-alt text-base"></i>
-                    </button>
+                    
+                    ${botonAccion}
                 </td>
             </tr>
         `;
@@ -304,23 +330,50 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =====================================================================
-// EVENTO SECUNDARIO: ELIMINAR
+// EVENTO SECUNDARIO: ELIMINAR (BORRADO LÓGICO)
 // =====================================================================
 async function eliminarRepresentante(id_representante) {
-    const confirmacion = confirm("¿Está seguro de eliminar este representante? Esta acción no se puede deshacer.");
+    // 1. Actualizamos el texto para reflejar que es un archivado reversible
+    const confirmacion = confirm("Está seguro de archivar este representante? Los atletas a su cargo quedarán libres de vinculación. Podrá reactivarlo después.");
     
     if (confirmacion) {
         let datosDelete = new FormData();
+
+        // 2. VITAL: Le decimos explícitamente al controlador POST qué acción ejecutar
+        datosDelete.append('accion', 'eliminar'); 
         datosDelete.append('id_representante', id_representante);
+
         
         const resultado = await peticionAjax('eliminar', datosDelete);
         
         if (resultado && resultado.status === 'success') {
-            UI.exito('Eliminado', 'El registro ha sido removido exitosamente.');
+            UI.exito('Archivado', 'El representante ha sido inactivado exitosamente.');
+            // Recarga silenciosa de la tabla
             cargarTablaRepresentantes();
-            // setTimeout(() => window.location.reload(), 2000);
         } else {
-            UI.error('Error', resultado?.message || 'No se pudo eliminar el registro.');
+            UI.error('Error', resultado?.message || 'No se pudo desactivar el registro.');
+        }
+    }
+}
+
+// =====================================================================
+// EVENTO SECUNDARIO: Reactivar Representante
+// =====================================================================
+async function reactivarRepresentante(id_representante) {
+    const confirmacion = confirm("¿Desea reactivar a este representante y habilitarlo nuevamente en el sistema?");
+
+    if (confirmacion) {
+        let datosReactivar = new FormData();
+        datosReactivar.append('accion', 'reactivar');
+        datosReactivar.append('id_representante', id_representante);
+
+        const resultado = await peticionAjax('reactivar', datosReactivar);
+
+        if (resultado && resultado.status === 'success') {
+            UI.exito('Reactivado', 'El representante vuelve a estar activo en el directorio.');
+            cargarTablaRepresentantes(); // Recarga silenciosa
+        } else {
+            UI.error('Error', 'No se pudo procesar la reactivación.');
         }
     }
 }
