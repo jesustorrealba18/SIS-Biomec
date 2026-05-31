@@ -21,10 +21,6 @@ $objMarca = new Marca();
 // =====================================================================
 // RUTAS GET: Para cargar vistas y pedir datos (Listados)
 // =====================================================================
-
-// =====================================================================
-// RUTAS GET: Para cargar vistas y pedir datos (Listados)
-// =====================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $accion = $_GET['accion'] ?? '';
 
@@ -64,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 // RUTAS POST: Para Guardar, Actualizar o Eliminar (Transacciones)
 // =====================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    
     header('Content-Type: application/json');
     $accionPost = $_POST['accion'] ?? '';
 
