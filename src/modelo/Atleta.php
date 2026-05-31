@@ -42,7 +42,7 @@ class Atleta extends Conexion {
         if ($cedula !== '') {
             $this->cedula($cedula, 'cedula');
         }
-        $this->unico($this->getConex1(), trim($cedula), 'atletas', 'cedula', $excluirId, 'id_atleta');
+        $this->unico($this->pdo, trim($cedula), 'atletas', 'cedula', $excluirId, 'id_atleta');
 
         $this->requerido($nombres, 'nombres');
         $this->soloLetras($nombres, 'nombres');
@@ -64,7 +64,7 @@ class Atleta extends Conexion {
 
         $this->requerido($correo, 'correo');
         $this->correoValido($correo, 'correo');
-        $this->unico($this->getConex1(), $correo, 'atletas', 'correo', $excluirId, 'id_atleta');
+        $this->unico($this->pdo, $correo, 'atletas', 'correo', $excluirId, 'id_atleta');
 
         $this->requerido($telefono, 'telefono');
         $this->telefono($telefono, 'telefono');
@@ -141,7 +141,7 @@ class Atleta extends Conexion {
     }
 
     public function obtenerPorId(int $id): ?array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "SELECT a.*,
                            TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) AS edad,
@@ -165,7 +165,7 @@ class Atleta extends Conexion {
     }
 
     public function obtenerCategorias(): array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "SELECT id_categoria, nombre, edad_minima, edad_maxima 
                     FROM categorias_feveda WHERE activa = 1 ORDER BY edad_minima";
@@ -198,7 +198,7 @@ class Atleta extends Conexion {
 
 
 public function listarMenoresParaRepresentante(int $id_representante = 0): array {
-    $conex = $this->getConex1();
+    $conex = $this->pdo;
     try {
         // La consulta permite traer atletas sin representante O que pertenezcan al representante actual
         $sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos,
@@ -219,7 +219,7 @@ public function listarMenoresParaRepresentante(int $id_representante = 0): array
 }
 
     public function registrarAtleta(array $datos): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $conex->beginTransaction();
 
@@ -281,7 +281,7 @@ public function listarMenoresParaRepresentante(int $id_representante = 0): array
     }
 
     public function editarAtleta(array $datos): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $conex->beginTransaction();
 
@@ -363,7 +363,7 @@ public function listarMenoresParaRepresentante(int $id_representante = 0): array
     }
 
     public function eliminarAtleta(int $id): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "UPDATE atletas SET estado = 'Inactivo' WHERE id_atleta = :id";
             $stmt = $conex->prepare($sql);
