@@ -12,11 +12,11 @@ if (empty($_SESSION['id'])) {
 
 // 2. Importamos los Modelos necesarios
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
-use GrupoProyecto\SisBiomec\modelo\Marca;
+use GrupoProyecto\SisBiomec\modelo\Marca1;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
 
 
-$objMarca = new Marca();
+$objMarca = new Marca1();
 
 // =====================================================================
 // RUTAS GET: Para cargar vistas y pedir datos (Listados)
@@ -70,24 +70,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Ruta C: Guardar nueva marca
     if ($accionPost === 'guardar') {
         
-            // El controlador manda a guardar. El modelo retorna 'false' y entra al bloque ELSE.
-        if ($objMarca->registrarMarca($_POST)) {
-            echo json_encode(['status' => 'success', 'message' => 'Marca registrada.']);
-        } else {
+        // 1. Validar reglas de negocio usando el Trait
+        $errores = $objMarca->validarDatos($_POST);
 
-            // El controlador le dice al objeto: "Vi que fallaste (false). Dame tu lista de errores."
-            $errores = $objMarca->obtenerErrores(); 
-            
-            if (!empty($errores)) {
-                // Si hay errores en la lista, se los mandamos al JavaScript (SweetAlert)
-                echo json_encode(['status' => 'warning', 'errores' => $errores]);
-            } else {
-                // Si la lista está vacía, significa que no fue un error de validación, 
-                // sino que se cayó la base de datos (PDOException)
-                echo json_encode(['status' => 'error', 'message' => 'Error con el servidor.']);
-            }
+        if (!empty($errores)) {
+
+        
+            // Si falta algún campo obligatorio, rebotamos la petición
+            echo json_encode(['status' => 'warning', 'errores' => $errores]);
+            exit;
         }
-      
+
+        //2. Enviar los datos validados a la transacción del modelo
+        if ($objMarca->registrarMarca($_POST)) {
+            echo json_encode(['status' => 'success', 'message' => 'Marca registrada exitosamente con sus parciales.']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Ocurrió un error al guardar en la base de datos.']);
+        }
+        exit;
+        //Para ver cual es el problema
+        // try {
+        //     if ($objMarca->registrarMarca($_POST)) {
+        //         echo json_encode(['status' => 'success', 'message' => 'Marca registrada.']);
+        //     }
+        // } catch (\Exception $e) {
+        //     // Esto mandará el error exacto (ej. "Foreign key constraint fails", "Column not found") a tu JavaScript
+        //     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        // }
+        // exit;
     }
 
     // Ruta D: Archivar (Borrado lógico con justificación)
@@ -99,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($objMarca->eliminarMarca($id, $motivo)) {
 
             // 2. El controlador orquesta la auditoría (Cero clases instanciadas dentro del modelo)
-           /*  Bitacora::registrar(
+            Bitacora::registrar(
                 $_SESSION['id'],            // Quién lo hizo (el usuario logueado)
                 'Módulo Marcas',            // Módulo afectado
                 'DELETE',                   // Tipo de operación
@@ -107,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'estado / motivo',          // Campos alterados
                 'Activo',                   // Cómo estaba antes
                 'Inactivo - Motivo: ' . $motivo // Cómo quedó ahora
-            ); */
+            );
 
             echo json_encode(['status' => 'success']);
         } else {

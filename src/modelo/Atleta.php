@@ -114,7 +114,7 @@ class Atleta extends Conexion {
     }
 
     public function listarAtletas(): array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "SELECT a.*, 
                            TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) AS edad,
