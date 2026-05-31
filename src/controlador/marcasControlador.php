@@ -36,8 +36,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Ruta B: Cargar la tabla principal de marcas
     if ($accion === 'listarMarcas') {
         header('Content-Type: application/json');
+       // 1. Capturamos todos los filtros que viajan desde el JS por la URL (GET)
         $estado = $_GET['estado'] ?? 'Activo';
-        echo json_encode($objMarca->listarMarcas($estado));
+       $id_atleta = !empty($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
+        $distancia = !empty($_GET['distancia']) ? (int)$_GET['distancia'] : 0;
+        $estilo    = trim($_GET['estilo'] ?? '');
+        $piscina   = trim($_GET['piscina'] ?? '');
+
+        // Inyectamos los 5 parámetros en el modelo
+        $marcas = $objMarca->listarMarcas($estado, $id_atleta, $distancia, $estilo, $piscina);
+
+    
+        echo json_encode($marcas);
         exit;
     }
 

@@ -216,7 +216,7 @@ class Marca extends Conexion {
     /**
      * Consulta las marcas registradas aplicando el borrado lógico por estado
      */
-    public function listarMarcas(string $estado = 'Activo'): array {
+ /*    public function listarMarcas(string $estado = 'Activo'): array {
         try {
             $sql = "SELECT 
                         m.id_marca, m.estilo, m.distancia_m, m.tipo_piscina, 
@@ -226,6 +226,14 @@ class Marca extends Conexion {
                     INNER JOIN atletas a ON m.id_atleta = a.id_atleta
                     WHERE m.estado = :estado
                     ORDER BY m.id_marca DESC";
+
+            $sql = "SELECT m.id_marca, m.estilo, m.distancia_m, m.tipo_piscina, 
+                        m.tiempo_final_seg, m.nivel_evento, m.fecha, m.es_pb, 
+                    CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta, a.cedula 
+                    FROM marcas m 
+                    INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
+                    WHERE m.estado = :estado 
+                    ORDER BY m.fecha DESC";        
                     
             $stmt = $this->pdo->prepare($sql);
             
@@ -238,6 +246,64 @@ class Marca extends Conexion {
         } catch (PDOException $e) {
             // Trazabilidad silenciosa en caso de caída de BD
             error_log("Error en listarMarcas: " . $e->getMessage());
+            return [];
+        }
+    } */
+
+    public function listarMarcas(string $estado = 'Activo', int $id_atleta = 0, int $distancia = 0, string $estilo = '', string $piscina = ''): array {
+        
+        $estadosPermitidos = ['Activo', 'Inactivo'];
+        if (!in_array($estado, $estadosPermitidos)) {
+            return [];
+        }
+
+        try {
+            $sql = "SELECT m.id_marca, m.estilo, m.distancia_m, m.tipo_piscina, 
+                        m.tiempo_final_seg, m.nivel_evento, m.fecha, m.es_pb, 
+                        CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta, a.cedula 
+                    FROM marcas m 
+                    INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
+                    WHERE m.estado = :estado";
+            
+            // CONCATENACIÓN DINÁMICA ULTRA-EFICIENTE
+            if ($id_atleta > 0) {
+                $sql .= " AND m.id_atleta = :id_atleta";
+            }
+            if ($distancia > 0) {
+                $sql .= " AND m.distancia_m = :distancia";
+            }
+            if ($estilo !== '') {
+                $sql .= " AND m.estilo = :estilo";
+            }
+            if ($piscina !== '') {
+                $sql .= " AND m.tipo_piscina = :piscina";
+            }
+            
+            $sql .= " ORDER BY m.fecha DESC";
+            
+            $stmt = $this->pdo->prepare($sql);
+            
+            // ENLACES ESTRICTOS
+            $stmt->bindValue(':estado', $estado, PDO::PARAM_STR);
+            
+            if ($id_atleta > 0) {
+                $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
+            }
+            if ($distancia > 0) {
+                $stmt->bindValue(':distancia', $distancia, PDO::PARAM_INT);
+            }
+            if ($estilo !== '') {
+                $stmt->bindValue(':estilo', $estilo, PDO::PARAM_STR);
+            }
+            if ($piscina !== '') {
+                $stmt->bindValue(':piscina', $piscina, PDO::PARAM_STR);
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error crítico en filtros listarMarcas: " . $e->getMessage());
             return [];
         }
     }

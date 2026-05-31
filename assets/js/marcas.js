@@ -401,13 +401,26 @@ formMarca.addEventListener('submit', async (e) => {
 async function cargarTablaMarcas() {
     // Leemos si el usuario quiere ver las marcas Activas o Inactivas
     const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
+    const id_atleta = document.getElementById('filtroAtleta')?.value || '';
+    const distancia = document.getElementById('filtroDistancia')?.value || '';
+    const estilo = document.getElementById('filtroEstilo')?.value || '';
+    const piscina = document.getElementById('filtroPiscina')?.value || '';
+
+    // 2. Construimos la cadena de parámetros URL dinámicamente
+    let params = new URLSearchParams({ estado: filtroEstado });
+    
+    // Solo anexamos los filtros si el usuario seleccionó algo distinto a "Todos"
+    if (id_atleta) params.append('id_atleta', id_atleta);
+    if (estilo) params.append('estilo', estilo);
+    if (distancia) params.append('distancia', distancia);
+    if (piscina) params.append('piscina', piscina);
     
     // Mostramos un esqueleto o texto de carga mientras esperamos a PHP
     const tbody = document.getElementById('tbodyMarcas');
     tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando marcas...</td></tr>';
 
     // Pedimos los datos al controlador
-    const marcas = await peticionAjax(`listarMarcas&estado=${filtroEstado}`);
+    const marcas = await peticionAjax(`listarMarcas&${params.toString()}`);
 
     if (!marcas || marcas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500 font-mono text-xs">No hay marcas registradas en esta vista.</td></tr>';
@@ -485,11 +498,25 @@ async function cargarTablaMarcas() {
     tbody.innerHTML = html;
 }
 
+// 1. Función para llenar el select de atletas (Se llama una sola vez al cargar la página)
+async function cargarFiltroAtletas() {
+    const atletas = await peticionAjax('listarAtletasSelect');
+    const select = document.getElementById('filtroAtleta');
+    
+    if (atletas && atletas.length > 0) {
+        atletas.forEach(atleta => {
+            // value="${atleta.id_atleta}" es la clave para la eficiencia de base de datos
+            select.insertAdjacentHTML('beforeend', `<option value="${atleta.id_atleta}">${atleta.nombres} ${atleta.apellidos} - CI: ${atleta.cedula}</option>`);
+        });
+    }
+}
+
 
 // =====================================================================
 // VISUALIZADOR CIENTÍFICO Y GRÁFICAS DE RENDIMIENTO (MAESTRO-DETALLE)
 // =====================================================================
 let instanciaGrafica = null; // Control para evitar bugs de renderizado en Chart.js
+let instanciaGraficaSplits = null; 
 
 async function verDetallesMarca(id_marca) {
     const modalVer = document.getElementById('modalVer');
@@ -589,6 +616,14 @@ async function verDetallesMarca(id_marca) {
                 <canvas id="canvasEvolucion"></canvas>
             </div>
         </div>
+        <div class="bg-black/20 p-4 rounded-xl border border-white/5">
+                <p class="text-[10px] uppercase text-gray-400 font-bold tracking-widest mb-3">
+                    <i class="fas fa-chart-line text-indigo-500 mr-2"></i> Análisis de Ritmo y Caída de Velocidad
+                </p>
+                <div class="w-full h-44 relative">
+                    <canvas id="graficaSplits"></canvas> 
+                </div>
+        </div>
     `;
 
     // Inicialización del Motor Gráfico (Chart.js) si posee historial acumulado
@@ -636,6 +671,52 @@ async function verDetallesMarca(id_marca) {
             }
         });
     }
+
+    // =========================================================
+    // Inicialización del Motor Gráfico 2: CAÍDA DE VELOCIDAD
+    // =========================================================
+    if (data.splits && data.splits.length > 0) {
+        const ejeDistancias = data.splits.map(s => s.distancia_parcial_m + 'm');
+        const ejeTiemposSplits = data.splits.map(s => parseFloat(s.tiempo_parcial_seg));
+
+        // Destruimos la gráfica anterior para evitar el "parpadeo" (Ghosting)
+        if (instanciaGraficaSplits) instanciaGraficaSplits.destroy();
+
+        const ctxSplits = document.getElementById('graficaSplits').getContext('2d');
+        instanciaGraficaSplits = new Chart(ctxSplits, {
+            type: 'line',
+            data: {
+                labels: ejeDistancias,
+                datasets: [{
+                    data: ejeTiemposSplits,
+                    borderColor: '#06b6d4', // Un color Cyan para diferenciarla de la otra
+                    backgroundColor: 'rgba(6, 182, 212, 0.05)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#06b6d4',
+                    pointBorderColor: '#fff',
+                    pointRadius: 3.5,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { 
+                        grid: { display: false }, 
+                        ticks: { color: '#6b7280', font: { size: 9, family: 'monospace' } } 
+                    },
+                    y: { 
+                        grid: { color: 'rgba(255, 255, 255, 0.03)' }, 
+                        ticks: { color: '#6b7280', font: { size: 9, family: 'monospace' }, callback: function(val) { return val + 's'; } } 
+                    }
+                }
+            }
+        });
+    }
+
 }
 
 function cerrarModalVer() {
@@ -705,5 +786,7 @@ async function reactivarMarca(id_marca) {
 // =====================================================================
 // Cuando el documento cargue, mandamos a pintar la tabla automáticamente
 document.addEventListener('DOMContentLoaded', () => {
+    cargarFiltroAtletas();
     cargarTablaMarcas();
+
 });

@@ -91,34 +91,47 @@
             </button>
         </div> -->
 
-        <div class="tarjeta p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div class="relative w-full md:w-72">
-                <i class="fas fa-search absolute left-4 top-3.5 text-gray-500"></i>
-                <input type="text" id="busquedaAtleta" onkeyup="filtrarTabla()" placeholder="Buscar por atleta o cédula..." class="w-full input-dark pl-11 pr-4 py-2.5 rounded-xl text-sm">
-            </div>
+<div class="tarjeta p-4 flex flex-wrap gap-3 items-center justify-between">
+    
 
-            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-                <select id="filtroEstilo" onchange="filtrarTabla()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23]">
-                    <option value="">🏊 Todos los Estilos</option>
-                    <option value="Libre">Libre</option>
-                    <option value="Espalda">Espalda</option>
-                    <option value="Braza">Braza</option>
-                    <option value="Mariposa">Mariposa</option>
-                    <option value="Combinado">Combinado</option>
-                </select>
+    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
 
-                <select id="filtroPiscina" onchange="filtrarTabla()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23]">
-                    <option value="">🏢 Todas las Piscinas</option>
-                    <option value="25m">Piscina Corta (25m)</option>
-                    <option value="50m">Piscina Olímpica (50m)</option>
-                </select>
+        <select id="filtroAtleta" onchange="cargarTablaMarcas()" class="input-dark py-2.5 rounded-xl text-xs bg-[#0f0d23] cursor-pointer">
+            <option value="">👤 Todos los Atletas</option>
+        </select>
+    
+        <select id="filtroDistancia" onchange="cargarTablaMarcas()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23] cursor-pointer">
+            <option value="">📏 Todas las Distancias</option>
+            <option value="25">25m</option>
+            <option value="50">50m</option>
+            <option value="100">100m</option>
+            <option value="200">200m</option>
+            <option value="400">400m</option>
+            <option value="800">800m</option>
+            <option value="1500">1500m</option>
+        </select>
 
-                <select id="filtroEstado" onchange="cargarTablaMarcas()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23]">
-                    <option value="Activo" selected>⏱️ Marcas Vigentes</option>
-                    <option value="Inactivo">🗑️ Marcas Archivadas</option>
-                </select>
-            </div>
-        </div>
+        <select id="filtroEstilo" onchange="cargarTablaMarcas()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23] cursor-pointer">
+            <option value="">🏊 Todos los Estilos</option>
+            <option value="Libre">Libre</option>
+            <option value="Espalda">Espalda</option>
+            <option value="Pecho">Pecho</option>
+            <option value="Mariposa">Mariposa</option>
+            <option value="Combinado">Combinado</option>
+        </select>
+
+        <select id="filtroPiscina" onchange="cargarTablaMarcas()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23] cursor-pointer">
+            <option value="">🏢 Todas las Piscinas</option>
+            <option value="25m">Piscina Corta (25m)</option>
+            <option value="50m">Piscina Olímpica (50m)</option>
+        </select>
+
+        <select id="filtroEstado" onchange="cargarTablaMarcas()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23] cursor-pointer">
+            <option value="Activo" selected>⏱️ Marcas Vigentes</option>
+            <option value="Inactivo">🗑️ Marcas Archivadas</option>
+        </select>
+    </div>
+</div>
 
         <div class="tarjeta overflow-hidden">
             <div class="overflow-x-auto">
@@ -301,7 +314,8 @@
             </button>
             
             <div class="p-8 relative z-10" id="detalleContenido">
-                </div>
+            </div>
+
         </div>
     </div>
 
