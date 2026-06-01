@@ -8,8 +8,7 @@ if (empty($_SESSION['id'])) {
     header('Location: ?p=login');
     exit;
 }
-
-require_once 'src/modelo/InicioModelo.php';
+use GrupoProyecto\SisBiomec\modelo\InicioModelo;
 
 $objInicio = new InicioModelo();
 $titulo_pagina = "Panel de Inicio";

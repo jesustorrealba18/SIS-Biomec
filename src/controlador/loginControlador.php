@@ -1,7 +1,8 @@
 <?php
 session_start();
 
-require_once 'src/modelo/login.php';
+
+use GrupoProyecto\SisBiomec\modelo\Login;
 
 if (!empty($_SESSION['id'])) {
     header('Location: ?p=inicio');
