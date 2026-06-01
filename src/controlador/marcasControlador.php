@@ -36,8 +36,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Ruta B: Cargar la tabla principal de marcas
     if ($accion === 'listarMarcas') {
         header('Content-Type: application/json');
+       // 1. Capturamos todos los filtros que viajan desde el JS por la URL (GET)
         $estado = $_GET['estado'] ?? 'Activo';
-        echo json_encode($objMarca->listarMarcas($estado));
+       $id_atleta = !empty($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
+        $distancia = !empty($_GET['distancia']) ? (int)$_GET['distancia'] : 0;
+        $estilo    = trim($_GET['estilo'] ?? '');
+        $piscina   = trim($_GET['piscina'] ?? '');
+
+        // Inyectamos los 5 parámetros en el modelo
+        $marcas = $objMarca->listarMarcas($estado, $id_atleta, $distancia, $estilo, $piscina);
+
+    
+        echo json_encode($marcas);
         exit;
     }
 
@@ -85,6 +95,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
       
+    }
+
+    // Ruta C.2: Actualizar registro existente
+    if ($accionPost === 'actualizar') {
+        $id_marca = (int)($_POST['id_marca'] ?? 0);
+        
+        if ($id_marca > 0 && $objMarca->actualizarMarca($_POST, $id_marca)) {
+            // Opcional: Llamar a Bitacora::registrar para auditar la modificación (RF-06.2)
+            echo json_encode(['status' => 'success']);
+        } else {
+            // Si validaciones fallan, extraemos el primer error del Trait
+            $errores = $objMarca->obtenerErrores();
+            $mensaje = !empty($errores) ? reset($errores) : 'Error estructural al actualizar la marca.';
+            echo json_encode(['status' => 'error', 'message' => $mensaje]);
+        }
+        exit;
     }
 
     // Ruta D: Archivar (Borrado lógico con justificación)

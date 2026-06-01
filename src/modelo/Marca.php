@@ -209,35 +209,198 @@ class Marca extends Conexion {
         }
     }
 
+    /**
+     * Actualiza una marca existente, recalculando el PB y reescribiendo sus métricas asociadas.
+     */
+    public function actualizarMarca(array $payload, int $id_marca): bool {
+        
+        // 1. Hidratación y validación estricta
+        $this->setAtributos($payload);
+
+        if (!$this->validarAtributosInternos()) {
+            return false; 
+        }
+
+        try {
+            $this->pdo->beginTransaction();
+            $tiempo_final = (float)$this->datos['tiempo_final_seg'];
+
+            // -------------------------------------------------------------
+            // A) RECALCULAR PERSONAL BEST (Excluyendo la marca actual)
+            // -------------------------------------------------------------
+            $sqlPB = "SELECT MIN(tiempo_final_seg) as mejor_tiempo 
+                      FROM marcas 
+                      WHERE id_atleta = :id_atleta AND estilo = :estilo 
+                      AND distancia_m = :distancia AND tipo_piscina = :piscina 
+                      AND estado = 'Activo' AND id_marca != :id_marca_actual";
+                      
+            $stmtPB = $this->pdo->prepare($sqlPB);
+            
+            $mapaPB = [
+                ':id_atleta' => ['id_atleta', PDO::PARAM_INT],
+                ':estilo'    => ['estilo', PDO::PARAM_STR],
+                ':distancia' => ['distancia_m', PDO::PARAM_INT],
+                ':piscina'   => ['tipo_piscina', PDO::PARAM_STR]
+            ];
+            
+            // Pasamos el ID actual como variable local para excluirlo del cálculo
+            $this->autoBind($stmtPB, $mapaPB, $this->datos, ['id_marca_actual' => $id_marca]); 
+            
+            $stmtPB->execute();
+            $historial = $stmtPB->fetch(PDO::FETCH_ASSOC);
+            
+            $es_pb = (empty($historial['mejor_tiempo']) || $tiempo_final < (float)$historial['mejor_tiempo']) ? 1 : 0;
+
+            // -------------------------------------------------------------
+            // B) ACTUALIZACIÓN DE LA TABLA PRINCIPAL
+            // -------------------------------------------------------------
+            $sqlUpdate = "UPDATE marcas SET 
+                            id_sesion = :id_sesion, id_evento = :id_evento, estilo = :estilo, 
+                            distancia_m = :distancia, tipo_piscina = :piscina, tiempo_final_seg = :tiempo, 
+                            tiempo_reaccion_seg = :reaccion, tiempo_viraje_seg = :viraje, 
+                            nivel_evento = :nivel, es_pb = :es_pb, fecha = :fecha, observaciones = :obs
+                          WHERE id_marca = :id_marca_condicion";
+            
+            $stmt = $this->pdo->prepare($sqlUpdate);
+            
+            $mapaPrincipal = [
+                ':id_sesion' => ['id_sesion', PDO::PARAM_INT],
+                ':id_evento' => ['id_evento', PDO::PARAM_INT],
+                ':estilo'    => ['estilo', PDO::PARAM_STR],
+                ':distancia' => ['distancia_m', PDO::PARAM_INT],
+                ':piscina'   => ['tipo_piscina', PDO::PARAM_STR],
+                ':tiempo'    => ['tiempo_final_seg', PDO::PARAM_STR],
+                ':reaccion'  => ['tiempo_reaccion_seg', PDO::PARAM_STR],
+                ':viraje'    => ['tiempo_viraje_seg', PDO::PARAM_STR],
+                ':nivel'     => ['nivel_evento', PDO::PARAM_STR],
+                ':es_pb'     => ['es_pb_local', PDO::PARAM_INT], 
+                ':fecha'     => ['fecha', PDO::PARAM_STR],
+                ':obs'       => ['observaciones', PDO::PARAM_STR]
+            ];
+
+            $this->autoBind($stmt, $mapaPrincipal, $this->datos, [
+                'es_pb_local' => $es_pb, 
+                'id_marca_condicion' => $id_marca
+            ]);
+            
+            $stmt->execute();
+
+            // -------------------------------------------------------------
+            // C) LIMPIEZA DE TABLAS SECUNDARIAS (Delete & Re-insert Pattern)
+            // -------------------------------------------------------------
+            // Es más seguro y rápido borrar los tramos viejos y crear los nuevos 
+            // que intentar hacer un UPDATE fila por fila averiguando qué cambió.
+            
+            $stmtDelSwolf = $this->pdo->prepare("DELETE FROM marcas_swolf WHERE id_marca = :id");
+            $stmtDelSwolf->bindValue(':id', $id_marca, PDO::PARAM_INT);
+            $stmtDelSwolf->execute();
+
+            $stmtDelSplits = $this->pdo->prepare("DELETE FROM marcas_splits WHERE id_marca = :id");
+            $stmtDelSplits->bindValue(':id', $id_marca, PDO::PARAM_INT);
+            $stmtDelSplits->execute();
+
+            // -------------------------------------------------------------
+            // D) RE-INSERCIÓN DE MÉTRICAS (SWOLF Y SPLITS)
+            // -------------------------------------------------------------
+            if (!empty($this->datos['brazadas_por_largo'])) {
+                $brazadas = (int)$this->datos['brazadas_por_largo'];
+                $longitud_piscina = ($this->datos['tipo_piscina'] === '25m') ? 25 : 50;
+                $cantidad_largos = (int)$this->datos['distancia_m'] / $longitud_piscina;
+                
+                $swolf_calculado = (int)round(($tiempo_final / $cantidad_largos) + $brazadas);
+
+                $stmtSwolf = $this->pdo->prepare("INSERT INTO marcas_swolf (id_marca, num_brazadas, swolf) VALUES (:id_marca, :brazadas, :swolf)");
+                $stmtSwolf->bindValue(':id_marca', $id_marca, PDO::PARAM_INT);
+                $stmtSwolf->bindValue(':brazadas', $brazadas, PDO::PARAM_INT);
+                $stmtSwolf->bindValue(':swolf', $swolf_calculado, PDO::PARAM_INT);
+                $stmtSwolf->execute();
+            }
+
+            if (!empty($this->datos['splits']) && is_array($this->datos['splits'])) {
+                $stmtSplit = $this->pdo->prepare("INSERT INTO marcas_splits (id_marca, parcial_numero, distancia_parcial_m, tiempo_parcial_seg) VALUES (:id_marca, :numero, :distancia_parcial, :tiempo_parcial)");
+                
+                $numeroSplit = 1;
+                foreach ($this->datos['splits'] as $dist_parcial => $tiempo_seg) {
+                    $tiempoParcialLimpio = (float)$tiempo_seg; 
+                    if ($tiempoParcialLimpio > 0) {
+                        $stmtSplit->bindValue(':id_marca', $id_marca, PDO::PARAM_INT);
+                        $stmtSplit->bindValue(':numero', $numeroSplit, PDO::PARAM_INT);
+                        $stmtSplit->bindValue(':distancia_parcial', (int)$dist_parcial, PDO::PARAM_INT);
+                        $stmtSplit->bindValue(':tiempo_parcial', $tiempoParcialLimpio, PDO::PARAM_STR);
+                        $stmtSplit->execute();
+                        $numeroSplit++;
+                    }
+                }
+            }
+
+            $this->pdo->commit();
+            return true;
+
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error en actualizacion de marca: " . $e->getMessage());
+            return false;
+        }
+    }
+
   // =====================================================================
     // 3. MÉTODOS DE CONSULTA Y ESTADO (Listados y Soft Delete)
     // =====================================================================
-    
-    /**
-     * Consulta las marcas registradas aplicando el borrado lógico por estado
-     */
-    public function listarMarcas(string $estado = 'Activo'): array {
+
+    public function listarMarcas(string $estado = 'Activo', int $id_atleta = 0, int $distancia = 0, string $estilo = '', string $piscina = ''): array {
+        
+        $estadosPermitidos = ['Activo', 'Inactivo'];
+        if (!in_array($estado, $estadosPermitidos)) {
+            return [];
+        }
+
         try {
-            $sql = "SELECT 
-                        m.id_marca, m.estilo, m.distancia_m, m.tipo_piscina, 
-                        m.tiempo_final_seg, m.nivel_evento, m.fecha, m.es_pb,
-                        CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta, a.cedula
-                    FROM marcas m
-                    INNER JOIN atletas a ON m.id_atleta = a.id_atleta
-                    WHERE m.estado = :estado
-                    ORDER BY m.id_marca DESC";
-                    
+            $sql = "SELECT m.id_marca, m.estilo, m.distancia_m, m.tipo_piscina, 
+                        m.tiempo_final_seg, m.nivel_evento, m.fecha, m.es_pb, 
+                        CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta, a.cedula 
+                    FROM marcas m 
+                    INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
+                    WHERE m.estado = :estado";
+            
+            // CONCATENACIÓN DINÁMICA ULTRA-EFICIENTE
+            if ($id_atleta > 0) {
+                $sql .= " AND m.id_atleta = :id_atleta";
+            }
+            if ($distancia > 0) {
+                $sql .= " AND m.distancia_m = :distancia";
+            }
+            if ($estilo !== '') {
+                $sql .= " AND m.estilo = :estilo";
+            }
+            if ($piscina !== '') {
+                $sql .= " AND m.tipo_piscina = :piscina";
+            }
+            
+            $sql .= " ORDER BY m.fecha DESC";
+            
             $stmt = $this->pdo->prepare($sql);
             
-            // Tipado fuerte para el estado ('Activo' / 'Inactivo')
+            // ENLACES ESTRICTOS
             $stmt->bindValue(':estado', $estado, PDO::PARAM_STR);
+            
+            if ($id_atleta > 0) {
+                $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
+            }
+            if ($distancia > 0) {
+                $stmt->bindValue(':distancia', $distancia, PDO::PARAM_INT);
+            }
+            if ($estilo !== '') {
+                $stmt->bindValue(':estilo', $estilo, PDO::PARAM_STR);
+            }
+            if ($piscina !== '') {
+                $stmt->bindValue(':piscina', $piscina, PDO::PARAM_STR);
+            }
             
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
             
         } catch (PDOException $e) {
-            // Trazabilidad silenciosa en caso de caída de BD
-            error_log("Error en listarMarcas: " . $e->getMessage());
+            error_log("Error crítico en filtros listarMarcas: " . $e->getMessage());
             return [];
         }
     }
