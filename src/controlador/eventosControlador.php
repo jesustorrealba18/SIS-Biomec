@@ -37,7 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($accion === 'listarAtletasSelect') {
         header('Content-Type: application/json');
         $objAtleta = new Atleta();
-        echo json_encode($objAtleta->listarAtletas());
+        //echo json_encode($objAtleta->listarAtletas());
+        echo json_encode($objAtleta->listar());
         exit;
     }
 
