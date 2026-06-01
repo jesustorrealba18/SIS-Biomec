@@ -29,7 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         header('Content-Type: application/json');
         $objAtleta = new Atleta();
         // Llama a la función de tu compañero (ajusta el nombre si es distinto)
-        echo json_encode($objAtleta->listarAtletas());
+        //echo json_encode($objAtleta->listarAtletas());
+        echo json_encode($objAtleta->listar());
         exit;
     }
 
