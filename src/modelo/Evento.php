@@ -77,7 +77,7 @@ class Evento extends Conexion {
     // =====================================================================
 
     public function actualizarEstadoEvento(int $id, string $nuevo_estado): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sqlActual = "SELECT estado FROM eventos WHERE id_evento = :id";
             $stmtActual = $conex->prepare($sqlActual);
@@ -116,7 +116,7 @@ class Evento extends Conexion {
     // =====================================================================
 
     public function registrarEvento(array $datos): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $conex->beginTransaction();
 
@@ -166,7 +166,7 @@ class Evento extends Conexion {
     }
 
     public function editarEvento(array $datos): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $conex->beginTransaction();
 
@@ -221,7 +221,7 @@ class Evento extends Conexion {
     }
 
     public function registrarMetasLote(int $id_evento, array $metas): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $conex->beginTransaction();
 
@@ -291,7 +291,7 @@ class Evento extends Conexion {
     }
 
     public function inscribirAtletasLote(int $id_evento, array $atletas_ids): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $conex->beginTransaction();
 
@@ -320,7 +320,7 @@ class Evento extends Conexion {
     // =====================================================================
 
     public function listarEventos(?string $estado = null, ?string $tipo = null): array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "SELECT e.*,
                            (SELECT COUNT(*) FROM metas_competitivas mc WHERE mc.id_evento = e.id_evento) as total_metas,
@@ -343,7 +343,7 @@ class Evento extends Conexion {
     }
 
     public function obtenerDetallePorId(int $id_evento): ?array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sqlBase = "SELECT * FROM eventos WHERE id_evento = :id";
             $stmtBase = $conex->prepare($sqlBase);
@@ -388,7 +388,7 @@ class Evento extends Conexion {
     }
 
     public function obtenerEventosProximos(int $dias = 14): array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "SELECT id_evento, nombre, fecha_inicio, fecha_fin, tipo, sede, estado
                     FROM eventos
@@ -404,7 +404,7 @@ class Evento extends Conexion {
     }
 
     public function obtenerAtletasConCompetenciaProxima(int $dias = 14): array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "SELECT DISTINCT ei.id_atleta, e.nombre as evento_nombre, e.fecha_inicio
                     FROM evento_inscripcion ei
@@ -421,7 +421,7 @@ class Evento extends Conexion {
     }
 
     public function obtenerEventosCalendario(?int $mes = null, ?int $anio = null): array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "SELECT id_evento, nombre as title, fecha_inicio as start,
                            COALESCE(fecha_fin, fecha_inicio) as end, tipo
@@ -462,7 +462,7 @@ class Evento extends Conexion {
     }
 
     public function obtenerEventosComoObjetivo(): array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "SELECT id_evento, nombre, fecha_inicio, tipo, nivel
                     FROM eventos
@@ -479,7 +479,7 @@ class Evento extends Conexion {
     }
 
     public function obtenerTiemposCorte(int $id_evento): array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "SELECT tc.*, c.nombre as categoria_nombre
                     FROM tiempos_corte_evento tc
@@ -495,7 +495,7 @@ class Evento extends Conexion {
     }
 
     public function listarInscripciones(int $id_evento): array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "SELECT ei.id_inscripcion, ei.id_atleta, a.cedula,
                            CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta,
@@ -515,7 +515,7 @@ class Evento extends Conexion {
     }
 
     public function eliminarInscripcion(int $id_evento, int $id_atleta): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "DELETE FROM evento_inscripcion WHERE id_evento = :id_evento AND id_atleta = :id_atleta";
             $stmt = $conex->prepare($sql);
@@ -529,7 +529,7 @@ class Evento extends Conexion {
     }
 
     public function eliminarMeta(int $id_meta): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $sql = "DELETE FROM metas_competitivas WHERE id_meta = :id_meta";
             $stmt = $conex->prepare($sql);

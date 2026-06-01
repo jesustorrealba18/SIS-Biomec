@@ -61,10 +61,10 @@
             <span>Expediente Antropométrico</span>
         </div>
 
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
-            <i class="fas fa-dumbbell w-5 text-center text-indigo-400 group-hover:text-white"></i> 
-            <span>Planificación de Cargas</span>
-        </div>
+        <a href="?p=periodizacion" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'periodizacion') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-project-diagram w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'periodizacion') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Periodización ATR</span>
+        </a>
 
         <!-- NUEVO: Enlace al módulo de Representantes -->
         <a href="?p=marcas" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'marcas') ? 'bg-white/10 text-white' : ''; ?>">

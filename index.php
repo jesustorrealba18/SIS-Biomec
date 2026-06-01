@@ -29,14 +29,14 @@ if (is_file($archivoControlador)) {
 
     if (class_exists($claseControlador, false)) {
        $dependencias = [
-    'GrupoProyecto\\SisBiomec\\controlador\\AtletaControlador' => [
-        new \GrupoProyecto\SisBiomec\modelo\Atleta()
-    ],
- 
     'GrupoProyecto\\SisBiomec\\controlador\\EntrenadorControlador' => [
         new \GrupoProyecto\SisBiomec\modelo\Entrenador()
     ],
 ];
+
+    $params = $dependencias[$claseControlador] ?? [];
+    $controlador = new $claseControlador(...$params);
+    $controlador->handle();
     }
 } else {
     header("HTTP/1.0 404 Not Found");

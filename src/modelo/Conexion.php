@@ -50,4 +50,8 @@ class Conexion {
             die("Error 500: Fallo de integridad del sistema.");
         }
     }
+
+    public function getConex1(): ?PDO {
+        return $this->pdo;
+    }
 }
