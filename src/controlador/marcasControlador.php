@@ -97,6 +97,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       
     }
 
+    // Ruta C.2: Actualizar registro existente
+    if ($accionPost === 'actualizar') {
+        $id_marca = (int)($_POST['id_marca'] ?? 0);
+        
+        if ($id_marca > 0 && $objMarca->actualizarMarca($_POST, $id_marca)) {
+            // Opcional: Llamar a Bitacora::registrar para auditar la modificación (RF-06.2)
+            echo json_encode(['status' => 'success']);
+        } else {
+            // Si validaciones fallan, extraemos el primer error del Trait
+            $errores = $objMarca->obtenerErrores();
+            $mensaje = !empty($errores) ? reset($errores) : 'Error estructural al actualizar la marca.';
+            echo json_encode(['status' => 'error', 'message' => $mensaje]);
+        }
+        exit;
+    }
+
     // Ruta D: Archivar (Borrado lógico con justificación)
     if ($accionPost === 'eliminar') {
         $id = (int)($_POST['id_marca'] ?? 0);
