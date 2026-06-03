@@ -264,7 +264,8 @@ class Marca extends Conexion {
                 ':id_atleta' => ['id_atleta', PDO::PARAM_INT],
                 ':estilo'    => ['estilo', PDO::PARAM_STR],
                 ':distancia' => ['distancia_m', PDO::PARAM_INT],
-                ':piscina'   => ['tipo_piscina', PDO::PARAM_STR]
+                ':piscina'   => ['tipo_piscina', PDO::PARAM_STR],
+                ':id_marca_actual' => ['id_marca_actual', PDO::PARAM_INT]
             ];
             
             // Pasamos el ID actual como variable local para excluirlo del cálculo
@@ -299,7 +300,8 @@ class Marca extends Conexion {
                 ':nivel'     => ['nivel_evento', PDO::PARAM_STR],
                 ':es_pb'     => ['es_pb_local', PDO::PARAM_INT], 
                 ':fecha'     => ['fecha', PDO::PARAM_STR],
-                ':obs'       => ['observaciones', PDO::PARAM_STR]
+                ':obs'       => ['observaciones', PDO::PARAM_STR],
+                ':id_marca_condicion' => ['id_marca_condicion', PDO::PARAM_INT]
             ];
 
             $this->autoBind($stmt, $mapaPrincipal, $this->datos, [
