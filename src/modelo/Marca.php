@@ -25,7 +25,7 @@ class Marca extends Conexion {
         'id_atleta', 'id_sesion', 'id_evento', 'estilo', 'distancia_m',
         'tipo_piscina', 'tiempo_final_seg', 'tiempo_reaccion_seg',
         'tiempo_viraje_seg', 'nivel_evento', 'fecha', 'observaciones',
-        'num_brazadas', 'splits','brazadas_por_largo'
+        'num_brazadas', 'splits','brazadas_por_largo','id_marca','accion'
     ];
 
     // NO SE DECLARA CONSTRUCTOR: PHP invoca automáticamente el de la clase Conexion.
@@ -36,10 +36,33 @@ class Marca extends Conexion {
     /**
      * Mapea el payload externo al arreglo privado filtrando campos basura.
      */
-    private function setAtributos(array $payload): void {
+   /*  private function setAtributos(array $payload): void {
         foreach ($this->camposPermitidos as $campo) {
             if (isset($payload[$campo]) && $payload[$campo] !== '') {
                 $this->datos[$campo] = $payload[$campo];
+            } else {
+                $this->datos[$campo] = null;
+            }
+        }
+    } */
+
+    /**
+     * Mapea el payload externo al arreglo privado filtrando campos basura.
+     * Soporta de forma segura variables escalares y arreglos estructurados (Splits).
+     */
+    private function setAtributos(array $payload): void {
+        foreach ($this->camposPermitidos as $campo) {
+            if (isset($payload[$campo])) {
+                // Si el campo es un arreglo (como los splits), lo guardamos directo sin comparar con string
+                if (is_array($payload[$campo])) {
+                    $this->datos[$campo] = $payload[$campo];
+                } 
+                // Si es un dato normal, validamos que no esté vacío
+                elseif ($payload[$campo] !== '') {
+                    $this->datos[$campo] = $payload[$campo];
+                } else {
+                    $this->datos[$campo] = null;
+                }
             } else {
                 $this->datos[$campo] = null;
             }
@@ -204,7 +227,8 @@ class Marca extends Conexion {
 
         } catch (PDOException $e) {
             $this->pdo->rollBack();
-            error_log("Error en transaccion de marca: " . $e->getMessage());
+           error_log("ERROR REAL DE SQL: " . $e->getMessage()); 
+            error_log("TRACE: " . $e->getTraceAsString());
             return false;
         }
     }
