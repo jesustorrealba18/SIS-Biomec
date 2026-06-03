@@ -171,9 +171,12 @@
                 </button>
             </div>
 
-            <form id="formMarca" autocomplete="off">
+           <!--  <form id="formMarca" autocomplete="off">
                 <input type="hidden" id="id_marca_original" name="id_marca_original" value="">
-
+ --><form id="formMarca" autocomplete="off">
+                <input type="hidden" id="accion_form" name="accion" value="registrar">
+                
+                <input type="hidden" id="id_marca" name="id_marca" value="">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 <!--                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Atleta *</label>
@@ -261,13 +264,36 @@
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 p-4 bg-black/20 rounded-xl border border-white/5">
-                    <div>
+<!--                     <div>
                         <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Reacción (s)</label>
-                        <input type="number" step="0.01" id="tiempo_reaccion_seg" name="tiempo_reaccion_seg" placeholder="0.00" class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
+                        <input type="number" step="0.01" lang="en-US" id="tiempo_reaccion_seg" name="tiempo_reaccion_seg" placeholder="0.00" class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
                     </div>
                     <div>
                         <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Viraje (s)</label>
-                        <input type="number" step="0.01" id="tiempo_viraje_seg" name="tiempo_viraje_seg" placeholder="0.00" class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
+                        <input type="number" step="0.01" lang="en-US" id="tiempo_viraje_seg" name="tiempo_viraje_seg" placeholder="0.00" class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
+                    </div> -->
+<div>
+                        <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Reacción (s)</label>
+                        <input type="text" 
+                               inputmode="decimal" 
+                               pattern="[0-9]*\.?[0-9]*" 
+                               oninput="this.value = this.value.replace(',', '.');" 
+                               id="tiempo_reaccion_seg" 
+                               name="tiempo_reaccion_seg" 
+                               placeholder="0.00" 
+                               class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Viraje (s)</label>
+                        <input type="text" 
+                               inputmode="decimal" 
+                               pattern="[0-9]*\.?[0-9]*" 
+                               oninput="this.value = this.value.replace(',', '.');" 
+                               id="tiempo_viraje_seg" 
+                               name="tiempo_viraje_seg" 
+                               placeholder="0.00" 
+                               class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
                     </div>
                     <div>
                         <label class="block text-[10px] text-amber-400 uppercase font-bold mb-1" title="Para calcular SWOLF">Brazadas/Largo</label>

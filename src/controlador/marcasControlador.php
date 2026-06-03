@@ -1,4 +1,8 @@
 <?php
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 // =====================================================================
 // CONTROLADOR PIVOTE: MARCAS DEPORTIVAS
 // =====================================================================
@@ -77,8 +81,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Ruta C: Guardar nueva marca
     if ($accionPost === 'guardar') {
-        
-            // El controlador manda a guardar. El modelo retorna 'false' y entra al bloque ELSE.
+
+   // ERROR REPORTING: Fuerza a PHP a mostrar el error en pantalla si lo hay
+        ini_set('display_errors', 1);
+        error_reporting(E_ALL);
+
+        // Debug de datos
+        error_log("Datos recibidos: " . print_r($_POST, true));
+        try {
+         // El controlador manda a guardar. El modelo retorna 'false' y entra al bloque ELSE.
         if ($objMarca->registrarMarca($_POST)) {
             echo json_encode(['status' => 'success', 'message' => 'Marca registrada.']);
         } else {
@@ -94,6 +105,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // sino que se cayó la base de datos (PDOException)
                 echo json_encode(['status' => 'error', 'message' => 'Error con el servidor.']);
             }
+        }
+
+       } catch (Throwable $e) {
+            // Throwable atrapa incluso errores fatales que un Exception normal no ve
+            echo json_encode([
+                'status' => 'error', 
+                'message' => 'CRASH EN PHP: ' . $e->getMessage() . ' en ' . $e->getFile() . ' linea ' . $e->getLine()
+            ]);
+            exit;
         }
       
     }
