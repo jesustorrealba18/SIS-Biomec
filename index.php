@@ -27,7 +27,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https://ui-avatars.com");
 
 $paginasPermitidas = [
-    'login', 'inicio', 'entrenador', 'atleta', 'evento', 'marcas',
+    'login', 'inicio', 'entrenador', 'drills', 'atleta', 'evento', 'marcas',
     'periodizacion', 'antropometria', 'representante', 'calendario', 'salir'
 ];
 
