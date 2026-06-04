@@ -386,7 +386,87 @@ function formatearTiempoDesdeSegundos(segundosTotales) {
     return `${minutos.toString().padStart(2, '0')}:${segundos.padStart(5, '0')}`;
 }
 
-const inputTiempoHumano = document.getElementById('tiempo_final_humano');
+
+// 1. Obtenemos el tiempo final que escribió el entrenador
+    const inputTiempoHumano = document.getElementById('tiempo_final_humano');
+    const inputTiempoSegundos = document.getElementById('tiempo_final_seg');
+    //const contenedorSplits = document.getElementById('contenedorSplits');
+    const alertaCoherencia = document.getElementById('alertaCoherencia');
+
+ function validarCoherenciaMatematica() {
+    
+    
+    const tiempoFinalSegundos = convertirTiempoASegundos(inputTiempoHumano.value);
+    
+    // Guardamos ese valor en el input oculto para enviarlo limpio a la Base de Datos
+    inputTiempoSegundos.value = tiempoFinalSegundos.toFixed(2);
+
+    // 2. Buscamos todas las cajitas de splits que generamos dinámicamente
+    const cajasSplits = document.querySelectorAll('.split-input');
+    
+    // Si no hay cajas (porque no han seleccionado distancia), salimos
+    if (cajasSplits.length === 0) return true; 
+
+    // 3. Sumamos el valor de todos los splits
+    let sumaParciales = 0;
+    cajasSplits.forEach(caja => {
+        sumaParciales += convertirTiempoASegundos(caja.value);
+    });
+
+    // 4. Calculamos la diferencia matemática absoluta
+    const diferencia = Math.abs(tiempoFinalSegundos - sumaParciales);
+
+    // 5. Evaluamos el Criterio CA-06.2 (Tolerancia estricta de 0.01s)
+    if (tiempoFinalSegundos > 0 && sumaParciales > 0) {
+        if (diferencia > 0.015) {
+            // ==========================================
+            // ESTADO DE ERROR: Encendemos los bordes rojos
+            // ==========================================
+            alertaCoherencia.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: Los parciales suman <b>${sumaParciales.toFixed(2)}s</b> y el final es <b>${tiempoFinalSegundos.toFixed(2)}s</b>.`;
+            alertaCoherencia.classList.replace('text-emerald-400', 'text-red-500');
+            
+            // Pintamos el input final de rojo
+            inputTiempoHumano.classList.remove('border-indigo-500', 'focus:ring-indigo-500');
+            inputTiempoHumano.classList.add('border-red-500', 'ring-2', 'ring-red-500');
+            
+            // Pintamos el contenedor de splits de rojo
+            contenedorSplits.classList.remove('border-gray-700');
+            contenedorSplits.classList.add('border-red-500', 'bg-red-900/10');
+            
+            return false; // Bloquea el envío
+        } else {
+            // ==========================================
+            // ESTADO CORRECTO: Restauramos colores originales
+            // ==========================================
+            alertaCoherencia.innerHTML = `<i class="fas fa-check-circle"></i> Tiempos coherentes. (Suma: ${sumaParciales.toFixed(2)}s)`;
+            alertaCoherencia.classList.replace('text-red-500', 'text-emerald-400');
+            
+            // Restauramos el input final a su azul índigo
+            inputTiempoHumano.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+            inputTiempoHumano.classList.add('border-indigo-500', 'focus:ring-indigo-500');
+            
+            // Restauramos el contenedor de splits
+            contenedorSplits.classList.remove('border-red-500', 'bg-red-900/10');
+            contenedorSplits.classList.add('border-gray-700');
+            
+            return true; // Permite el envío
+        }
+    }
+    
+    // Estado neutral (aún no terminan de escribir)
+    alertaCoherencia.innerHTML = '';
+    
+    // Por si borran todo, limpiamos posibles estilos de error residuales
+    inputTiempoHumano.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+    inputTiempoHumano.classList.add('border-indigo-500');
+    contenedorSplits.classList.remove('border-red-500', 'bg-red-900/10');
+    contenedorSplits.classList.add('border-gray-700');
+
+    return true; 
+} 
+
+
+/* const inputTiempoHumano = document.getElementById('tiempo_final_humano');
 const alertaCoherencia = document.getElementById('alertaCoherencia');
 const inputTiempoSegundos = document.getElementById('tiempo_final_seg'); // El oculto para la BD
 
@@ -430,7 +510,7 @@ function validarCoherenciaMatematica() {
     
     alertaCoherencia.innerHTML = '';
     return true; // Pasa si aún no han escrito nada
-}
+}  */
 
 // 6. Ponemos a escuchar al input del tiempo final para que valide al instante
 inputTiempoHumano.addEventListener('input', validarCoherenciaMatematica);
@@ -449,6 +529,30 @@ document.getElementById('rejillaSplits').addEventListener('input', function(e) {
 // =====================================================================
 formMarca.addEventListener('submit', async (e) => {
     e.preventDefault(); // Evitamos que la página se recargue
+
+
+    // === NUEVO: 1. Validación estricta del Validador Frontend ===
+    const erroresFormulario = Validador.validarFormulario(formMarca);
+    
+    // Si el Validador encontró errores (puede retornar un texto o un arreglo)
+    if (erroresFormulario && erroresFormulario.length > 0) {
+        
+        // Formateamos los errores para que se vean como una lista ordenada en HTML
+        const listaErrores = Array.isArray(erroresFormulario) 
+                             ? erroresFormulario.join('<br>') 
+                             : erroresFormulario;
+
+        // Mandamos la lista al SweetAlert alineada a la izquierda para fácil lectura
+        UI.error(
+            'Datos Incompletos', 
+            `<div class="text-left text-sm mt-2 text-gray-300">
+                <p class="mb-2 font-bold text-white">Por favor, corrige lo siguiente:</p>
+                ${listaErrores}
+             </div>`
+        );
+        
+        return; // ¡Cortamos el envío al servidor!
+    }
 
     // 1. Filtro de Seguridad: Validamos la coherencia matemática de los Splits
     // (Esta es la función CA-06.2 que creamos antes)
@@ -968,6 +1072,8 @@ async function reactivarMarca(id_marca) {
 // =====================================================================
 // Cuando el documento cargue, mandamos a pintar la tabla automáticamente
 document.addEventListener('DOMContentLoaded', () => {
+
+    Validador.vincularTiempoReal(document.getElementById('formMarca'));
     cargarFiltroAtletas();
     cargarTablaMarcas();
 
