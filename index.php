@@ -15,8 +15,24 @@ try {
 
 define('RAIZ', str_replace('\\', '/', __DIR__) . '/');
 
-$pagina = "inicio"; 
-if (!empty($_GET['p'])) {
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_secure', isset($_SERVER['HTTPS']));
+ini_set('session.use_strict_mode', 1);
+ini_set('session.cookie_samesite', 'Strict');
+session_start();
+
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https://ui-avatars.com");
+
+$paginasPermitidas = [
+    'login', 'inicio', 'entrenador', 'atleta', 'evento', 'marcas',
+    'periodizacion', 'antropometria', 'representante', 'calendario', 'salir'
+];
+
+$pagina = "inicio";
+if (!empty($_GET['p']) && in_array($_GET['p'], $paginasPermitidas, true)) {
     $pagina = $_GET['p'];
 }
 

@@ -6,7 +6,6 @@ error_reporting(E_ALL);
 // =====================================================================
 // CONTROLADOR PIVOTE: MARCAS DEPORTIVAS
 // =====================================================================
-session_start();
 
 // 1. Filtro de Seguridad
 if (empty($_SESSION['id'])) { 

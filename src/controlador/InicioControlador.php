@@ -1,6 +1,6 @@
 <?php
 // controlador/inicioControlador.php
-session_start(); //
+
 
 // Si el usuario NO ha iniciado sesión (la variable 'id' está vacía), 
 // lo mandamos al login inmediatamente.[cite: 3]
