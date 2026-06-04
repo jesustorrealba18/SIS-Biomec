@@ -14,10 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = isset($_GET['accion']) ? $_GET['accion'] : '';
 
     if ($accion === 'guardar') {
-        // CORREGIDO: Usamos la bandera explícita enviada desde el front
         $tipoAccion = isset($_POST['action_type']) ? $_POST['action_type'] : 'registrar';
         
-        // Si editamos, enviamos la cédula para que la validación "único" la ignore
         $excluirCedula = ($tipoAccion === 'actualizar') ? ($_POST['cedula'] ?? null) : null;
         
         $errores = $objEntrenador->validarDatos($_POST, $excluirCedula);
@@ -38,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($resultado) {
             echo json_encode(['status' => 'success', 'message' => 'Operación realizada con éxito.']);
         } else {
-            echo json_encode(['status' => 'error', 'message' => 'Error en la base de datos al guardar o no se alteraron campos.']);
+            echo json_encode(['status' => 'error', 'message' => 'Error en la base de datos al guardar.']);
         }
         exit;
     }
@@ -51,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($resultado) {
                 echo json_encode(['status' => 'success', 'message' => 'Entrenador eliminado correctamente.']);
             } else {
-                echo json_encode(['status' => 'error', 'message' => 'No se pudo eliminar el registro de la BD.']);
+                echo json_encode(['status' => 'error', 'message' => 'No se pudo eliminar el entrenador.']);
             }
         } else {
             echo json_encode(['status' => 'error', 'message' => 'ID de entrenador no proporcionado.']);

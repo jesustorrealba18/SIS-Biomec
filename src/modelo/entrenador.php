@@ -27,7 +27,6 @@ class entrenador extends Conexion {
         $this->requerido($cedula, 'cedula');
         $this->soloNumeros($cedula, 'cedula');
         
-        // CORREGIDO: Ahora evalúa de manera real si se debe saltar o no la regla
         if ($excluirCedula === null) {
             $this->unico($this->getConex1(), $cedula, 'entrenador', 'cedula');
         }
@@ -85,7 +84,7 @@ class entrenador extends Conexion {
             return true;
         } catch (PDOException $e) {
             $conex->rollBack();
-            error_log("Error BD registrarEntrenador: " . $e->getMessage());
+            error_log("Error BD registrar Entrenador: " . $e->getMessage());
             return false;
         }
     }
@@ -117,8 +116,7 @@ class entrenador extends Conexion {
             return null;
         }
     }
-
-    // CORREGIDO: Removido el parámetro innecesario y asegurado el ID numérico primario
+    
     public function actualizarEntrenador(array $datos): bool {
         $conex = $this->getConex1();
         try {
