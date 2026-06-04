@@ -2,8 +2,6 @@
 
 ob_start();
 
-session_start();
-
 if (empty($_SESSION['id'])) {
     ob_end_clean();
     header('Location: ?p=login');

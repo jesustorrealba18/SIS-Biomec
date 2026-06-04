@@ -2,7 +2,6 @@
 // =====================================================================
 // CONTROLADOR PIVOTE: SEGUIMIENTO ANTROPOMÉTRICO (RF-05)
 // =====================================================================
-session_start();
 
 // 1. Filtro de Seguridad estricto
 if (empty($_SESSION['id'])) { 

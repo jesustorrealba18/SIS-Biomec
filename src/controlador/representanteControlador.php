@@ -2,7 +2,6 @@
 // src/controlador/representanteControlador.php
 
 // 1. Filtro de Reglas Básicas (El pivote ataja a los intrusos)
-session_start();
 if (empty($_SESSION['id'])) { 
     header('Location: ?p=login'); 
     exit; 
