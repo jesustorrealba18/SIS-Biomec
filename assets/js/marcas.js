@@ -464,7 +464,7 @@ formMarca.addEventListener('submit', async (e) => {
     // ¡EL CAMBIO CLAVE!: Leemos qué acción debemos ejecutar ('guardar' o 'actualizar')
     // Asume 'guardar' por defecto si el input no existe
     const inputAccion = document.getElementById('accion_form');
-    const accionActual = inputAccion ? inputAccion.value : 'guardar';
+    const accionActual = inputAccion ? inputAccion.value : 'registrar';
 
     // Sobrescribimos o añadimos la acción al FormData por seguridad
     datosFormulario.set('accion', accionActual);

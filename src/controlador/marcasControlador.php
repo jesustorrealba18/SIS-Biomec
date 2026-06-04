@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accionPost = $_POST['accion'] ?? '';
 
     // Ruta C: Guardar nueva marca
-    if ($accionPost === 'guardar') {
+    if ($accionPost === 'registrar') {
 
    // ERROR REPORTING: Fuerza a PHP a mostrar el error en pantalla si lo hay
         ini_set('display_errors', 1);

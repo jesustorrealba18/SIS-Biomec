@@ -91,7 +91,96 @@
             </button>
         </div> -->
 
-<div class="tarjeta p-4 flex flex-wrap gap-3 items-center justify-between">
+
+<div class="tarjeta p-5 flex flex-col gap-4 border border-white/5 shadow-lg shadow-black/20">
+    
+    <div class="flex items-center gap-2 border-b border-[#252345] pb-2">
+        <i class="fas fa-filter text-indigo-400 text-sm"></i>
+        <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Filtros de Búsqueda</h3>
+    </div>
+
+    <div class="relative w-full">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <i class="fas fa-user-circle text-gray-400 text-lg"></i>
+        </div>
+        
+        <select id="filtroAtleta" onchange="cargarTablaMarcas()" class="w-full input-dark pl-12 pr-10 py-3 rounded-xl text-sm bg-[#0f0d23] border border-[#252345] hover:border-indigo-500/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all cursor-pointer appearance-none shadow-inner">
+            <option value="">👤 Todos los Atletas (Búsqueda General)</option>
+        </select>
+        
+        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+            <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
+        
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-ruler-horizontal text-emerald-400/70 group-hover:text-emerald-400 transition-colors text-xs"></i>
+            </div>
+            <select id="filtroDistancia" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-emerald-500/50 focus:border-emerald-500 transition-all cursor-pointer appearance-none">
+                <option value="">📏 Todas las Distancias</option>
+                <option value="25">25m</option>
+                <option value="50">50m</option>
+                <option value="100">100m</option>
+                <option value="200">200m</option>
+                <option value="400">400m</option>
+                <option value="800">800m</option>
+                <option value="1500">1500m</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+            </div>
+        </div>
+
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-swimmer text-cyan-400/70 group-hover:text-cyan-400 transition-colors text-xs"></i>
+            </div>
+            <select id="filtroEstilo" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-cyan-500/50 focus:border-cyan-500 transition-all cursor-pointer appearance-none">
+                <option value="">🏊 Todos los Estilos</option>
+                <option value="Libre">Libre</option>
+                <option value="Espalda">Espalda</option>
+                <option value="Pecho">Pecho</option>
+                <option value="Mariposa">Mariposa</option>
+                <option value="Combinado">Combinado</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+            </div>
+        </div>
+
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-water text-blue-400/70 group-hover:text-blue-400 transition-colors text-xs"></i>
+            </div>
+            <select id="filtroPiscina" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-blue-500/50 focus:border-blue-500 transition-all cursor-pointer appearance-none">
+                <option value="">🏢 Todas las Piscinas</option>
+                <option value="25m">Piscina Corta (25m)</option>
+                <option value="50m">Piscina Olímpica (50m)</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+            </div>
+        </div>
+
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-history text-amber-400/70 group-hover:text-amber-400 transition-colors text-xs"></i>
+            </div>
+            <select id="filtroEstado" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-amber-500/50 focus:border-amber-500 transition-all cursor-pointer appearance-none">
+                <option value="Activo" selected>⏱️ Marcas Vigentes</option>
+                <option value="Inactivo">🗑️ Marcas Archivadas</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+            </div>
+        </div>
+
+    </div>
+</div>        
+<!-- <div class="tarjeta p-4 flex flex-wrap gap-3 items-center justify-between">
     
 
     <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
@@ -131,7 +220,7 @@
             <option value="Inactivo">🗑️ Marcas Archivadas</option>
         </select>
     </div>
-</div>
+</div> -->
 
         <div class="tarjeta overflow-hidden">
             <div class="overflow-x-auto">
