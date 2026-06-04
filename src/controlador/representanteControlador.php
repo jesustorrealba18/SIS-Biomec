@@ -2,7 +2,6 @@
 // src/controlador/representanteControlador.php
 
 // 1. Filtro de Reglas Básicas (El pivote ataja a los intrusos)
-session_start();
 if (empty($_SESSION['id'])) { 
     header('Location: ?p=login'); 
     exit; 
@@ -97,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['accion']) && $_GET['accion'] === 'verPerfilAtleta' && isset($_GET['id'])) {
         header('Content-Type: application/json');
         // Usamos la función que ya hizo tu líder en su modelo
-        $datosAtleta = $objAtleta->obtenerPorId((int)$_GET['id']);
+        $datosAtleta = $objAtleta->obtenerDetallePorId((int)$_GET['id']);
         echo json_encode($datosAtleta);
         exit;
     }

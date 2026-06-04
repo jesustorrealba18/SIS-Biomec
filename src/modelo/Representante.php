@@ -25,7 +25,7 @@ class Representante extends Conexion {
         
         if (!$excluirCedula) {
             // Validamos contra la tabla real 'representantes'
-            $this->unico($this->getConex1(), $cedula, 'representantes', 'cedula');
+            $this->unico($this->pdo, $cedula, 'representantes', 'cedula');
         }
 
         $this->requerido($nombres, 'nombres');
@@ -41,7 +41,7 @@ class Representante extends Conexion {
      * Registra al representante en la tabla principal y lanza la vinculación
      */
     public function registrarRepresentante(array $datos): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $conex->beginTransaction();
 
@@ -154,7 +154,7 @@ class Representante extends Conexion {
 
         // NUEVA FUNCIÓN: Eliminar Híbrido
     public function eliminarRepresentante(int $id): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             $conex->beginTransaction();
 
@@ -179,7 +179,7 @@ class Representante extends Conexion {
 
   // MODIFICAR EL MÉTODO DE LISTAR PARA QUE SEA DINÁMICO
     public function listarRepresentantes(string $estado = 'Activo'): array {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             // El WHERE ahora usa el parámetro :estado dinámicamente
             $sql = "SELECT 
@@ -203,7 +203,7 @@ class Representante extends Conexion {
 
     // NUEVO MÉTODO: Reactivar Representante
     public function reactivarRepresentante(int $id): bool {
-        $conex = $this->getConex1();
+        $conex = $this->pdo;
         try {
             // Simplemente devolvemos el estado a 'Activo'
             // Nota: Los atletas no se revínculan automáticamente porque pudieron ser asignados a otra persona mientras este estuvo inactivo
@@ -219,7 +219,7 @@ class Representante extends Conexion {
  * Obtiene los datos de un representante por su ID
  */
 public function obtenerPorId(int $id): ?array {
-    $conex = $this->getConex1();
+    $conex = $this->pdo;
     try {
         $sql = "SELECT * FROM representantes WHERE id_representante = :id";
         $stmt = $conex->prepare($sql);
@@ -236,7 +236,7 @@ public function obtenerPorId(int $id): ?array {
  * Actualiza los datos del representante y refresca sus vinculaciones
  */
 public function actualizarRepresentante(array $datos): bool {
-    $conex = $this->getConex1();
+    $conex = $this->pdo;
     try {
         $conex->beginTransaction();
 

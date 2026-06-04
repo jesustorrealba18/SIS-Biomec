@@ -1,6 +1,4 @@
 <?php
-// Iniciamos la sesión para poder destruirla
-session_start();
 
 // Limpiamos todas las variables de sesión
 $_SESSION = array();

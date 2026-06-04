@@ -1,100 +1,106 @@
-document.getElementById('busquedaAtleta').addEventListener('input', function(e) {
-    const valor = e.target.value.toLowerCase();
-    const filas = document.querySelectorAll('.atleta-row');
-    filas.forEach(fila => {
-        const busqueda = fila.getAttribute('data-busqueda').toLowerCase();
-        fila.style.display = busqueda.includes(valor) ? '' : 'none';
-    });
-});
+const API_URL = 'index.php?p=atleta';
 
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('formAtleta');
-    if (form) {
-        Validador.vincularTiempoReal(form);
-
-        form.addEventListener('submit', function(e) {
-            Validador.limpiarEstilos(form);
-            const errores = Validador.validarFormulario(form);
-            if (errores) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Datos inválidos',
-                    html: errores,
-                    icon: 'error',
-                    background: '#161430',
-                    color: '#fff',
-                    confirmButtonColor: '#ef4444'
-                });
-            }
-        });
-    }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const msg = urlParams.get('m');
-
-    if (msg) {
-        const cfg = {
-            background: '#161430',
-            color: '#fff',
-            confirmButtonColor: '#6366f1',
-            timer: 3000,
-            timerProgressBar: true
-        };
-
-        const mensajes = {
-            registrado: { title: '¡Excelente!', text: 'El atleta ha sido registrado con éxito.', icon: 'success' },
-            editado:    { title: '¡Actualizado!', text: 'Los datos se modificaron correctamente.', icon: 'success' },
-            eliminado:  { title: '¡Desactivado!', text: 'El atleta ha sido marcado como inactivo.', icon: 'info' }
-        };
-
-        if (mensajes[msg]) {
-            Swal.fire({ ...cfg, ...mensajes[msg] });
-        }
-
-        window.history.replaceState({}, document.title, window.location.origin + window.location.pathname + "?p=atleta");
-    }
-
-    if (typeof ERRORES_VALIDACION !== 'undefined' && Object.keys(ERRORES_VALIDACION).length > 0) {
-        const lista = Object.values(ERRORES_VALIDACION).map(e => `<li class="mb-1">${e}</li>`).join('');
-        Swal.fire({
-            title: 'Errores de validación',
-            html: `<ul class="text-left text-sm list-disc list-inside">${lista}</ul>`,
-            icon: 'error',
-            background: '#161430',
-            color: '#fff',
-            confirmButtonColor: '#ef4444'
-        });
-
-        if (typeof DATOS_FORM !== 'undefined') {
-            const d = DATOS_FORM;
-            const esEdicion = d.id_atleta && d.id_atleta !== '';
-            document.getElementById('modalTitulo').innerText = esEdicion ? 'Editar Atleta' : 'Nuevo Atleta';
-            poblarFormulario(d, esEdicion);
-            if (d.foto) {
-                document.getElementById('fotoPreview').innerHTML = `<img src="${d.foto}" class="w-full h-full object-cover">`;
-                document.getElementById('foto_actual').value = d.foto;
-            }
-            document.getElementById('modalAtleta').classList.remove('hidden');
-        }
-    }
-
-    const fotoInput = document.getElementById('foto');
-    if (fotoInput) {
-        fotoInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    document.getElementById('fotoPreview').innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-});
-
-const modalForm = document.getElementById('modalAtleta');
+const modalAtleta = document.getElementById('modalAtleta');
 const modalVer = document.getElementById('modalVer');
+const formAtleta = document.getElementById('formAtleta');
+const btnGuardar = document.getElementById('btnGuardar');
+const tbodyLista = document.getElementById('listaAtletas');
+const inputBusqueda = document.getElementById('busquedaAtleta');
+const detalleContenido = document.getElementById('detalleContenido');
+const inputFoto = document.getElementById('foto');
+const fotoPreview = document.getElementById('fotoPreview');
+const totalAtletas = document.getElementById('totalAtletas');
+
+let categoriasCache = [];
+
+async function peticionAjax(accion, datos = null) {
+    const opciones = { method: datos ? 'POST' : 'GET' };
+    if (datos) opciones.body = datos;
+
+    try {
+        const respuesta = await fetch(`${API_URL}&accion=${accion}`, opciones);
+        if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);
+        const texto = await respuesta.text();
+        console.log('[DEBUG API]', accion.toUpperCase(), 'Status:', respuesta.status, 'Body:', texto.substring(0, 500));
+        return JSON.parse(texto);
+    } catch (error) {
+        console.error("Error Fetch:", error);
+        UI.error('Error del Servidor', 'No se pudo procesar la solicitud.');
+        return null;
+    }
+}
+
+async function cargarTabla() {
+    if (!tbodyLista) return;
+
+    tbodyLista.innerHTML = `<tr><td colspan="6" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando datos...</span></td></tr>`;
+
+    const atletas = await peticionAjax('listar');
+
+    if (!atletas || atletas.length === 0) {
+        totalAtletas.textContent = '0 Registrados';
+        tbodyLista.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center p-12 text-gray-500">
+                    <i class="fas fa-swimmer text-4xl mb-3 block text-gray-600 animate-pulse"></i>
+                    <span class="text-xs uppercase tracking-wider block">No hay atletas registrados en el sistema</span>
+                </td>
+            </tr>`;
+        return;
+    }
+
+    totalAtletas.textContent = `${atletas.length} Registrados`;
+
+    tbodyLista.innerHTML = atletas.map(a => `
+        <tr class="atleta-row hover:bg-white/5 transition-colors group" data-busqueda="${a.nombres} ${a.apellidos} ${a.cedula}">
+            <td class="p-4 flex items-center gap-3">
+                ${a.foto
+                    ? `<img src="${a.foto}" class="w-10 h-10 rounded-full object-cover border-2 border-indigo-500/30">`
+                    : `<div class="bg-indigo-500/10 p-2.5 rounded-full text-indigo-400"><i class="fas fa-user"></i></div>`
+                }
+                <div>
+                    <p class="text-white font-medium">${a.nombres} ${a.apellidos}</p>
+                    <p class="text-xs text-gray-500">${a.edad} años · ${a.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
+                </div>
+            </td>
+            <td class="p-4 font-mono text-gray-300">${a.cedula}</td>
+            <td class="p-4">
+                ${a.categoria_nombre
+                    ? `<span class="text-xs bg-indigo-500/10 text-indigo-300 px-2 py-1 rounded-lg">${a.categoria_nombre}</span>`
+                    : `<span class="text-gray-600">S/C</span>`
+                }
+            </td>
+            <td class="p-4 font-mono text-indigo-300">${a.numero_feveda ? a.numero_feveda : '—'}</td>
+            <td class="p-4">
+                <span class="estado-badge estado-${a.estado}">${a.estado}</span>
+            </td>
+            <td class="p-4 text-right">
+                <div class="flex justify-end gap-2">
+                    <button onclick='verDetalle(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all" title="Ver Perfil">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button onclick='abrirModal(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="confirmarEliminar(${a.id_atleta})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all" title="Desactivar">
+                        <i class="fas fa-user-slash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+if (inputBusqueda) {
+    inputBusqueda.addEventListener('input', function (e) {
+        const valor = e.target.value.toLowerCase().trim();
+        const filas = document.querySelectorAll('.atleta-row');
+        filas.forEach(fila => {
+            const textoFila = (fila.getAttribute('data-busqueda') || '').toLowerCase();
+            fila.style.display = textoFila.includes(valor) ? '' : 'none';
+        });
+    });
+}
 
 function cambiarTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -103,75 +109,119 @@ function cambiarTab(tab) {
     document.getElementById(`tab-${tab}`).classList.add('active');
 }
 
-function abrirModalCrear() {
-    document.getElementById('formAtleta').reset();
+async function cargarCategorias() {
+    if (categoriasCache.length > 0) return categoriasCache;
+    categoriasCache = await peticionAjax('categorias');
+    if (!categoriasCache) categoriasCache = [];
+
+    const select = document.getElementById('id_categoria');
+    if (select) {
+        select.innerHTML = '<option value="">Seleccione una categoría...</option>';
+        categoriasCache.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat.id_categoria;
+            option.textContent = `${cat.nombre} (${cat.edad_minima}-${cat.edad_maxima} años)`;
+            select.appendChild(option);
+        });
+    }
+    return categoriasCache;
+}
+
+async function abrirModal(id = null) {
+    formAtleta.reset();
+    try { Validador.limpiarEstilos(formAtleta); } catch (e) {}
+
     document.getElementById('id_atleta').value = '';
-    document.getElementById('foto_actual').value = '';
-    document.getElementById('fotoPreview').innerHTML = '<i class="fas fa-camera text-gray-600 text-lg"></i>';
-    document.getElementById('modalTitulo').innerText = 'Nuevo Atleta';
+    fotoPreview.innerHTML = '<i class="fas fa-camera text-gray-600 text-lg"></i>';
     document.getElementById('estado').value = 'Activo';
-    Validador.limpiarEstilos(document.getElementById('formAtleta'));
-    cambiarTab('personal');
-    modalForm.classList.remove('hidden');
-}
 
-function poblarFormulario(d, esEdicion) {
-    if (esEdicion) document.getElementById('id_atleta').value = d.id_atleta;
-    if (d.cedula)                           document.getElementById('cedula').value = d.cedula;
-    if (d.nombres)                          document.getElementById('nombres').value = d.nombres;
-    if (d.apellidos)                        document.getElementById('apellidos').value = d.apellidos;
-    if (d.fecha_nacimiento)                 document.getElementById('fecha_nacimiento').value = d.fecha_nacimiento;
-    if (d.sexo)                             document.getElementById('sexo').value = d.sexo;
-    if (d.estado)                           document.getElementById('estado').value = d.estado;
-    if (d.direccion)                        document.getElementById('direccion').value = d.direccion;
-    if (d.telefono)                         document.getElementById('telefono').value = d.telefono;
-    if (d.correo)                           document.getElementById('correo').value = d.correo;
-    if (d.fecha_registro_club)              document.getElementById('fecha_registro_club').value = d.fecha_registro_club;
-    if (d.grupo_sanguineo)                  document.getElementById('grupo_sanguineo').value = d.grupo_sanguineo;
-    if (d.seguro_medico)                    document.getElementById('seguro_medico').value = d.seguro_medico;
-    if (d.alergias)                         document.getElementById('alergias').value = d.alergias;
-    if (d.condiciones_previas)              document.getElementById('condiciones_previas').value = d.condiciones_previas;
-    if (d.contacto_emergencia_nombre)       document.getElementById('contacto_emergencia_nombre').value = d.contacto_emergencia_nombre;
-    if (d.contacto_emergencia_telefono)     document.getElementById('contacto_emergencia_telefono').value = d.contacto_emergencia_telefono;
-    if (d.contacto_emergencia_parentesco)   document.getElementById('contacto_emergencia_parentesco').value = d.contacto_emergencia_parentesco;
-    if (d.numero_feveda)                    document.getElementById('numero_feveda').value = d.numero_feveda;
-    if (d.club_procedencia)                 document.getElementById('club_procedencia').value = d.club_procedencia;
-    if (d.id_categoria)                     document.getElementById('id_categoria').value = d.id_categoria;
-}
+    await cargarCategorias();
 
-function editarAtleta(datos) {
-    poblarFormulario(datos, true);
+    if (id) {
+        document.getElementById('modalTitulo').textContent = 'Editar Atleta';
+        btnGuardar.innerHTML = 'ACTUALIZAR DATOS <i class="fas fa-sync-alt ml-2"></i>';
 
-    if (datos.foto) {
-        document.getElementById('fotoPreview').innerHTML = `<img src="${datos.foto}" class="w-full h-full object-cover">`;
-        document.getElementById('foto_actual').value = datos.foto;
+        const datos = await peticionAjax(`obtener&id=${id}`);
+        if (datos) {
+            document.getElementById('id_atleta').value = datos.id_atleta;
+            document.getElementById('cedula').value = datos.cedula || '';
+            document.getElementById('nombres').value = datos.nombres || '';
+            document.getElementById('apellidos').value = datos.apellidos || '';
+            document.getElementById('fecha_nacimiento').value = datos.fecha_nacimiento || '';
+            document.getElementById('sexo').value = datos.sexo || '';
+            document.getElementById('estado').value = datos.estado || 'Activo';
+            document.getElementById('direccion').value = datos.direccion || '';
+            document.getElementById('telefono').value = datos.telefono || '';
+            document.getElementById('correo').value = datos.correo || '';
+            document.getElementById('fecha_registro_club').value = datos.fecha_registro_club || '';
+            document.getElementById('grupo_sanguineo').value = datos.grupo_sanguineo || '';
+            document.getElementById('seguro_medico').value = datos.seguro_medico || '';
+            document.getElementById('alergias').value = datos.alergias || '';
+            document.getElementById('condiciones_previas').value = datos.condiciones_previas || '';
+            document.getElementById('contacto_emergencia_nombre').value = datos.contacto_emergencia_nombre || '';
+            document.getElementById('contacto_emergencia_telefono').value = datos.contacto_emergencia_telefono || '';
+            document.getElementById('contacto_emergencia_parentesco').value = datos.contacto_emergencia_parentesco || '';
+            document.getElementById('numero_feveda').value = datos.numero_feveda || '';
+            document.getElementById('club_procedencia').value = datos.club_procedencia || '';
+            document.getElementById('id_categoria').value = datos.id_categoria || '';
+
+            if (datos.foto) {
+                fotoPreview.innerHTML = `<img src="${datos.foto}" class="w-full h-full object-cover">`;
+            }
+        }
     } else {
-        document.getElementById('fotoPreview').innerHTML = '<i class="fas fa-camera text-gray-600 text-lg"></i>';
+        document.getElementById('modalTitulo').textContent = 'Registrar Atleta';
+        btnGuardar.innerHTML = 'GUARDAR DATOS <i class="fas fa-save ml-2"></i>';
     }
 
-    document.getElementById('modalTitulo').innerText = 'Editar Atleta';
     cambiarTab('personal');
-    modalForm.classList.remove('hidden');
+    modalAtleta.classList.remove('hidden');
+    setTimeout(() => {
+        modalAtleta.firstElementChild.classList.remove('scale-95', 'opacity-0');
+    }, 10);
 }
 
-function verDetalles(datos) {
+function cerrarModal() {
+    modalAtleta.firstElementChild.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+        modalAtleta.classList.add('hidden');
+    }, 200);
+}
+
+function cerrarModalVer() {
+    modalVer.firstElementChild.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+        modalVer.classList.add('hidden');
+    }, 200);
+}
+
+if (inputFoto) {
+    inputFoto.addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (ev) {
+                fotoPreview.innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+async function verDetalle(id) {
+    const datos = await peticionAjax(`obtener&id=${id}`);
+    if (!datos) return;
+
     const fotoHtml = datos.foto
         ? `<img src="${datos.foto}" class="w-28 h-28 rounded-full mx-auto mb-4 border-4 border-indigo-500/20 shadow-xl object-cover">`
         : `<div class="w-28 h-28 rounded-full mx-auto mb-4 bg-indigo-500/20 flex items-center justify-center text-4xl text-indigo-400 border-4 border-indigo-500/20"><i class="fas fa-user"></i></div>`;
-
-    const estadoColor = {
-        Activo: 'text-emerald-400',
-        Inactivo: 'text-red-400',
-        Retirado: 'text-amber-400',
-        Transferido: 'text-blue-400'
-    };
 
     const html = `
         <div class="text-center mb-8">
             ${fotoHtml}
             <h2 class="text-2xl font-bold text-white">${datos.nombres} ${datos.apellidos}</h2>
             <p class="text-indigo-400 mb-2 font-mono tracking-widest text-sm">${datos.cedula}</p>
-            <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase ${estadoColor[datos.estado] || 'text-gray-400'} bg-white/5">${datos.estado}</span>
+            <span class="estado-badge estado-${datos.estado}">${datos.estado}</span>
         </div>
 
         <div class="mb-6">
@@ -182,7 +232,7 @@ function verDetalles(datos) {
                 <div><p class="text-[10px] uppercase text-gray-500">Categoría</p><p class="text-indigo-300">${datos.categoria_nombre || 'S/C'}</p></div>
                 <div><p class="text-[10px] uppercase text-gray-500">Teléfono</p><p class="text-white">${datos.telefono || '—'}</p></div>
                 <div><p class="text-[10px] uppercase text-gray-500">Correo</p><p class="text-white text-xs">${datos.correo || '—'}</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Fichaje Club</p><p class="text-white">${datos.fecha_registro_club || '—'}</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500">Fichaje Club</p><p class="text-white">${datos.fecha_registro_club ? formatoFecha(datos.fecha_registro_club) : '—'}</p></div>
             </div>
         </div>
 
@@ -210,44 +260,84 @@ function verDetalles(datos) {
                 <div><p class="text-[10px] uppercase text-gray-500">FEVEDA</p><p class="text-indigo-300 font-mono">${datos.numero_feveda || 'S/F'}</p></div>
                 <div><p class="text-[10px] uppercase text-gray-500">Club Procedencia</p><p class="text-white">${datos.club_procedencia || '—'}</p></div>
             </div>
-        </div>
-    `;
-    document.getElementById('detalleContenido').innerHTML = html;
+        </div>`;
+
+    detalleContenido.innerHTML = html;
     modalVer.classList.remove('hidden');
+    setTimeout(() => {
+        modalVer.firstElementChild.classList.remove('scale-95', 'opacity-0');
+    }, 10);
 }
 
-function confirmarEliminar(id) {
-    Swal.fire({
-        title: '¿Desactivar atleta?',
-        text: "El atleta será marcado como inactivo. Podrá reactivarlo después.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#374151',
-        confirmButtonText: '<i class="fas fa-user-slash mr-2"></i>Sí, desactivar',
-        cancelButtonText: 'Cancelar',
-        background: '#161430',
-        color: '#fff'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = `?p=atleta&eliminar=${id}&m=eliminado`;
+async function confirmarEliminar(id) {
+    const confirmacion = await UI.confirmar(
+        '¿Desactivar atleta?',
+        'El atleta será marcado como inactivo. Podrá reactivarlo después.'
+    );
+
+    if (confirmacion.isConfirmed) {
+        let datosDelete = new FormData();
+        datosDelete.append('accion', 'eliminar');
+        datosDelete.append('id_atleta', id);
+
+        const resultado = await peticionAjax('eliminar', datosDelete);
+
+        if (resultado && resultado.status === 'success') {
+            UI.exito('Desactivado', resultado.message);
+            cargarTabla();
+        } else {
+            UI.error('Error', resultado?.message || 'No se pudo desactivar el atleta.');
         }
-    });
-}
-
-function cerrarModal() { 
-    modalForm.classList.add('hidden'); 
-    document.getElementById('formAtleta').reset();
-    Validador.limpiarEstilos(document.getElementById('formAtleta'));
-}
-
-function cerrarModalVer() { 
-    modalVer.classList.add('hidden'); 
+    }
 }
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === "Escape") {
-        cerrarModal();
-        cerrarModalVer();
+    if (e.key === 'Escape') {
+        if (!modalAtleta.classList.contains('hidden')) cerrarModal();
+        if (!modalVer.classList.contains('hidden')) cerrarModalVer();
     }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    try { Validador.vincularTiempoReal(formAtleta); } catch (e) {}
+
+    cargarTabla();
+
+    formAtleta.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const erroresJS = Validador.validarFormulario(formAtleta);
+        if (erroresJS) {
+            UI.advertencia('Datos Incompletos o Inválidos', erroresJS);
+            return;
+        }
+
+        const textoOriginal = btnGuardar.innerHTML;
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = 'Procesando... <i class="fas fa-spinner fa-spin ml-2"></i>';
+
+        const idAtleta = document.getElementById('id_atleta').value;
+        const accion = idAtleta ? 'editar' : 'guardar';
+
+        const datosForm = new FormData(formAtleta);
+        datosForm.append('accion', accion);
+
+        const resultado = await peticionAjax(accion, datosForm);
+
+        if (resultado) {
+            if (resultado.status === 'success') {
+                UI.exito('Transacción Exitosa', resultado.message);
+                cerrarModal();
+                cargarTabla();
+            } else if (resultado.status === 'warning') {
+                let msjErrores = Object.values(resultado.errores).join('<br>');
+                UI.advertencia('Validación del Servidor', msjErrores);
+            } else {
+                UI.error('Error de Sistema', resultado.message);
+            }
+        }
+
+        btnGuardar.disabled = false;
+        btnGuardar.innerHTML = textoOriginal;
+    });
 });

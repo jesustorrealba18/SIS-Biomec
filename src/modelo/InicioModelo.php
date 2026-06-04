@@ -1,5 +1,8 @@
 <?php
-use GrupoProyecto\SisBiomec\modelo\Conexion;
+namespace GrupoProyecto\SisBiomec\modelo;
+
+use PDO;
+use PDOException;
 
 class InicioModelo extends Conexion {
     public function __construct() {

@@ -69,9 +69,6 @@
 
          <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
              <div>
-                <!-- <h5 class="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
-                    <i class="fas fa-stopwatch text-indigo-500"></i> Rendimiento: Captura de Marcas
-                </h5> -->
                 <p class="text-sm text-gray-400 mt-1">Historial de tiempos competitivos, controles técnicos y desgloses de parciales (Splits).</p>
             </div>
             <button onclick="abrirModalMarca()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer">
@@ -79,47 +76,96 @@
             </button>
          </div>
         
-<!--         <div class="max-w-7xl mx-auto space-y-6">
-            <div>
-                <h1 class="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
-                    <i class="fas fa-stopwatch text-indigo-500"></i> Rendimiento: Captura de Marcas
-                </h1>
-                <p class="text-sm text-gray-400 mt-1">Historial de tiempos competitivos, controles técnicos y desgloses de parciales (Splits).</p>
+
+
+<div class="tarjeta p-5 flex flex-col gap-4 border border-white/5 shadow-lg shadow-black/20">
+    
+    <div class="flex items-center gap-2 border-b border-[#252345] pb-2">
+        <i class="fas fa-filter text-indigo-400 text-sm"></i>
+        <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Filtros de Búsqueda</h3>
+    </div>
+
+    <div class="relative w-full">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <i class="fas fa-user-circle text-gray-400 text-lg"></i>
+        </div>
+        
+        <select id="filtroAtleta" onchange="cargarTablaMarcas()" class="w-full input-dark pl-12 pr-10 py-3 rounded-xl text-sm bg-[#0f0d23] border border-[#252345] hover:border-indigo-500/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all cursor-pointer appearance-none shadow-inner">
+            <option value="">👤 Todos los Atletas (Búsqueda General)</option>
+        </select>
+        
+        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+            <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
+        
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-ruler-horizontal text-emerald-400/70 group-hover:text-emerald-400 transition-colors text-xs"></i>
             </div>
-            <button onclick="abrirModalMarca()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer">
-                <i class="fas fa-plus"></i> REGISTRAR TIEMPO
-            </button>
-        </div> -->
-
-        <div class="tarjeta p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div class="relative w-full md:w-72">
-                <i class="fas fa-search absolute left-4 top-3.5 text-gray-500"></i>
-                <input type="text" id="busquedaAtleta" onkeyup="filtrarTabla()" placeholder="Buscar por atleta o cédula..." class="w-full input-dark pl-11 pr-4 py-2.5 rounded-xl text-sm">
-            </div>
-
-            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-                <select id="filtroEstilo" onchange="filtrarTabla()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23]">
-                    <option value="">🏊 Todos los Estilos</option>
-                    <option value="Libre">Libre</option>
-                    <option value="Espalda">Espalda</option>
-                    <option value="Braza">Braza</option>
-                    <option value="Mariposa">Mariposa</option>
-                    <option value="Combinado">Combinado</option>
-                </select>
-
-                <select id="filtroPiscina" onchange="filtrarTabla()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23]">
-                    <option value="">🏢 Todas las Piscinas</option>
-                    <option value="25m">Piscina Corta (25m)</option>
-                    <option value="50m">Piscina Olímpica (50m)</option>
-                </select>
-
-                <select id="filtroEstado" onchange="cargarTablaMarcas()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23]">
-                    <option value="Activo" selected>⏱️ Marcas Vigentes</option>
-                    <option value="Inactivo">🗑️ Marcas Archivadas</option>
-                </select>
+            <select id="filtroDistancia" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-emerald-500/50 focus:border-emerald-500 transition-all cursor-pointer appearance-none">
+                <option value="">📏 Todas las Distancias</option>
+                <option value="25">25m</option>
+                <option value="50">50m</option>
+                <option value="100">100m</option>
+                <option value="200">200m</option>
+                <option value="400">400m</option>
+                <option value="800">800m</option>
+                <option value="1500">1500m</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
             </div>
         </div>
 
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-swimmer text-cyan-400/70 group-hover:text-cyan-400 transition-colors text-xs"></i>
+            </div>
+            <select id="filtroEstilo" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-cyan-500/50 focus:border-cyan-500 transition-all cursor-pointer appearance-none">
+                <option value="">🏊 Todos los Estilos</option>
+                <option value="Libre">Libre</option>
+                <option value="Espalda">Espalda</option>
+                <option value="Pecho">Pecho</option>
+                <option value="Mariposa">Mariposa</option>
+                <option value="Combinado">Combinado</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+            </div>
+        </div>
+
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-water text-blue-400/70 group-hover:text-blue-400 transition-colors text-xs"></i>
+            </div>
+            <select id="filtroPiscina" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-blue-500/50 focus:border-blue-500 transition-all cursor-pointer appearance-none">
+                <option value="">🏢 Todas las Piscinas</option>
+                <option value="25m">Piscina Corta (25m)</option>
+                <option value="50m">Piscina Olímpica (50m)</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+            </div>
+        </div>
+
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-history text-amber-400/70 group-hover:text-amber-400 transition-colors text-xs"></i>
+            </div>
+            <select id="filtroEstado" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-amber-500/50 focus:border-amber-500 transition-all cursor-pointer appearance-none">
+                <option value="Activo" selected>⏱️ Marcas Vigentes</option>
+                <option value="Inactivo">🗑️ Marcas Archivadas</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+            </div>
+        </div>
+
+    </div>
+</div>        
         <div class="tarjeta overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -158,18 +204,14 @@
                 </button>
             </div>
 
-            <form id="formMarca" autocomplete="off">
-                <input type="hidden" id="id_marca_original" name="id_marca_original" value="">
-
+         <form id="formMarca" autocomplete="off">
+                <input type="hidden" id="accion_form" name="accion" value="registrar">
+                
+                <input type="hidden" id="id_marca" name="id_marca" value="">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-<!--                     <div>
-                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Atleta *</label>
-                        <select id="id_atleta" name="id_atleta" required class="w-full input-dark p-3 rounded-xl text-sm"></select>
-                    </div> -->
-
                     <div class="relative">
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Atleta *</label>
-                        <input type="hidden" id="id_atleta" name="id_atleta">
+                        <input type="hidden" id="id_atleta" name="id_atleta" data-validar="requerido" data-nombre="Atleta Seleccionado">
                         
                         <div class="relative">
                             <i class="fas fa-search absolute left-3 top-3.5 text-gray-500"></i>
@@ -187,12 +229,12 @@
 
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Fecha del Registro *</label>
-                        <input type="date" id="fecha" name="fecha" max="<?php echo date('Y-m-d'); ?>" required class="w-full input-dark p-3 rounded-xl text-sm font-mono">
+                        <input type="date" id="fecha" name="fecha" max="<?php echo date('Y-m-d'); ?>" data-validar="requerido" data-nombre="Fecha" class="w-full input-dark p-3 rounded-xl text-sm font-mono">
                     </div>
 
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Estilo *</label>
-                        <select id="estilo" name="estilo" required class="w-full input-dark p-3 rounded-xl text-sm">
+                        <select id="estilo" name="estilo" data-validar="requerido" data-nombre="Estilo" class="w-full input-dark p-3 rounded-xl text-sm">
                             <option value="Libre">Libre (Crawl)</option>
                             <option value="Espalda">Espalda</option>
                             <option value="Braza">Braza (Pecho)</option>
@@ -203,7 +245,7 @@
 
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Distancia Total *</label>
-                        <select id="distancia_m" name="distancia_m" required class="w-full input-dark p-3 rounded-xl text-sm">
+                        <select id="distancia_m" name="distancia_m" data-validar="requerido" data-nombre="Distancia" class="w-full input-dark p-3 rounded-xl text-sm">
                             <option value="" disabled selected>Seleccione distancia...</option>
                             <option value="50">50 Metros</option>
                             <option value="100">100 Metros</option>
@@ -216,7 +258,7 @@
 
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Tipo de Piscina *</label>
-                        <select id="tipo_piscina" name="tipo_piscina" required class="w-full input-dark p-3 rounded-xl text-sm">
+                        <select id="tipo_piscina" name="tipo_piscina" data-validar="requerido" data-nombre="Tipo de Piscina" class="w-full input-dark p-3 rounded-xl text-sm">
                             <option value="50m">Olímpica (50 metros)</option>
                             <option value="25m">Corta (25 metros)</option>
                         </select>
@@ -224,7 +266,7 @@
 
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Nivel / Contexto *</label>
-                        <select id="nivel_evento" name="nivel_evento" required class="w-full input-dark p-3 rounded-xl text-sm">
+                        <select id="nivel_evento" name="nivel_evento" data-validar="requerido" data-nombre="Nivel del Evento" class="w-full input-dark p-3 rounded-xl text-sm">
                             <option value="Control">Control Técnico Interno</option>
                             <option value="Regional">Gala Regional FEVEDA</option>
                             <option value="Nacional">Campeonato Nacional</option>
@@ -248,21 +290,37 @@
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 p-4 bg-black/20 rounded-xl border border-white/5">
+
                     <div>
                         <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Reacción (s)</label>
-                        <input type="number" step="0.01" id="tiempo_reaccion_seg" name="tiempo_reaccion_seg" placeholder="0.00" class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
+                        <input type="text" 
+                               inputmode="decimal" 
+                               pattern="[0-9]*\.?[0-9]*" 
+                               oninput="this.value = this.value.replace(',', '.');" 
+                               id="tiempo_reaccion_seg" 
+                               name="tiempo_reaccion_seg" 
+                               placeholder="0.00" 
+                               class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
                     </div>
+                    
                     <div>
                         <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Viraje (s)</label>
-                        <input type="number" step="0.01" id="tiempo_viraje_seg" name="tiempo_viraje_seg" placeholder="0.00" class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
+                        <input type="text" 
+                               inputmode="decimal" 
+                               pattern="[0-9]*\.?[0-9]*" 
+                               oninput="this.value = this.value.replace(',', '.');" 
+                               id="tiempo_viraje_seg" 
+                               name="tiempo_viraje_seg" 
+                               placeholder="0.00" 
+                               class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
                     </div>
                     <div>
                         <label class="block text-[10px] text-amber-400 uppercase font-bold mb-1" title="Para calcular SWOLF">Brazadas/Largo</label>
-                        <input type="number" id="brazadas_por_largo" name="brazadas_por_largo" placeholder="Ej: 16" class="w-full bg-[#161430] border border-amber-500/50 text-white p-2 rounded-lg text-sm text-center font-mono focus:ring-2 focus:ring-amber-500 outline-none">
+                        <input type="number" id="brazadas_por_largo" name="brazadas_por_largo" data-validar="numeros" data-max="3" data-nombre="Brazadas" placeholder="Ej: 16" class="w-full bg-[#161430] border border-amber-500/50 text-white p-2 rounded-lg text-sm text-center font-mono focus:ring-2 focus:ring-amber-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-[10px] text-indigo-400 uppercase font-bold mb-1">Tiempo Final *</label>
-                        <input type="text" id="tiempo_final_humano" placeholder="MM:SS.cc" required class="w-full bg-[#161430] border border-indigo-500 text-white font-mono text-sm rounded-lg p-2 text-center focus:ring-2 focus:ring-indigo-500 font-bold">
+                        <input type="text" id="tiempo_final_humano" data-validar="requerido" data-nombre="Tiempo Final" placeholder="MM:SS.cc" required class="w-full bg-[#161430] border border-indigo-500 text-white font-mono text-sm rounded-lg p-2 text-center focus:ring-2 focus:ring-indigo-500 font-bold">
                         <input type="hidden" id="tiempo_final_seg" name="tiempo_final_seg">
                     </div>
                 </div>
@@ -281,7 +339,7 @@
 
                 <div class="mt-4">
                     <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Observaciones Técnicas</label>
-                    <textarea id="observaciones" name="observaciones" rows="2" placeholder="Detalles sobre las condiciones de nado, descalificaciones o comentarios del entrenador..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                    <textarea id="observaciones" name="observaciones" data-validar="texto" data-max="255" data-nombre="Observaciones" rows="2"  placeholder="Detalles sobre las condiciones de nado, descalificaciones o comentarios del entrenador..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
                 </div>
 
                 <div class="flex gap-3 mt-6">
@@ -301,7 +359,8 @@
             </button>
             
             <div class="p-8 relative z-10" id="detalleContenido">
-                </div>
+            </div>
+
         </div>
     </div>
 

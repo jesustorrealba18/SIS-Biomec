@@ -61,20 +61,30 @@
             <span>Control de Asistencia</span>
         </div>
 
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
-            <i class="fas fa-ruler-combined w-5 text-center text-indigo-400 group-hover:text-white"></i> 
-            <span>Expediente Antropométrico</span>
-        </div>
+        <a href="?p=antropometria" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'antropometria') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-ruler-combined w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'antropometria') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Expediente Antropométrico</span>
+        </a>
 
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
-            <i class="fas fa-dumbbell w-5 text-center text-indigo-400 group-hover:text-white"></i> 
-            <span>Planificación de Cargas</span>
-        </div>
+        <a href="?p=periodizacion" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'periodizacion') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-project-diagram w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'periodizacion') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Periodización ATR</span>
+        </a>
 
         <!-- NUEVO: Enlace al módulo de Representantes -->
         <a href="?p=marcas" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'marcas') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-stopwatch w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'marcas') ? 'text-white' : ''; ?>"></i> 
             <span class="font-medium">Marcas y Tiempos</span>
+        </a>
+
+        <a href="?p=eventos" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'eventos') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-calendar-alt w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'eventos') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Eventos y Metas</span>
+        </a>
+
+        <a href="?p=calendario" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'calendario') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-calendar-week w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'calendario') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Calendario</span>
         </a>
 
 <!--         <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">

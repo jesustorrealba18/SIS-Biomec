@@ -64,7 +64,109 @@ document.addEventListener('keydown', (e) => {
 // =====================================================================
 // ABRIR MODAL (INTELIGENTE: SIRVE PARA REGISTRAR Y EDITAR)
 // =====================================================================
-async function abrirModalMarca(idAtleta = null) {
+
+// =====================================================================
+// ABRIR MODAL (INTELIGENTE: ORQUESTA EL CREATE Y EL UPDATE)
+// =====================================================================
+async function abrirModalMarca(id_marca = null) {
+    // 1. LIMPIEZA TOTAL (Preparación para Modo 'Registrar' por defecto)
+    formMarca.reset(); 
+    try { Validador.limpiarEstilos(formMarca); } catch(e) {}
+    
+    document.getElementById('id_marca').value = '';
+    document.getElementById('accion_form').value = 'registrar';
+    
+    const btnGuardar = document.getElementById('btnGuardar');
+    btnGuardar.innerHTML = 'GUARDAR REGISTRO <i class="fas fa-save ml-2"></i>';
+    btnGuardar.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+    btnGuardar.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+    
+    const rejillaSplits = document.getElementById('rejillaSplits');
+    if(rejillaSplits) rejillaSplits.innerHTML = '';
+    
+    // Mostramos el modal con su animación
+    modalMarca.classList.remove('hidden');
+    setTimeout(() => {
+        modalMarca.firstElementChild.classList.remove('scale-95', 'opacity-0');
+    }, 10);
+
+    // Cargamos la lista de atletas para el buscador
+    cargarAtletasBuscador();
+
+    // =====================================================================
+    // 2. MODO EDICIÓN: Si recibimos un ID, la función "Muta" el formulario
+    // =====================================================================
+    if (id_marca) {
+        // Pedimos los datos al servidor
+        const data = await peticionAjax(`obtenerDetalleMarca&id=${id_marca}`);
+        
+        if (!data) {
+            UI.error('Error', 'No se pudieron cargar los datos para edición.');
+            cerrarModalMarca();
+            return;
+        }
+
+        // Llenamos el ID oculto de la marca a editar
+        document.getElementById('id_marca').value = data.id_marca;
+        
+        // Asignamos usando los nombres de los inputs
+        document.querySelector('[name="fecha"]').value = data.fecha;
+        document.querySelector('[name="estilo"]').value = data.estilo;
+        document.querySelector('[name="tiempo_final_seg"]').value = data.tiempo_final_seg;
+        
+        // Convertimos los segundos flotantes a formato MM:SS.cc para la vista del usuario
+        if (typeof formatearTiempoDesdeSegundos === 'function') {
+            document.getElementById('tiempo_final_humano').value = formatearTiempoDesdeSegundos(data.tiempo_final_seg);
+        } else {
+            document.getElementById('tiempo_final_humano').value = data.tiempo_final_seg;
+        }
+
+        document.querySelector('[name="tiempo_reaccion_seg"]').value = data.tiempo_reaccion_seg || '';
+        document.querySelector('[name="tiempo_viraje_seg"]').value = data.tiempo_viraje_seg || '';
+        document.querySelector('[name="nivel_evento"]').value = data.nivel_evento;
+        document.querySelector('[name="observaciones"]').value = data.observaciones || '';
+
+        // Buscador de Atleta (Asignamos el valor oculto y el texto visual)
+        document.getElementById('id_atleta').value = data.id_atleta;
+        document.getElementById('inputBuscarAtleta').value = `${data.nombre_atleta} (CI: ${data.cedula})`;
+
+        // Llenamos el SWOLF
+        const inputBrazadas = document.querySelector('[name="brazadas_por_largo"]');
+        if (inputBrazadas) {
+            inputBrazadas.value = data.swolf_data ? data.swolf_data.num_brazadas : '';
+        }
+
+        // TRUCO PARA LOS SPLITS: Asignamos distancia y piscina, y disparamos el 'change'
+        const selectDistancia = document.querySelector('[name="distancia_m"]');
+        const selectPiscina = document.querySelector('[name="tipo_piscina"]');
+        
+        selectDistancia.value = data.distancia_m;
+        selectPiscina.value = data.tipo_piscina;
+
+        // Esto fuerza a tu JS a dibujar las cajas de parciales (Ej: 50m, 100m)
+        selectDistancia.dispatchEvent(new Event('change'));
+
+        // Inyectamos los tiempos de los splits en las cajas recién creadas
+        if (data.splits && data.splits.length > 0) {
+            data.splits.forEach(split => {
+                const inputSplit = document.querySelector(`[name="splits[${split.distancia_parcial_m}]"]`);
+                if (inputSplit) inputSplit.value = split.tiempo_parcial_seg;
+            });
+        }
+
+        // Cambiamos la "acción" del formulario para el Controlador
+        document.getElementById('accion_form').value = 'actualizar';
+        
+        // Cambiamos el texto y color del botón para que el usuario sepa que está editando
+        btnGuardar.innerHTML = 'ACTUALIZAR REGISTRO <i class="fas fa-sync-alt ml-2"></i>';
+        btnGuardar.classList.replace('bg-indigo-600', 'bg-emerald-600');
+        btnGuardar.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-500');
+    }
+}
+
+
+
+/* async function abrirModalMarca(idAtleta = null) {
 
      // 1. Reiniciamos el formulario a su estado original
     formMarca.reset(); 
@@ -79,7 +181,7 @@ async function abrirModalMarca(idAtleta = null) {
 
     cargarAtletasBuscador();
 
-}
+} */
 
 
 // =====================================================================
@@ -284,7 +386,87 @@ function formatearTiempoDesdeSegundos(segundosTotales) {
     return `${minutos.toString().padStart(2, '0')}:${segundos.padStart(5, '0')}`;
 }
 
-const inputTiempoHumano = document.getElementById('tiempo_final_humano');
+
+// 1. Obtenemos el tiempo final que escribió el entrenador
+    const inputTiempoHumano = document.getElementById('tiempo_final_humano');
+    const inputTiempoSegundos = document.getElementById('tiempo_final_seg');
+    //const contenedorSplits = document.getElementById('contenedorSplits');
+    const alertaCoherencia = document.getElementById('alertaCoherencia');
+
+ function validarCoherenciaMatematica() {
+    
+    
+    const tiempoFinalSegundos = convertirTiempoASegundos(inputTiempoHumano.value);
+    
+    // Guardamos ese valor en el input oculto para enviarlo limpio a la Base de Datos
+    inputTiempoSegundos.value = tiempoFinalSegundos.toFixed(2);
+
+    // 2. Buscamos todas las cajitas de splits que generamos dinámicamente
+    const cajasSplits = document.querySelectorAll('.split-input');
+    
+    // Si no hay cajas (porque no han seleccionado distancia), salimos
+    if (cajasSplits.length === 0) return true; 
+
+    // 3. Sumamos el valor de todos los splits
+    let sumaParciales = 0;
+    cajasSplits.forEach(caja => {
+        sumaParciales += convertirTiempoASegundos(caja.value);
+    });
+
+    // 4. Calculamos la diferencia matemática absoluta
+    const diferencia = Math.abs(tiempoFinalSegundos - sumaParciales);
+
+    // 5. Evaluamos el Criterio CA-06.2 (Tolerancia estricta de 0.01s)
+    if (tiempoFinalSegundos > 0 && sumaParciales > 0) {
+        if (diferencia > 0.015) {
+            // ==========================================
+            // ESTADO DE ERROR: Encendemos los bordes rojos
+            // ==========================================
+            alertaCoherencia.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: Los parciales suman <b>${sumaParciales.toFixed(2)}s</b> y el final es <b>${tiempoFinalSegundos.toFixed(2)}s</b>.`;
+            alertaCoherencia.classList.replace('text-emerald-400', 'text-red-500');
+            
+            // Pintamos el input final de rojo
+            inputTiempoHumano.classList.remove('border-indigo-500', 'focus:ring-indigo-500');
+            inputTiempoHumano.classList.add('border-red-500', 'ring-2', 'ring-red-500');
+            
+            // Pintamos el contenedor de splits de rojo
+            contenedorSplits.classList.remove('border-gray-700');
+            contenedorSplits.classList.add('border-red-500', 'bg-red-900/10');
+            
+            return false; // Bloquea el envío
+        } else {
+            // ==========================================
+            // ESTADO CORRECTO: Restauramos colores originales
+            // ==========================================
+            alertaCoherencia.innerHTML = `<i class="fas fa-check-circle"></i> Tiempos coherentes. (Suma: ${sumaParciales.toFixed(2)}s)`;
+            alertaCoherencia.classList.replace('text-red-500', 'text-emerald-400');
+            
+            // Restauramos el input final a su azul índigo
+            inputTiempoHumano.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+            inputTiempoHumano.classList.add('border-indigo-500', 'focus:ring-indigo-500');
+            
+            // Restauramos el contenedor de splits
+            contenedorSplits.classList.remove('border-red-500', 'bg-red-900/10');
+            contenedorSplits.classList.add('border-gray-700');
+            
+            return true; // Permite el envío
+        }
+    }
+    
+    // Estado neutral (aún no terminan de escribir)
+    alertaCoherencia.innerHTML = '';
+    
+    // Por si borran todo, limpiamos posibles estilos de error residuales
+    inputTiempoHumano.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+    inputTiempoHumano.classList.add('border-indigo-500');
+    contenedorSplits.classList.remove('border-red-500', 'bg-red-900/10');
+    contenedorSplits.classList.add('border-gray-700');
+
+    return true; 
+} 
+
+
+/* const inputTiempoHumano = document.getElementById('tiempo_final_humano');
 const alertaCoherencia = document.getElementById('alertaCoherencia');
 const inputTiempoSegundos = document.getElementById('tiempo_final_seg'); // El oculto para la BD
 
@@ -328,7 +510,7 @@ function validarCoherenciaMatematica() {
     
     alertaCoherencia.innerHTML = '';
     return true; // Pasa si aún no han escrito nada
-}
+}  */
 
 // 6. Ponemos a escuchar al input del tiempo final para que valide al instante
 inputTiempoHumano.addEventListener('input', validarCoherenciaMatematica);
@@ -343,10 +525,34 @@ document.getElementById('rejillaSplits').addEventListener('input', function(e) {
 
 
 // =====================================================================
-// ENVÍO DEL FORMULARIO (CREATE / UPDATE)
+// ENVÍO DEL FORMULARIO (CREATE / UPDATE DINÁMICO)
 // =====================================================================
 formMarca.addEventListener('submit', async (e) => {
     e.preventDefault(); // Evitamos que la página se recargue
+
+
+    // === NUEVO: 1. Validación estricta del Validador Frontend ===
+    const erroresFormulario = Validador.validarFormulario(formMarca);
+    
+    // Si el Validador encontró errores (puede retornar un texto o un arreglo)
+    if (erroresFormulario && erroresFormulario.length > 0) {
+        
+        // Formateamos los errores para que se vean como una lista ordenada en HTML
+        const listaErrores = Array.isArray(erroresFormulario) 
+                             ? erroresFormulario.join('<br>') 
+                             : erroresFormulario;
+
+        // Mandamos la lista al SweetAlert alineada a la izquierda para fácil lectura
+        UI.error(
+            'Datos Incompletos', 
+            `<div class="text-left text-sm mt-2 text-gray-300">
+                <p class="mb-2 font-bold text-white">Por favor, corrige lo siguiente:</p>
+                ${listaErrores}
+             </div>`
+        );
+        
+        return; // ¡Cortamos el envío al servidor!
+    }
 
     // 1. Filtro de Seguridad: Validamos la coherencia matemática de los Splits
     // (Esta es la función CA-06.2 que creamos antes)
@@ -359,33 +565,43 @@ formMarca.addEventListener('submit', async (e) => {
     // ¡Magia!: FormData recoge automáticamente el array de splits[25], splits[50], etc.
     let datosFormulario = new FormData(formMarca);
     
-    // Le indicamos al controlador qué ruta POST debe tomar
-    datosFormulario.append('accion', 'guardar');
+    // ¡EL CAMBIO CLAVE!: Leemos qué acción debemos ejecutar ('guardar' o 'actualizar')
+    // Asume 'guardar' por defecto si el input no existe
+    const inputAccion = document.getElementById('accion_form');
+    const accionActual = inputAccion ? inputAccion.value : 'registrar';
+
+    // Sobrescribimos o añadimos la acción al FormData por seguridad
+    datosFormulario.set('accion', accionActual);
 
     // Cambiamos el botón a estado de "Cargando"
     const textoOriginal = btnGuardar.innerHTML;
-    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESANDO...';
+    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> PROCESANDO...';
     btnGuardar.disabled = true;
 
-    // 3. Enviamos la petición AJAX al controlador
-    const resultado = await peticionAjax('guardar', datosFormulario);
+    // 3. Enviamos la petición AJAX al controlador (Usando la variable dinámica)
+    const resultado = await peticionAjax(accionActual, datosFormulario);
 
     // 4. Procesamos la respuesta del servidor
     if (resultado) {
         if (resultado.status === 'success') {
-            // Guardado exitoso
-            UI.exito('¡Rendimiento Registrado!', resultado.message);
+            // Mensaje de éxito dinámico dependiendo de si creamos o actualizamos
+            const msjExito = (accionActual === 'actualizar') 
+                             ? 'El registro ha sido actualizado correctamente.' 
+                             : 'El rendimiento ha sido registrado con éxito.';
+                             
+            UI.exito('¡Operación Exitosa!', msjExito);
+            
             cerrarModalMarca();
-            cargarTablaMarcas(); // Descomenta esto cuando tengas la función de pintar la tabla
+            cargarTablaMarcas(); // Refrescamos la tabla para ver los cambios
         } 
         else if (resultado.status === 'warning') {
             // Errores de validación (Ej: Faltó un campo)
             let mensajesError = Object.values(resultado.errores).join('<br>');
-            UI.error('Faltan Datos', mensajesError);
+            UI.error('Datos Incompletos', mensajesError);
         } 
         else {
             // Error de base de datos
-            UI.error('Error de Sistema', resultado.message);
+            UI.error('Error de Sistema', resultado.message || 'Ocurrió un error inesperado al procesar los datos.');
         }
     }
 
@@ -394,6 +610,67 @@ formMarca.addEventListener('submit', async (e) => {
     btnGuardar.disabled = false;
 });
 
+// =====================================================================
+// OPERACIONES CRUD: MODO EDICIÓN (UPDATE)
+// =====================================================================
+/* async function editarMarca(id_marca) {
+    // 1. Solicitamos los datos del registro exacto al Controlador
+    const data = await peticionAjax(`obtenerDetalleMarca&id=${id_marca}`);
+    
+    if (!data) {
+        UI.error('Error de Lectura', 'No se pudieron cargar los datos del atleta para edición.');
+        return;
+    }
+
+    // 2. Llenamos el formulario con los datos básicos
+    document.getElementById('id_marca').value = data.id_marca; // ID Oculto vital para el UPDATE
+    
+    document.querySelector('[name="id_atleta"]').value = data.id_atleta;
+    document.querySelector('[name="fecha"]').value = data.fecha;
+    document.querySelector('[name="estilo"]').value = data.estilo;
+    document.querySelector('[name="tiempo_final_seg"]').value = data.tiempo_final_seg;
+    document.querySelector('[name="tiempo_reaccion_seg"]').value = data.tiempo_reaccion_seg || '';
+    document.querySelector('[name="tiempo_viraje_seg"]').value = data.tiempo_viraje_seg || '';
+    document.querySelector('[name="nivel_evento"]').value = data.nivel_evento;
+    document.querySelector('[name="observaciones"]').value = data.observaciones || '';
+
+    // 3. Llenamos el SWOLF
+    const inputBrazadas = document.querySelector('[name="brazadas_por_largo"]');
+    if (inputBrazadas) {
+        inputBrazadas.value = data.swolf_data ? data.swolf_data.num_brazadas : '';
+    }
+
+    // 4. EL TRUCO PARA LOS SPLITS: Asignamos distancia y piscina, y FORZAMOS el evento 'change'
+    const selectDistancia = document.querySelector('[name="distancia_m"]');
+    const selectPiscina = document.querySelector('[name="tipo_piscina"]');
+    
+    selectDistancia.value = data.distancia_m;
+    selectPiscina.value = data.tipo_piscina;
+
+    // Al disparar este evento, tu JS dibujará automáticamente las cajitas necesarias (50m, 100m, etc)
+    selectDistancia.dispatchEvent(new Event('change'));
+
+    // Ahora que las cajitas existen en el DOM, inyectamos los tiempos guardados en la BD
+    if (data.splits && data.splits.length > 0) {
+        data.splits.forEach(split => {
+            const inputSplit = document.querySelector(`[name="splits[${split.distancia_parcial_m}]"]`);
+            if (inputSplit) inputSplit.value = split.tiempo_parcial_seg;
+        });
+    }
+
+    // 5. Transformamos la interfaz al modo "Actualizar"
+    document.getElementById('accion_form').value = 'actualizar'; // Cambia la ruta del controlador
+    
+    const btnGuardar = document.getElementById('btnGuardar');
+    btnGuardar.innerHTML = 'ACTUALIZAR REGISTRO <i class="fas fa-sync-alt ml-2"></i>';
+    btnGuardar.classList.replace('bg-indigo-600', 'bg-emerald-600'); // Cambio de color visual para evitar errores del usuario
+    btnGuardar.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-500');
+    
+    // Mostramos el Modal
+    document.getElementById('modalMarca').classList.remove('hidden');
+    document.getElementById('modalMarca').firstElementChild.classList.remove('scale-95', 'opacity-0');
+} */
+
 
 // =====================================================================
 // RENDERIZADO DE LA TABLA PRINCIPAL (READ)
@@ -401,13 +678,26 @@ formMarca.addEventListener('submit', async (e) => {
 async function cargarTablaMarcas() {
     // Leemos si el usuario quiere ver las marcas Activas o Inactivas
     const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
+    const id_atleta = document.getElementById('filtroAtleta')?.value || '';
+    const distancia = document.getElementById('filtroDistancia')?.value || '';
+    const estilo = document.getElementById('filtroEstilo')?.value || '';
+    const piscina = document.getElementById('filtroPiscina')?.value || '';
+
+    // 2. Construimos la cadena de parámetros URL dinámicamente
+    let params = new URLSearchParams({ estado: filtroEstado });
+    
+    // Solo anexamos los filtros si el usuario seleccionó algo distinto a "Todos"
+    if (id_atleta) params.append('id_atleta', id_atleta);
+    if (estilo) params.append('estilo', estilo);
+    if (distancia) params.append('distancia', distancia);
+    if (piscina) params.append('piscina', piscina);
     
     // Mostramos un esqueleto o texto de carga mientras esperamos a PHP
     const tbody = document.getElementById('tbodyMarcas');
     tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando marcas...</td></tr>';
 
     // Pedimos los datos al controlador
-    const marcas = await peticionAjax(`listarMarcas&estado=${filtroEstado}`);
+    const marcas = await peticionAjax(`listarMarcas&${params.toString()}`);
 
     if (!marcas || marcas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500 font-mono text-xs">No hay marcas registradas en esta vista.</td></tr>';
@@ -426,10 +716,17 @@ async function cargarTablaMarcas() {
             ? `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold ml-2 uppercase shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="¡Mejor Marca Personal!"><i class="fas fa-star mr-1"></i>PB</span>` 
             : '';
 
-        // 3. Evaluamos si mostramos el botón de archivar(rojo) o reactivar(verde)
+// 3. Evaluamos si mostramos el botón de archivar(rojo) o reactivar(verde)
         const botonAccion = (filtroEstado === 'Activo')
             ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
             : `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`;
+        
+        // === NUEVO: EL BOTÓN DE EDITAR ===
+        // Solo mostramos el botón de editar (lápiz amarillo) si la marca está activa
+        const botonEditar = (filtroEstado === 'Activo')
+            ? `<button onclick="abrirModalMarca(${marca.id_marca})" class="text-amber-400 hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar Registro de Tiempo"><i class="fas fa-edit text-base"></i></button>`
+            : '';
+
         // === EL TOQUE FINAL DE UX ===
         // Si estamos viendo la papelera, armamos el texto rojo con el motivo
         const justificacionHTML = (filtroEstado === 'Inactivo' && marca.motivo_eliminacion)
@@ -476,6 +773,8 @@ async function cargarTablaMarcas() {
                         <i class="fas fa-chart-line text-base"></i>
                     </button>
                     
+                    ${botonEditar}
+                    
                     ${botonAccion}
                 </td>
             </tr>
@@ -485,11 +784,25 @@ async function cargarTablaMarcas() {
     tbody.innerHTML = html;
 }
 
+// 1. Función para llenar el select de atletas (Se llama una sola vez al cargar la página)
+async function cargarFiltroAtletas() {
+    const atletas = await peticionAjax('listarAtletasSelect');
+    const select = document.getElementById('filtroAtleta');
+    
+    if (atletas && atletas.length > 0) {
+        atletas.forEach(atleta => {
+            // value="${atleta.id_atleta}" es la clave para la eficiencia de base de datos
+            select.insertAdjacentHTML('beforeend', `<option value="${atleta.id_atleta}">${atleta.nombres} ${atleta.apellidos} - CI: ${atleta.cedula}</option>`);
+        });
+    }
+}
+
 
 // =====================================================================
 // VISUALIZADOR CIENTÍFICO Y GRÁFICAS DE RENDIMIENTO (MAESTRO-DETALLE)
 // =====================================================================
 let instanciaGrafica = null; // Control para evitar bugs de renderizado en Chart.js
+let instanciaGraficaSplits = null; 
 
 async function verDetallesMarca(id_marca) {
     const modalVer = document.getElementById('modalVer');
@@ -589,6 +902,14 @@ async function verDetallesMarca(id_marca) {
                 <canvas id="canvasEvolucion"></canvas>
             </div>
         </div>
+        <div class="bg-black/20 p-4 rounded-xl border border-white/5">
+                <p class="text-[10px] uppercase text-gray-400 font-bold tracking-widest mb-3">
+                    <i class="fas fa-chart-line text-indigo-500 mr-2"></i> Análisis de Ritmo y Caída de Velocidad
+                </p>
+                <div class="w-full h-44 relative">
+                    <canvas id="graficaSplits"></canvas> 
+                </div>
+        </div>
     `;
 
     // Inicialización del Motor Gráfico (Chart.js) si posee historial acumulado
@@ -636,6 +957,52 @@ async function verDetallesMarca(id_marca) {
             }
         });
     }
+
+    // =========================================================
+    // Inicialización del Motor Gráfico 2: CAÍDA DE VELOCIDAD
+    // =========================================================
+    if (data.splits && data.splits.length > 0) {
+        const ejeDistancias = data.splits.map(s => s.distancia_parcial_m + 'm');
+        const ejeTiemposSplits = data.splits.map(s => parseFloat(s.tiempo_parcial_seg));
+
+        // Destruimos la gráfica anterior para evitar el "parpadeo" (Ghosting)
+        if (instanciaGraficaSplits) instanciaGraficaSplits.destroy();
+
+        const ctxSplits = document.getElementById('graficaSplits').getContext('2d');
+        instanciaGraficaSplits = new Chart(ctxSplits, {
+            type: 'line',
+            data: {
+                labels: ejeDistancias,
+                datasets: [{
+                    data: ejeTiemposSplits,
+                    borderColor: '#06b6d4', // Un color Cyan para diferenciarla de la otra
+                    backgroundColor: 'rgba(6, 182, 212, 0.05)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#06b6d4',
+                    pointBorderColor: '#fff',
+                    pointRadius: 3.5,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { 
+                        grid: { display: false }, 
+                        ticks: { color: '#6b7280', font: { size: 9, family: 'monospace' } } 
+                    },
+                    y: { 
+                        grid: { color: 'rgba(255, 255, 255, 0.03)' }, 
+                        ticks: { color: '#6b7280', font: { size: 9, family: 'monospace' }, callback: function(val) { return val + 's'; } } 
+                    }
+                }
+            }
+        });
+    }
+
 }
 
 function cerrarModalVer() {
@@ -705,5 +1072,9 @@ async function reactivarMarca(id_marca) {
 // =====================================================================
 // Cuando el documento cargue, mandamos a pintar la tabla automáticamente
 document.addEventListener('DOMContentLoaded', () => {
+
+    Validador.vincularTiempoReal(document.getElementById('formMarca'));
+    cargarFiltroAtletas();
     cargarTablaMarcas();
+
 });

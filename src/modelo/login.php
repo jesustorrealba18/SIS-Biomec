@@ -1,5 +1,8 @@
 <?php
-use GrupoProyecto\SisBiomec\modelo\Conexion;
+namespace GrupoProyecto\SisBiomec\modelo;
+
+use PDO;
+use PDOException;
 
 class Login extends Conexion {
     public function __construct() {
@@ -9,6 +12,10 @@ class Login extends Conexion {
     public function validarUsuario($usuario, $password) {
         $conex = $this->getConex1();
         try {
+            if ($this->estaIpLimitada()) {
+                return ['error' => 'credenciales'];
+            }
+
             $sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.correo, 
                            u.contrasena_hash, u.activo, u.bloqueado_hasta, u.intentos_fallidos,
                            GROUP_CONCAT(r.nombre SEPARATOR ', ') AS roles
@@ -82,6 +89,17 @@ class Login extends Conexion {
                 WHERE id_usuario = :id";
         $stmt = $conex->prepare($sql);
         $stmt->execute([':id' => $idUsuario]);
+    }
+
+    private function estaIpLimitada(): bool {
+        $conex = $this->getConex1();
+        $sql = "SELECT COUNT(*) FROM intentos_login 
+                WHERE ip_origen = :ip 
+                AND exitoso = 0 
+                AND fecha_intento >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)";
+        $stmt = $conex->prepare($sql);
+        $stmt->execute([':ip' => $_SERVER['REMOTE_ADDR'] ?? null]);
+        return (int)$stmt->fetchColumn() >= 20;
     }
 }
 ?>
