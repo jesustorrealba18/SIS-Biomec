@@ -24,7 +24,7 @@ const UI = {
             ...this.config,
             icon: 'error',
             title: titulo,
-            text: mensaje
+            html: mensaje
         });
     },
 

@@ -332,6 +332,7 @@ function renderizarGraficos(labels, dataPeso, dataTalla, dataIMC) {
     });
 }
 
+
 function prepararEdicion(registroStr) {
     const r = JSON.parse(decodeURIComponent(registroStr));
     

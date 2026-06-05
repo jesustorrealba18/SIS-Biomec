@@ -66,6 +66,11 @@
             <span class="font-medium">Expediente Antropométrico</span>
         </a>
 
+        <a href="?p=lesion" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'lesion') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-notes-medical w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'lesion') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Control de Lesiones</span>
+        </a>
+
         <a href="?p=periodizacion" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'periodizacion') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-project-diagram w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'periodizacion') ? 'text-white' : ''; ?>"></i> 
             <span class="font-medium">Periodización ATR</span>
