@@ -24,10 +24,7 @@
 </head>
 <body class="flex h-screen overflow-hidden selection:bg-indigo-500/30">
 
-    <?php 
-    // Mantenemos la inclusión de tu menú lateral intacta
-    require_once 'vista/comunes/menu.php'; 
-    ?>
+    <?php include RAIZ . 'vista/complementos/menu.php'; ?>
 
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
         

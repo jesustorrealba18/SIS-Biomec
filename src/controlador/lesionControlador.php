@@ -45,6 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode($historial);
         exit;
     }
+
+     require_once 'vista/lesion.php';
+    exit;
 }
 
 // =====================================================================
