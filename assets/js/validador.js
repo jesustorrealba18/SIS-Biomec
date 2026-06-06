@@ -76,6 +76,24 @@ class Validador {
                 if (reglas.includes('texto') && !/^[A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s.,;:()\-\#\/]+$/.test(valor)) {
                     errores.push(`- <b>${nombreCampo}</b> contiene caracteres no permitidos.`);
                 }
+
+                if (reglas.includes('fecha_logica') && valor !== '') {
+                    // Obtenemos la fecha local actual en formato YYYY-MM-DD
+                    const hoy = new Date();
+                    const año = hoy.getFullYear();
+                    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+                    const dia = String(hoy.getDate()).padStart(2, '0');
+                    
+                    const strHoy = `${año}-${mes}-${dia}`;
+                    const strMinimo = `${año - 120}-${mes}-${dia}`;
+
+                    // Al estar en formato ISO (YYYY-MM-DD), JavaScript permite compararlas usando < o >
+                    if (valor > strHoy) {
+                        errores.push(`- <b>${nombreCampo}</b> no puede ser una fecha en el futuro.`);
+                    } else if (valor < strMinimo) {
+                        errores.push(`- <b>${nombreCampo}</b> indica una fecha demasiado antigua (más de 120 años).`);
+                    }
+                }
             }
         });
 
@@ -123,7 +141,16 @@ class Validador {
         if (reglas.includes('correo')   && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor))          valido = false;
         if (reglas.includes('telefono') && !/^[\d\-\+\(\)\s]{7,20}$/.test(valor))              valido = false;
         if (reglas.includes('texto')    && !/^[A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s.,;:()\-\#\/]+$/.test(valor)) valido = false;
-
+        if (reglas.includes('fecha_logica') && valor !== '') {
+            const hoy = new Date();
+            const año = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            const strHoy = `${año}-${mes}-${dia}`;
+            const strMinimo = `${año - 120}-${mes}-${dia}`;
+            
+            if (valor > strHoy || valor < strMinimo) valido = false;
+        }
         // ==========================================
         // REGLAS DE LONGITUD
         // ==========================================

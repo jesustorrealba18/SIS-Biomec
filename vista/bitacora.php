@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.28/dist/jspdf.plugin.autotable.min.js"></script>
     <style>
         body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Segoe UI', sans-serif; }
         .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 15px; }
@@ -93,55 +95,56 @@
                 <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Filtros de Auditoría</h3>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
                 
-                <!-- Búsqueda por Usuario -->
-                <div class="relative group">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-user-shield text-gray-400 group-hover:text-white transition-colors text-xs"></i>
-                    </div>
-                    <select id="filtroUsuario" onchange="cargarTablaBitacora()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] transition-all cursor-pointer appearance-none">
-                        <option value="">🛡️ Todos los Usuarios</option>
-                        <option value="1">José Miguel</option>
-                        <option value="2">Hendrick</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
-                    </div>
-                </div>
-
-                <!-- Módulo -->
-                <div class="relative group">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-puzzle-piece text-indigo-400/70 group-hover:text-indigo-400 transition-colors text-xs"></i>
-                    </div>
-                    <select id="filtroModulo" onchange="cargarTablaBitacora()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] transition-all cursor-pointer appearance-none">
-                        <option value="">🧩 Todos los Módulos</option>
-                        <option value="Sesión">Autenticación / Sesión</option>
-                        <option value="Marcas">Marcas y Tiempos</option>
-                        <option value="Atletas">Atletas</option>
-                        <option value="Drills">Drills</option>
-                        <option value="Seguridad">Seguridad</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider pl-1">Usuario responsable:</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user-shield text-gray-400 group-hover:text-white transition-colors text-xs"></i>
+                        </div>
+                        <select id="filtroUsuario" onchange="aplicarFiltros()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] transition-all cursor-pointer appearance-none">
+                            <option value="">🛡️ Todos los Usuarios</option>
+                            </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Fecha Desde -->
-                <div class="relative group">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-calendar-day text-emerald-400/70 group-hover:text-emerald-400 transition-colors text-xs"></i>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider pl-1">Área del sistema:</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-puzzle-piece text-indigo-400/70 group-hover:text-indigo-400 transition-colors text-xs"></i>
+                        </div>
+                        <select id="filtroModulo" onchange="aplicarFiltros()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] transition-all cursor-pointer appearance-none">
+                            <option value="">🧩 Todos los Módulos</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+                        </div>
                     </div>
-                    <input type="date" id="filtroFechaInicio" onchange="cargarTablaBitacora()" class="w-full input-dark pl-9 pr-3 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] transition-all cursor-pointer">
                 </div>
 
-                <!-- Fecha Hasta -->
-                <div class="relative group">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-calendar-check text-emerald-400/70 group-hover:text-emerald-400 transition-colors text-xs"></i>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider pl-1 text-emerald-400">Desde (Inicio):</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-calendar-day text-emerald-400/70 text-xs"></i>
+                        </div>
+                        <input type="date" id="filtroFechaInicio" onchange="validarFechasYFiltrar()" class="w-full input-dark pl-9 pr-3 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] transition-all cursor-pointer">
                     </div>
-                    <input type="date" id="filtroFechaFin" onchange="cargarTablaBitacora()" class="w-full input-dark pl-9 pr-3 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] transition-all cursor-pointer">
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider pl-1 text-red-400">Hasta (Fin):</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-calendar-check text-red-400/70 text-xs"></i>
+                        </div>
+                        <input type="date" id="filtroFechaFin" onchange="validarFechasYFiltrar()" class="w-full input-dark pl-9 pr-3 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] transition-all cursor-pointer">
+                    </div>
                 </div>
 
             </div>
