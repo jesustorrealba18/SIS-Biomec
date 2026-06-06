@@ -192,7 +192,8 @@
 
     <!-- Empiezan los modales -->
 
-    <div id="modalMarca" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300">
+    <!-- <div id="modalMarca" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300"> -->
+    <div id="modalMarca" class="fixed inset-0 z-50 hidden bg-black/20 backdrop-blur-sm flex items-center justify-center p-4">   
         <div class="relative bg-[#161430] border border-white/5 w-full max-w-3xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8">
             
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
