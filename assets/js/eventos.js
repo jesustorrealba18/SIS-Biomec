@@ -85,6 +85,7 @@ async function cargarTablaEventos() {
                     <button onclick="abrirModalMetas(${ev.id_evento})" class="p-2 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition cursor-pointer" title="Metas">
                         <i class="fas fa-bullseye text-sm"></i>
                     </button>
+                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
                     <button onclick="abrirModalInscripcion(${ev.id_evento})" class="p-2 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 rounded-lg transition cursor-pointer" title="Inscribir atletas">
                         <i class="fas fa-user-plus text-sm"></i>
                     </button>
@@ -94,6 +95,7 @@ async function cargarTablaEventos() {
                     <button onclick="accionEstado(${ev.id_evento}, '${ev.estado}')" class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition cursor-pointer" title="Cambiar estado">
                         <i class="fas fa-exchange-alt text-sm"></i>
                     </button>
+                    ` : ''}
                 </div>
             </td>
         </tr>

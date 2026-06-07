@@ -246,9 +246,11 @@ async function verHistorial(id_atleta, nombreCompleto) {
                     <td class="p-3 font-bold text-indigo-400">${r.imc}</td>
                     <td class="p-3 text-gray-400 text-xs">${r.responsable}</td>
                     <td class="p-3 text-center">
+                        ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar ? `
                         <button onclick="prepararEdicion('${encodeURIComponent(JSON.stringify(r))}')" class="text-orange-400 hover:text-orange-300 transition-colors" title="Corregir Registro">
                             <i class="fas fa-edit"></i>
                         </button>
+                        ` : ''}
                     </td>
                 `;
                 tbody.appendChild(tr);

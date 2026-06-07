@@ -6,6 +6,7 @@ if (empty($_SESSION['id'])) {
 }
 
 use GrupoProyecto\SisBiomec\modelo\entrenador;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 $objEntrenador = new entrenador();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -14,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($accion === 'guardar') {
         $tipoAccion = isset($_POST['action_type']) ? $_POST['action_type'] : 'registrar';
+        Autorizacion::exigir('atletas', $tipoAccion === 'actualizar' ? 'editar' : 'crear');
         
         $excluirCedula = ($tipoAccion === 'actualizar') ? ($_POST['cedula'] ?? null) : null;
         
@@ -41,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accion === 'eliminar') {
+        Autorizacion::exigir('atletas', 'eliminar');
         $id_entrenador = isset($_POST['id_entrenador']) ? $_POST['id_entrenador'] : null;
 
         if ($id_entrenador) {

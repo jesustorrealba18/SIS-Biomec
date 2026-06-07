@@ -106,6 +106,7 @@ async function cargarTablaEntrenador() {
             <td class="p-4 text-gray-400">${ent.telefono}</td>
             <td class="p-4 text-gray-400 max-w-xs truncate">${ent.direccion}</td>
             <td class="p-4 text-right">
+                ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
                 <div class="flex justify-end gap-2">
                     <button onclick="abrirModalEntrenador(${ent.id_entrenador})" class="bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 p-2 rounded-lg transition" title="Editar">
                         <i class="fas fa-edit text-xs"></i>
@@ -114,6 +115,7 @@ async function cargarTablaEntrenador() {
                         <i class="fas fa-trash text-xs"></i>
                     </button>
                 </div>
+                ` : '<span class="text-gray-600 text-xs">Solo lectura</span>'}
             </td>
         </tr>
     `).join('');

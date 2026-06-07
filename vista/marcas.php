@@ -71,9 +71,11 @@
              <div>
                 <p class="text-sm text-gray-400 mt-1">Historial de tiempos competitivos, controles técnicos y desgloses de parciales (Splits).</p>
             </div>
-            <button onclick="abrirModalMarca()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer">
-                <i class="fas fa-plus"></i> REGISTRAR TIEMPO
-            </button>
+             <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'registrar')): ?>
+             <button onclick="abrirModalMarca()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer">
+                 <i class="fas fa-plus"></i> REGISTRAR TIEMPO
+             </button>
+             <?php endif; ?>
          </div>
         
 
@@ -369,6 +371,11 @@
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
+    <script>
+        const PERMISOS_MODULO = {
+            registrar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'registrar') ? 'true' : 'false'; ?>,
+        };
+    </script>
     <script src="assets/js/marcas.js"></script>
 </body>
 </html>

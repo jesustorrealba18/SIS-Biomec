@@ -37,9 +37,11 @@
             </div>
             
             <div class="flex items-center gap-4">
+                <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'registrar')): ?>
                 <button onclick="abrirModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all cursor-pointer flex items-center gap-2">
                     <i class="fas fa-plus"></i> Registrar Lesión
                 </button>
+                <?php endif; ?>
             </div>
         </header>
 
@@ -274,6 +276,11 @@
     </div>
 
     <script src="assets/js/validador.js"></script> 
+    <script>
+        const PERMISOS_MODULO = {
+            registrar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'registrar') ? 'true' : 'false'; ?>,
+        };
+    </script>
     <script src="assets/js/lesion.js"></script>
 </body>
 </html>

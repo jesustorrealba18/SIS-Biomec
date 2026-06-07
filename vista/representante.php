@@ -81,9 +81,11 @@
                         <option value="Inactivo">🗑️ Archivados / Inactivos</option>
                     </select>
                 </div>                
+                <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
                 <button onclick="abrirModalRepresentante()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95">
                     <i class="fas fa-plus"></i> Nuevo Representante
                 </button>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -238,6 +240,11 @@
 
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/alertas.js"></script>
+    <script>
+        const PERMISOS_MODULO = {
+            gestionar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar') ? 'true' : 'false'; ?>,
+        };
+    </script>
     <script src="assets/js/representante.js"></script>
 </body>
 </html>

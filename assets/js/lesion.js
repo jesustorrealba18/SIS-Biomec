@@ -137,9 +137,11 @@ async function cargarTabla() {
                     <button onclick="verDetalle(${reg.id_lesion})" class="bg-[#252345] hover:bg-indigo-600 text-white w-8 h-8 rounded-lg transition-colors cursor-pointer" title="Ver Informe Completo">
                         <i class="fas fa-eye text-xs"></i>
                     </button>
+                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar ? `
                     <button onclick="anularRegistro(${reg.id_lesion})" class="bg-[#252345] hover:bg-red-600 text-red-400 hover:text-white w-8 h-8 rounded-lg transition-colors cursor-pointer" title="Anular Registro (IA)">
                         <i class="fas fa-ban text-xs"></i>
                     </button>
+                    ` : ''}
                 </td>
             </tr>
         `;

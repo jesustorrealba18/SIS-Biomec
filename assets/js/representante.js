@@ -232,11 +232,13 @@ let html = '';
                 </td>
                 
                 <td class="p-4 text-right space-x-1">
+                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
                     <button onclick="abrirModalRepresentante(${rep.id_representante})" class="text-indigo-400 hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-500/10 transition duration-200" title="Editar Ficha">
                         <i class="fas fa-edit text-base"></i>
                     </button>
                     
                     ${botonAccion}
+                    ` : '<span class="text-gray-600 text-xs">Solo lectura</span>'}
                 </td>
             </tr>
         `;

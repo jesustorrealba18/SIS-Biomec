@@ -11,6 +11,7 @@ if (empty($_SESSION['id'])) {
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\Periodizacion;
 use GrupoProyecto\SisBiomec\modelo\Evento;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 $objPeriodizacion = new Periodizacion();
 
@@ -98,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accionPost = $_POST['accion'] ?? $_GET['accion'] ?? '';
 
     if ($accionPost === 'guardar') {
+        Autorizacion::exigir('periodizacion', 'generar');
         $errores = $objPeriodizacion->validarDatosMacrociclo($_POST);
 
         if (!empty($errores)) {
@@ -121,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accionPost === 'editar') {
+        Autorizacion::exigir('periodizacion', 'editar');
         $errores = $objPeriodizacion->validarDatosMacrociclo($_POST);
 
         if (!empty($errores)) {
@@ -146,6 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accionPost === 'generarPeriodizacion') {
+        Autorizacion::exigir('periodizacion', 'generar');
         $id_macrociclo = (int)($_POST['id_macrociclo'] ?? 0);
 
         if ($id_macrociclo === 0) {
@@ -179,6 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accionPost === 'actualizarEstado') {
+        Autorizacion::exigir('periodizacion', 'editar');
         $id = (int)($_POST['id_macrociclo'] ?? 0);
         $nuevoEstado = $_POST['nuevo_estado'] ?? '';
 
@@ -197,6 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accionPost === 'guardarMesociclo') {
+        Autorizacion::exigir('periodizacion', 'editar');
         $errores = $objPeriodizacion->validarDatosMesociclo($_POST);
 
         if (!empty($errores)) {
@@ -236,6 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accionPost === 'eliminarMesociclo') {
+        Autorizacion::exigir('periodizacion', 'editar');
         $id_meso = (int)($_POST['id_mesociclo'] ?? 0);
 
         if ($objPeriodizacion->eliminarMesociclo($id_meso)) {

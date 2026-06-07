@@ -74,7 +74,7 @@ class Login extends Conexion {
         $sql = "UPDATE usuarios 
                 SET intentos_fallidos = intentos_fallidos + 1,
                     bloqueado_hasta = CASE 
-                        WHEN intentos_fallidos + 1 >= 5 THEN DATE_ADD(NOW(), INTERVAL 30 MINUTE) 
+                        WHEN intentos_fallidos + 1 >= 5 THEN DATE_ADD(NOW(), INTERVAL 15 MINUTE) 
                         ELSE bloqueado_hasta 
                     END
                 WHERE id_usuario = :id";

@@ -13,6 +13,7 @@ if (empty($_SESSION['id'])) {
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\MedicionAntropometrica;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 $objAntropometria = new MedicionAntropometrica();
 
@@ -75,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Ruta E: Guardar Nueva Medición (RF-05.1)
     // -----------------------------------------------------------------
     if ($accionPost === 'guardar') {
+        Autorizacion::exigir('antropometria', 'registrar');
         // Mapeo de campos del formulario a los nombres esperados por el modelo
         $datos = [
             'id_atleta'              => $_POST['id_atleta'] ?? null,
@@ -115,6 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Ruta F: Editar/Corregir Registro (RF-05.3)
     // -----------------------------------------------------------------
     if ($accionPost === 'editar') {
+        Autorizacion::exigir('antropometria', 'registrar');
         $id_medicion = (int)($_POST['id_medicion'] ?? 0);
         $justificacion = trim($_POST['justificacion'] ?? '');
 
@@ -165,6 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Ruta G: Eliminar físicamente una medición (Hard Delete)
     // -----------------------------------------------------------------
     if ($accionPost === 'eliminar') {
+        Autorizacion::exigir('antropometria', 'registrar');
         $id_medicion = (int)($_POST['id_medicion'] ?? 0);
         $motivo = trim($_POST['motivo'] ?? 'Sin justificación');
 

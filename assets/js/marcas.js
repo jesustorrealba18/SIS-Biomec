@@ -792,9 +792,7 @@ async function cargarTablaMarcas() {
                         <i class="fas fa-chart-line text-base"></i>
                     </button>
                     
-                    ${botonEditar}
-                    
-                    ${botonAccion}
+                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar ? `${botonEditar}${botonAccion}` : ''}
                 </td>
             </tr>
         `;

@@ -119,9 +119,11 @@
 
         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <p class="text-sm text-gray-400 mt-1">Planificacion Acumulacion / Transmutacion / Realizacion por macrociclo.</p>
+            <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'registrar')): ?>
             <button onclick="abrirModalMacro()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer">
                 <i class="fas fa-plus"></i> CREAR MACROCICLO
             </button>
+            <?php endif; ?>
         </div>
 
         <div class="tarjeta p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -240,6 +242,11 @@
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
+    <script>
+        const PERMISOS_MODULO = {
+            gestionar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'registrar') ? 'true' : 'false'; ?>,
+        };
+    </script>
     <script src="assets/js/periodizacion.js"></script>
 </body>
 </html>

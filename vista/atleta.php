@@ -81,9 +81,11 @@
                     <input type="text" id="busquedaAtleta" placeholder="Buscar por nombre o cédula..."
                            class="input-dark w-full pl-11 pr-4 py-3 rounded-xl text-sm shadow-inner">
                 </div>
+                <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
                 <button onclick="abrirModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95">
                     <i class="fas fa-plus"></i> Nuevo Atleta
                 </button>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -324,6 +326,11 @@
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
+    <script>
+        const PERMISOS_ATLETA = {
+            gestionar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar') ? 'true' : 'false'; ?>,
+        };
+    </script>
     <script src="assets/js/atleta.js"></script>
 </body>
 </html>

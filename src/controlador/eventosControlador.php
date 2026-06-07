@@ -8,6 +8,7 @@ if (empty($_SESSION['id'])) {
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\Evento;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 $objEvento = new Evento();
 
@@ -76,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accionPost = $_POST['accion'] ?? $_GET['accion'] ?? '';
 
     if ($accionPost === 'guardar') {
+        Autorizacion::exigir('eventos', 'crear');
         $errores = $objEvento->validarDatosEvento($_POST);
 
         if (!empty($errores)) {
@@ -96,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accionPost === 'editar') {
+        Autorizacion::exigir('eventos', 'editar');
         $errores = $objEvento->validarDatosEvento($_POST);
 
         if (!empty($errores)) {
@@ -116,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accionPost === 'actualizarEstado') {
+        Autorizacion::exigir('eventos', 'editar');
         $id = (int)($_POST['id_evento'] ?? 0);
         $nuevoEstado = $_POST['nuevo_estado'] ?? '';
 
@@ -132,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accionPost === 'guardarMetas') {
+        Autorizacion::exigir('eventos', 'editar');
         $id_evento = (int)($_POST['id_evento'] ?? 0);
         $metasJson = $_POST['metas'] ?? '[]';
         $metas = json_decode($metasJson, true);
@@ -163,6 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accionPost === 'inscribirAtletas') {
+        Autorizacion::exigir('eventos', 'editar');
         $id_evento = (int)($_POST['id_evento'] ?? 0);
         $atletas_ids = $_POST['atletas_ids'] ?? [];
 
@@ -184,6 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accionPost === 'eliminarMeta') {
+        Autorizacion::exigir('eventos', 'editar');
         $id_meta = (int)($_POST['id_meta'] ?? 0);
 
         if ($objEvento->eliminarMeta($id_meta)) {
@@ -199,6 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accionPost === 'eliminarInscripcion') {
+        Autorizacion::exigir('eventos', 'editar');
         $id_evento = (int)($_POST['id_evento'] ?? 0);
         $id_atleta = (int)($_POST['id_atleta'] ?? 0);
 
