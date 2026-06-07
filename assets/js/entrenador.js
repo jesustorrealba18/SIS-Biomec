@@ -1,6 +1,13 @@
+// CORRECCIÓN DE IDs SEGÚN TU HTML ACTUAL
 const modalEntrenador = document.getElementById('modalEntrenador');
+const modalVer = document.getElementById('modalVerEntrenador'); // <-- Corregido (era modalVer)
 const formEntrenador = document.getElementById('formEntrenador');
 const btnGuardar = document.getElementById('btnGuardar');
+const detalleContenido = document.getElementById('detalleContenido');
+const inputFoto = document.getElementById('foto');
+const fotoPreview = document.getElementById('previsualizarFoto'); // <-- Corregido (era fotoPreview)
+const iconoFotoDefecto = document.getElementById('iconoFotoPorDefecto'); // <-- Añadido para controlar el icono de silueta
+const totalEntrenador = document.getElementById('totalEntrenador');
 
 const API_URL = 'index.php?p=entrenador'; 
 
@@ -20,15 +27,43 @@ async function peticionAjax(accion, datos = null) {
 }
 
 function cerrarModalEntrenador() {
-    modalEntrenador.classList.add('hidden');
     modalEntrenador.firstElementChild.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+        modalEntrenador.classList.add('hidden');
+    }, 200);
+}
+
+function cerrarModalVer() {
+    modalVer.firstElementChild.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+        modalVer.classList.add('hidden');
+    }, 200);
 }
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === "Escape" && !modalEntrenador.classList.contains('hidden')) {
-        cerrarModalEntrenador();
+    if (e.key === "Escape") {
+        if (!modalEntrenador.classList.contains('hidden')) cerrarModalEntrenador();
+        if (!modalVer.classList.contains('hidden')) cerrarModalVer();
     }
 });
+
+// Control dinámico de la foto de perfil en tiempo real al seleccionarla
+if (inputFoto) {
+    inputFoto.addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (ev) {
+                if (fotoPreview) {
+                    fotoPreview.src = ev.target.result;
+                    fotoPreview.classList.remove('hidden');
+                }
+                if (iconoFotoDefecto) iconoFotoDefecto.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
 
 async function abrirModalEntrenador(id_entrenador = null) {
     formEntrenador.reset(); 
@@ -37,6 +72,13 @@ async function abrirModalEntrenador(id_entrenador = null) {
     const inputAction = document.getElementById('action_type');
     const inputIdHidden = document.getElementById('id_entrenador');
     const modalTitulo = document.getElementById('modalTitulo');
+    
+    // Limpiar previsualizaciones al abrir en modo registro
+    if (fotoPreview) {
+        fotoPreview.src = '';
+        fotoPreview.classList.add('hidden');
+    }
+    if (iconoFotoDefecto) iconoFotoDefecto.classList.remove('hidden');
 
     if (id_entrenador) {
         if (inputAction) inputAction.value = 'actualizar';
@@ -56,6 +98,12 @@ async function abrirModalEntrenador(id_entrenador = null) {
             document.getElementById('correo').value = entrenador.correo;
             document.getElementById('telefono').value = entrenador.telefono;
             document.getElementById('direccion').value = entrenador.direccion;
+            
+            if (entrenador.foto && fotoPreview) {
+                fotoPreview.src = entrenador.foto;
+                fotoPreview.classList.remove('hidden');
+                if (iconoFotoDefecto) iconoFotoDefecto.classList.add('hidden');
+            }
         }
     } else {
         if (inputAction) inputAction.value = 'registrar';
@@ -70,6 +118,39 @@ async function abrirModalEntrenador(id_entrenador = null) {
     }, 10);
 }
 
+// Ventana detallada del perfil (Modal Ver)
+async function verDetalle(id) {
+    const entrenador = await peticionAjax(`obtenerEntrenador&id=${id}`);
+    if (!entrenador) return;
+
+    // Actualizamos los nodos individuales del modal estático en lugar de reescribir todo con innerHTML
+    document.getElementById("verNombreCompleto").innerText = `${entrenador.nombres} ${entrenador.apellidos}`;
+    document.getElementById("verCedula").innerText = entrenador.cedula;
+    document.getElementById("verGenero").innerText = entrenador.genero === 'M' ? 'Masculino' : 'Femenino';
+    document.getElementById("verTelefono").innerText = entrenador.telefono;
+    document.getElementById("verFechaNac").innerText = entrenador.fecha_nacimiento || '—';
+    document.getElementById("verCorreo").innerText = entrenador.correo || '—';
+    document.getElementById("verDireccion").innerText = entrenador.direccion || '—';
+
+    const imgVer = document.getElementById("verFoto");
+    const iconoVerDefecto = document.getElementById("verIconoPorDefecto");
+
+    if (entrenador.foto && imgVer) {
+        imgVer.src = entrenador.foto;
+        imgVer.classList.remove("hidden");
+        if (iconoVerDefecto) iconoVerDefecto.classList.add("hidden");
+    } else if (imgVer) {
+        imgVer.src = "";
+        imgVer.classList.add("hidden");
+        if (iconoVerDefecto) iconoVerDefecto.classList.remove("hidden");
+    }
+
+    modalVer.classList.remove('hidden');
+    setTimeout(() => {
+        modalVer.firstElementChild.classList.remove('scale-95', 'opacity-0');
+    }, 10);
+}
+
 async function cargarTablaEntrenador() {
     const tbody = document.getElementById('listaEntrenador');
     if (!tbody) return;
@@ -79,6 +160,7 @@ async function cargarTablaEntrenador() {
     const entrenadores = await peticionAjax('listarEntrenador');
 
     if (!entrenadores || entrenadores.length === 0) {
+        if(totalEntrenador) totalEntrenador.textContent = '0 Registrados';
         tbody.innerHTML = `
             <tr>
                 <td colspan="5" class="text-center p-12 text-gray-500">
@@ -90,16 +172,20 @@ async function cargarTablaEntrenador() {
         return;
     }
 
-    // CORREGIDO: Renderizado de celdas completo acoplado a la Vista
-    tbody.innerHTML = entrenadores.map(ent => `
+    if(totalEntrenador) totalEntrenador.textContent = `${entrenadores.length} Registrados`;
+
+    tbody.innerHTML = entrenadores.map(ent => {
+        const InicialesHtml = ent.foto 
+            ? `<img src="${ent.foto}" class="w-8 h-8 rounded-full object-cover">`
+            : `<div class="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xs font-bold uppercase">${ent.nombres[0]}${ent.apellidos[0]}</div>`;
+
+        return `
         <tr class="entrenador-row border-b border-gray-800/50 hover:bg-[#1c1a3a]/40 transition-colors duration-200" data-busqueda="${ent.cedula} ${ent.nombres} ${ent.apellidos}">
             <td class="p-4 font-medium text-white flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xs font-bold uppercase">
-                    ${ent.nombres[0]}${ent.apellidos[0]}
-                </div>
+                ${InicialesHtml}
                 <div>
                     <span class="block">${ent.nombres} ${ent.apellidos}</span>
-                    <span class="text-xs text-gray-500">${ent.correo}</span>
+                    <span class="text-xs text-gray-500">${ent.correo || ''}</span>
                 </div>
             </td>
             <td class="p-4 text-gray-300 font-mono text-xs">${ent.cedula}</td>
@@ -107,6 +193,9 @@ async function cargarTablaEntrenador() {
             <td class="p-4 text-gray-400 max-w-xs truncate">${ent.direccion}</td>
             <td class="p-4 text-right">
                 <div class="flex justify-end gap-2">
+                    <button onclick="verDetalle(${ent.id_entrenador})" class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 p-2 rounded-lg transition" title="Ver Perfil">
+                        <i class="fas fa-eye text-xs"></i>
+                    </button>
                     <button onclick="abrirModalEntrenador(${ent.id_entrenador})" class="bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 p-2 rounded-lg transition" title="Editar">
                         <i class="fas fa-edit text-xs"></i>
                     </button>
@@ -116,7 +205,7 @@ async function cargarTablaEntrenador() {
                 </div>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
     
 const inputBusqueda = document.getElementById('busquedaCedula');

@@ -28,7 +28,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
 
 $paginasPermitidas = [
     'login', 'inicio', 'entrenador', 'drills', 'atleta', 'evento', 'marcas',
-    'periodizacion', 'antropometria', 'representante', 'calendario', 'salir'
+    'periodizacion', 'antropometria', 'representante', 'calendario', 'sesion', 'salir'
 ];
 
 $pagina = "inicio";
