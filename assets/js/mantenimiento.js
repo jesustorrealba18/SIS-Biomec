@@ -2,7 +2,6 @@
 
 const API_MANTENIMIENTO = 'index.php?p=mantenimiento';
 
-
 /**
  * Función centralizada para peticiones al servidor (Principio DRY)
  */
@@ -27,45 +26,28 @@ const Mantenimiento = {
      * Inicia el proceso de creación del Backup
      */
     generarRespaldo: async () => {
-        // Alerta de carga tipo "No cerrar navegador"
+        // Alerta que bloquea la pantalla mientras se empaca la base de datos
         Swal.fire({
             title: 'Generando Respaldo...',
             html: 'Empaquetando <b>sis_natacion</b> y <b>sis_seguridad</b>.<br>Por favor, no recargues la página.',
             allowOutsideClick: false,
             allowEscapeKey: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
+            didOpen: () => { Swal.showLoading(); }
         });
 
-        try {
-            // Se asume que el controlador responderá con un JSON que contiene la URL de descarga
-            const respuesta = await fetch(`${API_MANTENIMIENTO}&accion=backup`, { method: 'POST' });
-            const resultado = await respuesta.json();
+        // Enviamos un FormData vacío para forzar a peticionAjax a usar el método POST
+        const formVacio = new FormData();
+        const resultado = await peticionAjax('backup', formVacio);
 
-            if (resultado.status === 'success') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Respaldo Exitoso',
-                    text: 'Las bases de datos han sido respaldadas correctamente.',
-                    confirmButtonColor: '#10B981'
-                }).then(() => {
-                    // Forzamos la descarga del archivo generado
-                    window.location.href = resultado.url_descarga;
-                    
-                    // Opcional: Actualizar la fecha del "último respaldo" en la UI
-                    document.getElementById('txtUltimoRespaldo').textContent = 'Hace un momento';
-                });
-            } else {
-                throw new Error(resultado.message || 'Error desconocido al generar el archivo.');
-            }
-        } catch (error) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Fallo en el Respaldo',
-                text: error.message,
-                confirmButtonColor: '#EF4444'
-            });
+        if (resultado && resultado.status === 'success') {
+            // Usamos tu alertas.js
+            UI.exito('Respaldo Exitoso', 'Las bases de datos han sido respaldadas correctamente.')
+              .then(() => {
+                  window.location.href = resultado.url_descarga;
+                  document.getElementById('txtUltimoRespaldo').textContent = 'Hace un momento';
+              });
+        } else if (resultado) {
+            UI.error('Fallo en el Respaldo', resultado.message || 'Error desconocido al generar el archivo.');
         }
     },
 
@@ -77,10 +59,8 @@ const Mantenimiento = {
         const zonaDrop = document.getElementById('zonaDrop');
         const inputArchivo = document.getElementById('archivoRespaldo');
 
-        // Hacer clic en la zona abre el buscador de archivos
         zonaDrop.addEventListener('click', () => inputArchivo.click());
 
-        // Eventos de arrastrar
         zonaDrop.addEventListener('dragover', (e) => {
             e.preventDefault();
             zonaDrop.classList.add('dragover');
@@ -112,26 +92,23 @@ const Mantenimiento = {
             const archivo = input.files[0];
             const extension = archivo.name.split('.').pop().toLowerCase();
 
-            // Validar extensión
             if (extension !== 'sql' && extension !== 'zip') {
                 UI.error('Archivo Inválido', 'Solo se permiten archivos .sql o .zip generados por el sistema.');
                 Mantenimiento.limpiarArchivo();
                 return;
             }
 
-            // Actualizar Interfaz
             nombreArchivoTxt.textContent = archivo.name;
             infoArchivo.classList.add('hidden');
             archivoCargado.classList.remove('hidden');
 
-            // Habilitar botón de restaurar
             btnRestaurar.classList.remove('bg-red-600/50', 'text-white/50', 'cursor-not-allowed');
             btnRestaurar.classList.add('bg-red-600', 'hover:bg-red-500', 'text-white', 'shadow-lg', 'shadow-red-500/20');
         }
     },
 
     limpiarArchivo: (evento = null) => {
-        if(evento) evento.stopPropagation(); // Evita que se abra el buscador al hacer clic en "Cambiar archivo"
+        if(evento) evento.stopPropagation();
         
         const input = document.getElementById('archivoRespaldo');
         const btnRestaurar = document.getElementById('btnRestaurar');
@@ -140,20 +117,18 @@ const Mantenimiento = {
         document.getElementById('infoArchivo').classList.remove('hidden');
         document.getElementById('archivoCargado').classList.add('hidden');
 
-        // Deshabilitar botón
         btnRestaurar.classList.remove('bg-red-600', 'hover:bg-red-500', 'text-white', 'shadow-lg', 'shadow-red-500/20');
         btnRestaurar.classList.add('bg-red-600/50', 'text-white/50', 'cursor-not-allowed');
     },
 
     /**
-     * Inicia el proceso crítico de Restauración
+     * Inicia el proceso crítico de Restauración con confirmación extrema
      */
     iniciarRestauracion: () => {
         const input = document.getElementById('archivoRespaldo');
         
         if (!input.files || input.files.length === 0) return;
 
-        // Doble validación de seguridad (UX Profesional para acciones destructivas)
         Swal.fire({
             title: '¡ADVERTENCIA CRÍTICA!',
             icon: 'warning',
@@ -165,6 +140,8 @@ const Mantenimiento = {
             cancelButtonText: 'Cancelar',
             confirmButtonColor: '#EF4444',
             cancelButtonColor: '#4B5563',
+            background: '#161430',
+            color: '#fff',
             preConfirm: (texto) => {
                 if (texto !== 'CONFIRMAR') {
                     Swal.showValidationMessage('Debes escribir CONFIRMAR (en mayúsculas) para proceder.');
@@ -186,44 +163,22 @@ const Mantenimiento = {
             html: 'Este proceso puede tardar varios minutos.<br><b>No apagues el equipo ni cierres esta ventana.</b>',
             allowOutsideClick: false,
             allowEscapeKey: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
+            didOpen: () => { Swal.showLoading(); }
         });
 
-        try {
-            const respuesta = await fetch(`${API_MANTENIMIENTO}&accion=restore`, {
-                method: 'POST',
-                body: formData
-            });
-            const resultado = await respuesta.json();
+        // Usamos peticionAjax enviando el archivo
+        const resultado = await peticionAjax('restore', formData);
 
-            if (resultado.status === 'success') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Restauración Completada',
-                    text: 'El sistema ha sido restaurado exitosamente.',
-                    confirmButtonColor: '#10B981'
-                }).then(() => {
-                    // Recargar la página o enviar al login si las sesiones cambiaron
-                    window.location.reload();
-                });
-            } else {
-                throw new Error(resultado.message || 'Ocurrió un error procesando el archivo SQL.');
-            }
-        } catch (error) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error de Restauración',
-                text: error.message,
-                confirmButtonColor: '#EF4444'
-            });
+        if (resultado && resultado.status === 'success') {
+            UI.exito('Restauración Completada', 'El sistema ha sido restaurado exitosamente.')
+              .then(() => { window.location.reload(); });
+        } else if (resultado) {
+            UI.error('Error de Restauración', resultado.message || 'Ocurrió un error procesando el archivo SQL.');
             Mantenimiento.limpiarArchivo();
         }
     }
 };
 
-// Inicializar eventos al cargar el DOM
 document.addEventListener('DOMContentLoaded', () => {
     Mantenimiento.initDropzone();
 });

@@ -1,36 +1,29 @@
 <?php
 
 namespace GrupoProyecto\SisBiomec\seguridad;
-
+use GrupoProyecto\SisBiomec\modelo\Conexion;
 use Exception;
+use PDOException;
 
-class Mantenimiento {
+// Respetamos la Regla: La clase Model debe extender de la clase Conexión
+class Mantenimiento extends Conexion {
     
-    private string $dbUser;
-    private string $dbPass;
-    private string $dbHost;
-    private string $dbNatacion;
-    private string $dbSeguridad;
     private string $rutaBackups;
 
     public function __construct() {
-        // Leemos directamente de las variables de entorno
-        $this->dbUser = $_ENV['DB_USER'] ?? 'root';
-        $this->dbPass = $_ENV['DB_PASS'] ?? '';
-        $this->dbHost = $_ENV['DB_HOST'] ?? '127.0.0.1';
-        $this->dbNatacion = $_ENV['DB_NAME'] ?? 'sis_natacion'; // Ajusta según el nombre de tu variable .env
-        $this->dbSeguridad = $_ENV['DB_NAME_SEGURIDAD'] ?? 'sis_seguridad';
+        // Invocamos al constructor padre para cumplir con la herencia.
+        // Usamos la constante de entorno; el constructor de Conexion se encarga de validarla.
+        parent::__construct($_ENV['DB_NAME_SEGURIDAD']);
 
         // Definimos la ruta donde se guardarán temporalmente los respaldos
-        // Esta ruta debe apuntar a la carpeta assets/backups de tu proyecto
-        $this->rutaBackups = dirname(__DIR__, 3) . '/assets/backups/';
+        // Se asume que la carpeta 'assets/backups' existe en la raíz de tu proyecto
+        $this->rutaBackups = dirname(__DIR__, 2) . '/assets/backups/';
     }
 
-    /**
-     * Genera un volcado (Dump) de ambas bases de datos en un solo archivo SQL.
+   /**
+     * Genera un volcado (Dump) de ambas bases de datos.
      */
     public function generarRespaldo(): string {
-        // Aseguramos que el directorio exista
         if (!is_dir($this->rutaBackups)) {
             mkdir($this->rutaBackups, 0775, true);
         }
@@ -38,29 +31,28 @@ class Mantenimiento {
         $nombreArchivo = 'SGRD_Backup_' . date('Y-m-d_H-i-s') . '.sql';
         $rutaCompleta = $this->rutaBackups . $nombreArchivo;
 
-        // Construimos el comando nativo. El parámetro --databases permite incluir ambas BD
+        $user = escapeshellarg($_ENV['DB_USER']);
+        $host = escapeshellarg($_ENV['DB_HOST']);
+        $dbNatacion = escapeshellarg($_ENV['DB_NAME_NATACION']);
+        $dbSeguridad = escapeshellarg($_ENV['DB_NAME_SEGURIDAD']);
+        $passFlag = empty($_ENV['DB_PASS']) ? '' : '--password=' . escapeshellarg($_ENV['DB_PASS']);
+
+        // Ruta explícita para evitar que Apache se pierda
+        $binario = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') ? 'C:\\xampp\\mysql\\bin\\mysqldump.exe' : 'mysqldump';
+
         $comando = sprintf(
-            'mysqldump --user=%s --password=%s --host=%s --databases %s %s > %s',
-            escapeshellarg($this->dbUser),
-            escapeshellarg($this->dbPass),
-            escapeshellarg($this->dbHost),
-            escapeshellarg($this->dbNatacion),
-            escapeshellarg($this->dbSeguridad),
-            escapeshellarg($rutaCompleta)
+            '%s --user=%s %s --host=%s --databases %s %s > %s',
+            $binario, $user, $passFlag, $host, $dbNatacion, $dbSeguridad, escapeshellarg($rutaCompleta)
         );
 
-        // Ejecutamos en la terminal del servidor
         $resultado = null;
         $codigoSalida = null;
         exec($comando . ' 2>&1', $resultado, $codigoSalida);
 
         if ($codigoSalida !== 0) {
             $errorMsg = implode("\n", $resultado);
-            throw new Exception("Error interno al ejecutar mysqldump: " . $errorMsg);
-        }
-
-        if (!file_exists($rutaCompleta) || filesize($rutaCompleta) === 0) {
-            throw new Exception("El archivo de respaldo se creó vacío o no existe.");
+            // Ahora la alerta te mostrará el comando exacto que PHP intentó procesar
+            throw new Exception("Error en mysqldump.\nComando: $comando\nDetalle: $errorMsg");
         }
 
         return $rutaCompleta;
@@ -71,16 +63,19 @@ class Mantenimiento {
      */
     public function restaurarSistema(string $rutaArchivoSql): bool {
         if (!file_exists($rutaArchivoSql)) {
-            throw new Exception("El archivo SQL temporal no fue encontrado en el servidor.");
+            throw new Exception("El archivo SQL cargado no fue encontrado en el servidor temporal.");
         }
 
-        // Construimos el comando de restauración nativo
+        $user = escapeshellarg($_ENV['DB_USER']);
+        $host = escapeshellarg($_ENV['DB_HOST']);
+        $passFlag = empty($_ENV['DB_PASS']) ? '' : '--password=' . escapeshellarg($_ENV['DB_PASS']);
+
+        // Para restaurar usamos mysql, no mysqldump
+        $binario = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') ? 'C:\\xampp\\mysql\\bin\\mysql.exe' : 'mysql';
+
         $comando = sprintf(
-            'mysql --user=%s --password=%s --host=%s < %s',
-            escapeshellarg($this->dbUser),
-            escapeshellarg($this->dbPass),
-            escapeshellarg($this->dbHost),
-            escapeshellarg($rutaArchivoSql)
+            '%s --user=%s %s --host=%s < %s',
+            $binario, $user, $passFlag, $host, escapeshellarg($rutaArchivoSql)
         );
 
         $resultado = null;
@@ -89,7 +84,8 @@ class Mantenimiento {
 
         if ($codigoSalida !== 0) {
             $errorMsg = implode("\n", $resultado);
-            throw new Exception("Error al inyectar los datos en MySQL/MariaDB: " . $errorMsg);
+            // Ahora la alerta te mostrará el comando exacto que PHP intentó procesar
+            throw new Exception("Error en mysql (Restauración).\nComando: $comando\nDetalle: $errorMsg");
         }
 
         return true;
