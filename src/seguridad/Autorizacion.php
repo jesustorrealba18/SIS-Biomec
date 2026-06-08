@@ -23,6 +23,7 @@ class Autorizacion {
         'bitacora'      => ['seguridad', 'bitacora'],
         'usuarios'      => ['seguridad', 'usuarios'],
         'roles'         => ['seguridad', 'roles'],
+        'mantenimiento' => ['seguridad', 'mantenimiento'],
         'categorias'    => ['atletas', 'gestionar'],
         'cargaBienestar'=> ['cargaBienestar', 'ver'],
     ];
