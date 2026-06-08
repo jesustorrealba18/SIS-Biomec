@@ -162,6 +162,13 @@
         </div>
         <?php endif; ?>
 
+        
+         <a href="?p=mantenimiento" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'mantenimiento') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-database w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'mantenimiento') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Mantenimiento</span>
+        </a>
+        
+
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'bitacora')): ?>
          <a href="?p=bitacora" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'bitacora') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-book-open w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'bitacora') ? 'text-white' : ''; ?>"></i> 
