@@ -90,4 +90,30 @@ class Mantenimiento extends Conexion {
 
         return true;
     }
+
+    /**
+     * Busca en la carpeta de respaldos y devuelve la fecha del archivo más reciente.
+     */
+    public function obtenerUltimoRespaldo(): ?string {
+        if (!is_dir($this->rutaBackups)) {
+            return null; // La carpeta no existe aún
+        }
+
+        // Buscamos todos los archivos .sql en la carpeta
+        $archivos = glob($this->rutaBackups . '*.sql');
+        
+        if (empty($archivos)) {
+            return null; // No hay respaldos
+        }
+
+        // Ordenamos los archivos por fecha de modificación (del más nuevo al más viejo)
+        usort($archivos, function($a, $b) {
+            return filemtime($b) - filemtime($a);
+        });
+
+        // Tomamos el primero (el más nuevo) y devolvemos su fecha de modificación
+        return date('Y-m-d H:i:s', filemtime($archivos[0]));
+    }
+
+    
 }

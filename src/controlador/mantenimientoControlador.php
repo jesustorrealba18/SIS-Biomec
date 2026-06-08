@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($restaurado) {
                 // Registrar esta acción crítica
-                Bitacora::registrar($id_usuario, 'Mantenimiento', 'UPDATE', null, 'Base de Datos', 'Estado Anterior', 'Restauración ejecutada con: ' . $nombreOriginal);
+                Bitacora::registrar($id_usuario, 'Mantenimiento', 'RESTORE', null, 'Base de Datos', 'Estado Anterior', 'Restauración ejecutada con: ' . $nombreOriginal);
                 
                 echo json_encode(['status' => 'success']);
             } else {
@@ -85,6 +85,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // RUTAS GET: Cargar la interfaz visual
 // =====================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+
+$accionGet = $_GET['accion'] ?? '';
+
+    if ($accionGet === 'info_respaldo') {
+        try {
+            $objMantenimiento = new Mantenimiento();
+            $ultimaFecha = $objMantenimiento->obtenerUltimoRespaldo();
+            
+            echo json_encode([
+                'status' => 'success', 
+                'fecha' => $ultimaFecha
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+
     require_once 'vista/mantenimiento.php';
     exit;
 }

@@ -81,6 +81,24 @@ const Mantenimiento = {
             }
         });
     },
+    /**
+     * Consulta al servidor la fecha del último backup y actualiza la vista
+     */
+    cargarInfoUltimoRespaldo: async () => {
+        const txtUltimo = document.getElementById('txtUltimoRespaldo');
+        const resultado = await peticionAjax('info_respaldo');
+
+        if (resultado && resultado.status === 'success') {
+            if (resultado.fecha) {
+                // Usamos la función global que creamos en utilidades para formatear la fecha bonito
+                txtUltimo.innerHTML = `<span class="text-indigo-400 font-bold">${formatoFechaHora(resultado.fecha)}</span>`;
+            } else {
+                txtUltimo.innerHTML = '<span class="text-orange-400">Nunca se ha respaldado</span>';
+            }
+        } else {
+            txtUltimo.textContent = 'Error al consultar';
+        }
+    },
 
     archivoSeleccionado: (input) => {
         const btnRestaurar = document.getElementById('btnRestaurar');
@@ -179,6 +197,9 @@ const Mantenimiento = {
     }
 };
 
+
+
 document.addEventListener('DOMContentLoaded', () => {
     Mantenimiento.initDropzone();
+    Mantenimiento.cargarInfoUltimoRespaldo();
 });
