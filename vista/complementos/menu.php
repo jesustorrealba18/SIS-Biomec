@@ -144,7 +144,12 @@
             <span>Diagnóstico Inteligente</span>
         </div>
         <?php endif; ?>
-        
+        <?php $tieneAdmin = \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'usuarios')
+            || \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'roles')
+            || \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'mantenimiento')
+            || \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'bitacora');
+        ?>
+        <?php if ($tieneAdmin): ?>
         <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-8 mb-4">Administración</p>
         
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'usuarios')): ?>
@@ -169,10 +174,12 @@
         <?php endif; ?>
 
         
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'mantenimiento')): ?>
          <a href="?p=mantenimiento" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'mantenimiento') ? 'bg-white/10 text-white' : ''; ?>">
-            <i class="fas fa-database w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'mantenimiento') ? 'text-white' : ''; ?>"></i> 
-            <span class="font-medium">Mantenimiento</span>
+             <i class="fas fa-database w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'mantenimiento') ? 'text-white' : ''; ?>"></i> 
+             <span class="font-medium">Mantenimiento</span>
         </a>
+        <?php endif; ?>
         
 
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'bitacora')): ?>
@@ -180,6 +187,7 @@
             <i class="fas fa-book-open w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'bitacora') ? 'text-white' : ''; ?>"></i> 
             <span class="font-medium">Bitácora</span>
         </a>
+        <?php endif; ?>
         <?php endif; ?>
     </nav>
 </aside>

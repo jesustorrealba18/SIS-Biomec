@@ -42,7 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['status' => 'error', 'message' => 'No se pudo generar el archivo de respaldo.']);
             }
         } catch (Exception $e) {
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            error_log("mantenimientoControlador::backup: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'message' => 'Error interno del servidor.']);
         }
         exit;
     }
@@ -74,7 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['status' => 'error', 'message' => 'Falló la ejecución del script SQL.']);
             }
         } catch (Exception $e) {
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            error_log("mantenimientoControlador::restore: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'message' => 'Error interno del servidor.']);
         }
         exit;
     }
@@ -97,7 +99,8 @@ $accionGet = $_GET['accion'] ?? '';
                 'fecha' => $ultimaFecha
             ]);
         } catch (Exception $e) {
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            error_log("mantenimientoControlador::info_respaldo: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'message' => 'Error interno del servidor.']);
         }
         exit;
     }

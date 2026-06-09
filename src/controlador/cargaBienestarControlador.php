@@ -123,7 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['status' => 'error', 'message' => $mensaje]);
             }
         } catch (Exception $e) {
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            error_log("cargaBienestarControlador::editar: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'message' => 'Error interno del servidor.']);
         }
         exit;
     }
@@ -155,7 +156,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['status' => 'error', 'message' => 'No se pudo anular el registro']);
             }
         } catch (Exception $e) {
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            error_log("cargaBienestarControlador::anular: " . $e->getMessage());
+            echo json_encode(['status' => 'error', 'message' => 'Error interno del servidor.']);
         }
         exit;
     }
