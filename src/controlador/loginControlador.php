@@ -1,6 +1,7 @@
 <?php
 
 use GrupoProyecto\SisBiomec\modelo\Login;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 if (!empty($_SESSION['id'])) {
     header('Location: ?p=inicio');
@@ -23,6 +24,7 @@ if (!empty($_POST['usuario']) && !empty($_POST['password'])) {
         $_SESSION['id']     = $datosUser['id_usuario'];
         $_SESSION['nombre'] = $datosUser['nombres'] . ' ' . $datosUser['apellidos'];
         $_SESSION['rol']    = $datosUser['roles'];
+        Autorizacion::cargarPermisos($datosUser['id_usuario']);
         session_regenerate_id(true);
 
         header('Location: ?p=inicio');

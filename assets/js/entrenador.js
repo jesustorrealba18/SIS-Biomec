@@ -192,6 +192,7 @@ async function cargarTablaEntrenador() {
             <td class="p-4 text-gray-400">${ent.telefono}</td>
             <td class="p-4 text-gray-400 max-w-xs truncate">${ent.direccion}</td>
             <td class="p-4 text-right">
+                ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
                 <div class="flex justify-end gap-2">
                     <button onclick="verDetalle(${ent.id_entrenador})" class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 p-2 rounded-lg transition" title="Ver Perfil">
                         <i class="fas fa-eye text-xs"></i>
@@ -203,6 +204,7 @@ async function cargarTablaEntrenador() {
                         <i class="fas fa-trash text-xs"></i>
                     </button>
                 </div>
+                ` : '<span class="text-gray-600 text-xs">Solo lectura</span>'}
             </td>
         </tr>
     `}).join('');

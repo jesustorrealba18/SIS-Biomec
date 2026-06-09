@@ -71,9 +71,11 @@
              <div>
                 <p class="text-sm text-gray-400 mt-1">Historial de tiempos competitivos, controles técnicos y desgloses de parciales (Splits).</p>
             </div>
-            <button onclick="abrirModalMarca()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer">
-                <i class="fas fa-plus"></i> REGISTRAR TIEMPO
-            </button>
+             <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'registrar')): ?>
+             <button onclick="abrirModalMarca()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer">
+                 <i class="fas fa-plus"></i> REGISTRAR TIEMPO
+             </button>
+             <?php endif; ?>
          </div>
         
 
@@ -192,7 +194,8 @@
 
     <!-- Empiezan los modales -->
 
-    <div id="modalMarca" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300">
+    <!-- <div id="modalMarca" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300"> -->
+    <div id="modalMarca" class="fixed inset-0 z-50 hidden bg-black/20 backdrop-blur-sm flex items-center justify-center p-4">   
         <div class="relative bg-[#161430] border border-white/5 w-full max-w-3xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8">
             
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
@@ -229,7 +232,7 @@
 
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Fecha del Registro *</label>
-                        <input type="date" id="fecha" name="fecha" max="<?php echo date('Y-m-d'); ?>" data-validar="requerido" data-nombre="Fecha" class="w-full input-dark p-3 rounded-xl text-sm font-mono">
+                        <input type="date" id="fecha" name="fecha" max="<?php echo date('Y-m-d'); ?>" data-validar="requerido" required  data-nombre="Fecha" class="w-full input-dark p-3 rounded-xl text-sm font-mono">
                     </div>
 
                     <div>
@@ -295,8 +298,8 @@
                         <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Reacción (s)</label>
                         <input type="text" 
                                inputmode="decimal" 
-                               pattern="[0-9]*\.?[0-9]*" 
-                               oninput="this.value = this.value.replace(',', '.');" 
+                               data-validar="decimal" data-nombre="Reacción" 
+                               maxlength="5"
                                id="tiempo_reaccion_seg" 
                                name="tiempo_reaccion_seg" 
                                placeholder="0.00" 
@@ -307,8 +310,8 @@
                         <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Viraje (s)</label>
                         <input type="text" 
                                inputmode="decimal" 
-                               pattern="[0-9]*\.?[0-9]*" 
-                               oninput="this.value = this.value.replace(',', '.');" 
+                               data-validar="decimal" data-nombre="Viraje"
+                               maxlength="5"
                                id="tiempo_viraje_seg" 
                                name="tiempo_viraje_seg" 
                                placeholder="0.00" 
@@ -316,11 +319,11 @@
                     </div>
                     <div>
                         <label class="block text-[10px] text-amber-400 uppercase font-bold mb-1" title="Para calcular SWOLF">Brazadas/Largo</label>
-                        <input type="number" id="brazadas_por_largo" name="brazadas_por_largo" data-validar="numeros" data-max="3" data-nombre="Brazadas" placeholder="Ej: 16" class="w-full bg-[#161430] border border-amber-500/50 text-white p-2 rounded-lg text-sm text-center font-mono focus:ring-2 focus:ring-amber-500 outline-none">
+                        <input type="number" id="brazadas_por_largo" name="brazadas_por_largo" data-validar="numeros" data-max="4" data-nombre="Brazadas" maxlength="4" placeholder="Ej: 16" class="w-full bg-[#161430] border border-amber-500/50 text-white p-2 rounded-lg text-sm text-center font-mono focus:ring-2 focus:ring-amber-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-[10px] text-indigo-400 uppercase font-bold mb-1">Tiempo Final *</label>
-                        <input type="text" id="tiempo_final_humano" data-validar="requerido" data-nombre="Tiempo Final" placeholder="MM:SS.cc" required class="w-full bg-[#161430] border border-indigo-500 text-white font-mono text-sm rounded-lg p-2 text-center focus:ring-2 focus:ring-indigo-500 font-bold">
+                        <input type="text" id="tiempo_final_humano" placeholder="MM:SS.cc" data-validar="requerido|tiempo" data-nombre="Tiempo Final" maxlength="8" class="w-full bg-[#161430] border border-indigo-500 text-white font-mono text-sm rounded-lg p-2 text-center focus:ring-2 focus:ring-indigo-500 font-bold">
                         <input type="hidden" id="tiempo_final_seg" name="tiempo_final_seg">
                     </div>
                 </div>
@@ -339,7 +342,7 @@
 
                 <div class="mt-4">
                     <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Observaciones Técnicas</label>
-                    <textarea id="observaciones" name="observaciones" data-validar="texto" data-max="255" data-nombre="Observaciones" rows="2"  placeholder="Detalles sobre las condiciones de nado, descalificaciones o comentarios del entrenador..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                    <textarea id="observaciones" name="observaciones" data-validar="texto" data-max="255" maxlength="255" data-nombre="Observaciones" rows="2"  placeholder="Detalles sobre las condiciones de nado, descalificaciones o comentarios del entrenador..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
                 </div>
 
                 <div class="flex gap-3 mt-6">
@@ -368,6 +371,11 @@
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
+    <script>
+        const PERMISOS_MODULO = {
+            registrar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'registrar') ? 'true' : 'false'; ?>,
+        };
+    </script>
     <script src="assets/js/marcas.js"></script>
 </body>
 </html>

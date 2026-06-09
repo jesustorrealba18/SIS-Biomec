@@ -8,6 +8,7 @@ if (empty($_SESSION['id'])) {
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\Marca;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 
 $objMarca = new Marca();
@@ -70,6 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Guardar nueva marca
     if ($accionPost === 'registrar') {
+        Autorizacion::exigir('marcas', 'registrar');
 
          // El controlador manda a guardar. El modelo retorna 'false' y entra al bloque ELSE.
         if ($objMarca->registrarMarca($_POST)) {
@@ -104,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Actualizar registro existente
     if ($accionPost === 'actualizar') {
+        Autorizacion::exigir('marcas', 'registrar');
         $id_marca = (int)($_POST['id_marca'] ?? 0);
         
         if ($id_marca > 0 && $objMarca->actualizarMarca($_POST, $id_marca)) {
@@ -133,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     //Archivar (Borrado lógico con justificación)
     if ($accionPost === 'eliminar') {
+        Autorizacion::exigir('marcas', 'registrar');
         $id = (int)($_POST['id_marca'] ?? 0);
         $motivo = $_POST['motivo'] ?? 'Sin justificación'; // Capturamos el motivo
 
@@ -147,6 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Reactivar registro
     if ($accionPost === 'reactivar') {
+        Autorizacion::exigir('marcas', 'registrar');
         $id = (int)($_POST['id_marca'] ?? 0);
         if ($objMarca->reactivarMarca($id)) {
             Bitacora::registrar($id_usuario, 'Marcas', 'RESTORE', $id, 'estado', 'Inactivo', 'Activo');

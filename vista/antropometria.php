@@ -86,9 +86,11 @@ $pagina = 'antropometria';
                     <p class="text-gray-400 mt-2 text-sm">Control y evolución biológica de atletas (RF-05)</p>
                 </div>
                 <div class="relative z-10 flex gap-3">
+                    <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'registrar')): ?>
                     <button onclick="abrirModalMedicion()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-500/30 transition-all flex items-center transform hover:scale-105 cursor-pointer">
                         <i class="fas fa-plus mr-2"></i> Nueva Medición
                     </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -272,7 +274,14 @@ $pagina = 'antropometria';
         </div>
     </div>
 
-    <script src="assets/js/validador.js"></script> 
+    <script src="assets/js/validador.js"></script>
+    <script src="assets/js/utilidades.js"></script>
+    <script src="assets/js/alertas.js"></script>
+    <script>
+        const PERMISOS_MODULO = {
+            registrar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'registrar') ? 'true' : 'false'; ?>,
+        };
+    </script>
     <script src="assets/js/antropometria.js"></script>
 </body>
 </html>

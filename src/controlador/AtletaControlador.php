@@ -9,6 +9,7 @@ if (empty($_SESSION['id'])) {
 
 use GrupoProyecto\SisBiomec\modelo\Atleta;
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 $objAtleta = new Atleta();
 
@@ -23,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? $_GET['accion'] ?? '';
 
     if ($accion === 'guardar') {
+        Autorizacion::exigir('atletas', 'crear');
         try {
             $datos = $_POST;
             $datos['id_usuario'] = $_SESSION['id'] ?? null;
@@ -52,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accion === 'editar') {
+        Autorizacion::exigir('atletas', 'editar');
         try {
             $datos = $_POST;
             $datos['id_usuario'] = $_SESSION['id'] ?? null;
@@ -84,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accion === 'eliminar') {
+        Autorizacion::exigir('atletas', 'eliminar');
         try {
             $id = (int)($_POST['id_atleta'] ?? 0);
 

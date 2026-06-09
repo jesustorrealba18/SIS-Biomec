@@ -83,7 +83,13 @@ async function abrirModalMarca(id_marca = null) {
     
     const rejillaSplits = document.getElementById('rejillaSplits');
     if(rejillaSplits) rejillaSplits.innerHTML = '';
-    
+
+    // ---> NUEVO: Desbloqueo del buscador para Nuevo Registro <---
+    const inputAtleta = document.getElementById('inputBuscarAtleta');
+    inputAtleta.readOnly = false; // Permite escribir nuevamente
+    inputAtleta.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-800'); // Quita el estilo oscuro
+    document.getElementById('btnLimpiarAtleta').classList.add('hidden'); // Ocultamos la 'X' por defecto
+    // -----------------------------------------------------------
     // Mostramos el modal con su animación
     modalMarca.classList.remove('hidden');
     setTimeout(() => {
@@ -127,8 +133,18 @@ async function abrirModalMarca(id_marca = null) {
         document.querySelector('[name="observaciones"]').value = data.observaciones || '';
 
         // Buscador de Atleta (Asignamos el valor oculto y el texto visual)
+        // document.getElementById('id_atleta').value = data.id_atleta;
+        // document.getElementById('inputBuscarAtleta').value = `${data.nombre_atleta} (CI: ${data.cedula})`;
+        // ---> NUEVO: Asignación y Bloqueo estricto del Atleta <---
         document.getElementById('id_atleta').value = data.id_atleta;
-        document.getElementById('inputBuscarAtleta').value = `${data.nombre_atleta} (CI: ${data.cedula})`;
+        inputAtleta.value = `${data.nombre_atleta} (CI: ${data.cedula})`;
+        
+        // Bloqueo Funcional y Visual
+        inputAtleta.readOnly = true; 
+        inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-800'); 
+        document.getElementById('btnLimpiarAtleta').classList.add('hidden'); // Evita que intenten borrarlo
+        // ---------------------------------------------------------
+
 
         // Llenamos el SWOLF
         const inputBrazadas = document.querySelector('[name="brazadas_por_largo"]');
@@ -324,6 +340,9 @@ function generarCajasSplits() {
                 <div class="relative">
                     <input type="text" 
                            name="splits[${distanciaActual}]" 
+                           data-validar="requerido|decimal" 
+                           required 
+                            data-nombre="Parcial de ${distanciaActual}m" 
                            placeholder="00.00" 
                            class="w-full bg-[#161430] border border-gray-700 text-emerald-400 font-mono text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-center split-input">
                     <span class="absolute right-3 top-2.5 text-gray-600 text-xs">s</span>
@@ -773,9 +792,7 @@ async function cargarTablaMarcas() {
                         <i class="fas fa-chart-line text-base"></i>
                     </button>
                     
-                    ${botonEditar}
-                    
-                    ${botonAccion}
+                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar ? `${botonEditar}${botonAccion}` : ''}
                 </td>
             </tr>
         `;

@@ -97,6 +97,7 @@ async function cargarTablaMacro() {
                     <button onclick="verDetalle(${m.id_macrociclo})" class="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded-lg transition cursor-pointer" title="Ver detalle">
                         <i class="fas fa-eye text-sm"></i>
                     </button>
+                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
                     ${!m.fase_actual ? `<button onclick="generarPeriodizacion(${m.id_macrociclo})" class="p-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition cursor-pointer" title="Generar periodizacion ATR">
                         <i class="fas fa-magic text-sm"></i>
                     </button>` : `<button onclick="generarPeriodizacion(${m.id_macrociclo})" class="p-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition cursor-pointer" title="Regenerar periodizacion">
@@ -108,6 +109,7 @@ async function cargarTablaMacro() {
                     <button onclick="accionEstado(${m.id_macrociclo}, '${m.estado}')" class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition cursor-pointer" title="Cambiar estado">
                         <i class="fas fa-exchange-alt text-sm"></i>
                     </button>
+                    ` : ''}
                 </div>
             </td>
         </tr>

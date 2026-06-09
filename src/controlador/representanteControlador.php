@@ -10,6 +10,7 @@ if (empty($_SESSION['id'])) {
 // Traemos el Modelo que sí es una clase y hace el trabajo pesado
 use GrupoProyecto\SisBiomec\modelo\Representante;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 $objRepresentante = new Representante();
 $objAtleta = new Atleta();
 
@@ -20,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
      // Si la acción es eliminar (Atrapamos la petición de SweetAlert)
     if (isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
+        Autorizacion::exigir('representantes', 'gestionar');
         $id = isset($_POST['id_representante']) ? (int)$_POST['id_representante'] : 0;
 
       
@@ -35,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
         if (isset($_POST['accion']) && $_POST['accion'] === 'reactivar') {
+            Autorizacion::exigir('representantes', 'gestionar');
             $id = isset($_POST['id_representante']) ? (int)$_POST['id_representante'] : 0;
             if ($objRepresentante->reactivarRepresentante($id)) {
                 echo json_encode(['status' => 'success']);
@@ -45,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }    
     
     // Verificamos si es una actualización (si trae ID) o un registro nuevo
+    Autorizacion::exigir('representantes', 'gestionar');
     $excluirCedula = !empty($_POST['cedula_original']) ? $_POST['cedula_original'] : null;
     
     // El pivote NO valida, le pasa la pelota al Modelo
