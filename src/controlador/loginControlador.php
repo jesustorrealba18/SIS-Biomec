@@ -12,11 +12,9 @@ if (!empty($_SESSION['id'])) {
 $error = "";
 
 if (!empty($_POST['usuario']) && !empty($_POST['password'])) {
-    // CAPTCHA temporalmente deshabilitado para pruebas JMeter
-    // if (!Captcha::verificar($_POST['captcha'] ?? '')) {
-    //     $error = "Codigo de verificacion incorrecto";
-    // } else {
-    if (true) {
+    if (!Captcha::verificar($_POST['captcha'] ?? '')) {
+        $error = "Codigo de verificacion incorrecto";
+    } else {
         $objLogin = new Login();
         $datosUser = $objLogin->validarUsuario($_POST['usuario'], $_POST['password']);
 
