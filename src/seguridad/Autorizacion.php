@@ -27,7 +27,7 @@ class Autorizacion {
         'categorias'    => ['atletas', 'gestionar'],
     ];
 
-    public static function cargarPermisos(int $idUsuario): void {
+    public static function cargarPermisos(int $idUsuario): bool {
         try {
             $instancia = new Conexion($_ENV['DB_NAME_SEGURIDAD'] ?? 'sis_seguridad');
             $conex = $instancia->getConex1();
@@ -46,9 +46,11 @@ class Autorizacion {
             }
 
             $_SESSION['permisos'] = array_unique($permisos);
+            return true;
         } catch (\Throwable $e) {
             error_log("ERROR RBAC - Fallo al cargar permisos: " . $e->getMessage());
             $_SESSION['permisos'] = [];
+            return false;
         }
     }
 

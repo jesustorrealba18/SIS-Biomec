@@ -23,8 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ACCIÓN: GENERAR RESPALDO (BACKUP)
     // -----------------------------------------------------------------
     if ($accionPost === 'backup') {
-        // En un sistema real, exige permisos de súper administrador
-        // Autorizacion::exigir('mantenimiento', 'ejecutar');
+        Autorizacion::exigir('seguridad', 'mantenimiento');
 
         try {
             $objMantenimiento = new Mantenimiento();
@@ -52,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ACCIÓN: RESTAURAR SISTEMA (RESTORE)
     // -----------------------------------------------------------------
     if ($accionPost === 'restore') {
-        // Autorizacion::exigir('mantenimiento', 'ejecutar');
+        Autorizacion::exigir('seguridad', 'mantenimiento');
 
         if (!isset($_FILES['archivo_respaldo']) || $_FILES['archivo_respaldo']['error'] !== UPLOAD_ERR_OK) {
             echo json_encode(['status' => 'error', 'message' => 'No se recibió ningún archivo válido.']);

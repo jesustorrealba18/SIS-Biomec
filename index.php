@@ -56,13 +56,13 @@ if (!in_array($pagina, $rutasPublicas, true) && empty($_SESSION['id'])) {
     exit;
 }
 
-/* if (!in_array($pagina, $rutasPublicas, true) && !empty($_SESSION['id'])) {
+if (!in_array($pagina, $rutasPublicas, true) && !empty($_SESSION['id'])) {
     if (!\GrupoProyecto\SisBiomec\seguridad\Autorizacion::tieneAcceso($pagina)) {
         $_SESSION['error_403'] = true;
         header('Location: ?p=inicio');
         exit;
     }
-} */
+}
 
 $archivoControlador = "src/controlador/" . $pagina . "Controlador.php";
 
