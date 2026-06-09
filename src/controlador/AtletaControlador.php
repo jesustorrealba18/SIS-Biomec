@@ -49,7 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 jsonSalida(['status' => 'error', 'message' => 'Error al registrar el atleta en la base de datos.']);
             }
         } catch (\Throwable $e) {
-            jsonSalida(['status' => 'error', 'message' => 'Error interno: ' . $e->getMessage()]);
+            error_log("AtletaControlador::guardar: " . $e->getMessage());
+            jsonSalida(['status' => 'error', 'message' => 'Error interno del servidor.']);
         }
     }
 
@@ -82,7 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 jsonSalida(['status' => 'error', 'message' => 'Error al actualizar el atleta en la base de datos.']);
             }
         } catch (\Throwable $e) {
-            jsonSalida(['status' => 'error', 'message' => 'Error interno: ' . $e->getMessage()]);
+            error_log("AtletaControlador::editar: " . $e->getMessage());
+            jsonSalida(['status' => 'error', 'message' => 'Error interno del servidor.']);
         }
     }
 
@@ -104,7 +106,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 jsonSalida(['status' => 'error', 'message' => 'ID de atleta no proporcionado.']);
             }
         } catch (\Throwable $e) {
-            jsonSalida(['status' => 'error', 'message' => 'Error interno: ' . $e->getMessage()]);
+            error_log("AtletaControlador::eliminar: " . $e->getMessage());
+            jsonSalida(['status' => 'error', 'message' => 'Error interno del servidor.']);
         }
     }
 

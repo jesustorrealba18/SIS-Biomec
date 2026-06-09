@@ -2,6 +2,7 @@
 
 use GrupoProyecto\SisBiomec\modelo\RolesModelo;
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 $objRoles = new RolesModelo();
 
@@ -34,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
+    Autorizacion::exigir('seguridad', 'roles');
     $accionPost = $_POST['accion'] ?? '';
 
     if ($accionPost === 'guardar') {

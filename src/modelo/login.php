@@ -57,6 +57,7 @@ class Login extends Conexion {
     }
 
     private function registrarIntento($idUsuario, $correo, $exitoso) {
+        if (!($_ENV['RATE_LIMIT_ENABLED'] ?? true)) return;
         $conex = $this->getConex1();
         $sql = "INSERT INTO intentos_login (id_usuario, correoIntento, ip_origen, exitoso) 
                 VALUES (:id_usuario, :correo, :ip, :exitoso)";
@@ -70,6 +71,7 @@ class Login extends Conexion {
     }
 
     private function incrementarIntentos($idUsuario) {
+        if (!($_ENV['RATE_LIMIT_ENABLED'] ?? true)) return;
         $conex = $this->getConex1();
         $sql = "UPDATE usuarios 
                 SET intentos_fallidos = intentos_fallidos + 1,
@@ -92,6 +94,7 @@ class Login extends Conexion {
     }
 
     private function estaIpLimitada(): bool {
+        if (!($_ENV['RATE_LIMIT_ENABLED'] ?? true)) return false;
         $conex = $this->getConex1();
         $sql = "SELECT COUNT(*) FROM intentos_login 
                 WHERE ip_origen = :ip 

@@ -43,7 +43,7 @@
 
         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <p class="text-sm text-gray-400 mt-1">Calendario competitivo, metas por atleta y tiempos de corte.</p>
-            <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'registrar')): ?>
+            <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'crear')): ?>
             <button onclick="abrirModalEvento()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer">
                 <i class="fas fa-plus"></i> REGISTRAR EVENTO
             </button>
@@ -284,7 +284,7 @@
     <script src="assets/js/alertas.js"></script>
     <script>
         const PERMISOS_MODULO = {
-            gestionar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'registrar') ? 'true' : 'false'; ?>,
+            gestionar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'crear') ? 'true' : 'false'; ?>,
         };
     </script>
     <script src="assets/js/eventos.js"></script>

@@ -2,6 +2,7 @@
 
 use GrupoProyecto\SisBiomec\modelo\UsuarioModelo;
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 $objUsuario = new UsuarioModelo();
 
@@ -34,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
+    Autorizacion::exigir('seguridad', 'usuarios');
     $accionPost = $_POST['accion'] ?? '';
 
     if ($accionPost === 'guardar') {

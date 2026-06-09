@@ -81,6 +81,18 @@
                 </div>
             </div>
 
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase ml-1">Verificacion de seguridad</label>
+                <div class="flex items-center gap-3 mt-2">
+                    <img src="captcha.php" alt="CAPTCHA" id="captchaImg" class="rounded-lg border border-gray-600 cursor-pointer" onclick="refreshCaptcha()" title="Click para refrescar">
+                    <button type="button" onclick="refreshCaptcha()" class="text-gray-400 hover:text-blue-400 transition p-2">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <input type="text" name="captcha" required autocomplete="off" placeholder="Escribe el codigo"
+                    class="input-dark w-full rounded-2xl py-3 pl-4 pr-4 text-white focus:outline-none mt-2">
+            </div>
+
             <button type="submit" class="w-full gradiente-boton py-4 rounded-2xl font-bold text-white text-lg hover:scale-[1.01] transition active:scale-[0.98]">
                 INGRESAR
             </button>
@@ -93,6 +105,9 @@
             const i = document.getElementById('eye');
             p.type = p.type === 'password' ? 'text' : 'password';
             i.classList.toggle('fa-eye-slash');
+        }
+        function refreshCaptcha() {
+            document.getElementById('captchaImg').src = 'captcha.php?' + Date.now();
         }
     </script>
 </body>
