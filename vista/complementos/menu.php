@@ -48,33 +48,7 @@
         </a>
         <?php endif; ?>
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
-            <i class="fas fa-address-book w-5 text-center text-indigo-400 group-hover:text-white"></i> 
-            <span>Miembros</span>
-        </div>
-        <?php endif; ?>
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
-        <a href="?p=categorias" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'categorias') ? 'bg-white/10 text-white' : ''; ?>">
-            <i class="fas fa-layer-group w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'categorias') ? 'text-white' : ''; ?>"></i> 
-            <span class="font-medium">Categorías</span>
-        </a>
-        <?php endif; ?>
-
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
-            <i class="fas fa-water w-5 text-center text-indigo-400 group-hover:text-white"></i> 
-            <span>Carriles y Horarios</span>
-        </div>
-        <?php endif; ?>
-
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
-            <i class="fas fa-clipboard-check w-5 text-center text-indigo-400 group-hover:text-white"></i> 
-            <span>Control de Asistencia</span>
-        </div>
-        <?php endif; ?>
 
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'ver')): ?>
         <a href="?p=antropometria" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'antropometria') ? 'bg-white/10 text-white' : ''; ?>">
@@ -89,12 +63,6 @@
             <span class="font-medium">Control de Lesiones</span>
         </a>
         <?php endif; ?>
-
-        <a href="?p=cargaBienestar" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'cargaBienestar') ? 'bg-white/10 text-white' : ''; ?>">
-            <i class="fas fa-notes-medical w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'cargaBienestar') ? 'text-white' : ''; ?>"></i> 
-            <span class="font-medium">Bienestar ATR</span>
-        </a>
-
 
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'ver')): ?>
         <a href="?p=periodizacion" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'periodizacion') ? 'bg-white/10 text-white' : ''; ?>">
@@ -124,26 +92,7 @@
         </a>
         <?php endif; ?>
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
-            <i class="fas fa-trophy w-5 text-center text-indigo-400 group-hover:text-white"></i> 
-            <span>Rankings FEVEDA</span>
-        </div>
-        <?php endif; ?>
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
-            <i class="fas fa-video w-5 text-center text-indigo-400 group-hover:text-white"></i> 
-            <span>Análisis Biomecánico</span>
-        </div>
-        <?php endif; ?>
-
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
-            <i class="fas fa-brain w-5 text-center text-indigo-400 group-hover:text-white"></i> 
-            <span>Diagnóstico Inteligente</span>
-        </div>
-        <?php endif; ?>
         <?php $tieneAdmin = \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'usuarios')
             || \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'roles')
             || \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'mantenimiento')
