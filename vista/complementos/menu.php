@@ -115,13 +115,6 @@
         </a>
         <?php endif; ?>
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'usuarios')): ?>
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5">
-            <i class="fas fa-cogs w-5 text-center text-indigo-400 group-hover:text-white"></i> 
-            <span>Configuración</span>
-        </div>
-        <?php endif; ?>
-
         
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'mantenimiento')): ?>
          <a href="?p=mantenimiento" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'mantenimiento') ? 'bg-white/10 text-white' : ''; ?>">

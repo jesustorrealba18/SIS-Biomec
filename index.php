@@ -28,6 +28,44 @@ function mostrarErrorPagina(string $titulo, string $mensaje, string $codigo = ''
     exit;
 }
 
+function mostrarError404(string $titulo = 'Página no encontrada', string $mensaje = 'La sección que buscas no existe o ha sido removida.'): void {
+    if (esPeticionAjax()) {
+        http_response_code(404);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'status'  => 'error_404',
+            'message' => $mensaje
+        ]);
+        exit;
+    }
+
+    http_response_code(404);
+    $tituloEsc = htmlspecialchars($titulo, ENT_QUOTES, 'UTF-8');
+    $mensajeEsc = htmlspecialchars($mensaje, ENT_QUOTES, 'UTF-8');
+
+    require RAIZ . 'vista/error_404.php';
+    exit;
+}
+
+function mostrarError403(string $titulo = 'Acceso denegado', string $mensaje = 'No tienes permisos para acceder a esta sección. Si crees que es un error, contacta al administrador.'): void {
+    if (esPeticionAjax()) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'status'  => 'error_403',
+            'message' => $mensaje
+        ]);
+        exit;
+    }
+
+    http_response_code(403);
+    $tituloEsc = htmlspecialchars($titulo, ENT_QUOTES, 'UTF-8');
+    $mensajeEsc = htmlspecialchars($mensaje, ENT_QUOTES, 'UTF-8');
+
+    require RAIZ . 'vista/error_403.php';
+    exit;
+}
+
 function mostrarErrorGeneral(string $titulo, string $mensaje, string $codigo = ''): void {
     if (esPeticionAjax()) {
         http_response_code(500);
@@ -139,9 +177,7 @@ if (!in_array($pagina, $rutasPublicas, true) && empty($_SESSION['id'])) {
 
 if (!in_array($pagina, $rutasPublicas, true) && !empty($_SESSION['id'])) {
     if (!\GrupoProyecto\SisBiomec\seguridad\Autorizacion::tieneAcceso($pagina)) {
-        $_SESSION['error_403'] = true;
-        header('Location: ?p=inicio');
-        exit;
+        mostrarError403();
     }
 }
 
@@ -164,6 +200,5 @@ if (is_file($archivoControlador)) {
     $controlador->handle();
     }
 } else {
-    header("HTTP/1.0 404 Not Found");
-    echo "<h1>404 - La sección que buscas no existe</h1>";
+    mostrarError404();
 }
