@@ -26,7 +26,8 @@ class Autorizacion {
         'mantenimiento' => ['seguridad', 'mantenimiento'],
         'categorias'    => ['atletas', 'gestionar'],
         'cargaBienestar'=> ['cargaBienestar', 'ver'],
-        'mi_perfil'     => ['atletas', 'ver'],
+        'mi_perfil'     => ['mi_perfil', 'ver'],
+        'asistencia'    => ['asistencia', 'ver'],
     ];
 
     public static function cargarPermisos(int $idUsuario): bool {
