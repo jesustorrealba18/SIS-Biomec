@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($objPeriodizacion->registrarMacrociclo($_POST)) {
             Bitacora::registrar(
-                $_SESSION['id'], 'Modulo Periodizacion', 'INSERT', null,
+                $_SESSION['id'], 'Modulo Periodizacion', 'CREATE', null,
                 'macrociclo', null, $_POST['nombre'] ?? 'Nuevo macrociclo'
             );
             ob_end_clean();
@@ -228,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             if ($objPeriodizacion->registrarMesociclo($_POST)) {
                 Bitacora::registrar(
-                    $_SESSION['id'], 'Modulo Periodizacion', 'INSERT',
+                    $_SESSION['id'], 'Modulo Periodizacion', 'CREATE',
                     (int)$_POST['id_macrociclo'], 'mesociclo', null, $_POST['nombre']
                 );
                 ob_end_clean();

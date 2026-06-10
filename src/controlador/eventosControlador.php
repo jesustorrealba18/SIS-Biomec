@@ -170,7 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($accionPost === 'inscribirAtletas') {
         Autorizacion::exigir('eventos', 'editar');
         $id_evento = (int)($_POST['id_evento'] ?? 0);
-        $atletas_ids = $_POST['atletas_ids'] ?? [];
+        $atletas_ids_json = $_POST['atletas_ids'] ?? '[]';
+        $atletas_ids = json_decode($atletas_ids_json, true) ?: [];
 
         if (empty($atletas_ids)) {
             echo json_encode(['status' => 'warning', 'errores' => ['atletas_ids' => 'Seleccione al menos un atleta.']]);

@@ -67,7 +67,14 @@
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'ver')): ?>
         <a href="?p=periodizacion" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'periodizacion') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-project-diagram w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'periodizacion') ? 'text-white' : ''; ?>"></i> 
-            <span class="font-medium">Periodización ATR</span>
+            <span class="font-medium">Periodizacion ATR</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('temporadas', 'ver')): ?>
+        <a href="?p=temporadas" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'temporadas') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-calendar-check w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'temporadas') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Temporadas</span>
         </a>
         <?php endif; ?>
 

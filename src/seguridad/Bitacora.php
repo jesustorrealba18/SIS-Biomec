@@ -29,21 +29,19 @@ class Bitacora extends Conexion {
             $navegador = $_SERVER['HTTP_USER_AGENT'] ?? 'Desconocido';
 
             $sql = "INSERT INTO bitacora 
-                    (id_usuario, modulo_afectado, tipo_operacion, id_registro_afectado, campo_modificado, valor_anterior, valor_nuevo, ip_origen, navegador) 
-                    VALUES (:usr, :mod, :ope, :id_afec, :campo, :ant, :nue, :ip, :nav)";
+                    (id_usuario, modulo_afectado, tipo_operacion, id_registro_afectado, campo_modificado, valor_anterior, valor_nuevo, ip_origen) 
+                    VALUES (:usr, :mod, :ope, :id_afec, :campo, :ant, :nue, :ip)";
             
             $stmt = $conex->prepare($sql);
-            $stmt->execute([
-                ':usr'     => (int)$id_usuario,
-                ':mod'     => $modulo,
-                ':ope'     => $operacion, // Ej: 'DELETE', 'UPDATE'
-                ':id_afec' => $id_afectado,
-                ':campo'   => $campo,
-                ':ant'     => $val_ant,
-                ':nue'     => $val_nue,
-                ':ip'      => $ip,
-                ':nav'      => $navegador
-            ]);
+            $stmt->bindValue(':usr', (int)$id_usuario, PDO::PARAM_INT);
+            $stmt->bindValue(':mod', $modulo, PDO::PARAM_STR);
+            $stmt->bindValue(':ope', $operacion, PDO::PARAM_STR);
+            $stmt->bindValue(':id_afec', $id_afectado, $id_afectado === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+            $stmt->bindValue(':campo', $campo, $campo === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+            $stmt->bindValue(':ant', $val_ant, $val_ant === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+            $stmt->bindValue(':nue', $val_nue, $val_nue === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+            $stmt->bindValue(':ip', $ip, PDO::PARAM_STR);
+            $stmt->execute();
             
         } catch (PDOException $e) {
             // REGLA DE ORO DE AUDITORÍA: Si la bitácora falla, no debe tumbar el sistema principal.
