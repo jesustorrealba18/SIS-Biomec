@@ -50,6 +50,25 @@
                 }
 
                 // ==========================================================
+                // CONTROL DE MENORES: HIDRATACIÓN DE REPRESENTANTE (RF-01)
+                // ==========================================================
+                const tarjetaRep = document.getElementById('tarjetaRepresentante');
+                
+                if (datos.representante_nombre) {
+                    // Si el backend envía un nombre de representante, mapeamos los campos
+                    document.getElementById('lblRepNombre').textContent = datos.representante_nombre;
+                    document.getElementById('lblRepCedula').textContent = datos.representante_cedula ? `V-${datos.representante_cedula}` : '—';
+                    document.getElementById('lblRepParentesco').textContent = datos.representante_parentesco || 'Representante Legal';
+                    document.getElementById('lblRepTelefono').textContent = datos.representante_telefono || '—';
+                    
+                    // Mostramos la tarjeta removiendo la clase oculta
+                    tarjetaRep.classList.remove('hidden');
+                } else {
+                    // Si es mayor de edad o no tiene vinculación, aseguramos que permanezca oculta
+                    tarjetaRep.classList.add('hidden');
+                }
+
+                // ==========================================================
                 // 3. GENERACIÓN DEL CÓDIGO QR EN TIEMPO REAL
                 // ==========================================================
                 const contenedorQR = document.getElementById('contenedorQR');

@@ -386,23 +386,17 @@ class Atleta extends Conexion {
        dm.contacto_emergencia_nombre, dm.contacto_emergencia_telefono,
        dm.contacto_emergencia_parentesco, dm.seguro_medico,
        dm.numero_feveda, dm.club_procedencia,
-       
-       -- Datos del Representante (Aliados para coincidir con tu JS)
        r.id_representante,
        CONCAT(r.nombres, ' ', r.apellidos) AS representante_nombre,
        r.cedula AS representante_cedula,
        r.telefono_principal AS representante_telefono,
        r.parentesco AS representante_parentesco
-
-FROM atletas a
-LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
-LEFT JOIN atleta_datos_medicos dm ON a.id_atleta = dm.id_atleta
-
--- Vinculación de la tabla intermedia y la tabla de representantes
-LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta
-LEFT JOIN representantes r ON ar.id_representante = r.id_representante
-
-WHERE a.id_usuario = :id;";
+        FROM atletas a
+        LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
+        LEFT JOIN atleta_datos_medicos dm ON a.id_atleta = dm.id_atleta
+        LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta
+        LEFT JOIN representantes r ON ar.id_representante = r.id_representante
+        WHERE a.id_usuario = :id;";
             $stmt = $conex->prepare($sql);
             $this->vincular($stmt, ':id', $id, PDO::PARAM_INT);
             $stmt->execute();
