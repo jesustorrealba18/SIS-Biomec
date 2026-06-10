@@ -160,16 +160,24 @@ class Atleta extends Conexion {
     }
 
     public function guardar(): bool {
+
+        if (empty($this->datos['token_asistencia'])) {
+        // Creamos un hash seguro usando bytes aleatorios
+        $token = bin2hex(random_bytes(16)); 
+        $this->datos['token_asistencia'] = $token;
+        }   
+
+
         $conex = $this->pdo;
         try {
             $conex->beginTransaction();
 
             $sql = "INSERT INTO atletas (cedula, nombres, apellidos, fecha_nacimiento, sexo,
                                         direccion, telefono, correo, foto, fecha_registro_club,
-                                        estado, id_categoria, id_usuario)
+                                        estado, token_asistencia, id_categoria, id_usuario)
                     VALUES (:cedula, :nombres, :apellidos, :fecha_nac, :sexo,
                             :direccion, :telefono, :correo, :foto, :fecha_registro,
-                            :estado, :id_categoria, :id_usuario)";
+                            :estado, :token_asistencia, :id_categoria, :id_usuario)";
             $stmt = $conex->prepare($sql);
             $this->vincular($stmt, ':cedula', $this->getCampo('cedula'));
             $this->vincular($stmt, ':nombres', $this->getCampo('nombres'));
@@ -182,8 +190,10 @@ class Atleta extends Conexion {
             $this->vincular($stmt, ':foto', $this->getCampo('foto'));
             $this->vincular($stmt, ':fecha_registro', $this->getCampo('fecha_registro_club'));
             $this->vincular($stmt, ':estado', $this->getCampo('estado', 'Activo'));
+            $stmt->bindValue(':token_asistencia', $this->datos['token_asistencia']);
             $this->vincular($stmt, ':id_categoria', $this->getCampo('id_categoria'), PDO::PARAM_INT);
             $this->vincular($stmt, ':id_usuario', $this->getCampo('id_usuario'), PDO::PARAM_INT);
+
             $stmt->execute();
 
             $idAtleta = (int)$conex->lastInsertId();

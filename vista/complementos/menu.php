@@ -99,6 +99,13 @@
         </a>
         <?php endif; ?>
 
+         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'ver')): ?>
+        <a href="?p=mi_perfil" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'mi_perfil') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-user w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'mi_perfil') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Mi Perfil</span>
+        </a>
+        <?php endif; ?>
+
 
         <?php $tieneAdmin = \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'usuarios')
             || \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('seguridad', 'roles')

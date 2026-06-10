@@ -268,9 +268,50 @@ async function verDetalle(id) {
                 <div><p class="text-[10px] uppercase text-gray-500">FEVEDA</p><p class="text-indigo-300 font-mono">${datos.numero_feveda || 'S/F'}</p></div>
                 <div><p class="text-[10px] uppercase text-gray-500">Club Procedencia</p><p class="text-white">${datos.club_procedencia || '—'}</p></div>
             </div>
-        </div>`;
+        </div>
+        <div class="flex flex-col items-center justify-center p-4 bg-[#161430] border border-[#252345] rounded-xl mt-4">
+            <span class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">Carnet de Asistencia</span>
+            
+            <div id="contenedorQR" class="bg-white p-3 rounded-lg shadow-lg">
+                </div>
+            
+            <span id="txtTokenVisible" class="text-[10px] text-gray-500 font-mono mt-2 select-all"></span>
+        </div>        
+        `;
 
+  // ==============================================================
+    // CORRECCIÓN 1: PRIMERO inyectamos el HTML para que nazcan los divs
+    // ==============================================================
+    const detalleContenido = document.getElementById('detalleContenido'); // Aseguramos atrapar tu contenedor del modal
     detalleContenido.innerHTML = html;
+
+    // ==============================================================
+    // CORRECCIÓN 2: LUEGO buscamos el contenedor y usamos 'datos'
+    // ==============================================================
+    const contenedorQR = document.getElementById('contenedorQR');
+    const txtTokenVisible = document.getElementById('txtTokenVisible');
+    
+    if (contenedorQR && txtTokenVisible) {
+        contenedorQR.innerHTML = ''; 
+
+        // Usamos la variable 'datos' en lugar de 'datosAtleta'
+        if (datos.token_asistencia) {
+            new QRCode(contenedorQR, {
+                text: datos.token_asistencia,
+                width: 150,
+                height: 150,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            txtTokenVisible.textContent = datos.token_asistencia.substring(0, 8) + '...';
+        } else {
+            contenedorQR.innerHTML = '<span class="text-xs text-red-500 font-bold">Token no generado</span>';
+        }
+    }
+
+    // detalleContenido.innerHTML = html;
     modalVer.classList.remove('hidden');
     setTimeout(() => {
         modalVer.firstElementChild.classList.remove('scale-95', 'opacity-0');
@@ -298,6 +339,7 @@ async function confirmarEliminar(id) {
         }
     }
 }
+
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {

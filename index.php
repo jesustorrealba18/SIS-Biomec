@@ -160,7 +160,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
 $paginasPermitidas = [
     'login', 'inicio', 'entrenador', 'drills', 'atleta', 'eventos', 'marcas',
     'periodizacion', 'temporadas', 'antropometria', 'representante', 'calendario', 'salir',
-    'lesion','categorias','bitacora','usuarios','roles','mantenimiento' ,'cargaBienestar'
+    'lesion','categorias','bitacora','usuarios','roles','mantenimiento' ,'cargaBienestar', 'mi_perfil'
 ];
 
 $pagina = "inicio";
