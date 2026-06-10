@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <style>
         body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Inter', sans-serif; }
@@ -105,9 +105,9 @@
         </div>
     </main>
 
-    <audio id="beepSuccess" src="assets/audio/beep-success.mp3" preload="auto"></audio>
+   <!--  <audio id="beepSuccess" src="assets/audio/beep-success.mp3" preload="auto"></audio>
     <audio id="beepError" src="assets/audio/beep-error.mp3" preload="auto"></audio>
-
+ -->
     <script src="assets/js/alertas.js"></script>
     <script src="assets/js/asistencia.js"></script>
 </body>
