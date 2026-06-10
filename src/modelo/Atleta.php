@@ -375,6 +375,32 @@ class Atleta extends Conexion {
         }
     }
 
+    public function obtenerDetallePorIdUSER(int $id): ?array {
+        $conex = $this->pdo;
+        try {
+            $sql = "SELECT a.*,
+                           TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) AS edad,
+                           c.nombre AS categoria_nombre,
+                           c.id_categoria,
+                           dm.grupo_sanguineo, dm.alergias, dm.condiciones_previas,
+                           dm.contacto_emergencia_nombre, dm.contacto_emergencia_telefono,
+                           dm.contacto_emergencia_parentesco, dm.seguro_medico,
+                           dm.numero_feveda, dm.club_procedencia
+                    FROM atletas a
+                    LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
+                    LEFT JOIN atleta_datos_medicos dm ON a.id_atleta = dm.id_atleta
+                    WHERE a.id_usuario = :id";
+            $stmt = $conex->prepare($sql);
+            $this->vincular($stmt, ':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ?: null;
+        } catch (PDOException $e) {
+            error_log("Error en Atleta::obtenerDetallePorIdUSER(): " . $e->getMessage());
+            return null;
+        }
+    }
+
     public function obtenerCategorias(): array {
         $conex = $this->pdo;
         try {

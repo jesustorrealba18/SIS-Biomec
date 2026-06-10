@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         header('Content-Type: application/json');
         $objAtleta = new Atleta();
         
-        echo json_encode($objAtleta->obtenerDetallePorId());
+        echo json_encode($objAtleta->obtenerDetallePorIdUSER($_SESSION['id']));
         exit;
     }
 
