@@ -298,7 +298,7 @@
                         <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Reacción (s)</label>
                         <input type="text" 
                                inputmode="decimal" 
-                               data-validar="decimal" data-nombre="Reacción" 
+                               data-validar="decimal_tiempo" data-nombre="Reacción" 
                                maxlength="5"
                                id="tiempo_reaccion_seg" 
                                name="tiempo_reaccion_seg" 
@@ -310,7 +310,7 @@
                         <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Viraje (s)</label>
                         <input type="text" 
                                inputmode="decimal" 
-                               data-validar="decimal" data-nombre="Viraje"
+                               data-validar="decimal_tiempo" data-nombre="Viraje"
                                maxlength="5"
                                id="tiempo_viraje_seg" 
                                name="tiempo_viraje_seg" 
@@ -319,7 +319,7 @@
                     </div>
                     <div>
                         <label class="block text-[10px] text-amber-400 uppercase font-bold mb-1" title="Para calcular SWOLF">Brazadas/Largo</label>
-                        <input type="number" id="brazadas_por_largo" name="brazadas_por_largo" data-validar="numeros" data-max="4" data-nombre="Brazadas" maxlength="4" placeholder="Ej: 16" class="w-full bg-[#161430] border border-amber-500/50 text-white p-2 rounded-lg text-sm text-center font-mono focus:ring-2 focus:ring-amber-500 outline-none">
+                        <input type="number" id="brazadas_por_largo" name="brazadas_por_largo" min="1" max="999" oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);" data-validar="numeros" data-max="4" data-nombre="Brazadas"  placeholder="Ej: 16" class="w-full bg-[#161430] border border-amber-500/50 text-white p-2 rounded-lg text-sm text-center font-mono focus:ring-2 focus:ring-amber-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-[10px] text-indigo-400 uppercase font-bold mb-1">Tiempo Final *</label>
