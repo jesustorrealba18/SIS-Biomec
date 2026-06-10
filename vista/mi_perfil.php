@@ -104,6 +104,31 @@
                             </div>
                         </div>
                     </div>
+
+<div id="tarjetaRepresentante" class="tarjeta p-6 bg-[#161430]/60 border-l-4 border-l-indigo-500 hidden sm:col-span-2">
+        <h3 class="text-xs uppercase text-indigo-400 font-black tracking-widest mb-4 flex items-center gap-2">
+            <i class="fas fa-user-shield"></i> Representante Legal Asignado
+        </h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm font-medium">
+            <div>
+                <p class="text-[9px] uppercase text-gray-500">Nombre del Representante</p>
+                <p id="lblRepNombre" class="text-white font-bold mt-0.5">—</p>
+                <p id="lblRepCedula" class="text-gray-500 font-mono text-[10px] mt-0.5">V-00000000</p>
+            </div>
+            <div>
+                <p class="text-[9px] uppercase text-gray-500">Parentesco / Vínculo</p>
+                <p id="lblRepParentesco" class="text-indigo-300 mt-0.5 font-semibold">—</p>
+            </div>
+            <div>
+                <p class="text-[9px] uppercase text-gray-500">Teléfono de Contacto</p>
+                <p id="lblRepTelefono" class="text-emerald-400 font-mono mt-0.5 font-bold">—</p>
+            </div>
+        </div>
+    </div>
+                    
+
+
                 </div>
 
                 <div class="tarjeta p-6 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-500/5 to-transparent shadow-md">
