@@ -160,16 +160,24 @@ class Atleta extends Conexion {
     }
 
     public function guardar(): bool {
+
+        if (empty($this->datos['token_asistencia'])) {
+        // Creamos un hash seguro usando bytes aleatorios
+        $token = bin2hex(random_bytes(16)); 
+        $this->datos['token_asistencia'] = $token;
+        }   
+
+
         $conex = $this->pdo;
         try {
             $conex->beginTransaction();
 
             $sql = "INSERT INTO atletas (cedula, nombres, apellidos, fecha_nacimiento, sexo,
                                         direccion, telefono, correo, foto, fecha_registro_club,
-                                        estado, id_categoria, id_usuario)
+                                        estado, token_asistencia, id_categoria, id_usuario)
                     VALUES (:cedula, :nombres, :apellidos, :fecha_nac, :sexo,
                             :direccion, :telefono, :correo, :foto, :fecha_registro,
-                            :estado, :id_categoria, :id_usuario)";
+                            :estado, :token_asistencia, :id_categoria, :id_usuario)";
             $stmt = $conex->prepare($sql);
             $this->vincular($stmt, ':cedula', $this->getCampo('cedula'));
             $this->vincular($stmt, ':nombres', $this->getCampo('nombres'));
@@ -182,8 +190,10 @@ class Atleta extends Conexion {
             $this->vincular($stmt, ':foto', $this->getCampo('foto'));
             $this->vincular($stmt, ':fecha_registro', $this->getCampo('fecha_registro_club'));
             $this->vincular($stmt, ':estado', $this->getCampo('estado', 'Activo'));
+            $stmt->bindValue(':token_asistencia', $this->datos['token_asistencia']);
             $this->vincular($stmt, ':id_categoria', $this->getCampo('id_categoria'), PDO::PARAM_INT);
             $this->vincular($stmt, ':id_usuario', $this->getCampo('id_usuario'), PDO::PARAM_INT);
+
             $stmt->execute();
 
             $idAtleta = (int)$conex->lastInsertId();
@@ -365,6 +375,39 @@ class Atleta extends Conexion {
         }
     }
 
+    public function obtenerDetallePorIdUSER(int $id): ?array {
+        $conex = $this->pdo;
+        try {
+            $sql = "SELECT a.*,
+       TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) AS edad,
+       c.nombre AS categoria_nombre,
+       c.id_categoria,
+       dm.grupo_sanguineo, dm.alergias, dm.condiciones_previas,
+       dm.contacto_emergencia_nombre, dm.contacto_emergencia_telefono,
+       dm.contacto_emergencia_parentesco, dm.seguro_medico,
+       dm.numero_feveda, dm.club_procedencia,
+       r.id_representante,
+       CONCAT(r.nombres, ' ', r.apellidos) AS representante_nombre,
+       r.cedula AS representante_cedula,
+       r.telefono_principal AS representante_telefono,
+       r.parentesco AS representante_parentesco
+        FROM atletas a
+        LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
+        LEFT JOIN atleta_datos_medicos dm ON a.id_atleta = dm.id_atleta
+        LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta
+        LEFT JOIN representantes r ON ar.id_representante = r.id_representante
+        WHERE a.id_usuario = :id;";
+            $stmt = $conex->prepare($sql);
+            $this->vincular($stmt, ':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ?: null;
+        } catch (PDOException $e) {
+            error_log("Error en Atleta::obtenerDetallePorIdUSER(): " . $e->getMessage());
+            return null;
+        }
+    }
+
     public function obtenerCategorias(): array {
         $conex = $this->pdo;
         try {
@@ -398,6 +441,25 @@ class Atleta extends Conexion {
             return [];
         }
     }
+
+     public function listarMenoresSinRepresentante(): array {
+    $conex = $this->getConex1();
+    try {
+       
+        $sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos
+                FROM atletas a
+                LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta
+                WHERE TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) < 18
+                  AND ar.id_atleta IS NULL
+                ORDER BY a.nombres ASC";
+
+        $stmt = $conex->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+     
+        return [];
+    }
+} 
 
     public function procesarFoto(array $archivo, ?string $fotoActual = null): ?string {
         if ($archivo['error'] === UPLOAD_ERR_NO_FILE || !isset($archivo['tmp_name'])) {

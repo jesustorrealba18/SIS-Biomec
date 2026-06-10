@@ -31,12 +31,13 @@ CREATE TABLE `bitacora` (
   `id_bitacora` int(11) NOT NULL,
   `id_usuario` int(11) NOT NULL,
   `modulo_afectado` varchar(80) NOT NULL,
-  `tipo_operacion` enum('CREATE','UPDATE','DELETE','LOGIN','LOGOUT','EXPORT') NOT NULL,
+  `tipo_operacion` enum('CREATE','RESTORE', 'INSERT','UPDATE','DELETE','LOGIN','LOGOUT','EXPORT') NOT NULL,
   `id_registro_afectado` int(11) DEFAULT NULL,
   `campo_modificado` varchar(100) DEFAULT NULL,
   `valor_anterior` text DEFAULT NULL,
   `valor_nuevo` text DEFAULT NULL,
   `ip_origen` varchar(45) DEFAULT NULL,
+  `navegador` varchar(255) DEFAULT NULL,
   `fecha_operacion` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

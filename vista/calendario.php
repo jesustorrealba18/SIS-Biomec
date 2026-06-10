@@ -12,7 +12,7 @@
         body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Segoe UI', sans-serif; }
         .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 15px; }
         #calendario-container { padding: 1.5rem; }
-        .fc { --fc-border-color: #252345; --fc-button-bg-color: #1e1b4b; --fc-button-border-color: #3730a3; --fc-button-text-color: #c7d2fe; --fc-button-hover-bg-color: #312e81; --fc-button-hover-border-color: #4338ca; --fc-button-active-bg-color: #4338ca; --fc-button-active-border-color: #6366f1; --fc-page-bg-color: transparent; --fc-neutral-bg-color: #111026; --fc-list-event-hover-bg-color: #1e1b4b; --fc-today-bg-color: #1e1b4b44; --fc-event-border-color: transparent; }
+        .fc { --fc-border-color: #252345; --fc-button-bg-color: #1e1b4b; --fc-button-border-color: #3730a3; --fc-button-text-color: #c7d2fe; --fc-button-hover-bg-color: #312e81; --fc-button-hover-border-color: #4338ca; --fc-button-active-bg-color: #4338ca; --fc-button-active-border-color: #6366f1; --fc-page-bg-color: transparent; --fc-neutral-bg-color: #111026; --fc-list-event-hover-bg-color: #1e1b4b; --fc-today-bg-color: #1e1b4b44; --fc-event-border-color: transparent; --fc-button-icon-color: #c7d2fe; --fc-button-icon-hover-color: #e0e7ff; --fc-button-icon-active-color: #fff; }
         .fc .fc-toolbar-title { color: #fff; font-size: 1.25rem; font-weight: 700; }
         .fc .fc-col-header-cell-cushion { color: #6b7280; text-transform: uppercase; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; }
         .fc .fc-daygrid-day-number { color: #9ca3af; text-decoration: none; }
@@ -32,14 +32,14 @@
 
         <header class="flex justify-between items-center mb-8">
             <h1 class="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
-                <i class="fas fa-calendar-week text-indigo-500"></i> Calendario General
+                <i class="fas fa-calendar text-indigo-500"></i> Calendario General
             </h1>
 
             <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
                 <div class="text-right mr-2">
                     <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre']; ?></p>
                     <a href="?p=salir" class="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-widest transition">
-                        Cerrar Sesion <i class="fas fa-sign-out-alt ml-1"></i>
+                        Cerrar Sesion <i class="fas fa-right-from-bracket ml-1"></i>
                     </a>
                 </div>
                 <img src="https://ui-avatars.com/api/?name=<?php echo $_SESSION['nombre']; ?>&background=4f46e5&color=fff"

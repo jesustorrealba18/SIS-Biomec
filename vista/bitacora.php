@@ -166,45 +166,7 @@
                         </tr>
                     </thead>
                     <tbody id="tbodyBitacora" class="divide-y divide-[#252345] text-sm text-gray-300">
-                        <!-- Fila de ejemplo 1 -->
-                        <tr class="hover:bg-white/5 transition-colors">
-                            <td class="p-4 font-mono text-xs">2026-06-05 18:30:45</td>
-                            <td class="p-4">
-                                <div class="font-bold text-white text-xs">Hendrick</div>
-                                <div class="text-[10px] text-gray-500">Entrenador Jefe</div>
-                            </td>
-                            <td class="p-4"><span class="text-indigo-400 font-semibold text-xs">Marcas</span></td>
-                            <td class="p-4">
-                                <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase">
-                                    Insertar
-                                </span>
-                            </td>
-                            <td class="p-4 text-right">
-                                <button onclick="verDetalleBitacora(1)" class="text-blue-400 hover:text-blue-300 transition" title="Ver detalle completo">
-                                    <i class="fas fa-eye fa-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        
-                        <!-- Fila de ejemplo 2 -->
-                        <tr class="hover:bg-white/5 transition-colors">
-                            <td class="p-4 font-mono text-xs">2026-06-05 15:12:10</td>
-                            <td class="p-4">
-                                <div class="font-bold text-white text-xs">José Miguel</div>
-                                <div class="text-[10px] text-gray-500">Administrador</div>
-                            </td>
-                            <td class="p-4"><span class="text-indigo-400 font-semibold text-xs">Sesión</span></td>
-                            <td class="p-4">
-                                <span class="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase">
-                                    Login
-                                </span>
-                            </td>
-                            <td class="p-4 text-right">
-                                <button onclick="verDetalleBitacora(2)" class="text-blue-400 hover:text-blue-300 transition" title="Ver detalle completo">
-                                    <i class="fas fa-eye fa-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
+                       
                     </tbody>
                 </table>
             </div>
