@@ -255,7 +255,6 @@ function calcularVolumenTotalSesion() {
 
     const volTotal = volCalentamiento + volPrincipal + volVueltaCalma; 
 
-    // Vinculados con los IDs correctos de tu HTML (lblVol...)
     if(document.getElementById('lblVolCalentamiento')) document.getElementById('lblVolCalentamiento').textContent = `${volCalentamiento}m`;
     if(document.getElementById('lblVolPrincipal')) document.getElementById('lblVolPrincipal').textContent = `${volPrincipal}m`;
     if(document.getElementById('lblVolVueltaCalma')) document.getElementById('lblVolVueltaCalma').textContent = `${volVueltaCalma}m`;
@@ -443,5 +442,4 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Arrancar carga
 cargarRecursosIniciales().then(() => cargarTablaSesiones());
