@@ -1,6 +1,6 @@
 <?php
 // =====================================================================
-// CONTROLADOR PIVOTE: CARGA Y BIENESTAR (RF-11)
+// CONTROLADOR: CARGA DE BIENESTAR (RPE)
 // =====================================================================
 
 if (empty($_SESSION['id'])) { 
@@ -10,44 +10,44 @@ if (empty($_SESSION['id'])) {
 
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\CargaBienestar;
+use GrupoProyecto\SisBiomec\modelo\Atleta;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 $objCarga = new CargaBienestar();
-$id_usuario = $_SESSION['id'];
 
 // =====================================================================
-// RUTAS GET: Lectura de datos y carga de vista
+// RUTAS GET: Para cargar vistas y pedir datos (Listados)
 // =====================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $accion = $_GET['accion'] ?? '';
 
-    // Listar historial de carga/bienestar de un atleta (para la tabla)
-    if ($accion === 'listarHistorial') {
+    // Buscador predictivo de atletas (para formularios)
+    if ($accion === 'listarAtletasSelect') {
         header('Content-Type: application/json');
-        $id_atleta = (int)($_GET['id_atleta'] ?? 0);
-        if ($id_atleta <= 0) {
-            echo json_encode(['status' => 'error', 'message' => 'ID de atleta inválido']);
-            exit;
-        }
-        $historial = $objCarga->obtenerHistorialAtleta($id_atleta);
-        echo json_encode($historial);
+        $objAtleta = new Atleta();
+        echo json_encode($objAtleta->listar());
         exit;
     }
 
-    // Obtener un evento específico para edición (carga el modal)
-    if ($accion === 'obtenerEvento') {
+    // Listar registros de carga (para DataTable)
+    if ($accion === 'listarCargas') {
         header('Content-Type: application/json');
-        $id_evento = (int)($_GET['id_evento'] ?? 0);
-        if ($id_evento <= 0) {
-            echo json_encode(['status' => 'error', 'message' => 'ID de evento inválido']);
-            exit;
-        }
-        $evento = $objCarga->obtenerPorId($id_evento);
-        if (empty($evento)) {
-            echo json_encode(['status' => 'error', 'message' => 'Evento no encontrado']);
-            exit;
-        }
-        echo json_encode($evento);
+        $estado       = $_GET['estado']       ?? 'Activo';
+        $id_atleta    = !empty($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : null;
+        $fecha_desde  = $_GET['fecha_desde'] ?? null;
+        $fecha_hasta  = $_GET['fecha_hasta'] ?? null;
+
+        $registros = $objCarga->listar($estado, $id_atleta, $fecha_desde, $fecha_hasta);
+        echo json_encode($registros);
+        exit;
+    }
+
+    // Obtener detalle completo de un registro (para edición o visualización)
+    if ($accion === 'obtenerDetalleCarga') {
+        header('Content-Type: application/json');
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        $detalle = $objCarga->obtenerPorId($id);
+        echo json_encode($detalle);
         exit;
     }
 
@@ -57,112 +57,120 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 // =====================================================================
-// RUTAS POST: Acciones transaccionales (CRUD con auditoría)
+// RUTAS POST: Para Guardar, Actualizar, Anular o Reactivar
 // =====================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $accionPost = $_POST['accion'] ?? '';
+    $id_usuario = $_SESSION['id'] ?? 0;
 
-    // ========================= REGISTRAR =========================
-    if ($accionPost === 'registrar') {
-        Autorizacion::exigir('cargaBienestar', 'registrar');
+    // -----------------------------------------------------------------
+    // Guardar (insertar o actualizar)
+    // -----------------------------------------------------------------
+    if ($accionPost === 'guardar') {
+        Autorizacion::exigir('carga_bienestar', 'registrar');
 
-        // Intentar registrar
-        if ($objCarga->registrarEvento($_POST)) {
-            // Registrar en bitácora (se omiten datos sensibles)
-            $datosRegistrados = $_POST;
-            unset($datosRegistrados['accion']);
-            Bitacora::registrar(
-                $id_usuario,
-                'CargaBienestar',
-                'INSERT',
-                0,
-                'Nuevo registro',
-                null,
-                json_encode($datosRegistrados, JSON_UNESCAPED_UNICODE)
-            );
-            echo json_encode(['status' => 'success', 'message' => 'Evento registrado exitosamente']);
-        } else {
-            $errores = $objCarga->obtenerErrores();
-            if (!empty($errores)) {
-                echo json_encode(['status' => 'warning', 'errores' => $errores]);
+        $resultado = $objCarga->guardar($_POST);
+
+        if ($resultado['exito']) {
+            // Registrar en bitácora según sea inserción o actualización
+            $esNuevo = empty($_POST['id_rpe']);
+            $id_registro = $resultado['id'];
+
+            if ($esNuevo) {
+                $datosGuardados = $_POST;
+                unset($datosGuardados['accion']);
+                Bitacora::registrar(
+                    $id_usuario,
+                    'CargaBienestar',
+                    'CREATE',
+                    $id_registro,
+                    'Registro RPE',
+                    null,
+                    json_encode($datosGuardados, JSON_UNESCAPED_UNICODE)
+                );
             } else {
-                echo json_encode(['status' => 'error', 'message' => 'Error del servidor al registrar el evento']);
-            }
-        }
-        exit;
-    }
-
-    // ========================= EDITAR =========================
-    if ($accionPost === 'editar') {
-        Autorizacion::exigir('cargaBienestar', 'editar');
-
-        // Validar justificación obligatoria (RF-11.3)
-        $justificacion = trim($_POST['justificacion_cambio'] ?? '');
-        if (empty($justificacion)) {
-            echo json_encode(['status' => 'error', 'message' => 'La justificación del cambio es obligatoria']);
-            exit;
-        }
-
-        // Intentar editar
-        try {
-            if ($objCarga->editarEvento($_POST)) {
+                $datosActualizados = $_POST;
+                unset($datosActualizados['accion'], $datosActualizados['id_rpe']);
                 Bitacora::registrar(
                     $id_usuario,
                     'CargaBienestar',
                     'UPDATE',
-                    (int)($_POST['id_evento'] ?? 0),
-                    'RPE, calidad_sueño, fatiga, descripción',
-                    'Registro anterior',
-                    "Editado con justificación: $justificacion"
+                    $id_registro,
+                    'Actualización RPE',
+                    null,
+                    json_encode($datosActualizados, JSON_UNESCAPED_UNICODE)
                 );
-                echo json_encode(['status' => 'success', 'message' => 'Evento actualizado correctamente']);
-            } else {
-                $errores = $objCarga->obtenerErrores();
-                $mensaje = !empty($errores) ? reset($errores) : 'Error al actualizar el evento';
-                echo json_encode(['status' => 'error', 'message' => $mensaje]);
             }
-        } catch (Exception $e) {
-            error_log("cargaBienestarControlador::editar: " . $e->getMessage());
-            echo json_encode(['status' => 'error', 'message' => 'Error interno del servidor.']);
+
+            echo json_encode(['status' => 'success', 'message' => $resultado['mensaje'], 'id' => $id_registro]);
+        } else {
+            // Si hay errores de validación
+            if (isset($resultado['errores'])) {
+                echo json_encode(['status' => 'warning', 'errores' => $resultado['errores']]);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => $resultado['mensaje']]);
+            }
         }
         exit;
     }
 
-    // ========================= ANULAR (Soft Delete) =========================
+    // -----------------------------------------------------------------
+    // Anular (soft delete)
+    // -----------------------------------------------------------------
     if ($accionPost === 'anular') {
-        Autorizacion::exigir('cargaBienestar', 'eliminar');
+        Autorizacion::exigir('carga_bienestar', 'anular');
 
-        $id_evento = (int)($_POST['id_evento'] ?? 0);
-        $justificacion = trim($_POST['justificacion_cambio'] ?? '');
-        if (empty($justificacion)) {
-            echo json_encode(['status' => 'error', 'message' => 'La justificación para anular es obligatoria']);
-            exit;
-        }
+        $id_rpe   = (int)($_POST['id_rpe'] ?? 0);
+        $motivo   = trim($_POST['motivo'] ?? '');
+        $id_usuario = $_SESSION['id'] ?? 0;
 
-        try {
-            if ($objCarga->anularEvento($id_evento, $justificacion)) {
-                Bitacora::registrar(
-                    $id_usuario,
-                    'CargaBienestar',
-                    'DELETE',
-                    $id_evento,
-                    'estado',
-                    'Activo',
-                    "Anulado con justificación: $justificacion"
-                );
-                echo json_encode(['status' => 'success', 'message' => 'Evento anulado correctamente']);
-            } else {
-                echo json_encode(['status' => 'error', 'message' => 'No se pudo anular el registro']);
-            }
-        } catch (Exception $e) {
-            error_log("cargaBienestarControlador::anular: " . $e->getMessage());
-            echo json_encode(['status' => 'error', 'message' => 'Error interno del servidor.']);
+        $resultado = $objCarga->anularRegistro($id_rpe, $motivo, $id_usuario);
+
+        if ($resultado['exito']) {
+            Bitacora::registrar(
+                $id_usuario,
+                'CargaBienestar',
+                'DELETE',
+                $id_rpe,
+                'estado',
+                'Activo',
+                "Anulado. Motivo: $motivo"
+            );
+            echo json_encode(['status' => 'success', 'message' => $resultado['mensaje']]);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => $resultado['mensaje']]);
         }
         exit;
     }
 
-    // Si la acción no es reconocida
+    // -----------------------------------------------------------------
+    // Reactivar (cambiar de Anulado a Activo)
+    // -----------------------------------------------------------------
+    if ($accionPost === 'reactivar') {
+        Autorizacion::exigir('carga_bienestar', 'registrar');
+
+        $id_rpe = (int)($_POST['id_rpe'] ?? 0);
+        $resultado = $objCarga->reactivarRegistro($id_rpe, $_SESSION['id']);
+
+        if ($resultado['exito']) {
+            Bitacora::registrar(
+                $_SESSION['id'],
+                'CargaBienestar',
+                'RESTORE',
+                $id_rpe,
+                'estado',
+                'Anulado',
+                'Activo'
+            );
+            echo json_encode(['status' => 'success', 'message' => $resultado['mensaje']]);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => $resultado['mensaje']]);
+        }
+        exit;
+    }
+
+    // Si ninguna acción coincide
     echo json_encode(['status' => 'error', 'message' => 'Acción no válida']);
     exit;
 }

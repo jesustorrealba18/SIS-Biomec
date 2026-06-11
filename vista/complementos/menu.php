@@ -48,6 +48,13 @@
         </a>
         <?php endif; ?>
 
+         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('grupo', 'ver')): ?>
+        <a href="?p=grupo" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'grupo') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'sesiones') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Grupo</span>
+        </a>
+        <?php endif; ?>
+
  <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sesiones', 'ver')): ?>
         <a href="?p=sesiones" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'representante') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'sesiones') ? 'text-white' : ''; ?>"></i> 
@@ -66,6 +73,20 @@
         <a href="?p=lesion" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'lesion') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-notes-medical w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'lesion') ? 'text-white' : ''; ?>"></i> 
             <span class="font-medium">Control de Lesiones</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'ver')): ?>
+        <a href="?p=cargaBienestar" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'cargaBienestar') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-notes-medical w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'cargaBienestar') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Monitoreo de Carga y Bienestar</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('normalizacion', 'ver')): ?>
+        <a href="?p=normalizacion" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'normalizacion') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-notes-medical w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'normalizacion') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Normalizacion de tiempos</span>
         </a>
         <?php endif; ?>
 

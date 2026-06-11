@@ -1,5 +1,3 @@
-const API_URL = 'index.php?p=sesiones';
-
 const modalSesion = document.getElementById('modalSesion');
 const modalVerSesion = document.getElementById('modalVer');
 const modalCompletarSesion = document.getElementById('modalCompletar');

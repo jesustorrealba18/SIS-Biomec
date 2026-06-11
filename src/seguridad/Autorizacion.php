@@ -18,6 +18,7 @@ class Autorizacion {
         'periodizacion' => ['periodizacion', 'ver'],
         'antropometria' => ['antropometria', 'ver'],
         'representante' => ['representantes', 'ver'],
+        'grupo'         => ['grupo', 'ver'],
         'calendario'    => ['eventos', 'ver'],
         'sesiones'      => ['sesiones', 'ver'],
         'lesion'        => ['lesiones', 'ver'],
@@ -26,11 +27,12 @@ class Autorizacion {
         'roles'         => ['seguridad', 'roles'],
         'mantenimiento' => ['seguridad', 'mantenimiento'],
         'categorias'    => ['atletas', 'gestionar'],
-        'cargaBienestar'=> ['cargaBienestar', 'ver'],
+        'cargaBienestar'=> ['rpe', 'ver'],
         'mi_perfil'     => ['mi_perfil', 'ver'],
         'asistencia'    => ['asistencia', 'ver'],
         'observacionesTecnicas' => ['observacionesTecnicas', 'ver'],
         'testFisico'             => ['testFisico', 'ver'],
+        'normalizacion'          => ['normalizacion', 'ver'],
     ];
 
     public static function cargarPermisos(int $idUsuario): bool {
