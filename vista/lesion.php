@@ -14,52 +14,74 @@
         .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 15px; }
         .input-dark { background: #0f0d23; border: 1px solid #252345; color: white; transition: all 0.3s ease; }
         .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 15px rgba(99,102,241,0.2); outline: none; }
-        
-        /* Scroll personalizado */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #0f0d23; }
         ::-webkit-scrollbar-thumb { background: #252345; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
-
-        /* Estilo para el modal con scroll interno */
-        .modal-scroll {
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .modal-header-sticky {
-            position: sticky;
-            top: 0;
-            z-index: 20;
-        }
+        .modal-scroll { max-height: 90vh; overflow-y: auto; }
+        .modal-header-sticky { position: sticky; top: 0; z-index: 20; }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden selection:bg-indigo-500/30">
+<body class="flex min-h-screen selection:bg-indigo-500/30">
 
     <?php include RAIZ . 'vista/complementos/menu.php'; ?>
 
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
-        
-        <header class="bg-[#161430]/80 backdrop-blur-md border-b border-white/5 p-6 flex justify-between items-center z-20">
+    <main class="flex-1 p-8 overflow-y-auto">
+        <!-- Header unificado (sin botón de registrar) -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
-                <h1 class="text-2xl font-black text-white tracking-tight flex items-center gap-3">
-                    <i class="fas fa-notes-medical text-indigo-500"></i> Control Clínico
-                </h1>
+                <h1 class="text-2xl font-bold text-white">Control de Lesiones</h1>
                 <p class="text-sm text-gray-400 mt-1">Gestión de Lesiones y Estados de Salud (RF-10)</p>
             </div>
-            
-            <div class="flex items-center gap-4">
-                <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'registrar')): ?>
-                <button onclick="abrirModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all cursor-pointer flex items-center gap-2">
-                    <i class="fas fa-plus"></i> Registrar Lesión
-                </button>
-                <?php endif; ?>
+            <div class="flex items-center gap-6">
+                <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
+                    <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute top-2 right-12 bg-red-500 w-2 h-2 rounded-full border border-[#0f0d23]"></span>
+                    </div>
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
+                        Notificaciones
+                    </div>
+                </div>
+                <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
+                    <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
+                        <i class="fas fa-question-circle text-xl"></i>
+                        <span class="absolute top-2 right-12 bg-red-500 w-2 h-2 rounded-full border border-[#0f0d23]"></span>
+                    </div>
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
+                        Guía de ayuda
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
+                    <div class="text-right mr-2">
+                        <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre']; ?></p>
+                        <a href="?p=salir" class="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-widest transition">
+                            Cerrar Sesión <i class="fas fa-sign-out-alt ml-1"></i>
+                        </a>
+                    </div>
+                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($_SESSION['nombre']); ?>&background=4f46e5&color=fff"
+                         class="w-10 h-10 rounded-full border-2 border-indigo-500 shadow-lg shadow-indigo-500/20">
+                </div>
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-6 space-y-6">
-            
+        <!-- Barra de acciones (similar a atleta.php: indicador + botón) -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div class="flex items-center gap-2 text-sm text-indigo-400">
+                <i class="fas fa-notes-medical"></i>
+                <span class="font-medium tracking-wide uppercase text-xs">Módulo de Control Clínico</span>
+            </div>
+            <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'registrar')): ?>
+            <button onclick="abrirModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95">
+                <i class="fas fa-plus"></i> Registrar Lesión
+            </button>
+            <?php endif; ?>
+        </div>
+
+        <!-- Contenido principal de lesiones (KPIs, filtros, tabla) -->
+        <div class="space-y-6">
             <!-- KPIs -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="tarjeta p-5 flex items-center gap-4 relative overflow-hidden group">
                     <div class="absolute -right-6 -top-6 text-indigo-500/10 group-hover:text-indigo-500/20 transition-colors">
                         <i class="fas fa-user-injured text-8xl"></i>
@@ -78,33 +100,38 @@
                         <i class="fas fa-exclamation-triangle text-8xl"></i>
                     </div>
                     <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 text-xl z-10">
-                        <i class="fas fa-radiation"></i>
+                        <i class="fas fa-chart-line"></i>
                     </div>
                     <div class="z-10">
-                        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Casos Graves</p>
-                        <h3 class="text-2xl font-black text-white mt-1" id="kpi_graves">0</h3>
+                        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Molestia Alta (>7)</p>
+                        <h3 class="text-2xl font-black text-white mt-1" id="kpi_molestia_alta">0</h3>
                     </div>
                 </div>
 
                 <div class="tarjeta p-5 flex items-center gap-4 relative overflow-hidden group">
                     <div class="absolute -right-6 -top-6 text-emerald-500/10 group-hover:text-emerald-500/20 transition-colors">
-                        <i class="fas fa-bed text-8xl"></i>
+                        <i class="fas fa-calendar-week text-8xl"></i>
                     </div>
                     <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl z-10">
-                        <i class="fas fa-calendar-plus"></i>
+                        <i class="fas fa-clock"></i>
                     </div>
                     <div class="z-10">
-                        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Promedio Reposo (Días)</p>
-                        <h3 class="text-2xl font-black text-white mt-1" id="kpi_reposo">0</h3>
+                        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Reposo Promedio (días)</p>
+                        <h3 class="text-2xl font-black text-white mt-1" id="kpi_reposo_promedio">0</h3>
                     </div>
                 </div>
             </div>
 
-            <!-- Panel de filtros (similar a marcas.php) -->
+            <!-- Filtros -->
             <div class="tarjeta p-5 flex flex-col gap-4 border border-white/5 shadow-lg shadow-black/20">
-                <div class="flex items-center gap-2 border-b border-[#252345] pb-2">
-                    <i class="fas fa-filter text-indigo-400 text-sm"></i>
-                    <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Filtros de Búsqueda</h3>
+                <div class="flex items-center justify-between gap-2 border-b border-[#252345] pb-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-filter text-indigo-400 text-sm"></i>
+                        <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Filtros de Búsqueda</h3>
+                    </div>
+                    <button id="btnMostrarPapelera" class="text-xs bg-red-500/20 hover:bg-red-500/40 text-red-300 px-3 py-1 rounded-full transition flex items-center gap-1 cursor-pointer">
+                        <i class="fas fa-trash-alt"></i> Ver Papelera
+                    </button>
                 </div>
 
                 <div class="relative w-full">
@@ -114,108 +141,84 @@
                     <select id="filtroAtleta" class="w-full input-dark pl-12 pr-10 py-3 rounded-xl text-sm bg-[#0f0d23] border border-[#252345] hover:border-indigo-500/50 focus:border-indigo-500 transition-all cursor-pointer appearance-none shadow-inner">
                         <option value="">👤 Todos los Atletas</option>
                     </select>
-                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                        <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
-                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
-                    <!-- Filtro Tipo de Lesión -->
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-tag text-purple-400/70 group-hover:text-purple-400 transition-colors text-xs"></i>
-                        </div>
-                        <select id="filtroTipo" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-purple-500/50 focus:border-purple-500 transition-all cursor-pointer appearance-none">
-                            <option value="">📌 Todos los Tipos</option>
-                            <option value="Muscular">Muscular</option>
-                            <option value="Articular">Articular</option>
-                            <option value="Ósea">Ósea</option>
-                            <option value="Tendinosa">Tendinosa</option>
-                            <option value="Enfermedad General">Enfermedad General</option>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
-                        </div>
-                    </div>
+                    <select id="filtroEstadoClinico" class="w-full input-dark px-4 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] cursor-pointer">
+                        <option value="">🏥 Todos los Estados Clínicos</option>
+                        <option value="Activa">🟢 Activa</option>
+                        <option value="EnRehabilitacion">🟡 En Rehabilitación</option>
+                        <option value="Recuperada">✅ Recuperada</option>
+                        <option value="Cronica">⚠️ Crónica</option>
+                    </select>
 
-                    <!-- Filtro Gravedad -->
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-exclamation-triangle text-red-400/70 group-hover:text-red-400 transition-colors text-xs"></i>
-                        </div>
-                        <select id="filtroGravedad" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-red-500/50 focus:border-red-500 transition-all cursor-pointer appearance-none">
-                            <option value="">⚠️ Todas las Gravedades</option>
-                            <option value="Leve">Leve</option>
-                            <option value="Moderada">Moderada</option>
-                            <option value="Grave">Grave</option>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
-                        </div>
-                    </div>
+                    <select id="filtroTipo" class="w-full input-dark px-4 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] cursor-pointer">
+                        <option value="">📌 Todos los Tipos</option>
+                        <option value="Sobreuso">Sobrecarga/Sobreuso</option>
+                        <option value="Aguda">Aguda (Traumática)</option>
+                        <option value="Recidiva">Recidiva (Reincidente)</option>
+                    </select>
 
-                    <!-- Filtro Estado (Activo/Anulado) -->
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-history text-amber-400/70 group-hover:text-amber-400 transition-colors text-xs"></i>
-                        </div>
-                        <select id="filtroEstado" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-amber-500/50 focus:border-amber-500 transition-all cursor-pointer appearance-none">
-                            <option value="Activo">🟢 Lesiones Activas</option>
-                            <option value="Anulado">🔴 Anuladas (IA)</option>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
-                        </div>
-                    </div>
+                    <select id="filtroZona" class="w-full input-dark px-4 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] cursor-pointer">
+                        <option value="">🦴 Todas las Zonas</option>
+                        <option value="Hombro">Hombro</option>
+                        <option value="Rodilla">Rodilla</option>
+                        <option value="Espalda">Espalda</option>
+                        <option value="Tobillo">Tobillo</option>
+                        <option value="Otra">Otra</option>
+                    </select>
 
-                    <!-- Botón de refrescar -->
                     <button onclick="cargarTabla()" class="bg-[#252345] hover:bg-indigo-600 text-white rounded-xl flex items-center justify-center gap-2 transition cursor-pointer py-2.5 px-4 text-xs font-bold uppercase tracking-wider">
-                        <i class="fas fa-sync-alt"></i> Actualizar
+                        <i class="fas fa-sync-alt"></i> Filtrar
                     </button>
                 </div>
             </div>
 
             <!-- Tabla de lesiones -->
-            <div class="tarjeta overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm whitespace-nowrap">
-                        <thead class="bg-[#0f0d23] text-gray-400 border-b border-[#252345] uppercase text-[10px] tracking-wider">
-                            <tr>
-                                <th class="px-6 py-4 font-bold">Fecha</th>
-                                <th class="px-6 py-4 font-bold">Atleta</th>
-                                <th class="px-6 py-4 font-bold">Tipo / Zona</th>
-                                <th class="px-6 py-4 font-bold">Gravedad</th>
-                                <th class="px-6 py-4 font-bold">Reposo (días)</th>
-                                <th class="px-6 py-4 font-bold text-center">Estado</th>
-                                <th class="px-6 py-4 font-bold text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaCuerpo" class="divide-y divide-[#252345] text-gray-300">
-                            <tr>
-                                <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando registros médicos...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div class="mt-2">
+                <h2 id="tituloTablaState" class="text-lg font-bold text-emerald-400 mb-3 ml-2 flex items-center gap-2">
+                    <i class="fas fa-check-circle"></i> Mostrando Registros Activos
+                </h2>
+                <div class="tarjeta overflow-hidden shadow-lg border-t-2 border-t-indigo-500">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-[#0f0d23] text-gray-400 border-b border-[#252345] uppercase text-[10px] tracking-wider">
+                                <tr>
+                                    <th class="px-6 py-4 font-bold">Fecha Inicio</th>
+                                    <th class="px-6 py-4 font-bold">Atleta</th>
+                                    <th class="px-6 py-4 font-bold">Zona / Lado</th>
+                                    <th class="px-6 py-4 font-bold">Molestia</th>
+                                    <th class="px-6 py-4 font-bold">Estado Clínico</th>
+                                    <th class="px-6 py-4 font-bold text-center">Status DB</th>
+                                    <th class="px-6 py-4 font-bold text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaCuerpo" class="divide-y divide-[#252345] text-gray-300">
+                                <tr>
+                                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando registros médicos...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- MODAL FORMULARIO (con scroll interno y header sticky) -->
+    <!-- Modal para formulario de lesión (sin cambios) -->
     <div id="modalFormulario" class="fixed inset-0 bg-[#060512]/90 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-[#111026] border border-white/10 w-full max-w-3xl rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] flex flex-col max-h-[90vh]">
-            
+        <div class="bg-[#111026] border border-white/10 w-full max-w-4xl rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] flex flex-col max-h-[90vh]">
             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 relative modal-header-sticky">
                 <button type="button" onclick="cerrarModal()" class="absolute top-6 right-6 text-white/70 hover:text-white hover:rotate-90 transition-all duration-300 cursor-pointer">
                     <i class="fas fa-times text-xl"></i>
                 </button>
-                <h2 class="text-2xl font-black text-white" id="tituloModal">Registrar Nuevo Evento Médico</h2>
-                <p class="text-indigo-100 text-sm mt-1">Los datos alimentarán el algoritmo de prevención de lesiones.</p>
+                <h2 class="text-2xl font-black text-white" id="tituloModal">Registrar Nueva Lesión</h2>
+                <p class="text-indigo-100 text-sm mt-1">Componente del Sistema Inteligente de Prevención.</p>
             </div>
 
-            <div class="overflow-y-auto p-8">
+            <div class="overflow-y-auto p-8 modal-scroll">
                 <form id="formularioLesion" class="space-y-6">
                     <input type="hidden" name="id_lesion" id="id_lesion">
                     <input type="hidden" name="accion" id="accion" value="registrar">
@@ -229,59 +232,89 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Fecha de Lesión *</label>
-                            <input type="date" name="fecha_lesion" id="fecha_lesion" class="w-full input-dark rounded-xl px-4 py-3" required>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Fecha de Inicio *</label>
+                            <input type="date" name="fecha_inicio" id="fecha_inicio" class="w-full input-dark rounded-xl px-4 py-3" required>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Tipo de Lesión *</label>
-                            <select name="tipo_lesion" id="tipo_lesion" class="w-full input-dark rounded-xl px-4 py-3" required>
-                                <option value="">Seleccione el tipo...</option>
-                                <option value="Muscular">Muscular (Desgarro, Contractura)</option>
-                                <option value="Articular">Articular (Esguince, Luxación)</option>
-                                <option value="Ósea">Ósea (Fractura, Fisura)</option>
-                                <option value="Tendinosa">Tendinosa (Tendinitis)</option>
-                                <option value="Enfermedad General">Enfermedad General (Fiebre, Infección)</option>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Fecha Estimada Recuperación</label>
+                            <input type="date" name="fecha_estimada_recup" id="fecha_estimada_recup" class="w-full input-dark rounded-xl px-4 py-3">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Zona Anatómica *</label>
+                            <select name="zona_anatomica" id="zona_anatomica" class="w-full input-dark rounded-xl px-4 py-3" required>
+                                <option value="">Seleccione...</option>
+                                <option value="Hombro">Hombro</option>
+                                <option value="Rodilla">Rodilla</option>
+                                <option value="Espalda">Espalda</option>
+                                <option value="Codo">Codo</option>
+                                <option value="Tobillo">Tobillo</option>
+                                <option value="Cervical">Cervical</option>
+                                <option value="Lumbar">Lumbar</option>
+                                <option value="Muslo">Muslo</option>
+                                <option value="Gemelo">Gemelo</option>
+                                <option value="Pie">Pie</option>
+                                <option value="Otra">Otra</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Lado Afectado</label>
+                            <select name="lado" id="lado" class="w-full input-dark rounded-xl px-4 py-3">
+                                <option value="">No especificado</option>
+                                <option value="Izquierdo">Izquierdo</option>
+                                <option value="Derecho">Derecho</option>
+                                <option value="Bilateral">Bilateral</option>
                             </select>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Zona Corporal *</label>
-                            <input type="text" name="zona_corporal" id="zona_corporal" placeholder="Ej. Hombro derecho, Manguito rotador..." class="w-full input-dark rounded-xl px-4 py-3" required>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Tipo de Lesión *</label>
+                            <select name="tipo" id="tipo" class="w-full input-dark rounded-xl px-4 py-3" required>
+                                <option value="">Seleccione el tipo...</option>
+                                <option value="Sobreuso">Sobrecarga / Sobreuso</option>
+                                <option value="Aguda">Aguda (Traumática)</option>
+                                <option value="Recidiva">Recidiva (Reincidente)</option>
+                            </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Gravedad *</label>
-                            <select name="gravedad" id="gravedad" class="w-full input-dark rounded-xl px-4 py-3" required>
-                                <option value="">Seleccione nivel...</option>
-                                <option value="Leve">Leve (Puede entrenar con molestias)</option>
-                                <option value="Moderada">Moderada (Requiere bajar carga)</option>
-                                <option value="Grave">Grave (Cese total de actividad)</option>
-                            </select>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Nivel de Molestia (1-10) *</label>
+                            <input type="number" name="nivel_molestia" id="nivel_molestia" min="1" max="10" class="w-full input-dark rounded-xl px-4 py-3" required>
                         </div>
 
                         <div class="md:col-span-2">
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Diagnóstico Clínico *</label>
-                            <textarea name="diagnostico" id="diagnostico" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none" required placeholder="Descripción detallada del diagnóstico..."></textarea>
+                            <textarea name="diagnostico" id="diagnostico" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none" required></textarea>
                         </div>
 
                         <div class="md:col-span-1">
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Tratamiento Asignado</label>
-                            <textarea name="tratamiento" id="tratamiento" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none" placeholder="Fisioterapia, hielo, medicamentos..."></textarea>
+                            <textarea name="tratamiento" id="tratamiento" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none"></textarea>
                         </div>
                         <div class="md:col-span-1">
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Días Reposo Estimados</label>
-                            <input type="number" name="dias_reposo_estimados" id="dias_reposo_estimados" min="0" placeholder="0" class="w-full input-dark rounded-xl px-4 py-3">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Profesional Responsable</label>
+                            <input type="text" name="profesional" id="profesional" class="w-full input-dark rounded-xl px-4 py-3">
+                        </div>
+
+                        <div class="md:col-span-2" id="campoEstadoEdicion" style="display:none;">
+                            <label class="block text-xs font-bold text-amber-400 uppercase tracking-wide mb-2">Actualizar Estado Clínico</label>
+                            <select name="estado" id="estado" class="w-full input-dark rounded-xl px-4 py-3 border-amber-500/50 focus:border-amber-500">
+                                <option value="Activa">🟢 Activa</option>
+                                <option value="EnRehabilitacion">🟡 En Rehabilitación</option>
+                                <option value="Recuperada">✅ Recuperada</option>
+                                <option value="Cronica">⚠️ Crónica</option>
+                            </select>
                         </div>
 
                         <div class="md:col-span-2">
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Observaciones Generales</label>
-                            <textarea name="observaciones" id="observaciones" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none" placeholder="Cualquier nota extra para el entrenador principal..."></textarea>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Observaciones</label>
+                            <textarea name="observaciones" id="observaciones" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none"></textarea>
                         </div>
                     </div>
 
                     <div class="flex gap-4 pt-4">
-                        <button type="button" onclick="cerrarModal()" class="flex-1 bg-transparent border border-[#252345] hover:bg-[#252345] text-gray-300 py-3.5 rounded-xl font-bold transition cursor-pointer uppercase text-xs tracking-wider">CANCELAR</button>
-                        <button type="submit" id="btnGuardar" class="flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 cursor-pointer uppercase text-xs tracking-wider">
-                            GUARDAR INFORME CLÍNICO <i class="fas fa-save ml-2"></i>
+                        <button type="button" onclick="cerrarModal()" class="flex-1 border border-[#252345] text-gray-300 py-3 rounded-xl font-bold hover:bg-[#252345] transition uppercase text-xs">Cancelar</button>
+                        <button type="submit" id="btnGuardar" class="flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold uppercase text-xs shadow-lg shadow-indigo-500/20">
+                            Guardar Informe <i class="fas fa-save ml-2"></i>
                         </button>
                     </div>
                 </form>
@@ -289,62 +322,14 @@
         </div>
     </div>
 
-    <!-- MODAL VER DETALLE (con gráfica) -->
+    <!-- Modal para ver detalles (sin cambios) -->
     <div id="modalVer" class="fixed inset-0 bg-[#060512]/90 backdrop-blur-xl hidden flex items-center justify-center p-4 z-50">
-        <div class="relative bg-[#111026] border border-white/10 w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] max-h-[92vh] overflow-y-auto">
-            <button type="button" onclick="cerrarModalVer()" class="absolute top-6 right-6 text-gray-400 hover:text-white hover:rotate-90 transition-all duration-300 z-[100] cursor-pointer p-2">
+        <div class="relative bg-[#111026] border border-white/10 w-full max-w-2xl rounded-[2rem] shadow-[0_0_50px_rgba(79,70,229,0.15)] max-h-[92vh] overflow-y-auto">
+            <button type="button" onclick="cerrarModalVer()" class="absolute top-6 right-6 text-gray-400 hover:text-white hover:rotate-90 transition-all duration-300 z-[100] cursor-pointer">
                 <i class="fas fa-times text-2xl"></i>
             </button>
-
             <div class="p-8 md:p-10">
-                <div class="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
-                    <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-3xl shrink-0">
-                        <i class="fas fa-file-medical"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-3xl font-black text-white leading-tight" id="ver_atleta">Cargando...</h2>
-                        <p class="text-indigo-400 font-medium flex items-center gap-2 mt-1">
-                            <i class="fas fa-calendar-alt"></i> <span id="ver_fecha">00/00/0000</span>
-                        </p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-6 mb-8">
-                    <div class="bg-[#161430] p-4 rounded-xl border border-white/5">
-                        <p class="text-xs text-gray-500 uppercase font-bold mb-1">Zona Afectada</p>
-                        <p class="text-white font-medium" id="ver_zona">...</p>
-                    </div>
-                    <div class="bg-[#161430] p-4 rounded-xl border border-white/5">
-                        <p class="text-xs text-gray-500 uppercase font-bold mb-1">Gravedad</p>
-                        <p class="text-white font-medium" id="ver_gravedad">...</p>
-                    </div>
-                    <div class="col-span-2 bg-[#161430] p-4 rounded-xl border border-white/5">
-                        <p class="text-xs text-gray-500 uppercase font-bold mb-1">Diagnóstico Clínico</p>
-                        <p class="text-gray-300" id="ver_diagnostico">...</p>
-                    </div>
-                    <div class="col-span-2 bg-[#161430] p-4 rounded-xl border border-white/5">
-                        <p class="text-xs text-gray-500 uppercase font-bold mb-1">Tratamiento y Reposo</p>
-                        <p class="text-gray-300" id="ver_tratamiento">...</p>
-                    </div>
-                    <div class="col-span-2 bg-[#161430] p-4 rounded-xl border border-white/5">
-                        <p class="text-xs text-gray-500 uppercase font-bold mb-1">Observaciones</p>
-                        <p class="text-gray-300" id="ver_observaciones">...</p>
-                    </div>
-                </div>
-
-                <!-- Contenedor de gráfica de impacto (RPE) -->
-                <div class="bg-[#161430] border border-white/5 rounded-2xl p-5 mb-8 hidden" id="contenedorGraficaImpacto">
-                    <h3 class="text-sm font-bold text-gray-300 mb-4 uppercase tracking-wider">Impacto en la Carga (RPE) - Últimos 30 días</h3>
-                    <div class="h-48 w-full">
-                        <canvas id="graficaImpacto"></canvas>
-                    </div>
-                </div>
-                
-                <div class="flex justify-end pt-4">
-                    <button onclick="cerrarModalVer()" class="bg-[#252345] hover:bg-white/10 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-colors cursor-pointer">
-                        Cerrar Ficha
-                    </button>
-                </div>
+                <div id="contenidoDetalle"></div>
             </div>
         </div>
     </div>
@@ -353,12 +338,13 @@
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
     <script>
-        // Permisos del módulo (se pueden ampliar según el controlador)
+        // Mapeo seguro de permisos del módulo
         const PERMISOS_MODULO = {
             registrar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'registrar') ? 'true' : 'false'; ?>,
             editar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'editar') ? 'true' : 'false'; ?>,
             eliminar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'eliminar') ? 'true' : 'false'; ?>,
-            anular: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'anular') ? 'true' : 'false'; ?>
+            eliminardb: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'eliminardb') ? 'true' : 'false'; ?>,
+            reactivar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'reactivar') ? 'true' : 'false'; ?>
         };
     </script>
     <script src="assets/js/lesion.js"></script>

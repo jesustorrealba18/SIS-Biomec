@@ -27,7 +27,7 @@ class Autorizacion {
         'roles'         => ['seguridad', 'roles'],
         'mantenimiento' => ['seguridad', 'mantenimiento'],
         'categorias'    => ['atletas', 'gestionar'],
-        'cargaBienestar'=> ['cargaBienestar', 'ver'],
+        'cargaBienestar'=> ['rpe', 'ver'],
         'mi_perfil'     => ['mi_perfil', 'ver'],
         'asistencia'    => ['asistencia', 'ver'],
     ];

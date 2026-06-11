@@ -1,30 +1,27 @@
 // =====================================================================
-// CONFIGURACIÓN PRINCIPAL Y MAPEO DEL DOM
+// CONTROLADOR FRONT-END: CONTROL CLÍNICO DE LESIONES (RF-10)
 // =====================================================================
 const modalFormulario = document.getElementById('modalFormulario');
 const modalVer = document.getElementById('modalVer');
 const formulario = document.getElementById('formularioLesion');
 const btnGuardar = document.getElementById('btnGuardar');
 const tablaCuerpo = document.getElementById('tablaCuerpo');
+const tituloTablaState = document.getElementById('tituloTablaState');
 
-// Filtros
+// Referencias a los filtros
 const filtroAtleta = document.getElementById('filtroAtleta');
 const filtroTipo = document.getElementById('filtroTipo');
-const filtroGravedad = document.getElementById('filtroGravedad');
-const filtroEstado = document.getElementById('filtroEstado');
+const filtroZona = document.getElementById('filtroZona');
+const filtroEstadoClinico = document.getElementById('filtroEstadoClinico');
+const btnPapelera = document.getElementById('btnMostrarPapelera');
 
-// Ruta al controlador pivote (ajusta 'lesion' según tu ruteo)
 const API_URL = 'index.php?p=lesion';
-
-// Variable global para almacenar el historial actual (para el modal de detalle)
-let historialActual = [];
-
-// Variable global para la gráfica (si se usa Chart.js)
 let instanciaGrafica = null;
+let modoPapelera = false; // Estado: false = Activos, true = Inactivos (Papelera)
 
-/**
- * Función centralizada para peticiones AJAX al servidor (Principio DRY)
- */
+// ---------------------------------------------------------------------
+// Petición AJAX Centralizada (Fetch API)
+// ---------------------------------------------------------------------
 async function peticionAjax(accion, datos = null, metodo = 'GET') {
     let url = `${API_URL}&accion=${accion}`;
     const opciones = { method: metodo };
@@ -34,507 +31,395 @@ async function peticionAjax(accion, datos = null, metodo = 'GET') {
             opciones.body = JSON.stringify(datos);
             opciones.headers = { 'Content-Type': 'application/json' };
         } else {
-            opciones.body = datos; // FormData
+            opciones.body = datos;
         }
     }
-
+    
     try {
         const respuesta = await fetch(url, opciones);
-        if (!respuesta.ok) throw new Error('Error de comunicación con el servidor');
+        if (!respuesta.ok) throw new Error('Error HTTP: ' + respuesta.status);
         return await respuesta.json();
     } catch (error) {
         console.error("Error Fetch:", error);
-        if (typeof UI !== 'undefined') {
-            UI.error('Error Crítico', 'No se pudo procesar la solicitud con el servidor.');
-        } else {
-            alert('Error de red. Consulte la consola.');
-        }
+        if (typeof UI !== 'undefined') UI.error('Falla de Comunicación', 'El servidor no pudo procesar la solicitud.');
         return null;
     }
 }
 
 // =====================================================================
-// MANEJO DE INTERFAZ Y MODALES
+// INICIALIZACIÓN REACTIVA (Actualización automática al cambiar filtros)
 // =====================================================================
-
-function abrirModal(id_lesion = null) {
-    // Limpieza total del formulario
-    formulario.reset();
-    document.getElementById('id_lesion').value = '';
-    document.getElementById('accion').value = 'registrar';
-    document.getElementById('tituloModal').innerText = 'Registrar Nuevo Evento Médico';
-    if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formulario);
-    
-    // Reseteamos el color y texto del botón
-    btnGuardar.innerHTML = 'GUARDAR INFORME CLÍNICO <i class="fas fa-save ml-2"></i>';
-    btnGuardar.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
-    btnGuardar.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
-    
-    // Si recibimos un id_lesion, cargamos los datos para edición
-    if (id_lesion) {
-        cargarDatosParaEdicion(id_lesion);
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
+        Validador.vincularTiempoReal(formulario);
     }
     
-    // Mostramos el modal
-    modalFormulario.classList.remove('hidden');
-    // Pequeña animación si se desea (opcional)
-    setTimeout(() => {
-        modalFormulario.firstElementChild?.classList?.remove('scale-95', 'opacity-0');
-    }, 10);
-}
-
-async function cargarDatosParaEdicion(id_lesion) {
-    // Mostrar estado de carga en el botón (opcional)
-    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando datos...';
-    btnGuardar.disabled = true;
+    cargarAtletas();
+    cargarTabla();
     
-    const data = await peticionAjax(`obtenerDetalleLesion&id=${id_lesion}`);
-    if (!data || data.status === 'error') {
-        if (typeof UI !== 'undefined') UI.error('Error', data?.message || 'No se pudo cargar el registro para edición.');
-        cerrarModal();
-        return;
-    }
-    
-    // Llenar campos del formulario
-    document.getElementById('id_lesion').value = data.id_lesion;
-    document.getElementById('accion').value = 'actualizar';
-    document.getElementById('id_atleta').value = data.id_atleta;
-    document.getElementById('fecha_lesion').value = data.fecha_lesion;
-    document.getElementById('tipo_lesion').value = data.tipo_lesion;
-    document.getElementById('zona_corporal').value = data.zona_corporal;
-    document.getElementById('gravedad').value = data.gravedad;
-    document.getElementById('diagnostico').value = data.diagnostico || '';
-    document.getElementById('tratamiento').value = data.tratamiento || '';
-    document.getElementById('dias_reposo_estimados').value = data.dias_reposo_estimados || '';
-    document.getElementById('observaciones').value = data.observaciones || '';
-    
-    // Cambiar título y estilo del botón
-    document.getElementById('tituloModal').innerText = 'Editar Informe Médico';
-    btnGuardar.innerHTML = 'ACTUALIZAR INFORME <i class="fas fa-sync-alt ml-2"></i>';
-    btnGuardar.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
-    btnGuardar.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
-    
-    btnGuardar.disabled = false;
-}
+    // Vinculación de eventos para filtrado reactivo (automático)
+    // Al cambiar cualquier select, se dispara la carga de la tabla instantáneamente
+    if (filtroAtleta) filtroAtleta.addEventListener('change', cargarTabla);
+    if (filtroTipo) filtroTipo.addEventListener('change', cargarTabla);
+    if (filtroZona) filtroZona.addEventListener('change', cargarTabla);
+    if (filtroEstadoClinico) filtroEstadoClinico.addEventListener('change', cargarTabla);
+ 
+});
 
-function cerrarModal() {
-    modalFormulario.classList.add('hidden');
-    formulario.reset();
-    if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formulario);
-}
-
-function cerrarModalVer() {
-    modalVer.classList.add('hidden');
-    if (instanciaGrafica) {
-        instanciaGrafica.destroy();
-        instanciaGrafica = null;
-    }
-}
-
-// =====================================================================
-// CARGA DE DATOS (LECTURA)
-// =====================================================================
-
-/**
- * Carga los atletas en el select del formulario y en el filtro superior
- */
+// ---------------------------------------------------------------------
+// Carga de Datos Iniciales (Atletas y Tabla)
+// ---------------------------------------------------------------------
 async function cargarAtletas() {
     const atletas = await peticionAjax('listarAtletasSelect');
     if (!atletas || !Array.isArray(atletas)) return;
     
-    let opcionesForm = '<option value="">Seleccione el atleta...</option>';
-    let opcionesFiltro = '<option value="">👤 Todos los Atletas</option>';
+    let opc = '<option value="">Seleccione el atleta...</option>';
+    let opcFiltro = '<option value="">👤 Todos los Atletas</option>';
     
-    atletas.forEach(atleta => {
-        const texto = `${atleta.nombres} ${atleta.apellidos} - ${atleta.cedula}`;
-        opcionesForm += `<option value="${atleta.id_atleta}">${texto}</option>`;
-        opcionesFiltro += `<option value="${atleta.id_atleta}">${texto}</option>`;
+    atletas.forEach(a => {
+        const txt = `${a.nombres} ${a.apellidos} - ${a.cedula}`;
+        opc += `<option value="${a.id_atleta}">${txt}</option>`;
+        opcFiltro += `<option value="${a.id_atleta}">${txt}</option>`;
     });
     
-    document.getElementById('id_atleta').innerHTML = opcionesForm;
-    if (filtroAtleta) filtroAtleta.innerHTML = opcionesFiltro;
+    document.getElementById('id_atleta').innerHTML = opc;
+    if (filtroAtleta) filtroAtleta.innerHTML = opcFiltro;
 }
 
-/**
- * Carga la tabla de lesiones y actualiza los KPIs
- */
 async function cargarTabla() {
-    // Obtener valores de filtros
     const params = new URLSearchParams();
-    if (filtroAtleta && filtroAtleta.value) params.append('id_atleta', filtroAtleta.value);
-    if (filtroTipo && filtroTipo.value) params.append('tipo', filtroTipo.value);
-    if (filtroGravedad && filtroGravedad.value) params.append('gravedad', filtroGravedad.value);
-    if (filtroEstado && filtroEstado.value) params.append('estado', filtroEstado.value);
+    if (filtroAtleta?.value) params.append('id_atleta', filtroAtleta.value);
+    if (filtroTipo?.value) params.append('tipo', filtroTipo.value);
+    if (filtroZona?.value) params.append('zona', filtroZona.value);
+    if (filtroEstadoClinico?.value) params.append('estado', filtroEstadoClinico.value);
     
-    // Mostrar carga
-    tablaCuerpo.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">
-        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando registros médicos...
-    </td></tr>`;
+    // CORRECCIÓN: Le decimos al controlador el modo exacto que queremos consultar
+    params.append('modo', modoPapelera ? 'papelera' : 'activos');
+    
+    tablaCuerpo.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl"></i><br>Cargando registros...</td></tr>`;
     
     const registros = await peticionAjax(`listarLesiones&${params.toString()}`);
-    historialActual = registros || [];
     
     if (!registros || registros.length === 0) {
-        tablaCuerpo.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">
-            No hay registros médicos con los filtros seleccionados.
-        </td></tr>`;
+        tablaCuerpo.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-folder-open mb-2 text-2xl"></i><br>No hay registros que coincidan con los filtros en este apartado.</td></tr>`;
         actualizarKPIs([]);
         return;
     }
     
     let filas = '';
     registros.forEach(reg => {
-        // Estilos según gravedad
-        let colorGravedad = 'text-gray-400 bg-gray-500/10';
-        if (reg.gravedad === 'Leve') colorGravedad = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-        if (reg.gravedad === 'Moderada') colorGravedad = 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
-        if (reg.gravedad === 'Grave') colorGravedad = 'text-red-400 bg-red-500/10 border-red-500/20';
+        // Estilos de molestia
+        let colorMolestia = reg.nivel_molestia >= 8 ? 'text-red-400 bg-red-500/10' : 
+                           (reg.nivel_molestia >= 5 ? 'text-yellow-400 bg-yellow-500/10' : 'text-emerald-400 bg-emerald-500/10');
         
-        // Estado visual
-        const estadoBadge = reg.estado === 'Activo' 
-            ? '<span class="text-emerald-400 text-xs font-bold uppercase"><i class="fas fa-circle text-[8px] mr-1"></i> Activo</span>'
-            : '<span class="text-red-400 text-xs font-bold uppercase"><i class="fas fa-circle text-[8px] mr-1"></i> Anulado</span>';
+        // Etiqueta de Estado Clínico
+        const iconos = { 'Activa':'🟢', 'EnRehabilitacion':'🟡', 'Recuperada':'✅', 'Cronica':'⚠️' };
+        const lblEstado = iconos[reg.estado] ? `${iconos[reg.estado]} ${reg.estado.replace('EnRehabilitacion', 'En Rehab.')}` : reg.estado;
+
+        // Etiqueta de Estado de BD (Activo / Papelera)
+        const visibleBadge = reg.activo == 1 
+            ? '<span class="text-green-400 bg-green-500/10 px-2 py-1 rounded text-xs"><i class="fas fa-check"></i> Activo</span>'
+            : '<span class="text-red-400 bg-red-500/10 px-2 py-1 rounded text-xs" title="'+(reg.motivo_eliminacion||'')+'"><i class="fas fa-trash-alt"></i> Papelera</span>';
         
-        // Botones de acción según permisos (se pueden controlar con PERMISOS_MODULO)
-        const puedeEditar = typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.editar && reg.estado === 'Activo';
-        const puedeAnular = typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.anular && reg.estado === 'Activo';
-        const puedeEliminarFisico = typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.eliminarFisico && reg.estado === 'Anulado';
+        // Generación de botones basada en permisos y reglas de negocio
+        let botones = `<button onclick="verDetalle(${reg.id_lesion})" class="bg-[#252345] hover:bg-indigo-600 text-white w-8 h-8 rounded-lg transition-colors" title="Ficha Médica"><i class="fas fa-eye text-xs"></i></button>`;
         
-        let botones = `
-            <button onclick="verDetalle(${reg.id_lesion})" class="bg-[#252345] hover:bg-indigo-600 text-white w-8 h-8 rounded-lg transition-colors cursor-pointer" title="Ver Informe Completo">
-                <i class="fas fa-eye text-xs"></i>
-            </button>
-        `;
-        
-        if (puedeEditar) {
-            botones += `
-                <button onclick="abrirModal(${reg.id_lesion})" class="bg-[#252345] hover:bg-amber-600 text-amber-400 hover:text-white w-8 h-8 rounded-lg transition-colors cursor-pointer" title="Editar Registro">
-                    <i class="fas fa-edit text-xs"></i>
-                </button>
-            `;
-        }
-        
-        if (puedeAnular) {
-            botones += `
-                <button onclick="anularRegistro(${reg.id_lesion})" class="bg-[#252345] hover:bg-red-600 text-red-400 hover:text-white w-8 h-8 rounded-lg transition-colors cursor-pointer" title="Anular Registro (Baja lógica)">
-                    <i class="fas fa-ban text-xs"></i>
-                </button>
-            `;
-        }
-        
-        if (puedeEliminarFisico) {
-            botones += `
-                <button onclick="eliminarFisico(${reg.id_lesion})" class="bg-[#252345] hover:bg-red-600 text-red-400 hover:text-white w-8 h-8 rounded-lg transition-colors cursor-pointer" title="Eliminar Físicamente (Permanente)">
-                    <i class="fas fa-trash-alt text-xs"></i>
-                </button>
-            `;
+        if (reg.activo == 1) { 
+            // MODO ACTIVOS
+            
+            // CORRECCIÓN: Si el estado es "Recuperada", no se renderiza el botón editar
+            if (PERMISOS_MODULO.editar && reg.estado !== 'Recuperada') {
+                botones += `<button onclick="abrirModal(${reg.id_lesion})" class="bg-[#252345] hover:bg-amber-600 text-amber-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Editar"><i class="fas fa-edit text-xs"></i></button>`;
+            }
+            
+            // CORRECCIÓN: Botón "Anular" usa el permiso "eliminar"
+            if (PERMISOS_MODULO.eliminar) {
+                botones += `<button onclick="softDelete(${reg.id_lesion})" class="bg-[#252345] hover:bg-red-600 text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Eliminado Lógico (Papelera)"><i class="fas fa-trash-alt text-xs"></i></button>`;
+            }
+            
+        } else { 
+            // MODO PAPELERA
+            if (PERMISOS_MODULO.reactivar) botones += `<button onclick="reactivar(${reg.id_lesion})" class="bg-[#252345] hover:bg-green-600 text-green-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Restaurar de la papelera"><i class="fas fa-undo-alt text-xs"></i></button>`;
+            if (PERMISOS_MODULO.eliminardb) botones += `<button onclick="eliminarFisico(${reg.id_lesion})" class="bg-[#252345] hover:bg-red-600 text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Destrucción total"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
         }
         
         filas += `
             <tr class="hover:bg-white/5 transition-colors">
-                <td class="px-6 py-4 font-medium text-white">${reg.fecha_lesion}</td>
-                <td class="px-6 py-4 text-indigo-300">${reg.nombre_atleta || `ID: ${reg.id_atleta}`}</td>
-                <td class="px-6 py-4">
-                    <span class="block text-white font-semibold">${reg.tipo_lesion}</span>
-                    <span class="text-xs text-gray-500">${reg.zona_corporal}</span>
-                </td>
-                <td class="px-6 py-4">
-                    <span class="px-3 py-1 rounded-full text-xs font-bold border ${colorGravedad}">${reg.gravedad}</span>
-                </td>
-                <td class="px-6 py-4 text-gray-400">${reg.dias_reposo_estimados || 'N/A'} días</td>
-                <td class="px-6 py-4 text-center">${estadoBadge}</td>
-                <td class="px-6 py-4 text-right flex justify-end gap-2">${botones}</td>
-            </tr>
-        `;
+                <td class="px-6 py-4 font-medium text-white">${formatearFecha(reg.fecha_inicio)}</td>
+                <td class="px-6 py-4 text-indigo-300 font-semibold">${reg.nombre_atleta}</td>
+                <td class="px-6 py-4">${reg.zona_anatomica} ${reg.lado ? '('+reg.lado+')' : ''}<br><span class="text-xs text-gray-500">${reg.tipo}</span></td>
+                <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold border border-current ${colorMolestia}">${reg.nivel_molestia}/10</span></td>
+                <td class="px-6 py-4">${lblEstado}</td>
+                <td class="px-6 py-4 text-center">${visibleBadge}</td>
+                <td class="px-6 py-4 text-right flex justify-end gap-1">${botones}</td>
+            </tr>`;
     });
     
     tablaCuerpo.innerHTML = filas;
-    actualizarKPIs(registros);
+    actualizarKPIs(registros.filter(r => r.activo == 1)); // KPIs solo cuentan los activos
 }
 
-/**
- * Calcula y actualiza los KPIs (tarjetas superiores)
- */
-function actualizarKPIs(datos) {
-    // Lesiones activas (solo las que tienen estado 'Activo')
-    const activas = datos.filter(d => d.estado === 'Activo').length;
-    // Casos graves (solo activos o todos? Definimos sobre los que están activos)
-    const graves = datos.filter(d => d.estado === 'Activo' && d.gravedad === 'Grave').length;
+function actualizarKPIs(activos) {
+    if (document.getElementById('kpi_activas')) document.getElementById('kpi_activas').innerText = activos.length;
+    if (document.getElementById('kpi_molestia_alta')) document.getElementById('kpi_molestia_alta').innerText = activos.filter(a => a.nivel_molestia > 7).length;
     
-    let totalReposo = 0;
-    let registrosConReposo = 0;
-    datos.forEach(d => {
-        if (d.estado === 'Activo' && d.dias_reposo_estimados && !isNaN(d.dias_reposo_estimados)) {
-            totalReposo += parseInt(d.dias_reposo_estimados);
-            registrosConReposo++;
+    let totalDias = 0, count = 0;
+    activos.forEach(a => {
+        if (a.fecha_inicio && a.fecha_estimada_recup) {
+            const diff = Math.ceil((new Date(a.fecha_estimada_recup) - new Date(a.fecha_inicio)) / (1000*3600*24));
+            if (diff > 0) { totalDias += diff; count++; }
         }
     });
-    const promReposo = registrosConReposo > 0 ? (totalReposo / registrosConReposo).toFixed(1) : 0;
+    if (document.getElementById('kpi_reposo_promedio')) document.getElementById('kpi_reposo_promedio').innerText = count ? (totalDias/count).toFixed(1) : 0;
+} 
+
+// ---------------------------------------------------------------------
+// Operaciones de Formulario (Registrar / Actualizar)
+// ---------------------------------------------------------------------
+function abrirModal(id_lesion = null) {
+    formulario.reset();
+    document.getElementById('id_lesion').value = '';
+    document.getElementById('accion').value = 'registrar';
+    document.getElementById('tituloModal').innerText = 'Registrar Nueva Lesión';
+    document.getElementById('campoEstadoEdicion').style.display = 'none';
     
-    const kpiActivas = document.getElementById('kpi_activas');
-    const kpiGraves = document.getElementById('kpi_graves');
-    const kpiReposo = document.getElementById('kpi_reposo');
-    if (kpiActivas) kpiActivas.innerText = activas;
-    if (kpiGraves) kpiGraves.innerText = graves;
-    if (kpiReposo) kpiReposo.innerText = promReposo;
+    if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formulario);
+    
+    btnGuardar.innerHTML = 'Guardar Informe <i class="fas fa-save ml-2"></i>';
+    btnGuardar.classList.replace('bg-emerald-600', 'bg-indigo-600');
+    btnGuardar.classList.replace('hover:bg-emerald-500', 'hover:bg-indigo-500');
+    
+    if (id_lesion) cargarDatosParaEdicion(id_lesion);
+    modalFormulario.classList.remove('hidden');
 }
 
-// =====================================================================
-// TRANSACCIONES (ESCRITURA, ANULACIÓN, ELIMINACIÓN FÍSICA)
-// =====================================================================
-
-formulario.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // Validación frontend
-    if (typeof Validador !== 'undefined') {
-        const errores = Validador.validarFormulario(formulario);
-        if (errores && errores.length > 0) {
-            if (typeof UI !== 'undefined') {
-                UI.advertencia('Campos Incompletos', errores.join('<br>'));
-            } else {
-                alert('Complete todos los campos requeridos.');
-            }
-            return;
-        }
-    }
-    
-    // Bloquear botón para evitar doble envío
-    const textoOriginal = btnGuardar.innerHTML;
-    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+async function cargarDatosParaEdicion(id_lesion) {
+    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
     btnGuardar.disabled = true;
-    
-    let datosEnvio = new FormData(formulario);
-    const accion = document.getElementById('accion').value; // 'registrar' o 'actualizar'
-    datosEnvio.set('accion', accion);
-    
-    const resultado = await peticionAjax(accion, datosEnvio, 'POST');
-    
-    btnGuardar.innerHTML = textoOriginal;
-    btnGuardar.disabled = false;
-    
-    if (resultado && resultado.status === 'success') {
-        if (typeof UI !== 'undefined') {
-            UI.exito('Éxito', resultado.message || 'Operación realizada correctamente.');
-        } else {
-            alert('Operación exitosa');
-        }
-        cerrarModal();
-        cargarTabla(); // Recargar tabla y KPIs
-    } else {
-        if (typeof UI !== 'undefined') {
-            UI.error('Error', resultado?.message || 'Ocurrió un error inesperado.');
-        } else {
-            alert('Error: ' + (resultado?.message || 'Contacte al administrador'));
-        }
-    }
-});
-
-/**
- * Anulación lógica (cambia estado a 'Anulado')
- */
-async function anularRegistro(id_lesion) {
-    if (typeof UI === 'undefined' || typeof UI.pedirJustificacion !== 'function') {
-        alert('Función de justificación no disponible. Consulte al administrador.');
-        return;
-    }
-    
-    const justificacion = await UI.pedirJustificacion(
-        'Anular Registro Clínico',
-        'Esta acción ocultará el registro para no afectar estadísticas. Motivo de la anulación:',
-        'Ej. Error de diagnóstico, lesión no confirmada...'
-    );
-    
-    if (justificacion.isConfirmed) {
-        let datos = new FormData();
-        datos.append('id_lesion', id_lesion);
-        datos.append('motivo', justificacion.value);
-        
-        const resultado = await peticionAjax('anular', datos, 'POST');
-        if (resultado && resultado.status === 'success') {
-            if (typeof UI !== 'undefined') UI.exito('Anulado', resultado.message);
-            cargarTabla();
-        } else {
-            if (typeof UI !== 'undefined') UI.error('Error', resultado?.message || 'No se pudo anular el registro.');
-        }
-    }
-}
-
-/**
- * Eliminación física permanente (solo para registros ya anulados, con doble confirmación)
- */
-async function eliminarFisico(id_lesion) {
-    if (typeof UI === 'undefined') {
-        if (confirm('¿Eliminar permanentemente? No se podrá recuperar.')) {
-            let datos = new FormData();
-            datos.append('id_lesion', id_lesion);
-            const resultado = await peticionAjax('eliminarFisico', datos, 'POST');
-            if (resultado && resultado.status === 'success') {
-                alert('Eliminado permanentemente');
-                cargarTabla();
-            } else {
-                alert('Error al eliminar');
-            }
-        }
-        return;
-    }
-    
-    const confirmacion = await UI.confirmar(
-        'Eliminación Permanente',
-        'Esta acción borrará el registro de la base de datos de forma irreversible. ¿Está completamente seguro?'
-    );
-    
-    if (confirmacion.isConfirmed) {
-        let datos = new FormData();
-        datos.append('id_lesion', id_lesion);
-        const resultado = await peticionAjax('eliminarFisico', datos, 'POST');
-        if (resultado && resultado.status === 'success') {
-            UI.exito('Eliminado', resultado.message);
-            cargarTabla();
-        } else {
-            UI.error('Error', resultado?.message || 'No se pudo eliminar el registro.');
-        }
-    }
-}
-
-// =====================================================================
-// MODAL DE VER DETALLE CON GRÁFICA DE IMPACTO (RPE)
-// =====================================================================
-
-async function verDetalle(id_lesion) {
-    if (!modalVer) return;
-    // Mostrar modal y estado de carga
-    modalVer.classList.remove('hidden');
-    const contenedorContenido = document.querySelector('#modalVer .p-8.md\\:p-10');
-    if (contenedorContenido) {
-        contenedorContenido.innerHTML = `
-            <div class="flex justify-center items-center py-20">
-                <i class="fas fa-spinner fa-spin text-3xl text-indigo-500"></i>
-                <span class="ml-3 text-gray-400">Cargando ficha clínica...</span>
-            </div>
-        `;
-    }
     
     const data = await peticionAjax(`obtenerDetalleLesion&id=${id_lesion}`);
     if (!data || data.status === 'error') {
-        if (typeof UI !== 'undefined') UI.error('Error', data?.message || 'No se pudo obtener el detalle.');
-        cerrarModalVer();
+        UI.error('Error', data?.message || 'No se pudo cargar la lesión.');
+        cerrarModal();
         return;
     }
     
-    // Construir el contenido del modal de detalle
-    const html = `
-        <div class="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
-            <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-3xl shrink-0">
-                <i class="fas fa-file-medical"></i>
-            </div>
-            <div>
-                <h2 class="text-3xl font-black text-white leading-tight">${data.nombre_atleta || 'Atleta'}</h2>
-                <p class="text-indigo-400 font-medium flex items-center gap-2 mt-1">
-                    <i class="fas fa-calendar-alt"></i> <span>${data.fecha_lesion}</span>
-                </p>
-            </div>
-        </div>
-        <div class="grid grid-cols-2 gap-6 mb-8">
-            <div class="bg-[#161430] p-4 rounded-xl border border-white/5">
-                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Zona Afectada</p>
-                <p class="text-white font-medium">${data.tipo_lesion} / ${data.zona_corporal}</p>
-            </div>
-            <div class="bg-[#161430] p-4 rounded-xl border border-white/5">
-                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Gravedad</p>
-                <p class="text-white font-medium">${data.gravedad}</p>
-            </div>
-            <div class="col-span-2 bg-[#161430] p-4 rounded-xl border border-white/5">
-                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Diagnóstico Clínico</p>
-                <p class="text-gray-300">${data.diagnostico || 'Sin descripción.'}</p>
-            </div>
-            <div class="col-span-2 bg-[#161430] p-4 rounded-xl border border-white/5">
-                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Tratamiento y Reposo</p>
-                <p class="text-gray-300">${data.tratamiento || 'No indicado'} | ${data.dias_reposo_estimados || 0} días estimados</p>
-            </div>
-            <div class="col-span-2 bg-[#161430] p-4 rounded-xl border border-white/5">
-                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Observaciones</p>
-                <p class="text-gray-300">${data.observaciones || 'Ninguna.'}</p>
-            </div>
-        </div>
-        <div class="bg-[#161430] border border-white/5 rounded-2xl p-5 mb-8" id="contenedorGraficaImpacto">
-            <h3 class="text-sm font-bold text-gray-300 mb-4 uppercase tracking-wider">Impacto en la Carga (RPE) - Últimos 30 días</h3>
-            <div class="h-48 w-full">
-                <canvas id="graficaImpacto"></canvas>
-            </div>
-        </div>
-        <div class="flex justify-end pt-4">
-            <button onclick="cerrarModalVer()" class="bg-[#252345] hover:bg-white/10 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-colors cursor-pointer">
-                Cerrar Ficha
-            </button>
-        </div>
-    `;
+    Object.keys(data).forEach(key => {
+        if (document.getElementById(key)) document.getElementById(key).value = data[key];
+    });
     
-    if (contenedorContenido) {
-        contenedorContenido.innerHTML = html;
+    document.getElementById('accion').value = 'actualizar';
+    document.getElementById('campoEstadoEdicion').style.display = 'block';
+    document.getElementById('tituloModal').innerText = 'Actualizar Estado Clínico';
+    
+    btnGuardar.innerHTML = 'Actualizar Informe <i class="fas fa-sync-alt ml-2"></i>';
+    btnGuardar.classList.replace('bg-indigo-600', 'bg-emerald-600');
+    btnGuardar.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-500');
+    btnGuardar.disabled = false;
+}
+
+function cerrarModal() {
+    modalFormulario.classList.add('hidden');
+    formulario.reset();
+    document.getElementById('campoEstadoEdicion').style.display = 'none';
+}
+
+formulario.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (typeof Validador !== 'undefined' && Validador.validarFormulario(formulario).length) return;
+    
+    const originalText = btnGuardar.innerHTML;
+    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    btnGuardar.disabled = true;
+    
+    let datos = new FormData(formulario);
+    datos.set('accion', document.getElementById('accion').value);
+    
+    const resultado = await peticionAjax(datos.get('accion'), datos, 'POST');
+    
+    btnGuardar.innerHTML = originalText;
+    btnGuardar.disabled = false;
+    
+    if (resultado && resultado.status === 'success') {
+        UI.exito('Procesado', resultado.message);
+        cerrarModal();
+        cargarTabla();
     } else {
-        // Fallback: reemplazar todo el contenido interno del modal
-        const modalInner = document.querySelector('#modalVer .relative.bg-\\[\\#111026\\]');
-        if (modalInner) modalInner.innerHTML = `<div class="p-8 md:p-10">${html}</div>`;
+        UI.error('Advertencia', resultado?.message || 'Error de procesamiento');
     }
+});
+
+// ---------------------------------------------------------------------
+// Operaciones Lógicas y Físicas (Soft Delete / Destroy)
+// ---------------------------------------------------------------------
+async function softDelete(id_lesion) {
+    const justificacion = await UI.pedirJustificacion(
+        'Mover a Papelera',
+        'Justifique por qué se anula este registro (ej. Error de transcripción):',
+        'Motivo obligatorio (mínimo 10 caracteres)'
+    );
+    if (!justificacion.isConfirmed) return;
     
-    // Si el controlador envía datos para la gráfica (por ejemplo, un array de valores RPE)
-    if (data.rpe_historico && Array.isArray(data.rpe_historico) && typeof Chart !== 'undefined') {
-        const ctx = document.getElementById('graficaImpacto')?.getContext('2d');
-        if (ctx) {
-            if (instanciaGrafica) instanciaGrafica.destroy();
-            instanciaGrafica = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.rpe_fechas || data.rpe_historico.map((_, i) => `Día ${i+1}`),
-                    datasets: [{
-                        label: 'RPE (0-10)',
-                        data: data.rpe_historico,
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        tension: 0.3,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { min: 0, max: 10, ticks: { stepSize: 1 } } }
-                }
-            });
-        }
+    let datos = new FormData();
+    datos.append('id_lesion', id_lesion);
+    datos.append('motivo', justificacion.value);
+    
+    const resultado = await peticionAjax('anular', datos, 'POST');
+    if (resultado && resultado.status === 'success') {
+        UI.exito('Movido a Papelera', resultado.message);
+        cargarTabla();
     } else {
-        // Mostrar mensaje de que no hay datos de RPE
-        const contGrafica = document.getElementById('contenedorGraficaImpacto');
-        if (contGrafica) {
-            contGrafica.innerHTML = '<div class="text-center text-gray-400 py-4">No hay datos de carga (RPE) disponibles para este período.</div>';
-        }
+        UI.error('No se pudo anular', resultado?.message);
     }
 }
 
-// =====================================================================
-// INICIALIZADOR AL CARGAR EL DOM
-// =====================================================================
-document.addEventListener('DOMContentLoaded', () => {
-    // Vincular validaciones en tiempo real si existe Validador
-    if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
-        Validador.vincularTiempoReal(formulario);
+async function reactivar(id_lesion) {
+    const confirm = await UI.confirmar('Restaurar Registro', '¿Devolver este registro a los módulos de estadísticas clínicas?');
+    if (!confirm.isConfirmed) return;
+    
+    let datos = new FormData();
+    datos.append('id_lesion', id_lesion);
+    
+    const resultado = await peticionAjax('reactivar', datos, 'POST');
+    if (resultado && resultado.status === 'success') {
+        UI.exito('Restaurado', resultado.message);
+        cargarTabla();
+    } else {
+        UI.error('Error', resultado?.message);
     }
+}
+
+async function eliminarFisico(id_lesion) {
+    const confirm = await UI.confirmar(
+        'Destrucción Permanente', 
+        'Esta acción purgará el dato de la base de datos irreversiblemente. ¿Está completamente seguro?', 
+        { icon: 'error', confirmButtonText: 'Sí, Purgar' }
+    );
+    if (!confirm.isConfirmed) return;
     
-    // Cargar atletas en selects
+    let datos = new FormData();
+    datos.append('id_lesion', id_lesion);
+    
+    const resultado = await peticionAjax('eliminardb', datos, 'POST');
+    if (resultado && resultado.status === 'success') {
+        UI.exito('Purgado', resultado.message);
+        cargarTabla();
+    } else {
+        UI.error('Acción Bloqueada', resultado?.message);
+    }
+}
+
+// ---------------------------------------------------------------------
+// Ficha de Detalle y Gráfica RPE
+// ---------------------------------------------------------------------
+async function verDetalle(id_lesion) {
+    modalVer.classList.remove('hidden');
+    const contenedor = document.querySelector('#modalVer #contenidoDetalle');
+    contenedor.innerHTML = `<div class="text-center py-20"><i class="fas fa-spinner fa-spin text-4xl text-indigo-500"></i></div>`;
+    
+    const data = await peticionAjax(`obtenerDetalleLesion&id=${id_lesion}`);
+    if (!data || data.status === 'error') return cerrarModalVer();
+    
+    let advertenciaPapelera = data.activo == 0 
+        ? `<div class="bg-red-500/20 border border-red-500/50 p-3 rounded-xl mb-4"><i class="fas fa-trash-alt text-red-400 mr-2"></i><strong class="text-red-400">Motivo de anulación:</strong> <span class="text-gray-300">${data.motivo_eliminacion}</span></div>` 
+        : '';
+
+    contenedor.innerHTML = `
+        ${advertenciaPapelera}
+        <div class="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-3xl">
+                <i class="fas fa-file-medical"></i>
+            </div>
+            <div>
+                <h2 class="text-3xl font-black text-white">${data.nombres} ${data.apellidos}</h2>
+                <p class="text-indigo-400"><i class="fas fa-id-card"></i> ${data.cedula} | Inicio: ${formatearFecha(data.fecha_inicio)}</p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-[#161430] p-4 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">Zona</p><p class="text-white font-bold">${data.zona_anatomica}</p></div>
+            <div class="bg-[#161430] p-4 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">Tipo</p><p class="text-white font-bold">${data.tipo}</p></div>
+            <div class="bg-[#161430] p-4 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">Molestia</p><p class="text-amber-400 font-bold">${data.nivel_molestia}/10</p></div>
+            <div class="bg-[#161430] p-4 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">Estado</p><p class="text-emerald-400 font-bold">${data.estado}</p></div>
+            
+            <div class="col-span-2 md:col-span-4 bg-[#161430] p-4 rounded-xl">
+                <p class="text-[10px] text-gray-500 uppercase mb-1">Diagnóstico Clínico</p>
+                <p class="text-gray-300 text-sm leading-relaxed">${data.diagnostico}</p>
+            </div>
+            <div class="col-span-2 md:col-span-4 bg-[#161430] p-4 rounded-xl border-l-2 border-indigo-500">
+                <p class="text-[10px] text-gray-500 uppercase mb-1">Tratamiento Asignado por: ${data.profesional || 'No definido'}</p>
+                <p class="text-gray-300 text-sm">${data.tratamiento || 'Sin tratamiento.'}</p>
+            </div>
+        </div>
+
+        <div class="bg-[#161430] border border-white/5 rounded-2xl p-5">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"><i class="fas fa-chart-area mr-1"></i> RPE Inteligente (Últimos 7 días)</h3>
+            <div class="h-40 w-full relative"><canvas id="graficaImpacto"></canvas></div>
+        </div>
+    `;
+
+    // Renderizar Gráfica de RPE histórico
+    // Dentro de verDetalle(), después de contenedor.innerHTML = ...
+    if (data.rpe_historico && Array.isArray(data.rpe_historico) && data.rpe_historico.length > 0 && typeof Chart !== 'undefined') {
+    const ctx = document.getElementById('graficaImpacto')?.getContext('2d');
+    
+
+    if (ctx) {
+        if (instanciaGrafica) instanciaGrafica.destroy();
+        instanciaGrafica = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.rpe_fechas.map(f => formatearFecha(f)),
+                datasets: [{ label: 'RPE (0-10)', data: data.rpe_historico, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.3, fill: true }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 10 } } }
+        });
+    }
+    } else {
+    // Mostrar mensaje en el contenedor de la gráfica
+    const graficaContainer = document.querySelector('#modalVer .bg-\\[\\#161430\\].border.rounded-2xl.p-5');
+    if (graficaContainer) {
+        graficaContainer.innerHTML = '<div class="text-center text-gray-400 py-8"><i class="fas fa-chart-line text-3xl mb-2"></i><br>No hay datos de RPE disponibles para este atleta en el período cercano a la lesión.</div>';
+    }
+    }
+}
+
+function cerrarModalVer() {
+    modalVer.classList.add('hidden');
+    if (instanciaGrafica) instanciaGrafica.destroy();
+}
+
+// ---------------------------------------------------------------------
+// INICIALIZACIÓN
+// ---------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) Validador.vincularTiempoReal(formulario);
+    
     cargarAtletas();
-    
-    // Cargar tabla inicial (con filtros por defecto: estado Activo)
-    if (filtroEstado) filtroEstado.value = 'Activo';
     cargarTabla();
     
-    // Eventos de filtros
-    if (filtroAtleta) filtroAtleta.addEventListener('change', cargarTabla);
-    if (filtroTipo) filtroTipo.addEventListener('change', cargarTabla);
-    if (filtroGravedad) filtroGravedad.addEventListener('change', cargarTabla);
-    if (filtroEstado) filtroEstado.addEventListener('change', cargarTabla);
-    
-    // Botón de refrescar manual (si existe)
-    const btnRefresh = document.querySelector('button[onclick="cargarTabla()"]');
-    if (btnRefresh) btnRefresh.onclick = cargarTabla;
+    // Toggle Papelera con cambio de título en la tabla
+    btnPapelera?.addEventListener('click', () => {
+        modoPapelera = !modoPapelera;
+        
+        // Cambios en el botón
+        btnPapelera.innerHTML = modoPapelera ? '<i class="fas fa-folder-open"></i> Ver Activos' : '<i class="fas fa-trash-alt"></i> Ver Papelera';
+        btnPapelera.classList.toggle('bg-red-500/20', !modoPapelera);
+        btnPapelera.classList.toggle('bg-green-500/20', modoPapelera);
+        btnPapelera.classList.toggle('text-red-300', !modoPapelera);
+        btnPapelera.classList.toggle('text-green-300', modoPapelera);
+        
+        // Cambios visuales sobre la tabla
+        if(modoPapelera) {
+            tituloTablaState.innerHTML = '<i class="fas fa-trash-alt"></i> Mostrando Papelera (Registros Anulados)';
+            tituloTablaState.className = 'text-lg font-bold text-red-400 mb-3 ml-2 flex items-center gap-2';
+            document.querySelector('.tarjeta.overflow-hidden').classList.replace('border-t-indigo-500', 'border-t-red-500');
+        } else {
+            tituloTablaState.innerHTML = '<i class="fas fa-check-circle"></i> Mostrando Registros Activos';
+            tituloTablaState.className = 'text-lg font-bold text-emerald-400 mb-3 ml-2 flex items-center gap-2';
+            document.querySelector('.tarjeta.overflow-hidden').classList.replace('border-t-red-500', 'border-t-indigo-500');
+        }
+        
+        cargarTabla();
+    });
 });
