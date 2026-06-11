@@ -3,289 +3,340 @@
 namespace GrupoProyecto\SisBiomec\modelo;
 
 use PDO;
-use PDOException;
 use Exception;
 
-class CargaBienestar extends Conexion {
+class CargaBienestar extends Conexion
+{
     use ValidacionesTrait;
     use AutoBinderTrait;
 
-    // =====================================================================
-    // 1. ENCAPSULAMIENTO ESTRICTO
-    // =====================================================================
     private array $datos = [];
 
+    /**
+     * Lista blanca de campos permitidos.
+     * Incluye los campos reales de la tabla + los nuevos para soft delete.
+     */
     private array $camposPermitidos = [
-        'id_evento', 'id_atleta', 'tipo_evento', 'descripcion',
-        'rpe', 'calidad_sueno', 'nivel_fatiga', 'fecha',
-        'estado', 'id_usuario_registra', 'justificacion_cambio',
-        'duracion_sesion_min'   // opcional para calcular carga
+        'id_rpe',                // PK real de la tabla
+        'id_atleta',
+        'id_sesion',
+        'fecha',
+        'rpe',
+        'horas_sueno',
+        'calidad_sueno',
+        'sensacion_muscular',
+        'estres_percibido',
+        'observaciones',
+        'metros_nadados',
+        'duracion_minutos',
+        'srpe',
+        'fecha_creacion',
+        // Columnas para soft delete
+        'estado',
+        'motivo_anulacion',
+        'id_usuario_registra'
     ];
 
-    // =====================================================================
-    // 2. HIDRATACIÓN Y VALIDACIÓN INTERNA
-    // =====================================================================
-    private function setAtributos(array $payload): void {
+    /**
+     * Hidrata el objeto a partir de un payload, aplicando tipado y limpieza.
+     */
+    private function setAtributos(array $payload): void
+    {
         foreach ($this->camposPermitidos as $campo) {
             if (isset($payload[$campo]) && $payload[$campo] !== '') {
-                $this->datos[$campo] = $payload[$campo];
+                // Tipado fuerte según el campo
+                if (in_array($campo, [
+                    'id_rpe', 'id_atleta', 'id_sesion', 'rpe', 'calidad_sueno',
+                    'sensacion_muscular', 'estres_percibido', 'metros_nadados',
+                    'duracion_minutos', 'srpe', 'id_usuario_registra'
+                ])) {
+                    $this->datos[$campo] = (int)$payload[$campo];
+                } elseif ($campo === 'horas_sueno') {
+                    $this->datos[$campo] = (float)$payload[$campo];
+                } else {
+                    // Campos de texto: sanitización básica
+                    $this->datos[$campo] = htmlspecialchars(strip_tags($payload[$campo]), ENT_QUOTES, 'UTF-8');
+                }
             } else {
-                $this->datos[$campo] = null;
+                // Valores por defecto
+                if ($campo === 'estado') {
+                    $this->datos[$campo] = 'Activo';
+                } elseif ($campo === 'fecha_creacion') {
+                    $this->datos[$campo] = date('Y-m-d H:i:s');
+                } else {
+                    $this->datos[$campo] = null;
+                }
             }
         }
     }
 
     /**
-     * Valida reglas de negocio:
-     * - RPE, calidad_sueno, nivel_fatiga deben estar entre 1 y 10.
-     * - Fecha no puede ser futura.
-     * - Campos requeridos.
+     * Validaciones de negocio antes de guardar.
      */
-    private function validarAtributosInternos(bool $edicion = false): bool {
+    private function validarAtributosInternos(): bool
+    {
         $this->resetearErrores();
 
-        // Campos siempre requeridos
+        // Campos obligatorios
         $this->requerido((string)($this->datos['id_atleta'] ?? ''), 'id_atleta');
-        $this->requerido((string)($this->datos['tipo_evento'] ?? ''), 'tipo_evento');
         $this->requerido((string)($this->datos['fecha'] ?? ''), 'fecha');
+        $this->requerido((string)($this->datos['rpe'] ?? ''), 'rpe');
 
-        // En registro, todos los numéricos son requeridos; en edición pueden venir solo los editables
-        if (!$edicion) {
-            $this->requerido((string)($this->datos['rpe'] ?? ''), 'rpe');
-            $this->requerido((string)($this->datos['calidad_sueno'] ?? ''), 'calidad_sueno');
-            $this->requerido((string)($this->datos['nivel_fatiga'] ?? ''), 'nivel_fatiga');
-            $this->requerido((string)($this->datos['id_usuario_registra'] ?? ''), 'id_usuario_registra');
+        // RPE (1-10)
+        if (isset($this->datos['rpe']) && ($this->datos['rpe'] < 1 || $this->datos['rpe'] > 10)) {
+            $this->agregarError('rpe', 'El RPE debe estar en la escala de 1 a 10.');
         }
 
-        // Validaciones de rango (si el campo está presente)
-        if (isset($this->datos['rpe']) && $this->datos['rpe'] !== null) {
-            $rpe = (int)$this->datos['rpe'];
-            if ($rpe < 1 || $rpe > 10) {
-                $this->agregarError('rpe', 'El RPE debe estar entre 1 y 10.');
-            }
-        }
-        if (isset($this->datos['calidad_sueno']) && $this->datos['calidad_sueno'] !== null) {
-            $calidad = (int)$this->datos['calidad_sueno'];
-            if ($calidad < 1 || $calidad > 10) {
-                $this->agregarError('calidad_sueno', 'La calidad de sueño debe estar entre 1 y 10.');
-            }
-        }
-        if (isset($this->datos['nivel_fatiga']) && $this->datos['nivel_fatiga'] !== null) {
-            $fatiga = (int)$this->datos['nivel_fatiga'];
-            if ($fatiga < 1 || $fatiga > 10) {
-                $this->agregarError('nivel_fatiga', 'El nivel de fatiga debe estar entre 1 y 10.');
-            }
+        // Calidad de sueño (1-5) opcional
+        if (!empty($this->datos['calidad_sueno']) && ($this->datos['calidad_sueno'] < 1 || $this->datos['calidad_sueno'] > 5)) {
+            $this->agregarError('calidad_sueno', 'La calidad del sueño debe ser 1 (pésimo) a 5 (excelente).');
         }
 
-        // Fecha no futura
-        if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {
-            $this->agregarError('fecha', 'La fecha no puede ser futura.');
+        // Sensación muscular (1-10) opcional
+        if (!empty($this->datos['sensacion_muscular']) && ($this->datos['sensacion_muscular'] < 1 || $this->datos['sensacion_muscular'] > 10)) {
+            $this->agregarError('sensacion_muscular', 'La sensación muscular debe ser 1 (muy mal) a 10 (muy bien).');
+        }
+
+        // Estrés percibido (1-10) opcional
+        if (!empty($this->datos['estres_percibido']) && ($this->datos['estres_percibido'] < 1 || $this->datos['estres_percibido'] > 10)) {
+            $this->agregarError('estres_percibido', 'El estrés percibido debe ser 1 (muy bajo) a 10 (muy alto).');
+        }
+
+        // Si es una actualización, el id_rpe debe ser válido
+        if (!empty($this->datos['id_rpe']) && $this->datos['id_rpe'] <= 0) {
+            $this->agregarError('id_rpe', 'Identificador de registro inválido.');
         }
 
         return empty($this->obtenerErrores());
     }
 
     /**
-     * Calcula la carga de sesión (RPE × duración en minutos)
-     * y la retorna, o null si falta duración.
+     * Guarda (inserta o actualiza) un registro de RPE.
+     * Si se proporciona id_rpe, actualiza (solo si está Activo); si no, inserta.
      */
-    private function calcularCargaSesion(): ?float {
-        if (empty($this->datos['rpe']) || empty($this->datos['duracion_sesion_min'])) {
+    public function guardar(array $payload): array
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $this->setAtributos($payload);
+
+            if (!$this->validarAtributosInternos()) {
+                $this->pdo->rollBack();
+                return ['exito' => false, 'mensaje' => 'Errores de validación', 'errores' => $this->obtenerErrores()];
+            }
+
+            $esNuevo = empty($this->datos['id_rpe']);
+
+            if ($esNuevo) {
+                // INSERT
+                $sql = "INSERT INTO registro_rpe 
+                        (id_atleta, id_sesion, fecha, rpe, horas_sueno, calidad_sueno,
+                         sensacion_muscular, estres_percibido, observaciones,
+                         metros_nadados, duracion_minutos, srpe, fecha_creacion,
+                         estado, id_usuario_registra)
+                        VALUES 
+                        (:id_atleta, :id_sesion, :fecha, :rpe, :horas_sueno, :calidad_sueno,
+                         :sensacion_muscular, :estres_percibido, :observaciones,
+                         :metros_nadados, :duracion_minutos, :srpe, :fecha_creacion,
+                         :estado, :id_usuario_registra)";
+
+                $stmt = $this->pdo->prepare($sql);
+                $this->autoBind($stmt, $this->getMapaParametros(), $this->datos);
+                $stmt->execute();
+
+                $idGenerado = $this->pdo->lastInsertId();
+                $mensaje = "Registro de carga (RPE) guardado exitosamente.";
+            } else {
+                // UPDATE: solo si el registro está Activo
+                $sql = "UPDATE registro_rpe SET
+                            id_atleta = :id_atleta,
+                            id_sesion = :id_sesion,
+                            fecha = :fecha,
+                            rpe = :rpe,
+                            horas_sueno = :horas_sueno,
+                            calidad_sueno = :calidad_sueno,
+                            sensacion_muscular = :sensacion_muscular,
+                            estres_percibido = :estres_percibido,
+                            observaciones = :observaciones,
+                            metros_nadados = :metros_nadados,
+                            duracion_minutos = :duracion_minutos,
+                            srpe = :srpe,
+                            estado = :estado,
+                            id_usuario_registra = :id_usuario_registra
+                        WHERE id_rpe = :id_rpe AND estado = 'Activo'";
+
+                $stmt = $this->pdo->prepare($sql);
+                $mapaUpdate = $this->getMapaParametros();
+                // No actualizamos fecha_creacion
+                unset($mapaUpdate[':fecha_creacion']);
+                $this->autoBind($stmt, $mapaUpdate, $this->datos);
+                $stmt->execute();
+
+                if ($stmt->rowCount() === 0) {
+                    throw new Exception("No se pudo actualizar. El registro no existe o no está activo.");
+                }
+
+                $idGenerado = $this->datos['id_rpe'];
+                $mensaje = "Registro de carga actualizado correctamente.";
+            }
+
+            $this->pdo->commit();
+            return ['exito' => true, 'mensaje' => $mensaje, 'id' => $idGenerado];
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            error_log("Error en guardar() CargaBienestar: " . $e->getMessage());
+            return ['exito' => false, 'mensaje' => 'Error al procesar la solicitud: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Anula (soft delete) un registro, cambiando estado a 'Anulado' y guardando motivo.
+     */
+    public function anularRegistro(int $id_rpe, string $motivo, int $id_usuario): array
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            if (empty(trim($motivo))) {
+                throw new Exception("Debe proporcionar una justificación para anular.");
+            }
+
+            $sql = "UPDATE registro_rpe 
+                    SET estado = 'Anulado', 
+                        motivo_anulacion = :motivo,
+                        id_usuario_registra = :id_usuario
+                    WHERE id_rpe = :id_rpe AND estado = 'Activo'";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':motivo', trim($motivo), PDO::PARAM_STR);
+            $stmt->bindValue(':id_usuario', $id_usuario, PDO::PARAM_INT);
+            $stmt->bindValue(':id_rpe', $id_rpe, PDO::PARAM_INT);
+            $stmt->execute();
+
+            if ($stmt->rowCount() === 0) {
+                throw new Exception("Registro no encontrado o ya anulado.");
+            }
+
+            $this->pdo->commit();
+            return ['exito' => true, 'mensaje' => 'Registro anulado correctamente.'];
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            error_log("Error en anularRegistro: " . $e->getMessage());
+            return ['exito' => false, 'mensaje' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Reactiva un registro anulado (cambia estado a 'Activo' y limpia motivo).
+     */
+    public function reactivarRegistro(int $id_rpe, int $id_usuario): array
+    {
+        try {
+            $sql = "UPDATE registro_rpe 
+                    SET estado = 'Activo', 
+                        motivo_anulacion = NULL,
+                        id_usuario_registra = :id_usuario
+                    WHERE id_rpe = :id_rpe AND estado = 'Anulado'";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':id_usuario', $id_usuario, PDO::PARAM_INT);
+            $stmt->bindValue(':id_rpe', $id_rpe, PDO::PARAM_INT);
+            $stmt->execute();
+
+            if ($stmt->rowCount() === 0) {
+                return ['exito' => false, 'mensaje' => 'Registro no encontrado o ya está activo.'];
+            }
+            return ['exito' => true, 'mensaje' => 'Registro reactivado correctamente.'];
+        } catch (Exception $e) {
+            error_log("Error en reactivarRegistro: " . $e->getMessage());
+            return ['exito' => false, 'mensaje' => 'Error al reactivar: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Lista registros filtrando por estado, atleta y rango de fechas.
+     */
+    public function listar(string $estado = 'Activo', ?int $id_atleta = null, ?string $fechaDesde = null, ?string $fechaHasta = null): array
+    {
+        try {
+            $sql = "SELECT r.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta
+                    FROM registro_rpe r
+                    INNER JOIN atletas a ON r.id_atleta = a.id_atleta
+                    WHERE r.estado = :estado";
+            $params = [':estado' => $estado];
+
+            if ($id_atleta) {
+                $sql .= " AND r.id_atleta = :id_atleta";
+                $params[':id_atleta'] = $id_atleta;
+            }
+            if ($fechaDesde) {
+                $sql .= " AND r.fecha >= :fecha_desde";
+                $params[':fecha_desde'] = $fechaDesde;
+            }
+            if ($fechaHasta) {
+                $sql .= " AND r.fecha <= :fecha_hasta";
+                $params[':fecha_hasta'] = $fechaHasta;
+            }
+
+            $sql .= " ORDER BY r.fecha DESC, r.id_rpe DESC";
+
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error en listar() CargaBienestar: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtiene un registro específico por su ID (sin importar estado).
+     */
+    public function obtenerPorId(int $id_rpe): ?array
+    {
+        try {
+            $sql = "SELECT r.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta
+                    FROM registro_rpe r
+                    INNER JOIN atletas a ON r.id_atleta = a.id_atleta
+                    WHERE r.id_rpe = :id_rpe";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':id_rpe', $id_rpe, PDO::PARAM_INT);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ?: null;
+        } catch (Exception $e) {
+            error_log("Error en obtenerPorId: " . $e->getMessage());
             return null;
         }
-        return (float)$this->datos['rpe'] * (float)$this->datos['duracion_sesion_min'];
-    }
-
-    // =====================================================================
-    // 3. OPERACIONES CRUD TRANSACCIONALES
-    // =====================================================================
-
-    /**
-     * Registra un nuevo evento de carga/bienestar.
-     */
-    public function registrarEvento(array $payload): bool {
-        $this->setAtributos($payload);
-
-        if (!$this->validarAtributosInternos(false)) {
-            return false;
-        }
-
-        try {
-            $this->pdo->beginTransaction();
-
-            $sql = "INSERT INTO eventos_salud 
-                    (id_atleta, tipo_evento, descripcion, rpe, calidad_sueno, nivel_fatiga, fecha, estado, id_usuario_registra, duracion_sesion_min, carga_sesion) 
-                    VALUES 
-                    (:id_atleta, :tipo_evento, :descripcion, :rpe, :calidad_sueno, :nivel_fatiga, :fecha, 'Activo', :id_usuario_registra, :duracion, :carga)";
-
-            $stmt = $this->pdo->prepare($sql);
-
-            $carga = $this->calcularCargaSesion();
-
-            $mapa = [
-                ':id_atleta'           => ['id_atleta', PDO::PARAM_INT],
-                ':tipo_evento'         => ['tipo_evento', PDO::PARAM_STR],
-                ':descripcion'         => ['descripcion', PDO::PARAM_STR],
-                ':rpe'                 => ['rpe', PDO::PARAM_INT],
-                ':calidad_sueno'       => ['calidad_sueno', PDO::PARAM_INT],
-                ':nivel_fatiga'        => ['nivel_fatiga', PDO::PARAM_INT],
-                ':fecha'               => ['fecha', PDO::PARAM_STR],
-                ':id_usuario_registra' => ['id_usuario_registra', PDO::PARAM_INT],
-                ':duracion'            => ['duracion_sesion_min', PDO::PARAM_STR],
-                ':carga'               => ['carga_local', PDO::PARAM_STR]
-            ];
-
-            $this->autoBind($stmt, $mapa, $this->datos, ['carga_local' => $carga]);
-            $stmt->execute();
-
-            $this->pdo->commit();
-            return true;
-
-        } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            error_log("Error en registrarEvento: " . $e->getMessage());
-            return false;
-        }
     }
 
     /**
-     * Edita un evento existente (solo campos RPE, calidad_sueno, nivel_fatiga, descripcion)
-     * con justificación obligatoria.
+     * Helper: construye el mapa de parámetros para autoBind.
      */
-    public function editarEvento(array $payload): bool {
-        if (empty($payload['justificacion_cambio'])) {
-            throw new Exception("La justificación de la edición es obligatoria.");
-        }
-
-        $this->setAtributos($payload);
-
-        // Validación parcial: solo los campos que vienen en la edición
-        if (!$this->validarAtributosInternos(true)) {
-            return false;
-        }
-
-        if (empty($this->datos['id_evento'])) {
-            throw new Exception("ID de evento no proporcionado.");
-        }
-
-        try {
-            $this->pdo->beginTransaction();
-
-            $sql = "UPDATE eventos_salud 
-                    SET rpe = :rpe,
-                        calidad_sueno = :calidad_sueno,
-                        nivel_fatiga = :nivel_fatiga,
-                        descripcion = :descripcion,
-                        duracion_sesion_min = :duracion,
-                        carga_sesion = :carga
-                    WHERE id_evento = :id_evento AND estado = 'Activo'";
-
-            $stmt = $this->pdo->prepare($sql);
-
-            $carga = $this->calcularCargaSesion();
-
-            $mapa = [
-                ':rpe'          => ['rpe', PDO::PARAM_INT],
-                ':calidad_sueno'=> ['calidad_sueno', PDO::PARAM_INT],
-                ':nivel_fatiga' => ['nivel_fatiga', PDO::PARAM_INT],
-                ':descripcion'  => ['descripcion', PDO::PARAM_STR],
-                ':duracion'     => ['duracion_sesion_min', PDO::PARAM_STR],
-                ':carga'        => ['carga_local', PDO::PARAM_STR],
-                ':id_evento'    => ['id_evento', PDO::PARAM_INT]
-            ];
-
-            $this->autoBind($stmt, $mapa, $this->datos, ['carga_local' => $carga]);
-            $stmt->execute();
-
-            $this->pdo->commit();
-            return true;
-
-        } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            error_log("Error en editarEvento: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Anula (soft delete) un evento, cambiando estado a 'Anulado'.
-     * Requiere justificación.
-     */
-    public function anularEvento(int $idEvento, string $justificacion): bool {
-        if (empty($justificacion)) {
-            throw new Exception("La justificación para la anulación es obligatoria.");
-        }
-
-        try {
-            $this->pdo->beginTransaction();
-
-            $sql = "UPDATE eventos_salud SET estado = 'Anulado' WHERE id_evento = :id_evento";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':id_evento', $idEvento, PDO::PARAM_INT);
-            $resultado = $stmt->execute();
-
-            // Aquí podrías registrar la justificación en una tabla de auditoría,
-            // pero normalmente la bitácora se maneja desde el controlador.
-            // Dejamos espacio para que el controlador llame a Bitacora::registrar.
-
-            $this->pdo->commit();
-            return $resultado;
-
-        } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            error_log("Error en anularEvento: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    // =====================================================================
-    // 4. MÉTODOS DE LECTURA (READ)
-    // =====================================================================
-
-    /**
-     * Obtiene un evento por su ID.
-     */
-    public function obtenerPorId(int $idEvento): array {
-        $sql = "SELECT * FROM eventos_salud WHERE id_evento = :id_evento LIMIT 1";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':id_evento', $idEvento, PDO::PARAM_INT);
-        $stmt->execute();
-        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $resultado ?: [];
-    }
-
-    /**
-     * Obtiene el historial completo de un atleta (solo eventos activos).
-     */
-    public function obtenerHistorialAtleta(int $idAtleta): array {
-        $sql = "SELECT * FROM eventos_salud 
-                WHERE id_atleta = :id_atleta AND estado = 'Activo' 
-                ORDER BY fecha DESC";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':id_atleta', $idAtleta, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    /**
-     * Obtiene el historial con carga de sesión y métricas agregadas (para gráficas).
-     */
-    public function obtenerHistorialConMetricas(int $idAtleta, string $fechaInicio = '', string $fechaFin = ''): array {
-        $sql = "SELECT fecha, rpe, calidad_sueno, nivel_fatiga, carga_sesion, tipo_evento 
-                FROM eventos_salud 
-                WHERE id_atleta = :id_atleta AND estado = 'Activo'";
-        if ($fechaInicio && $fechaFin) {
-            $sql .= " AND fecha BETWEEN :inicio AND :fin";
-        }
-        $sql .= " ORDER BY fecha ASC";
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':id_atleta', $idAtleta, PDO::PARAM_INT);
-        if ($fechaInicio && $fechaFin) {
-            $stmt->bindValue(':inicio', $fechaInicio, PDO::PARAM_STR);
-            $stmt->bindValue(':fin', $fechaFin, PDO::PARAM_STR);
-        }
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    private function getMapaParametros(): array
+    {
+        return [
+            ':id_rpe'                => ['id_rpe', PDO::PARAM_INT],
+            ':id_atleta'             => ['id_atleta', PDO::PARAM_INT],
+            ':id_sesion'             => ['id_sesion', PDO::PARAM_INT],
+            ':fecha'                 => ['fecha', PDO::PARAM_STR],
+            ':rpe'                   => ['rpe', PDO::PARAM_INT],
+            ':horas_sueno'           => ['horas_sueno', PDO::PARAM_STR],
+            ':calidad_sueno'         => ['calidad_sueno', PDO::PARAM_INT],
+            ':sensacion_muscular'    => ['sensacion_muscular', PDO::PARAM_INT],
+            ':estres_percibido'      => ['estres_percibido', PDO::PARAM_INT],
+            ':observaciones'         => ['observaciones', PDO::PARAM_STR],
+            ':metros_nadados'        => ['metros_nadados', PDO::PARAM_INT],
+            ':duracion_minutos'      => ['duracion_minutos', PDO::PARAM_INT],
+            ':srpe'                  => ['srpe', PDO::PARAM_INT],
+            ':fecha_creacion'        => ['fecha_creacion', PDO::PARAM_STR],
+            ':estado'                => ['estado', PDO::PARAM_STR],
+            ':motivo_anulacion'      => ['motivo_anulacion', PDO::PARAM_STR],
+            ':id_usuario_registra'   => ['id_usuario_registra', PDO::PARAM_INT]
+        ];
     }
 }

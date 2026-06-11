@@ -89,7 +89,7 @@
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
-                <input type="text" name="captcha" required autocomplete="off" placeholder="Escribe el codigo"
+                <input type="text" name="captcha"  autocomplete="off" placeholder="Escribe el codigo"
                     class="input-dark w-full rounded-2xl py-3 pl-4 pr-4 text-white focus:outline-none mt-2">
             </div>
 

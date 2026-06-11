@@ -9,21 +9,20 @@ class Lesion extends Conexion {
     use ValidacionesTrait;
     use AutoBinderTrait;
 
-    // =====================================================================
-    // 1. ENCAPSULAMIENTO ESTRICTO
-    // =====================================================================
+    // =================================================================
+    // 1. CAMPOS PERMITIDOS (incluyen los dos estados y motivo)
+    // =================================================================
     private array $datos = [];
-
-    // Lista blanca de campos permitidos (coincide con las columnas de la tabla)
     private array $camposPermitidos = [
-        'id_atleta', 'fecha_lesion', 'tipo_lesion', 'zona_corporal', 
-        'gravedad', 'diagnostico', 'tratamiento', 'dias_reposo_estimados', 
-        'observaciones', 'id_lesion', 'accion'
+        'id_lesion', 'id_atleta', 'zona_anatomica', 'lado', 'tipo',
+        'nivel_molestia', 'diagnostico', 'tratamiento', 'fecha_inicio',
+        'fecha_estimada_recup', 'estado', 'profesional', 'observaciones',
+        'activo', 'motivo_eliminacion'
     ];
 
-    // =====================================================================
+    // =================================================================
     // 2. HIDRATACIÓN Y VALIDACIÓN INTERNA
-    // =====================================================================
+    // =================================================================
     private function setAtributos(array $payload): void {
         foreach ($this->camposPermitidos as $campo) {
             if (isset($payload[$campo])) {
@@ -38,70 +37,108 @@ class Lesion extends Conexion {
                 $this->datos[$campo] = null;
             }
         }
+        // Por defecto, el registro se crea como activo (visible)
+        if (!isset($this->datos['activo'])) {
+            $this->datos['activo'] = 1;
+        }
     }
 
     private function validarAtributosInternos(bool $paraActualizacion = false): bool {
         $this->resetearErrores();
 
-        // Validaciones comunes
+        // Validaciones de campos obligatorios (excepto en actualización parcial)
         if (!$paraActualizacion || isset($this->datos['id_atleta'])) {
             $this->requerido((string)($this->datos['id_atleta'] ?? ''), 'id_atleta');
         }
-        if (!$paraActualizacion || isset($this->datos['fecha_lesion'])) {
-            $this->requerido((string)($this->datos['fecha_lesion'] ?? ''), 'fecha_lesion');
+        if (!$paraActualizacion || isset($this->datos['fecha_inicio'])) {
+            $this->requerido((string)($this->datos['fecha_inicio'] ?? ''), 'fecha_inicio');
         }
-        if (!$paraActualizacion || isset($this->datos['tipo_lesion'])) {
-            $this->requerido((string)($this->datos['tipo_lesion'] ?? ''), 'tipo_lesion');
+        if (!$paraActualizacion || isset($this->datos['zona_anatomica'])) {
+            $this->requerido((string)($this->datos['zona_anatomica'] ?? ''), 'zona_anatomica');
         }
-        if (!$paraActualizacion || isset($this->datos['gravedad'])) {
-            $this->requerido((string)($this->datos['gravedad'] ?? ''), 'gravedad');
-        }
-        if (!$paraActualizacion || isset($this->datos['diagnostico'])) {
-            $this->requerido((string)($this->datos['diagnostico'] ?? ''), 'diagnostico');
+        if (!$paraActualizacion || isset($this->datos['tipo'])) {
+            $this->requerido((string)($this->datos['tipo'] ?? ''), 'tipo');
         }
 
-        // Validación de fecha futura
-        if (!empty($this->datos['fecha_lesion']) && $this->datos['fecha_lesion'] > date('Y-m-d')) {
-            $this->agregarError('fecha_lesion', 'La fecha de la lesión no puede ser futura.');
+        // Nivel de molestia (1-10)
+        $valor = $this->datos['nivel_molestia'] ?? null;
+        if ($valor === null || $valor === '') {
+            $this->agregarError('nivel_molestia', 'El nivel de molestia es obligatorio.');
+        } elseif (!is_numeric($valor) || $valor < 1 || $valor > 10) {
+            $this->agregarError('nivel_molestia', 'Debe ser un número entre 1 y 10.');
         }
 
-        // Validar que la gravedad sea uno de los valores permitidos
-        if (!empty($this->datos['gravedad']) && !in_array($this->datos['gravedad'], ['Leve', 'Moderada', 'Grave'])) {
-            $this->agregarError('gravedad', 'Gravedad no válida.');
+        // Fechas
+        if (!empty($this->datos['fecha_inicio']) && $this->datos['fecha_inicio'] > date('Y-m-d')) {
+            $this->agregarError('fecha_inicio', 'La fecha de inicio no puede ser futura.');
+        }
+        if (!empty($this->datos['fecha_estimada_recup']) && !empty($this->datos['fecha_inicio'])
+            && $this->datos['fecha_estimada_recup'] < $this->datos['fecha_inicio']) {
+            $this->agregarError('fecha_estimada_recup', 'No puede ser anterior a la fecha de inicio.');
+        }
+
+        // Enums
+        $zonasValidas = ['Hombro','Rodilla','Espalda','Codo','Tobillo','Cervical','Lumbar','Muslo','Gemelo','Pie','Otra'];
+        if (!empty($this->datos['zona_anatomica']) && !in_array($this->datos['zona_anatomica'], $zonasValidas)) {
+            $this->agregarError('zona_anatomica', 'Zona anatómica no válida.');
+        }
+
+        $ladosValidos = ['Izquierdo','Derecho','Bilateral'];
+        if (!empty($this->datos['lado']) && !in_array($this->datos['lado'], $ladosValidos)) {
+            $this->agregarError('lado', 'Lado no válido.');
+        }
+
+        $tiposValidos = ['Sobreuso','Aguda','Recidiva'];
+        if (!empty($this->datos['tipo']) && !in_array($this->datos['tipo'], $tiposValidos)) {
+            $this->agregarError('tipo', 'Tipo de lesión no válido.');
+        }
+
+        $estadosClinicos = ['Activa','EnRehabilitacion','Recuperada','Cronica'];
+        if (!empty($this->datos['estado']) && !in_array($this->datos['estado'], $estadosClinicos)) {
+            $this->agregarError('estado', 'Estado clínico no válido.');
         }
 
         return empty($this->obtenerErrores());
     }
 
-    // =====================================================================
-    // 3. OPERACIONES DE LECTURA (READ)
-    // =====================================================================
+    // =================================================================
+    // 3. OPERACIONES DE LECTURA (solo registros activos por defecto)
+    // =================================================================
 
     /**
-     * Lista lesiones con filtros dinámicos (estado, atleta, tipo, gravedad)
+     * Lista lesiones con filtros. Por defecto solo registros activos (activo=1).
+     * Si $incluirInactivos = true, muestra también los de papelera.
      */
-    public function listarLesiones(string $estado = 'Activo', int $id_atleta = 0, string $tipo = '', string $gravedad = ''): array {
+   /*  public function listarLesiones(string $estadoClinico = '', int $id_atleta = 0, string $tipo = '', string $zona = '', bool $incluirInactivos = false): array {
         try {
             $sql = "SELECT l.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta 
                     FROM lesiones l
                     INNER JOIN atletas a ON l.id_atleta = a.id_atleta
-                    WHERE l.estado = :estado";
-            $params = [':estado' => $estado];
+                    WHERE 1=1";
+            $params = [];
 
+            if (!$incluirInactivos) {
+                $sql .= " AND l.activo = 1";
+            }
+
+            if (!empty($estadoClinico)) {
+                $sql .= " AND l.estado = :estado";
+                $params[':estado'] = $estadoClinico;
+            }
             if ($id_atleta > 0) {
                 $sql .= " AND l.id_atleta = :id_atleta";
                 $params[':id_atleta'] = $id_atleta;
             }
             if (!empty($tipo)) {
-                $sql .= " AND l.tipo_lesion = :tipo";
+                $sql .= " AND l.tipo = :tipo";
                 $params[':tipo'] = $tipo;
             }
-            if (!empty($gravedad)) {
-                $sql .= " AND l.gravedad = :gravedad";
-                $params[':gravedad'] = $gravedad;
+            if (!empty($zona)) {
+                $sql .= " AND l.zona_anatomica = :zona";
+                $params[':zona'] = $zona;
             }
 
-            $sql .= " ORDER BY l.fecha_lesion DESC";
+            $sql .= " ORDER BY l.fecha_inicio DESC";
             $stmt = $this->pdo->prepare($sql);
             foreach ($params as $key => &$val) {
                 $stmt->bindValue($key, $val);
@@ -112,11 +149,62 @@ class Lesion extends Conexion {
             error_log("Error en listarLesiones: " . $e->getMessage());
             return [];
         }
+    } */
+
+    public function listarLesiones(string $estadoClinico = '', int $id_atleta = 0, string $tipo = '', string $zona = '', bool $modoPapelera = false): array {
+        try {
+            $sql = "SELECT l.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta 
+                    FROM lesiones l
+                    INNER JOIN atletas a ON l.id_atleta = a.id_atleta
+                    WHERE 1=1";
+            $params = [];
+
+            // =======================================================
+            // LÓGICA CORREGIDA PARA EL MODO PAPELERA (Eliminado Lógico)
+            // =======================================================
+            if ($modoPapelera) {
+                // Si estamos en papelera, traemos SOLO los inactivos
+                $sql .= " AND l.activo = 0";
+            } else {
+                // Modo normal, traemos SOLO los activos
+                $sql .= " AND l.activo = 1";
+            }
+
+            if (!empty($estadoClinico)) {
+                $sql .= " AND l.estado = :estado";
+                $params[':estado'] = $estadoClinico;
+            }
+            if ($id_atleta > 0) {
+                $sql .= " AND l.id_atleta = :id_atleta";
+                $params[':id_atleta'] = $id_atleta;
+            }
+            if (!empty($tipo)) {
+                $sql .= " AND l.tipo = :tipo";
+                $params[':tipo'] = $tipo;
+            }
+            if (!empty($zona)) {
+                $sql .= " AND l.zona_anatomica = :zona";
+                $params[':zona'] = $zona;
+            }
+
+            $sql .= " ORDER BY l.fecha_inicio DESC";
+            
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => &$val) {
+                $stmt->bindValue($key, $val);
+            }
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            // Registro de error fundamental para las pruebas de caja blanca
+            error_log("Error en listarLesiones: " . $e->getMessage());
+            return [];
+        }
     }
 
     /**
-     * Obtiene el detalle completo de una lesión por ID, incluyendo datos del atleta
-     * y (opcionalmente) histórico de RPE para la gráfica.
+     * Obtiene el detalle completo de una lesión (incluye datos del atleta y RPE simulado)
      */
     public function obtenerDetallePorId(int $id_lesion): ?array {
         try {
@@ -130,22 +218,14 @@ class Lesion extends Conexion {
             $detalle = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$detalle) return null;
 
-            // =========================================================
-            // SIMULACIÓN / CONSULTA DE RPE PARA LA GRÁFICA
-            // Si tienes una tabla 'cargas_entrenamiento' o 'rpe_sesiones',
-            // aquí puedes consultar los últimos 30 días y construir el histórico.
-            // Mientras tanto, generamos datos de ejemplo para que la gráfica funcione.
-            // =========================================================
-            $rpeHistorico = [];
-            $rpeFechas = [];
-            // Ejemplo: últimos 7 días con valores aleatorios entre 1 y 9
+            // RPE simulado (puedes reemplazar con consulta real)
+            $detalle['rpe_historico'] = [];
+            $detalle['rpe_fechas'] = [];
             for ($i = 6; $i >= 0; $i--) {
                 $fecha = date('Y-m-d', strtotime("-$i days"));
-                $rpeFechas[] = $fecha;
-                $rpeHistorico[] = rand(1, 9); // Simula RPE
+                $detalle['rpe_fechas'][] = $fecha;
+                $detalle['rpe_historico'][] = rand(1, 9);
             }
-            $detalle['rpe_historico'] = $rpeHistorico;
-            $detalle['rpe_fechas'] = $rpeFechas;
 
             return $detalle;
         } catch (PDOException $e) {
@@ -155,15 +235,14 @@ class Lesion extends Conexion {
     }
 
     /**
-     * Obtiene solo el historial clínico de un atleta (sin filtros de estado, todos los activos)
-     * Se mantiene por compatibilidad con el controlador anterior.
+     * Historial clínico de un atleta (solo registros activos)
      */
     public function obtenerHistorial(int $id_atleta): array {
         try {
-            $sql = "SELECT id_lesion, fecha_lesion, tipo_lesion, zona_corporal, gravedad, diagnostico, estado 
+            $sql = "SELECT id_lesion, fecha_inicio, zona_anatomica, lado, tipo, nivel_molestia, diagnostico, estado 
                     FROM lesiones 
-                    WHERE id_atleta = :id_atleta AND estado = 'Activo'
-                    ORDER BY fecha_lesion DESC";
+                    WHERE id_atleta = :id_atleta AND activo = 1
+                    ORDER BY fecha_inicio DESC";
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
             $stmt->execute();
@@ -174,12 +253,12 @@ class Lesion extends Conexion {
         }
     }
 
-    // =====================================================================
+    // =================================================================
     // 4. OPERACIONES DE ESCRITURA (ACID)
-    // =====================================================================
+    // =================================================================
 
     /**
-     * Registra una nueva lesión (INSERT)
+     * Registra una nueva lesión (activo = 1 por defecto)
      */
     public function registrarLesion(array $payload): bool|array {
         $this->setAtributos($payload);
@@ -190,25 +269,28 @@ class Lesion extends Conexion {
         try {
             $this->pdo->beginTransaction();
             $sql = "INSERT INTO lesiones (
-                        id_atleta, fecha_lesion, tipo_lesion, zona_corporal, 
-                        gravedad, diagnostico, tratamiento, dias_reposo_estimados, 
-                        estado, observaciones
+                        id_atleta, zona_anatomica, lado, tipo, nivel_molestia,
+                        diagnostico, tratamiento, fecha_inicio, fecha_estimada_recup,
+                        estado, profesional, observaciones, activo
                     ) VALUES (
-                        :id_atleta, :fecha_lesion, :tipo_lesion, :zona_corporal, 
-                        :gravedad, :diagnostico, :tratamiento, :dias_reposo_estimados, 
-                        'Activo', :observaciones
+                        :id_atleta, :zona_anatomica, :lado, :tipo, :nivel_molestia,
+                        :diagnostico, :tratamiento, :fecha_inicio, :fecha_estimada_recup,
+                        COALESCE(:estado, 'Activa'), :profesional, :observaciones, 1
                     )";
             $stmt = $this->pdo->prepare($sql);
             $mapa = [
-                ':id_atleta'             => ['id_atleta', PDO::PARAM_INT],
-                ':fecha_lesion'          => ['fecha_lesion', PDO::PARAM_STR],
-                ':tipo_lesion'           => ['tipo_lesion', PDO::PARAM_STR],
-                ':zona_corporal'         => ['zona_corporal', PDO::PARAM_STR],
-                ':gravedad'              => ['gravedad', PDO::PARAM_STR],
-                ':diagnostico'           => ['diagnostico', PDO::PARAM_STR],
-                ':tratamiento'           => ['tratamiento', PDO::PARAM_STR],
-                ':dias_reposo_estimados' => ['dias_reposo_estimados', PDO::PARAM_INT],
-                ':observaciones'         => ['observaciones', PDO::PARAM_STR]
+                ':id_atleta'            => ['id_atleta', PDO::PARAM_INT],
+                ':zona_anatomica'       => ['zona_anatomica', PDO::PARAM_STR],
+                ':lado'                 => ['lado', PDO::PARAM_STR],
+                ':tipo'                 => ['tipo', PDO::PARAM_STR],
+                ':nivel_molestia'       => ['nivel_molestia', PDO::PARAM_INT],
+                ':diagnostico'          => ['diagnostico', PDO::PARAM_STR],
+                ':tratamiento'          => ['tratamiento', PDO::PARAM_STR],
+                ':fecha_inicio'         => ['fecha_inicio', PDO::PARAM_STR],
+                ':fecha_estimada_recup' => ['fecha_estimada_recup', PDO::PARAM_STR],
+                ':estado'               => ['estado', PDO::PARAM_STR],
+                ':profesional'          => ['profesional', PDO::PARAM_STR],
+                ':observaciones'        => ['observaciones', PDO::PARAM_STR]
             ];
             $this->autoBind($stmt, $mapa, $this->datos);
             $stmt->execute();
@@ -224,7 +306,7 @@ class Lesion extends Conexion {
     }
 
     /**
-     * Actualiza una lesión existente (UPDATE)
+     * Actualiza una lesión existente (solo si está activa)
      */
     public function actualizarLesion(array $payload, int $id_lesion): bool {
         $this->setAtributos($payload);
@@ -236,33 +318,39 @@ class Lesion extends Conexion {
             $this->pdo->beginTransaction();
             $sql = "UPDATE lesiones SET
                         id_atleta = :id_atleta,
-                        fecha_lesion = :fecha_lesion,
-                        tipo_lesion = :tipo_lesion,
-                        zona_corporal = :zona_corporal,
-                        gravedad = :gravedad,
+                        zona_anatomica = :zona_anatomica,
+                        lado = :lado,
+                        tipo = :tipo,
+                        nivel_molestia = :nivel_molestia,
                         diagnostico = :diagnostico,
                         tratamiento = :tratamiento,
-                        dias_reposo_estimados = :dias_reposo_estimados,
+                        fecha_inicio = :fecha_inicio,
+                        fecha_estimada_recup = :fecha_estimada_recup,
+                        estado = :estado,
+                        profesional = :profesional,
                         observaciones = :observaciones
-                    WHERE id_lesion = :id_lesion AND estado = 'Activo'";
+                    WHERE id_lesion = :id_lesion AND activo = 1";
             $stmt = $this->pdo->prepare($sql);
             $mapa = [
-                ':id_atleta'             => ['id_atleta', PDO::PARAM_INT],
-                ':fecha_lesion'          => ['fecha_lesion', PDO::PARAM_STR],
-                ':tipo_lesion'           => ['tipo_lesion', PDO::PARAM_STR],
-                ':zona_corporal'         => ['zona_corporal', PDO::PARAM_STR],
-                ':gravedad'              => ['gravedad', PDO::PARAM_STR],
-                ':diagnostico'           => ['diagnostico', PDO::PARAM_STR],
-                ':tratamiento'           => ['tratamiento', PDO::PARAM_STR],
-                ':dias_reposo_estimados' => ['dias_reposo_estimados', PDO::PARAM_INT],
-                ':observaciones'         => ['observaciones', PDO::PARAM_STR],
-                ':id_lesion'             => [$id_lesion, PDO::PARAM_INT]
+                ':id_atleta'            => ['id_atleta', PDO::PARAM_INT],
+                ':zona_anatomica'       => ['zona_anatomica', PDO::PARAM_STR],
+                ':lado'                 => ['lado', PDO::PARAM_STR],
+                ':tipo'                 => ['tipo', PDO::PARAM_STR],
+                ':nivel_molestia'       => ['nivel_molestia', PDO::PARAM_INT],
+                ':diagnostico'          => ['diagnostico', PDO::PARAM_STR],
+                ':tratamiento'          => ['tratamiento', PDO::PARAM_STR],
+                ':fecha_inicio'         => ['fecha_inicio', PDO::PARAM_STR],
+                ':fecha_estimada_recup' => ['fecha_estimada_recup', PDO::PARAM_STR],
+                ':estado'               => ['estado', PDO::PARAM_STR],
+                ':profesional'          => ['profesional', PDO::PARAM_STR],
+                ':observaciones'        => ['observaciones', PDO::PARAM_STR],
+                ':id_lesion'            => ['id_lesion', PDO::PARAM_INT]
             ];
             $this->autoBind($stmt, $mapa, $this->datos);
             $stmt->execute();
             if ($stmt->rowCount() === 0) {
                 $this->pdo->rollBack();
-                $this->agregarError('actualizacion', 'No se encontró la lesión o ya está anulada.');
+                $this->agregarError('actualizacion', 'No se encontró la lesión activa o no se realizaron cambios.');
                 return false;
             }
             $this->pdo->commit();
@@ -275,64 +363,75 @@ class Lesion extends Conexion {
         }
     }
 
+    // =================================================================
+    // 5. SOFT DELETE, REACTIVACIÓN Y ELIMINACIÓN FÍSICA
+    // =================================================================
+
     /**
-     * Anulación lógica (cambia estado a 'Anulado' y guarda motivo en observaciones)
+     * Soft Delete: mueve el registro a la papelera (activo = 0) y guarda el motivo.
      */
-    public function anularLesion(int $id_lesion, string $motivo): bool|array {
+    public function eliminarLesionLogicamente(int $id_lesion, string $motivo): bool {
         try {
-            $this->pdo->beginTransaction();
             $sql = "UPDATE lesiones 
-                    SET estado = 'Anulado', 
-                        observaciones = CONCAT(COALESCE(observaciones, ''), '\n[ANULADO]: ', :motivo) 
-                    WHERE id_lesion = :id_lesion AND estado != 'Anulado'";
+                    SET activo = 0, motivo_eliminacion = :motivo 
+                    WHERE id_lesion = :id_lesion AND activo = 1";
             $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':motivo', $motivo, PDO::PARAM_STR);
+            $stmt->bindValue(':motivo', trim($motivo), PDO::PARAM_STR);
             $stmt->bindValue(':id_lesion', $id_lesion, PDO::PARAM_INT);
-            $stmt->execute();
-            if ($stmt->rowCount() === 0) {
-                $this->pdo->rollBack();
-                $this->agregarError('anulacion', 'El registro no existe o ya fue anulado.');
-                return false;
-            }
-            $this->pdo->commit();
-            return ['exito' => true, 'mensaje' => 'Lesión anulada correctamente.'];
+            return $stmt->execute();
         } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            error_log("Error en anularLesion: " . $e->getMessage());
-            $this->agregarError('bd', 'Error interno al anular la lesión.');
+            error_log("Error en eliminarLesionLogicamente: " . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * Eliminación física permanente (solo para registros ya anulados)
+     * Reactiva un registro previamente eliminado lógicamente (activo = 1, limpia motivo).
      */
-    public function eliminarFisico(int $id_lesion): bool {
+    public function reactivarLesion(int $id_lesion): bool {
         try {
-            $this->pdo->beginTransaction();
-            // Verificar que esté anulado antes de borrar
-            $sqlCheck = "SELECT estado FROM lesiones WHERE id_lesion = :id";
-            $stmtCheck = $this->pdo->prepare($sqlCheck);
-            $stmtCheck->bindValue(':id', $id_lesion, PDO::PARAM_INT);
-            $stmtCheck->execute();
-            $estado = $stmtCheck->fetchColumn();
-            if ($estado !== 'Anulado') {
-                $this->pdo->rollBack();
-                $this->agregarError('eliminar', 'Solo se pueden eliminar físicamente registros previamente anulados.');
-                return false;
-            }
-
-            $sqlDelete = "DELETE FROM lesiones WHERE id_lesion = :id";
-            $stmtDel = $this->pdo->prepare($sqlDelete);
-            $stmtDel->bindValue(':id', $id_lesion, PDO::PARAM_INT);
-            $stmtDel->execute();
-            $this->pdo->commit();
-            return true;
+            $sql = "UPDATE lesiones 
+                    SET activo = 1, motivo_eliminacion = NULL 
+                    WHERE id_lesion = :id AND activo = 0";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':id', $id_lesion, PDO::PARAM_INT);
+            return $stmt->execute();
         } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            error_log("Error en eliminarFisico: " . $e->getMessage());
-            $this->agregarError('bd', 'Error interno al eliminar físicamente.');
+            error_log("Error en reactivarLesion: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+ * Eliminación física permanente (solo para registros en papelera, activo = 0)
+ */
+public function eliminarFisico(int $id_lesion): bool {
+    try {
+        $sql = "DELETE FROM lesiones WHERE id_lesion = :id AND activo = 0";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id', $id_lesion, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() === 0) {
+            $this->agregarError('eliminar', 'No se encontró el registro o no está en papelera (activo=0).');
+            return false;
+        }
+        return true;
+    } catch (PDOException $e) {
+        error_log("Error en eliminarFisico: " . $e->getMessage());
+        $this->agregarError('bd', 'Error interno al eliminar físicamente.');
+        return false;
+    }
+}
+
+    /**
+     * Método de compatibilidad con el frontend existente (si usaba 'anularLesion').
+     * Llama al soft delete.
+     */
+    public function anularLesion(int $id_lesion, string $motivo): bool|array {
+        if ($this->eliminarLesionLogicamente($id_lesion, $motivo)) {
+            return ['exito' => true, 'mensaje' => 'Lesión movida a la papelera correctamente.'];
+        }
+        return false;
     }
 }
