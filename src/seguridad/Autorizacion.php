@@ -19,6 +19,7 @@ class Autorizacion {
         'antropometria' => ['antropometria', 'ver'],
         'representante' => ['representantes', 'ver'],
         'calendario'    => ['eventos', 'ver'],
+        'sesiones'      => ['sesiones', 'ver'],
         'lesion'        => ['lesiones', 'ver'],
         'bitacora'      => ['seguridad', 'bitacora'],
         'usuarios'      => ['seguridad', 'usuarios'],
@@ -26,6 +27,9 @@ class Autorizacion {
         'mantenimiento' => ['seguridad', 'mantenimiento'],
         'categorias'    => ['atletas', 'gestionar'],
         'cargaBienestar'=> ['rpe', 'ver'],
+        'cargaBienestar'=> ['cargaBienestar', 'ver'],
+        'mi_perfil'     => ['mi_perfil', 'ver'],
+        'asistencia'    => ['asistencia', 'ver'],
     ];
 
     public static function cargarPermisos(int $idUsuario): bool {

@@ -106,21 +106,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     
     // A) Petición de JavaScript (Fetch) para listar atletas en los checkboxes
-    // if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {
-    //     header('Content-Type: application/json');
-    //     echo json_encode($objAtleta->listarMenoresSinRepresentante());
-    //     exit;
-    // }
-        if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {
-                header('Content-Type: application/json');
+    if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {
+        header('Content-Type: application/json');
+        echo json_encode($objAtleta->listarMenoresSinRepresentante());
+        exit;
+    }
+        // if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {
+        //         header('Content-Type: application/json');
                 
-                // Aquí pregunta: ¿Me mandaron un ID para editar? Si no, pongo 0 (Registrar)
-                $id_rep = isset($_GET['id_representante']) ? (int)$_GET['id_representante'] : 0;
+        //         // Aquí pregunta: ¿Me mandaron un ID para editar? Si no, pongo 0 (Registrar)
+        //         $id_rep = isset($_GET['id_representante']) ? (int)$_GET['id_representante'] : 0;
                 
-                // Le pasamos el número al Modelo y él se encarga de cambiar el SQL internamente
-                echo json_encode($objAtleta->listarMenoresParaRepresentante($id_rep));
-                exit;
-            }
+        //         // Le pasamos el número al Modelo y él se encarga de cambiar el SQL internamente
+        //         echo json_encode($objAtleta->listarMenoresParaRepresentante($id_rep));
+        //         exit;
+        //     }
 
     // ACCIÓN: Petición de JavaScript para rellenar el formulario al Editar
     if (isset($_GET['accion']) && $_GET['accion'] === 'obtenerRepresentante' && isset($_GET['id'])) {

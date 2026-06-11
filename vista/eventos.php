@@ -24,7 +24,6 @@
     <?php include RAIZ . 'vista/complementos/menu.php'; ?>
 
     <main class="flex-1 p-8 overflow-y-auto">
-
         <header class="flex justify-between items-center mb-8">
             <h1 class="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
                 <i class="fas fa-calendar-alt text-indigo-500"></i> Planificacion de Eventos y Metas
@@ -55,6 +54,7 @@
                 <i class="fas fa-search absolute left-4 top-3.5 text-gray-500"></i>
                 <input type="text" id="busquedaEvento" onkeyup="filtrarTablaEventos()" placeholder="Buscar por nombre o sede..." class="w-full input-dark pl-11 pr-4 py-2.5 rounded-xl text-sm">
             </div>
+
             <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
                 <select id="filtroTipo" onchange="cargarTablaEventos()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23]">
                     <option value="">Todos los Tipos</option>
@@ -64,6 +64,7 @@
                     <option value="Selectivo">Selectivo</option>
                     <option value="Control">Control</option>
                 </select>
+
                 <select id="filtroEstado" onchange="cargarTablaEventos()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23]">
                     <option value="">Todos los Estados</option>
                     <option value="Planificado">Planificado</option>
@@ -96,7 +97,6 @@
                 </table>
             </div>
         </div>
-
     </main>
 
     <div id="modalEvento" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300">
@@ -129,10 +129,12 @@
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Sede</label>
                         <input type="text" id="sede" name="sede" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: Complejo Acuatico de Barinas">
                     </div>
+
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Organizador</label>
                         <input type="text" id="organizador" name="organizador" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: FEVEDA">
                     </div>
+
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Tipo *</label>
                         <select id="tipo" name="tipo" required class="w-full input-dark p-3 rounded-xl text-sm">
@@ -143,6 +145,7 @@
                             <option value="Selectivo">Selectivo</option>
                         </select>
                     </div>
+
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Nivel</label>
                         <select id="nivel" name="nivel" class="w-full input-dark p-3 rounded-xl text-sm">
@@ -152,6 +155,7 @@
                             <option value="C">Nivel C</option>
                         </select>
                     </div>
+
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Estado *</label>
                         <select id="estado" name="estado" required class="w-full input-dark p-3 rounded-xl text-sm">
@@ -162,6 +166,7 @@
                             <option value="Cancelado">Cancelado</option>
                         </select>
                     </div>
+
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">&nbsp;</label>
                         <div></div>
@@ -182,6 +187,7 @@
                             <i class="fas fa-plus mr-1"></i> Agregar
                         </button>
                     </div>
+
                     <div id="contenedorTiemposCorte" class="space-y-2">
                     </div>
                 </div>
@@ -283,10 +289,13 @@
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
     <script>
+
         const PERMISOS_MODULO = {
             gestionar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'crear') ? 'true' : 'false'; ?>,
+
         };
+
     </script>
     <script src="assets/js/eventos.js"></script>
 </body>
-</html>
+</html> 

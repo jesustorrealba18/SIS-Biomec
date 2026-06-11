@@ -340,7 +340,7 @@ function generarCajasSplits() {
                 <div class="relative">
                     <input type="text" 
                            name="splits[${distanciaActual}]" 
-                           data-validar="requerido|decimal" 
+                           data-validar="requerido|decimal_tiempo" 
                            required 
                             data-nombre="Parcial de ${distanciaActual}m" 
                            placeholder="00.00" 

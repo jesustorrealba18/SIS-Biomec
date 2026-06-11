@@ -94,6 +94,10 @@ class Validador {
                         errores.push(`- <b>${nombreCampo}</b> indica una fecha demasiado antigua (más de 120 años).`);
                     }
                 }
+                // Validación estricta de Segundos y Centésimas (SS.cc)
+                if (reglas.includes('decimal_tiempo') && !/^\d{1,2}\.\d{2}$/.test(valor)) {
+                    errores.push(`- <b>${nombreCampo}</b> debe tener el formato exacto SS.cc (Ejemplo: 05.50).`);
+                }
             }
         });
 
@@ -136,6 +140,7 @@ class Validador {
         // ---> TUS NUEVAS REGLAS DE CRONOMETRAJE <---
         if (reglas.includes('decimal')  && !/^\d+(\.\d{1,2})?$/.test(valor))                   valido = false;
         if (reglas.includes('tiempo')   && !/^\d{1,2}:\d{2}\.\d{2}$/.test(valor))              valido = false;
+        if (reglas.includes('decimal_tiempo') && !/^\d{1,2}\.\d{2}$/.test(valor)) valido = false;
         // -------------------------------------------
 
         if (reglas.includes('correo')   && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor))          valido = false;
@@ -302,24 +307,7 @@ class Validador {
                 }
             }
 
-            // Regla 'tiempo': SOLO permite números, ":" y "." (Máximo uno de cada uno)
-            if (reglas.includes('tiempo')) {
-                // Bloquea cualquier cosa que no sea número, dos puntos, punto o coma
-                if (!/^[0-9:.,]$/.test(e.key)) e.preventDefault();
-                
-                // Evita que escriban un segundo ':' si ya existe uno
-                if (e.key === ':' && campo.value.includes(':')) e.preventDefault();
-                
-                // Evita que escriban un segundo '.' si ya existe uno
-                if ((e.key === '.' || e.key === ',') && campo.value.includes('.')) e.preventDefault();
 
-                // Si ponen una coma, la convertimos en punto instantáneamente
-                if (e.key === ',') {
-                    e.preventDefault();
-                    campo.value += '.';
-                    campo.dispatchEvent(new Event('input', { bubbles: true })); 
-                }
-            }
 
             // Regla 'cedula': Formato V-12345678
             if (reglas.includes('cedula') && !/[VEve\-0-9]/.test(e.key)) e.preventDefault();
@@ -354,8 +342,41 @@ class Validador {
                 campo.value = val;
             }
 
+                        // MÁSCARA INTELIGENTE PARA TIEMPO (MM:SS.cc)
             if (reglas.includes('tiempo')) {
-                campo.value = campo.value.replace(/[^0-9:.]/g, '');
+                // 1. Extraemos solo los números que el usuario va tecleando
+                let raw = campo.value.replace(/\D/g, ''); 
+                let formateado = '';
+                
+                // 2. Construimos el formato predictivo
+                if (raw.length > 0) {
+                    formateado = raw.substring(0, 2); // Minutos
+                }
+                if (raw.length > 2) {
+                    formateado += ':' + raw.substring(2, 4); // Segundos
+                }
+                if (raw.length > 4) {
+                    formateado += '.' + raw.substring(4, 6); // Centésimas
+                }
+                
+                campo.value = formateado;
+            }
+
+            // MÁSCARA INTELIGENTE PARA SEGUNDOS Y CENTÉSIMAS (SS.cc)
+            if (reglas.includes('decimal_tiempo')) {
+                // 1. Extraemos solo los números
+                let raw = campo.value.replace(/\D/g, ''); 
+                let formateado = '';
+                
+                // 2. Construimos el formato predictivo
+                if (raw.length > 0) {
+                    formateado = raw.substring(0, 2); // Primeros 2 dígitos son segundos
+                }
+                if (raw.length > 2) {
+                    formateado += '.' + raw.substring(2, 4); // Ponemos el punto y las centésimas
+                }
+                
+                campo.value = formateado;
             }
 
             if (reglas.includes('cedula')) {

@@ -33,7 +33,7 @@ const UI = {
             ...this.config,
             icon: 'warning',
             title: titulo,
-            text: mensaje
+            html: mensaje
         });
     },
 
