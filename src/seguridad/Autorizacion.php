@@ -18,6 +18,7 @@ class Autorizacion {
         'periodizacion' => ['periodizacion', 'ver'],
         'antropometria' => ['antropometria', 'ver'],
         'representante' => ['representantes', 'ver'],
+        'grupo'         => ['grupo', 'ver'],
         'calendario'    => ['eventos', 'ver'],
         'sesiones'      => ['sesiones', 'ver'],
         'lesion'        => ['lesiones', 'ver'],

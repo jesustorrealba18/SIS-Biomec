@@ -44,6 +44,14 @@ trait ValidacionesTrait {
         return true;
     }
 
+protected function soloLetrasyNumeros(string $valor, string $campo): bool {
+        if (!preg_match('/^[\p{L}\d\s\-_.,]+$/u', trim($valor))) {
+            $this->agregarError($campo, "El campo {$campo} solo puede contener letras, números y símbolos.");
+            return false;
+        }
+        return true;
+    }
+
     protected function fechaValida(string $valor, string $campo): bool {
         $partes = explode('-', $valor);
         if (count($partes) !== 3 || !checkdate((int)$partes[1], (int)$partes[2], (int)$partes[0])) {

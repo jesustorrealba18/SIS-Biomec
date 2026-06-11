@@ -48,6 +48,13 @@
         </a>
         <?php endif; ?>
 
+         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('grupo', 'ver')): ?>
+        <a href="?p=grupo" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'grupo') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'sesiones') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Grupo</span>
+        </a>
+        <?php endif; ?>
+
  <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sesiones', 'ver')): ?>
         <a href="?p=sesiones" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'representante') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'sesiones') ? 'text-white' : ''; ?>"></i> 
