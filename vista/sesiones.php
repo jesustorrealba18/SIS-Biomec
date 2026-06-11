@@ -27,7 +27,7 @@
 
         <header class="flex justify-between items-center mb-8">
             <h1 class="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
-                <i class="fas fa-swimming-pool text-indigo-500"></i> Planificación de Sesiones de Nado
+                <i class="fas fa-swimming-pool text-indigo-500"></i> Planificación de Sesiones 
             </h1>
             <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
                 <div class="text-right mr-2">
@@ -42,10 +42,10 @@
         </header>
 
         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-            <p class="text-sm text-gray-400 mt-1">Diseño de entrenamientos, series dinámicas por bloque y control volumétrico.</p>
+            <p class="text-sm text-gray-400 mt-1">Diseño de entrenamientos</p>
             <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sesiones', 'crear')): ?>
             <button onclick="abrirModalSesion()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer">
-                <i class="fas fa-plus"></i> DISEÑAR ENTRENAMIENTO
+                <i class="fas fa-plus"></i> REGISTRAR ENTRENAMIENTO
             </button>
             <?php endif; ?>
         </div>
@@ -58,8 +58,8 @@
             <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
                 <select id="filtroGrupo" onchange="cargarTablaSesiones()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23] w-full md:w-48">
                     <option value="">Todos los Grupos</option>
-                    </select>
-                <select id="filtroEstado" onchange="cargarTablaSesiones()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23] w-full md:w-44">
+                </select>
+                <select id="filtroTipoSesion" onchange="cargarTablaSesiones()" class="input-dark p-2.5 rounded-xl text-xs bg-[#0f0d23] w-full md:w-44">
                     <option value="">Todos los Estados</option>
                     <option value="Planificada">Planificada</option>
                     <option value="Completada">Completada</option>
@@ -74,16 +74,15 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-[#0f0d23] text-gray-400 uppercase text-[11px] font-bold tracking-wider border-b border-[#252345]">
+                            <th class="p-4">Fecha / Info</th>
                             <th class="p-4">Grupo / Planificación</th>
-                            <th class="p-4">Fecha</th>
-                            <th class="p-4">Tipo de Sesión</th>
-                            <th class="p-4">Métricas de Volumen</th>
-                            <th class="p-4">Estado</th>
+                            <th class="p-4">Tipo de Sesión / Estado</th>
+                            <th class="p-4 text-center">Vol. Planificado</th>
+                            <th class="p-4 text-center">Vol. Ejecutado</th>
                             <th class="p-4 text-right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="tbodySesiones" class="divide-y divide-[#252345] text-sm text-gray-300">
-                        </tbody>
+                    <tbody id="tbodySesiones" class="divide-y divide-[#252345] text-sm text-gray-300"></tbody>
                 </table>
             </div>
         </div>
@@ -93,15 +92,16 @@
     <div id="modalSesion" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300">
         <div class="relative bg-[#161430] border border-white/5 w-full max-w-6xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8">
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
-                <h3 id="modalSesionTitulo" class="text-lg font-bold text-white flex items-center gap-2">
-                    </h3>
+                <h3 id="modalSesionTitulo" class="text-lg font-bold text-white flex items-center gap-2"></h3>
                 <button onclick="cerrarModalSesion()" class="text-gray-400 hover:text-white transition cursor-pointer">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
             
-            <form id="formFormularioSesion" autocomplete="off"> <input type="hidden" id="id_sesion" name="id_sesion" value="">
+            <form id="formSesion" autocomplete="off"> 
+                <input type="hidden" id="id_sesion" name="id_sesion" value="">
                 <input type="hidden" id="id_fase_actual" name="id_fase_actual" value="">
+                <input type="hidden" id="volumen_planificado" name="volumen_planificado" value="0">
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <div>
@@ -130,33 +130,37 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="md:col-span-1">
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Duración (Minutos)</label>
+                        <input type="number" id="duracion_minutos" name="duracion_minutos" min="1" placeholder="Ej: 90" class="w-full input-dark p-3 rounded-xl text-sm font-mono">
+                    </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Indicación de Calentamiento General</label>
-                        <textarea id="calentamiento" name="calentamiento" rows="2" placeholder="Ej: 200m Libre cómodo + 100m Estilos..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                        <textarea id="calentamiento" name="calentamiento" rows="2" placeholder="Ej: 200m Libre..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Indicación de Vuelta a la Calma General</label>
-                        <textarea id="vuelta_calma" name="vuelta_calma" rows="2" placeholder="Ej: 100m Afloje libre respiración bilateral..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                        <textarea id="vuelta_calma" name="vuelta_calma" rows="2" placeholder="Ej: 100m Afloje..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-center">
                     <div class="bg-black/20 p-2 rounded-xl border border-[#252345]">
                         <p class="text-[10px] text-gray-500 uppercase font-bold">Calentamiento</p>
-                        <p id="badgeVolCalentamiento" class="text-sm font-bold text-gray-300 font-mono">0m</p>
+                        <p id="lblVolCalentamiento" class="text-sm font-bold text-gray-300 font-mono">0m</p>
                     </div>
                     <div class="bg-black/20 p-2 rounded-xl border border-[#252345]">
                         <p class="text-[10px] text-gray-500 uppercase font-bold">Bloque Principal</p>
-                        <p id="badgeVolPrincipal" class="text-sm font-bold text-indigo-400 font-mono">0m</p>
+                        <p id="lblVolPrincipal" class="text-sm font-bold text-indigo-400 font-mono">0m</p>
                     </div>
                     <div class="bg-black/20 p-2 rounded-xl border border-[#252345]">
                         <p class="text-[10px] text-gray-500 uppercase font-bold">Vuelta a la Calma</p>
-                        <p id="badgeVolVueltaCalma" class="text-sm font-bold text-emerald-400 font-mono">0m</p>
+                        <p id="lblVolVueltaCalma" class="text-sm font-bold text-emerald-400 font-mono">0m</p>
                     </div>
                     <div class="bg-indigo-600/10 p-2 rounded-xl border border-indigo-500/30">
                         <p class="text-[10px] text-indigo-400 uppercase font-bold">Volumen Total</p>
-                        <p id="badgeVolTotal" class="text-base font-bold text-white font-mono">0m</p>
+                        <p id="lblVolTotalPlanificado" class="text-base font-bold text-white font-mono">0m</p>
                     </div>
                 </div>
 
@@ -172,15 +176,16 @@
 
                     <div class="hidden md:grid grid-cols-9 gap-2 px-3 mb-2 text-[10px] uppercase font-bold text-gray-500">
                         <div>Bloque</div>
-                        <div class="col-span-2">Drill / Catálogo</div>
-                        <div class="col-span-2">Descripción Libre (Si no hay Drill)</div>
+                        <div class="col-span-2">Drill / Catálogo y Desc.</div>
+                        <div>Ritmo Objetivo</div>
                         <div class="text-center">Rep.</div>
                         <div class="text-center">Metros</div>
-                        <div class="text-center">Intensidad</div>
-                        <div>Descanso/Ritmo</div>
+                        <div class="text-center">Descanso (s)</div>
+                        <div>Intensidad</div>
+                        <div class="text-right">Subtotal / Borrar</div>
                     </div>
 
-                    <div id="contenedorSeries" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+                    <table class="w-full"><tbody id="tbodySeries" class="space-y-2"></tbody></table>
                 </div>
 
                 <div class="mt-4">
@@ -198,36 +203,36 @@
         </div>
     </div>
 
-    <div id="modalVerSesion" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300">
+    <div id="modalVer" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300">
         <div class="relative bg-[#161430] border border-white/5 w-full max-w-4xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8">
-            <button type="button" onclick="cerrarModalVerSesion()" class="absolute top-6 right-6 text-gray-400 hover:text-white transition cursor-pointer p-2">
+            <button type="button" onclick="cerrarModalVer()" class="absolute top-6 right-6 text-gray-400 hover:text-white transition cursor-pointer p-2">
                 <i class="fas fa-times text-xl"></i>
             </button>
-            <div id="detalleSesionContenido" class="mt-2">
-                </div>
+            <div id="detalleContenido" class="mt-2"></div>
             <div class="mt-6 flex justify-end">
-                <button type="button" onclick="cerrarModalVerSesion()" class="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition">Cerrar Ventana</button>
+                <button type="button" onclick="cerrarModalVer()" class="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition">Cerrar Ventana</button>
             </div>
         </div>
     </div>
 
-    <div id="modalCompletarSesion" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300">
+    <div id="modalCompletar" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300">
         <div class="relative bg-[#161430] border border-white/5 w-full max-w-lg rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 p-6 md:p-8">
             <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
                 <h3 class="text-base font-bold text-white flex items-center gap-2">
                     <i class="fas fa-check-circle text-green-400"></i> Cierre de Sesión de Entrenamiento
                 </h3>
-                <button onclick="cerrarModalCompletarSesion()" class="text-gray-400 hover:text-white transition cursor-pointer">
+                <button onclick="cerrarModalCompletar()" class="text-gray-400 hover:text-white transition cursor-pointer">
                     <i class="fas fa-times text-lg"></i>
                 </button>
             </div>
             
-            <form id="formCompletarFormularioSesion" autocomplete="off"> <input type="hidden" id="comp_id_sesion" name="id_sesion" value="">
+            <form id="formCompletar" autocomplete="off"> 
+                <input type="hidden" id="id_sesion_completar" name="id_sesion" value="">
 
                 <div class="bg-black/20 border border-[#252345] p-3 rounded-xl mb-4 space-y-1.5 text-xs">
-                    <p class="text-gray-400"><strong>Grupo:</strong> <span id="comp_txt_grupo" class="text-white"></span></p>
-                    <p class="text-gray-400"><strong>Fecha:</strong> <span id="comp_txt_fecha" class="text-white font-mono"></span> | <strong>Tipo:</strong> <span id="comp_txt_tipo" class="text-blue-400"></span></p>
-                    <p class="text-indigo-400 font-semibold"><strong>Volumen Planificado:</strong> <span id="comp_txt_vol_planificado"></span></p>
+                    <p class="text-gray-400"><strong>Grupo:</strong> <span id="compGrupo" class="text-white"></span></p>
+                    <p class="text-gray-400"><strong>Fecha:</strong> <span id="compFecha" class="text-white font-mono"></span> | <strong>Tipo:</strong> <span id="compTipo" class="text-blue-400"></span></p>
+                    <p class="text-indigo-400 font-semibold"><strong>Volumen Planificado:</strong> <span id="compVolPlanificado"></span></p>
                 </div>
 
                 <div class="mb-4">
@@ -238,11 +243,11 @@
 
                 <div class="mb-4">
                     <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Observaciones de Ejecución / Rendimiento</label>
-                    <textarea id="comp_observaciones" name="observaciones" rows="3" placeholder="Ej: Excelentes ritmos en el bloque principal. 2 atletas no completaron la última serie..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                    <textarea id="observaciones_completar" name="observaciones" rows="3" placeholder="Ej: Excelentes ritmos..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
                 </div>
 
                 <div class="flex gap-3 mt-6">
-                    <button type="button" onclick="cerrarModalCompletarSesion()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-3 rounded-xl font-bold transition text-xs tracking-wider">CANCELAR</button>
+                    <button type="button" onclick="cerrarModalCompletar()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-3 rounded-xl font-bold transition text-xs tracking-wider">CANCELAR</button>
                     <button type="submit" class="flex-[2] bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-green-500/20 text-xs tracking-wider uppercase">
                         CERRAR ENTRENAMIENTO <i class="fas fa-lock ml-1"></i>
                     </button>
@@ -254,10 +259,6 @@
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
-    <script>
-        const formSesion = document.getElementById('formFormularioSesion');
-        const formCompletarSesion = document.getElementById('formCompletarFormularioSesion');
-    </script>
     <script src="assets/js/sesion.js"></script>
 </body>
 </html>
