@@ -167,8 +167,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // 5. ELIMINACIÓN FÍSICA PERMANENTE (Solo permitida si ya estaba en papelera)
-    if ($accion === 'eliminarFisico') {
-        Autorizacion::exigir('lesiones', 'eliminar_fisico');
+    if ($accion === 'eliminardb') {
+        Autorizacion::exigir('lesiones', 'eliminardb');
         $id = (int)($_POST['id_lesion'] ?? 0);
         
         if ($id <= 0) { 
@@ -177,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit; 
         }
         
-        $res = $objLesion->eliminarFisico($id);
+        $res = $objLesion->eliminarfisico($id);
         ob_end_clean();
         
         if ($res) {

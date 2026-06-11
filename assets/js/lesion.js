@@ -140,7 +140,7 @@ async function cargarTabla() {
         } else { 
             // MODO PAPELERA
             if (PERMISOS_MODULO.reactivar) botones += `<button onclick="reactivar(${reg.id_lesion})" class="bg-[#252345] hover:bg-green-600 text-green-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Restaurar de la papelera"><i class="fas fa-undo-alt text-xs"></i></button>`;
-            if (PERMISOS_MODULO.eliminar_fisico) botones += `<button onclick="eliminarFisico(${reg.id_lesion})" class="bg-[#252345] hover:bg-red-600 text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Destrucción total"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
+            if (PERMISOS_MODULO.eliminardb) botones += `<button onclick="eliminarFisico(${reg.id_lesion})" class="bg-[#252345] hover:bg-red-600 text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Destrucción total"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
         }
         
         filas += `
@@ -300,7 +300,7 @@ async function eliminarFisico(id_lesion) {
     let datos = new FormData();
     datos.append('id_lesion', id_lesion);
     
-    const resultado = await peticionAjax('eliminarFisico', datos, 'POST');
+    const resultado = await peticionAjax('eliminardb', datos, 'POST');
     if (resultado && resultado.status === 'success') {
         UI.exito('Purgado', resultado.message);
         cargarTabla();
@@ -359,18 +359,28 @@ async function verDetalle(id_lesion) {
     `;
 
     // Renderizar Gráfica de RPE histórico
-    if (data.rpe_historico && typeof Chart !== 'undefined') {
-        
-        const ctx = document.getElementById('graficaImpacto').getContext('2d');
+    // Dentro de verDetalle(), después de contenedor.innerHTML = ...
+    if (data.rpe_historico && Array.isArray(data.rpe_historico) && data.rpe_historico.length > 0 && typeof Chart !== 'undefined') {
+    const ctx = document.getElementById('graficaImpacto')?.getContext('2d');
+    
+
+    if (ctx) {
         if (instanciaGrafica) instanciaGrafica.destroy();
         instanciaGrafica = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: data.rpe_fechas,
-                datasets: [{ label: 'Nivel de Carga/Dolor (RPE)', data: data.rpe_historico, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.4, fill: true }]
+                labels: data.rpe_fechas.map(f => formatearFecha(f)),
+                datasets: [{ label: 'RPE (0-10)', data: data.rpe_historico, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.3, fill: true }]
             },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 10 } } }
         });
+    }
+    } else {
+    // Mostrar mensaje en el contenedor de la gráfica
+    const graficaContainer = document.querySelector('#modalVer .bg-\\[\\#161430\\].border.rounded-2xl.p-5');
+    if (graficaContainer) {
+        graficaContainer.innerHTML = '<div class="text-center text-gray-400 py-8"><i class="fas fa-chart-line text-3xl mb-2"></i><br>No hay datos de RPE disponibles para este atleta en el período cercano a la lesión.</div>';
+    }
     }
 }
 

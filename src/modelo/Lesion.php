@@ -206,6 +206,8 @@ class Lesion extends Conexion {
     /**
      * Obtiene el detalle completo de una lesión (incluye datos del atleta y RPE simulado)
      */
+
+    /*
     public function obtenerDetallePorId(int $id_lesion): ?array {
         try {
             $sql = "SELECT l.*, a.nombres, a.apellidos, a.cedula
@@ -233,6 +235,50 @@ class Lesion extends Conexion {
             return null;
         }
     }
+*/
+
+public function obtenerDetallePorId(int $id_lesion): ?array {
+    try {
+        $sql = "SELECT l.*, a.nombres, a.apellidos, a.cedula
+                FROM lesiones l
+                INNER JOIN atletas a ON l.id_atleta = a.id_atleta
+                WHERE l.id_lesion = :id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id', $id_lesion, PDO::PARAM_INT);
+        $stmt->execute();
+        $detalle = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$detalle) return null;
+
+        // =========================================================
+        // CONSULTA REAL DE RPE DESDE LA TABLA registro_rpe
+        // =========================================================
+        $fechaInicio = $detalle['fecha_inicio'];
+        // Definir rango: 15 días antes y 15 días después (puedes ajustar)
+        $fechaInicioRango = date('Y-m-d', strtotime($fechaInicio . ' -15 days'));
+        $fechaFinRango   = date('Y-m-d', strtotime($fechaInicio . ' +15 days'));
+
+        $sqlRPE = "SELECT fecha, rpe 
+                   FROM registro_rpe 
+                   WHERE id_atleta = :id_atleta 
+                     AND fecha BETWEEN :fecha_inicio AND :fecha_fin
+                   ORDER BY fecha ASC";
+        $stmtRPE = $this->pdo->prepare($sqlRPE);
+        $stmtRPE->bindValue(':id_atleta', $detalle['id_atleta'], PDO::PARAM_INT);
+        $stmtRPE->bindValue(':fecha_inicio', $fechaInicioRango);
+        $stmtRPE->bindValue(':fecha_fin', $fechaFinRango);
+        $stmtRPE->execute();
+        $rpeData = $stmtRPE->fetchAll(PDO::FETCH_ASSOC);
+
+        $detalle['rpe_fechas'] = array_column($rpeData, 'fecha');
+        $detalle['rpe_historico'] = array_column($rpeData, 'rpe');
+
+        // Si no hay datos, devolvemos arrays vacíos (la gráfica no se dibujará)
+        return $detalle;
+    } catch (PDOException $e) {
+        error_log("Error en obtenerDetallePorId: " . $e->getMessage());
+        return null;
+    }
+}
 
     /**
      * Historial clínico de un atleta (solo registros activos)
@@ -405,7 +451,7 @@ class Lesion extends Conexion {
     /**
  * Eliminación física permanente (solo para registros en papelera, activo = 0)
  */
-public function eliminarFisico(int $id_lesion): bool {
+public function eliminarfisico(int $id_lesion): bool {
     try {
         $sql = "DELETE FROM lesiones WHERE id_lesion = :id AND activo = 0";
         $stmt = $this->pdo->prepare($sql);

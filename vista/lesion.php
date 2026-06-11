@@ -343,7 +343,7 @@
             registrar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'registrar') ? 'true' : 'false'; ?>,
             editar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'editar') ? 'true' : 'false'; ?>,
             eliminar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'eliminar') ? 'true' : 'false'; ?>,
-            eliminar_fisico: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'eliminar_fisico') ? 'true' : 'false'; ?>,
+            eliminardb: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'eliminardb') ? 'true' : 'false'; ?>,
             reactivar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'reactivar') ? 'true' : 'false'; ?>
         };
     </script>
