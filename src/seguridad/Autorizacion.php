@@ -30,6 +30,9 @@ class Autorizacion {
         'cargaBienestar'=> ['rpe', 'ver'],
         'mi_perfil'     => ['mi_perfil', 'ver'],
         'asistencia'    => ['asistencia', 'ver'],
+        'observacionesTecnicas' => ['observacionesTecnicas', 'ver'],
+        'testFisico'             => ['testFisico', 'ver'],
+        'normalizacion'          => ['normalizacion', 'ver'],
     ];
 
     public static function cargarPermisos(int $idUsuario): bool {
