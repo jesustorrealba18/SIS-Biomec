@@ -23,9 +23,6 @@ class Grupo extends Conexion {
         return $this->obtenerErrores();
     }
 
-    /**
-     * Registra un nuevo grupo de entrenamiento
-     */
     public function registrarGrupo(array $datos): bool {
         $conex = $this->pdo;
         try {
@@ -48,9 +45,6 @@ class Grupo extends Conexion {
         }
     }
 
-    /**
-     * Modifica el estado activo/inactivo del grupo (Borrado lógico)
-     */
     public function cambiarEstadoGrupo(int $id, int $estado): bool {
         $conex = $this->pdo;
         try {
@@ -63,10 +57,6 @@ class Grupo extends Conexion {
         }
     }
 
-    /**
-     * Lista los grupos según el estado 'activo' (1 o 0)
-     * Trae los datos del entrenador asociado globalmente, sin importar filtros de estado del entrenador.
-     */
     public function listarGrupos(int $estado = 1): array {
         $conex = $this->pdo;
         try {
@@ -88,9 +78,6 @@ class Grupo extends Conexion {
         }
     }
 
-    /**
-     * Obtiene los datos de un grupo por su ID
-     */
     public function obtenerPorId(int $id): ?array {
         $conex = $this->pdo;
         try {
@@ -105,9 +92,6 @@ class Grupo extends Conexion {
         }
     }
 
-    /**
-     * Actualiza los datos del grupo
-     */
     public function actualizarGrupo(array $datos): bool {
         $conex = $this->pdo;
         try {
@@ -129,6 +113,37 @@ class Grupo extends Conexion {
         } catch (PDOException $e) {
             error_log("Error en actualizarGrupo: " . $e->getMessage());
             return false;
+        }
+    }
+
+    public function listarGruposPorEntrenador(int $id_entrenador): array {
+        $conex = $this->pdo;
+        try {
+            $esAdmin = false;
+            if (isset($_SESSION['rol'])) {
+                $esAdmin = ($_SESSION['rol'] == 1 || $_SESSION['rol'] == 'admin' || $_SESSION['rol'] == 'Administrador');
+            }
+            
+            if ($esAdmin) {
+                $sql = "SELECT id_grupo, nombre, descripcion, activo 
+                        FROM grupos_entrenamiento 
+                        WHERE activo = 1
+                        ORDER BY nombre";
+                $stmt = $conex->prepare($sql);
+                $stmt->execute();
+            } else {
+                $sql = "SELECT id_grupo, nombre, descripcion, activo 
+                        FROM grupos_entrenamiento 
+                        WHERE id_entrenador = :id_entrenador AND activo = 1
+                        ORDER BY nombre";
+                $stmt = $conex->prepare($sql);
+                $stmt->execute([':id_entrenador' => $id_entrenador]);
+            }
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error listando grupos por entrenador: " . $e->getMessage());
+            return [];
         }
     }
 }
