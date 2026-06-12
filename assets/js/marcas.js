@@ -5,12 +5,10 @@ const modalMarca = document.getElementById('modalMarca');
 const formMarca = document.getElementById('formMarca');
 const btnGuardar = document.getElementById('btnGuardar');
 
-// NUEVA RUTA DIRECTA AL CONTROLADOR PIVOTE A TRAVÉS DEL INDEX:
+
 const API_URL = 'index.php?p=marcas'; 
 
-/**
- * Función centralizada para peticiones al servidor (Principio DRY)
- */
+
 async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
     if (datos) opciones.body = datos; 
@@ -61,15 +59,11 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// =====================================================================
-// ABRIR MODAL (INTELIGENTE: SIRVE PARA REGISTRAR Y EDITAR)
-// =====================================================================
 
 // =====================================================================
 // ABRIR MODAL (INTELIGENTE: ORQUESTA EL CREATE Y EL UPDATE)
 // =====================================================================
 async function abrirModalMarca(id_marca = null) {
-    // 1. LIMPIEZA TOTAL (Preparación para Modo 'Registrar' por defecto)
     formMarca.reset(); 
     try { Validador.limpiarEstilos(formMarca); } catch(e) {}
     
@@ -84,26 +78,21 @@ async function abrirModalMarca(id_marca = null) {
     const rejillaSplits = document.getElementById('rejillaSplits');
     if(rejillaSplits) rejillaSplits.innerHTML = '';
 
-    // ---> NUEVO: Desbloqueo del buscador para Nuevo Registro <---
     const inputAtleta = document.getElementById('inputBuscarAtleta');
-    inputAtleta.readOnly = false; // Permite escribir nuevamente
-    inputAtleta.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-800'); // Quita el estilo oscuro
-    document.getElementById('btnLimpiarAtleta').classList.add('hidden'); // Ocultamos la 'X' por defecto
-    // -----------------------------------------------------------
-    // Mostramos el modal con su animación
+    inputAtleta.readOnly = false; 
+    inputAtleta.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-800'); 
+    document.getElementById('btnLimpiarAtleta').classList.add('hidden'); 
     modalMarca.classList.remove('hidden');
     setTimeout(() => {
         modalMarca.firstElementChild.classList.remove('scale-95', 'opacity-0');
     }, 10);
 
-    // Cargamos la lista de atletas para el buscador
     cargarAtletasBuscador();
 
     // =====================================================================
-    // 2. MODO EDICIÓN: Si recibimos un ID, la función "Muta" el formulario
+    // MODO EDICIÓN: Si recibimos un ID, la función "Muta" el formulario
     // =====================================================================
     if (id_marca) {
-        // Pedimos los datos al servidor
         const data = await peticionAjax(`obtenerDetalleMarca&id=${id_marca}`);
         
         if (!data) {
@@ -112,15 +101,12 @@ async function abrirModalMarca(id_marca = null) {
             return;
         }
 
-        // Llenamos el ID oculto de la marca a editar
         document.getElementById('id_marca').value = data.id_marca;
         
-        // Asignamos usando los nombres de los inputs
         document.querySelector('[name="fecha"]').value = data.fecha;
         document.querySelector('[name="estilo"]').value = data.estilo;
         document.querySelector('[name="tiempo_final_seg"]').value = data.tiempo_final_seg;
         
-        // Convertimos los segundos flotantes a formato MM:SS.cc para la vista del usuario
         if (typeof formatearTiempoDesdeSegundos === 'function') {
             document.getElementById('tiempo_final_humano').value = formatearTiempoDesdeSegundos(data.tiempo_final_seg);
         } else {
@@ -132,18 +118,13 @@ async function abrirModalMarca(id_marca = null) {
         document.querySelector('[name="nivel_evento"]').value = data.nivel_evento;
         document.querySelector('[name="observaciones"]').value = data.observaciones || '';
 
-        // Buscador de Atleta (Asignamos el valor oculto y el texto visual)
-        // document.getElementById('id_atleta').value = data.id_atleta;
-        // document.getElementById('inputBuscarAtleta').value = `${data.nombre_atleta} (CI: ${data.cedula})`;
-        // ---> NUEVO: Asignación y Bloqueo estricto del Atleta <---
+       
         document.getElementById('id_atleta').value = data.id_atleta;
         inputAtleta.value = `${data.nombre_atleta} (CI: ${data.cedula})`;
         
-        // Bloqueo Funcional y Visual
         inputAtleta.readOnly = true; 
         inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-800'); 
-        document.getElementById('btnLimpiarAtleta').classList.add('hidden'); // Evita que intenten borrarlo
-        // ---------------------------------------------------------
+        document.getElementById('btnLimpiarAtleta').classList.add('hidden'); 
 
 
         // Llenamos el SWOLF
@@ -152,17 +133,14 @@ async function abrirModalMarca(id_marca = null) {
             inputBrazadas.value = data.swolf_data ? data.swolf_data.num_brazadas : '';
         }
 
-        // TRUCO PARA LOS SPLITS: Asignamos distancia y piscina, y disparamos el 'change'
         const selectDistancia = document.querySelector('[name="distancia_m"]');
         const selectPiscina = document.querySelector('[name="tipo_piscina"]');
         
         selectDistancia.value = data.distancia_m;
         selectPiscina.value = data.tipo_piscina;
 
-        // Esto fuerza a tu JS a dibujar las cajas de parciales (Ej: 50m, 100m)
         selectDistancia.dispatchEvent(new Event('change'));
 
-        // Inyectamos los tiempos de los splits en las cajas recién creadas
         if (data.splits && data.splits.length > 0) {
             data.splits.forEach(split => {
                 const inputSplit = document.querySelector(`[name="splits[${split.distancia_parcial_m}]"]`);
@@ -170,34 +148,14 @@ async function abrirModalMarca(id_marca = null) {
             });
         }
 
-        // Cambiamos la "acción" del formulario para el Controlador
         document.getElementById('accion_form').value = 'actualizar';
         
-        // Cambiamos el texto y color del botón para que el usuario sepa que está editando
         btnGuardar.innerHTML = 'ACTUALIZAR REGISTRO <i class="fas fa-sync-alt ml-2"></i>';
         btnGuardar.classList.replace('bg-indigo-600', 'bg-emerald-600');
         btnGuardar.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-500');
     }
 }
 
-
-
-/* async function abrirModalMarca(idAtleta = null) {
-
-     // 1. Reiniciamos el formulario a su estado original
-    formMarca.reset(); 
-    try { Validador.limpiarEstilos(formMarca); } catch(e) {}
-
-
-    // 1. Mostramos el modal en pantalla
-    modalMarca.classList.remove('hidden');
-    setTimeout(() => {
-        modalMarca.firstElementChild.classList.remove('scale-95', 'opacity-0');
-    }, 10);
-
-    cargarAtletasBuscador();
-
-} */
 
 
 // =====================================================================
@@ -211,9 +169,7 @@ const ulAtletas = document.getElementById('ulAtletas');
 const inputIdOculto = document.getElementById('id_atleta');
 const btnLimpiar = document.getElementById('btnLimpiarAtleta');
 
-// 1. Función para cargar los atletas desde la BD (Llamar al abrir el modal)
 async function cargarAtletasBuscador() {
-    // Asumiendo que tu controlador tiene una ruta para listar todos los atletas
     const respuesta = await peticionAjax('listarAtletasSelect');
     if (respuesta) {
         atletasGlobal = respuesta;
@@ -221,7 +177,7 @@ async function cargarAtletasBuscador() {
     }
 }
 
-// 2. Función para dibujar los cuadritos de los atletas en la lista
+// Función para dibujar los cuadritos de los atletas en la lista
 function renderizarDropdown(lista) {
     ulAtletas.innerHTML = '';
     
@@ -241,7 +197,6 @@ function renderizarDropdown(lista) {
             <i class="fas fa-check-circle text-indigo-500/0 transition-all"></i>
         `;
         
-        // Al hacer clic en un atleta de la lista
         li.onclick = () => {
             seleccionarAtleta(atleta);
         };
@@ -249,7 +204,6 @@ function renderizarDropdown(lista) {
     });
 }
 
-// 3. Cuando el usuario selecciona a alguien
 function seleccionarAtleta(atleta) {
     inputIdOculto.value = atleta.id_atleta;
     inputBuscar.value = `${atleta.nombres} ${atleta.apellidos}`;
@@ -260,7 +214,6 @@ function seleccionarAtleta(atleta) {
     btnLimpiar.classList.remove('hidden');
 }
 
-// 4. Botón para limpiar y buscar a otro
 btnLimpiar.onclick = () => {
     inputIdOculto.value = '';
     inputBuscar.value = '';
@@ -270,11 +223,9 @@ btnLimpiar.onclick = () => {
     inputBuscar.focus();
 };
 
-// 5. Evento: Al escribir en el buscador
 inputBuscar.addEventListener('input', (e) => {
     const texto = e.target.value.toLowerCase();
     
-    // Filtramos el array buscando coincidencias en nombre, apellido o cédula
     const filtrados = atletasGlobal.filter(a => 
         a.nombres.toLowerCase().includes(texto) || 
         a.apellidos.toLowerCase().includes(texto) ||
@@ -285,15 +236,13 @@ inputBuscar.addEventListener('input', (e) => {
     renderizarDropdown(filtrados);
 });
 
-// 6. Evento: Al hacer clic en el input (mostrar todos)
 inputBuscar.addEventListener('focus', () => {
-    if (!inputIdOculto.value) { // Solo si no ha seleccionado a nadie aún
+    if (!inputIdOculto.value) { 
         dropdown.classList.remove('hidden');
         renderizarDropdown(atletasGlobal);
     }
 });
 
-// 7. Cerrar la lista flotante si hace clic en cualquier otro lado de la pantalla
 document.addEventListener('click', (e) => {
     if (!inputBuscar.contains(e.target) && !dropdown.contains(e.target)) {
         dropdown.classList.add('hidden');
@@ -302,25 +251,20 @@ document.addEventListener('click', (e) => {
 
 
 
-// Atrapamos el select de distancia y los contenedores
 const selectDistancia = document.getElementById('distancia_m');
-// (Ya no necesitamos atrapar el select de tipo_piscina para esto)
 const contenedorSplits = document.getElementById('contenedorSplits');
 const rejillaSplits = document.getElementById('rejillaSplits');
 const contadorSplits = document.getElementById('contadorSplits');
 
-// Función centralizada para generar los splits
 function generarCajasSplits() {
     const distanciaTotal = parseInt(selectDistancia.value);
     
-    // Si falta la distancia, ocultamos todo
     if (isNaN(distanciaTotal)) {
         contenedorSplits.classList.add('hidden');
         rejillaSplits.innerHTML = '';
         return;
     }
 
-    // NUEVA REGLA DEL LÍDER: Los parciales siempre son cada 25m
     const tamanoTramo = 25; 
     
     // Calculamos la cantidad de cajas (Ej: 100m / 25m = 4 cajas)
@@ -328,7 +272,6 @@ function generarCajasSplits() {
     
     rejillaSplits.innerHTML = '';
     
-    // Bucle mágico
     for (let i = 1; i <= cantidadTramos; i++) {
         let distanciaActual = i * tamanoTramo; // 25, 50, 75, 100...
         
@@ -353,11 +296,9 @@ function generarCajasSplits() {
         rejillaSplits.innerHTML += cajaHTML;
     }
 
-    // Actualizamos textos e interfaz
     contadorSplits.innerText = `${cantidadTramos} Tramos (Cada 25m)`;
     contenedorSplits.classList.remove('hidden');
     
-    // Animación suave
     rejillaSplits.style.opacity = 0;
     setTimeout(() => {
         rejillaSplits.style.transition = "opacity 0.3s ease-in-out";
@@ -365,7 +306,6 @@ function generarCajasSplits() {
     }, 50);
 }
 
-// Ahora SOLO escuchamos a la distancia para disparar la función
 selectDistancia.addEventListener('change', generarCajasSplits);
 
 
@@ -485,57 +425,9 @@ function formatearTiempoDesdeSegundos(segundosTotales) {
 } 
 
 
-/* const inputTiempoHumano = document.getElementById('tiempo_final_humano');
-const alertaCoherencia = document.getElementById('alertaCoherencia');
-const inputTiempoSegundos = document.getElementById('tiempo_final_seg'); // El oculto para la BD
-
-function validarCoherenciaMatematica() {
-    // 1. Obtenemos el tiempo final que escribió el entrenador
-    const tiempoFinalSegundos = convertirTiempoASegundos(inputTiempoHumano.value);
-    
-    // Guardamos ese valor en el input oculto para enviarlo limpio a la Base de Datos
-    inputTiempoSegundos.value = tiempoFinalSegundos.toFixed(2);
-
-    // 2. Buscamos todas las cajitas de splits que generamos dinámicamente
-    const cajasSplits = document.querySelectorAll('.split-input');
-    
-    // Si no hay cajas (porque no han seleccionado distancia), salimos
-    if (cajasSplits.length === 0) return true; 
-
-    // 3. Sumamos el valor de todos los splits
-    let sumaParciales = 0;
-    cajasSplits.forEach(caja => {
-        sumaParciales += convertirTiempoASegundos(caja.value);
-    });
-
-    // 4. Calculamos la diferencia matemática absoluta
-    const diferencia = Math.abs(tiempoFinalSegundos - sumaParciales);
-
-    // 5. Evaluamos el Criterio CA-06.2 (Tolerancia estricta de 0.01s)
-    // Usamos 0.015 por los decimales de punto flotante en JS
-    if (tiempoFinalSegundos > 0 && sumaParciales > 0) {
-        if (diferencia > 0.015) {
-            alertaCoherencia.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: Los parciales suman <b>${sumaParciales.toFixed(2)}s</b> y el final es <b>${tiempoFinalSegundos.toFixed(2)}s</b>.`;
-            alertaCoherencia.classList.remove('text-emerald-400');
-            alertaCoherencia.classList.add('text-red-500');
-            return false; // Bloquea el envío
-        } else {
-            alertaCoherencia.innerHTML = `<i class="fas fa-check-circle"></i> Tiempos coherentes. (Suma: ${sumaParciales.toFixed(2)}s)`;
-            alertaCoherencia.classList.remove('text-red-500');
-            alertaCoherencia.classList.add('text-emerald-400');
-            return true; // Permite el envío
-        }
-    }
-    
-    alertaCoherencia.innerHTML = '';
-    return true; // Pasa si aún no han escrito nada
-}  */
-
-// 6. Ponemos a escuchar al input del tiempo final para que valide al instante
+// Ponemos a escuchar al input del tiempo final para que valide al instante
 inputTiempoHumano.addEventListener('input', validarCoherenciaMatematica);
 
-// También debemos escuchar a las cajitas dinámicas. 
-// Como las cajas se crean después, usamos la técnica de Delegación de Eventos:
 document.getElementById('rejillaSplits').addEventListener('input', function(e) {
     if(e.target && e.target.classList.contains('split-input')) {
         validarCoherenciaMatematica();
@@ -547,21 +439,17 @@ document.getElementById('rejillaSplits').addEventListener('input', function(e) {
 // ENVÍO DEL FORMULARIO (CREATE / UPDATE DINÁMICO)
 // =====================================================================
 formMarca.addEventListener('submit', async (e) => {
-    e.preventDefault(); // Evitamos que la página se recargue
+    e.preventDefault(); 
 
 
-    // === NUEVO: 1. Validación estricta del Validador Frontend ===
     const erroresFormulario = Validador.validarFormulario(formMarca);
     
-    // Si el Validador encontró errores (puede retornar un texto o un arreglo)
     if (erroresFormulario && erroresFormulario.length > 0) {
         
-        // Formateamos los errores para que se vean como una lista ordenada en HTML
         const listaErrores = Array.isArray(erroresFormulario) 
                              ? erroresFormulario.join('<br>') 
                              : erroresFormulario;
 
-        // Mandamos la lista al SweetAlert alineada a la izquierda para fácil lectura
         UI.error(
             'Datos Incompletos', 
             `<div class="text-left text-sm mt-2 text-gray-300">
@@ -570,40 +458,31 @@ formMarca.addEventListener('submit', async (e) => {
              </div>`
         );
         
-        return; // ¡Cortamos el envío al servidor!
+        return; 
     }
 
     // 1. Filtro de Seguridad: Validamos la coherencia matemática de los Splits
-    // (Esta es la función CA-06.2 que creamos antes)
     if (typeof validarCoherenciaMatematica === 'function' && !validarCoherenciaMatematica()) {
         UI.error('Incoherencia Matemática', 'La suma de los parciales no coincide con el tiempo final (Tolerancia: 0.01s).');
         return;
     }
 
-    // 2. Recolectamos absolutamente todo el formulario
-    // ¡Magia!: FormData recoge automáticamente el array de splits[25], splits[50], etc.
     let datosFormulario = new FormData(formMarca);
     
-    // ¡EL CAMBIO CLAVE!: Leemos qué acción debemos ejecutar ('guardar' o 'actualizar')
-    // Asume 'guardar' por defecto si el input no existe
+   
     const inputAccion = document.getElementById('accion_form');
     const accionActual = inputAccion ? inputAccion.value : 'registrar';
 
-    // Sobrescribimos o añadimos la acción al FormData por seguridad
     datosFormulario.set('accion', accionActual);
 
-    // Cambiamos el botón a estado de "Cargando"
     const textoOriginal = btnGuardar.innerHTML;
     btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> PROCESANDO...';
     btnGuardar.disabled = true;
 
-    // 3. Enviamos la petición AJAX al controlador (Usando la variable dinámica)
     const resultado = await peticionAjax(accionActual, datosFormulario);
 
-    // 4. Procesamos la respuesta del servidor
     if (resultado) {
         if (resultado.status === 'success') {
-            // Mensaje de éxito dinámico dependiendo de si creamos o actualizamos
             const msjExito = (accionActual === 'actualizar') 
                              ? 'El registro ha sido actualizado correctamente.' 
                              : 'El rendimiento ha sido registrado con éxito.';
@@ -611,111 +490,45 @@ formMarca.addEventListener('submit', async (e) => {
             UI.exito('¡Operación Exitosa!', msjExito);
             
             cerrarModalMarca();
-            cargarTablaMarcas(); // Refrescamos la tabla para ver los cambios
+            cargarTablaMarcas(); 
         } 
         else if (resultado.status === 'warning') {
-            // Errores de validación (Ej: Faltó un campo)
             let mensajesError = Object.values(resultado.errores).join('<br>');
             UI.error('Datos Incompletos', mensajesError);
         } 
         else {
-            // Error de base de datos
+           
             UI.error('Error de Sistema', resultado.message || 'Ocurrió un error inesperado al procesar los datos.');
         }
     }
 
-    // Devolvemos el botón a la normalidad
+   
     btnGuardar.innerHTML = textoOriginal;
     btnGuardar.disabled = false;
 });
 
-// =====================================================================
-// OPERACIONES CRUD: MODO EDICIÓN (UPDATE)
-// =====================================================================
-/* async function editarMarca(id_marca) {
-    // 1. Solicitamos los datos del registro exacto al Controlador
-    const data = await peticionAjax(`obtenerDetalleMarca&id=${id_marca}`);
-    
-    if (!data) {
-        UI.error('Error de Lectura', 'No se pudieron cargar los datos del atleta para edición.');
-        return;
-    }
-
-    // 2. Llenamos el formulario con los datos básicos
-    document.getElementById('id_marca').value = data.id_marca; // ID Oculto vital para el UPDATE
-    
-    document.querySelector('[name="id_atleta"]').value = data.id_atleta;
-    document.querySelector('[name="fecha"]').value = data.fecha;
-    document.querySelector('[name="estilo"]').value = data.estilo;
-    document.querySelector('[name="tiempo_final_seg"]').value = data.tiempo_final_seg;
-    document.querySelector('[name="tiempo_reaccion_seg"]').value = data.tiempo_reaccion_seg || '';
-    document.querySelector('[name="tiempo_viraje_seg"]').value = data.tiempo_viraje_seg || '';
-    document.querySelector('[name="nivel_evento"]').value = data.nivel_evento;
-    document.querySelector('[name="observaciones"]').value = data.observaciones || '';
-
-    // 3. Llenamos el SWOLF
-    const inputBrazadas = document.querySelector('[name="brazadas_por_largo"]');
-    if (inputBrazadas) {
-        inputBrazadas.value = data.swolf_data ? data.swolf_data.num_brazadas : '';
-    }
-
-    // 4. EL TRUCO PARA LOS SPLITS: Asignamos distancia y piscina, y FORZAMOS el evento 'change'
-    const selectDistancia = document.querySelector('[name="distancia_m"]');
-    const selectPiscina = document.querySelector('[name="tipo_piscina"]');
-    
-    selectDistancia.value = data.distancia_m;
-    selectPiscina.value = data.tipo_piscina;
-
-    // Al disparar este evento, tu JS dibujará automáticamente las cajitas necesarias (50m, 100m, etc)
-    selectDistancia.dispatchEvent(new Event('change'));
-
-    // Ahora que las cajitas existen en el DOM, inyectamos los tiempos guardados en la BD
-    if (data.splits && data.splits.length > 0) {
-        data.splits.forEach(split => {
-            const inputSplit = document.querySelector(`[name="splits[${split.distancia_parcial_m}]"]`);
-            if (inputSplit) inputSplit.value = split.tiempo_parcial_seg;
-        });
-    }
-
-    // 5. Transformamos la interfaz al modo "Actualizar"
-    document.getElementById('accion_form').value = 'actualizar'; // Cambia la ruta del controlador
-    
-    const btnGuardar = document.getElementById('btnGuardar');
-    btnGuardar.innerHTML = 'ACTUALIZAR REGISTRO <i class="fas fa-sync-alt ml-2"></i>';
-    btnGuardar.classList.replace('bg-indigo-600', 'bg-emerald-600'); // Cambio de color visual para evitar errores del usuario
-    btnGuardar.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-500');
-    
-    // Mostramos el Modal
-    document.getElementById('modalMarca').classList.remove('hidden');
-    document.getElementById('modalMarca').firstElementChild.classList.remove('scale-95', 'opacity-0');
-} */
 
 
 // =====================================================================
 // RENDERIZADO DE LA TABLA PRINCIPAL (READ)
 // =====================================================================
 async function cargarTablaMarcas() {
-    // Leemos si el usuario quiere ver las marcas Activas o Inactivas
     const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
     const id_atleta = document.getElementById('filtroAtleta')?.value || '';
     const distancia = document.getElementById('filtroDistancia')?.value || '';
     const estilo = document.getElementById('filtroEstilo')?.value || '';
     const piscina = document.getElementById('filtroPiscina')?.value || '';
 
-    // 2. Construimos la cadena de parámetros URL dinámicamente
     let params = new URLSearchParams({ estado: filtroEstado });
     
-    // Solo anexamos los filtros si el usuario seleccionó algo distinto a "Todos"
     if (id_atleta) params.append('id_atleta', id_atleta);
     if (estilo) params.append('estilo', estilo);
     if (distancia) params.append('distancia', distancia);
     if (piscina) params.append('piscina', piscina);
     
-    // Mostramos un esqueleto o texto de carga mientras esperamos a PHP
     const tbody = document.getElementById('tbodyMarcas');
     tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando marcas...</td></tr>';
 
-    // Pedimos los datos al controlador
     const marcas = await peticionAjax(`listarMarcas&${params.toString()}`);
 
     if (!marcas || marcas.length === 0) {
@@ -726,35 +539,29 @@ async function cargarTablaMarcas() {
     let html = '';
     marcas.forEach(marca => {
         
-        // 1. Convertimos el tiempo al formato humano
         const tiempoReloj = formatearTiempoDesdeSegundos(marca.tiempo_final_seg);
-        const fechaLatina = formatearFecha(marca.fecha); // <--- AQUÍ LA USAS
+        const fechaLatina = formatearFecha(marca.fecha); 
 
-        // 2. Lógica visual: Si la BD dijo que es PB, armamos una medallita dorada
         const badgePB = (marca.es_pb == 1) 
             ? `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold ml-2 uppercase shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="¡Mejor Marca Personal!"><i class="fas fa-star mr-1"></i>PB</span>` 
             : '';
 
-// 3. Evaluamos si mostramos el botón de archivar(rojo) o reactivar(verde)
         const botonAccion = (filtroEstado === 'Activo')
             ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
             : `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`;
         
-        // === NUEVO: EL BOTÓN DE EDITAR ===
-        // Solo mostramos el botón de editar (lápiz amarillo) si la marca está activa
+       
         const botonEditar = (filtroEstado === 'Activo')
             ? `<button onclick="abrirModalMarca(${marca.id_marca})" class="text-amber-400 hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar Registro de Tiempo"><i class="fas fa-edit text-base"></i></button>`
             : '';
 
-        // === EL TOQUE FINAL DE UX ===
-        // Si estamos viendo la papelera, armamos el texto rojo con el motivo
+        
         const justificacionHTML = (filtroEstado === 'Inactivo' && marca.motivo_eliminacion)
             ? `<div class="text-[9px] text-red-400 mt-1 flex items-center gap-1 w-48 leading-tight">
                 <i class="fas fa-exclamation-circle"></i> Anulado: ${marca.motivo_eliminacion}
                </div>`
             : '';
 
-        // 4. Armamos la fila HTML
         html += `
             <tr class="hover:bg-white/5 transition-colors duration-200 border-b border-[#252345]">
                 
@@ -801,14 +608,12 @@ async function cargarTablaMarcas() {
     tbody.innerHTML = html;
 }
 
-// 1. Función para llenar el select de atletas (Se llama una sola vez al cargar la página)
 async function cargarFiltroAtletas() {
     const atletas = await peticionAjax('listarAtletasSelect');
     const select = document.getElementById('filtroAtleta');
     
     if (atletas && atletas.length > 0) {
         atletas.forEach(atleta => {
-            // value="${atleta.id_atleta}" es la clave para la eficiencia de base de datos
             select.insertAdjacentHTML('beforeend', `<option value="${atleta.id_atleta}">${atleta.nombres} ${atleta.apellidos} - CI: ${atleta.cedula}</option>`);
         });
     }
@@ -818,14 +623,13 @@ async function cargarFiltroAtletas() {
 // =====================================================================
 // VISUALIZADOR CIENTÍFICO Y GRÁFICAS DE RENDIMIENTO (MAESTRO-DETALLE)
 // =====================================================================
-let instanciaGrafica = null; // Control para evitar bugs de renderizado en Chart.js
+let instanciaGrafica = null; 
 let instanciaGraficaSplits = null; 
 
 async function verDetallesMarca(id_marca) {
     const modalVer = document.getElementById('modalVer');
     const contenedor = document.getElementById('detalleContenido');
     
-    // Feedback visual de carga asíncrona
     contenedor.innerHTML = `
         <div class="text-center p-12 text-gray-500">
             <i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-3"></i>
@@ -833,10 +637,8 @@ async function verDetallesMarca(id_marca) {
         </div>
     `;
     
-    // Desplegamos el contenedor flotante
     modalVer.classList.remove('hidden');
     
-    // Solicitamos el paquete de datos unificado al Controlador
     const data = await peticionAjax(`obtenerDetalleMarca&id=${id_marca}`);
     if (!data) {
         UI.error('Error de Consulta', 'No se pudo estructurar el análisis técnico del registro.');
@@ -844,14 +646,12 @@ async function verDetallesMarca(id_marca) {
         return;
     }
 
-    // Traducción de formatos numéricos a métricas legibles
     const tiempoFinalHumano = formatearTiempoDesdeSegundos(data.tiempo_final_seg);
     const swolfScore = data.swolf_data ? data.swolf_data.swolf : '🚫 N/A';
     const numBrazadas = data.swolf_data ? data.swolf_data.num_brazadas : 'Sin conteo';
     const tReaccion = data.tiempo_reaccion_seg ? data.tiempo_reaccion_seg + 's' : '—';
     const tViraje = data.tiempo_viraje_seg ? data.tiempo_viraje_seg + 's' : '—';
     
-    // Procesamiento dinámico de la rejilla de splits (RF-06)
     let tramosHTML = '';
     if (data.splits && data.splits.length > 0) {
         data.splits.forEach(split => {
@@ -866,7 +666,6 @@ async function verDetallesMarca(id_marca) {
         tramosHTML = '<div class="col-span-4 p-4 text-center text-xs text-gray-600 italic">No se recolectaron parciales en este control.</div>';
     }
 
-    // Inyección estructural en el nodo del DOM
     contenedor.innerHTML = `
         <div class="mb-6">
             <span class="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold rounded-md uppercase tracking-widest">
@@ -929,12 +728,10 @@ async function verDetallesMarca(id_marca) {
         </div>
     `;
 
-    // Inicialización del Motor Gráfico (Chart.js) si posee historial acumulado
     if (data.historial_evolucion && data.historial_evolucion.length > 0) {
         const ejeFechas = data.historial_evolucion.map(h => formatearFecha(h.fecha));
         const ejeTiempos = data.historial_evolucion.map(h => parseFloat(h.tiempo_final_seg));
 
-        // Liberamos memoria destruyendo la instancia previa para evitar parpadeos de caché
         if (instanciaGrafica) instanciaGrafica.destroy();
 
         const contextoLienzo = document.getElementById('canvasEvolucion').getContext('2d');
@@ -944,13 +741,13 @@ async function verDetallesMarca(id_marca) {
                 labels: ejeFechas,
                 datasets: [{
                     data: ejeTiempos,
-                    borderColor: '#6366f1', // Línea de tendencia Indigo
+                    borderColor: '#6366f1', 
                     backgroundColor: 'rgba(99, 102, 241, 0.05)',
                     borderWidth: 2.5,
-                    pointBackgroundColor: '#10b981', // Puntos de quiebre en Esmeralda
+                    pointBackgroundColor: '#10b981', 
                     pointBorderColor: '#fff',
                     pointRadius: 3.5,
-                    tension: 0.25 // Curvatura estética suavizada
+                    tension: 0.25 
                 }]
             },
             options: {
@@ -976,7 +773,7 @@ async function verDetallesMarca(id_marca) {
     }
 
     // =========================================================
-    // Inicialización del Motor Gráfico 2: CAÍDA DE VELOCIDAD
+    // Inicialización del Motor Gráfico: CAÍDA DE VELOCIDAD
     // =========================================================
     if (data.splits && data.splits.length > 0) {
         const ejeDistancias = data.splits.map(s => s.distancia_parcial_m + 'm');
@@ -992,7 +789,7 @@ async function verDetallesMarca(id_marca) {
                 labels: ejeDistancias,
                 datasets: [{
                     data: ejeTiemposSplits,
-                    borderColor: '#06b6d4', // Un color Cyan para diferenciarla de la otra
+                    borderColor: '#06b6d4',
                     backgroundColor: 'rgba(6, 182, 212, 0.05)',
                     borderWidth: 2.5,
                     pointBackgroundColor: '#06b6d4',
@@ -1026,7 +823,7 @@ function cerrarModalVer() {
     document.getElementById('modalVer').classList.add('hidden');
     if (instanciaGrafica) {
         instanciaGrafica.destroy();
-        instanciaGrafica = null; // Limpieza física del colector de basura
+        instanciaGrafica = null; 
     }
 }
 
@@ -1036,20 +833,17 @@ function cerrarModalVer() {
 // =====================================================================
 
 async function eliminarMarca(id_marca) {
-    // 1. Invocamos nuestro método centralizado súper limpio
     const alerta = await UI.pedirJustificacion(
         'Archivar Registro de Tiempo',
         'Indique el motivo exacto de la anulación (Ej: Descalificación, Fallo de cronómetro):',
         'Escriba la justificación detallada aquí...'
     );
 
-    // 2. Evaluamos la respuesta de la alerta
     if (alerta.isConfirmed && alerta.value) {
         let datosDelete = new FormData();
         datosDelete.append('accion', 'eliminar');
         datosDelete.append('id_marca', id_marca);
-        datosDelete.append('motivo', alerta.value); // alerta.value contiene lo que escribió el usuario
-        
+        datosDelete.append('motivo', alerta.value); 
         const resultado = await peticionAjax('eliminar', datosDelete);
         
         if (resultado && resultado.status === 'success') {
@@ -1062,7 +856,6 @@ async function eliminarMarca(id_marca) {
 }
 
 async function reactivarMarca(id_marca) {
-    // Para reactivar, simplemente usamos el UI.confirmar que ya tenías creado
     const confirmacion = await UI.confirmar(
         '¿Restaurar Marca?',
         'Este registro volverá a ser oficial y visible en los perfiles y estadísticas del atleta.'
@@ -1087,7 +880,6 @@ async function reactivarMarca(id_marca) {
 // =====================================================================
 // INICIALIZADOR
 // =====================================================================
-// Cuando el documento cargue, mandamos a pintar la tabla automáticamente
 document.addEventListener('DOMContentLoaded', () => {
 
     Validador.vincularTiempoReal(document.getElementById('formMarca'));
