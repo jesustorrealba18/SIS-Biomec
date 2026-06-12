@@ -226,23 +226,23 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="md:col-span-2">
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Atleta Afectado *</label>
-                            <select name="id_atleta" id="id_atleta" class="w-full input-dark rounded-xl px-4 py-3" required>
+                            <select name="id_atleta" id="id_atleta" class="w-full input-dark rounded-xl px-4 py-3" required data-validar="requerido" data-nombre="Atleta">
                                 <option value="">Seleccione el atleta...</option>
                             </select>
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Fecha de Inicio *</label>
-                            <input type="date" name="fecha_inicio" id="fecha_inicio" class="w-full input-dark rounded-xl px-4 py-3" required>
+                            <input type="date" name="fecha_inicio" id="fecha_inicio" class="w-full input-dark rounded-xl px-4 py-3" required data-validar="requerido|fecha_logica" data-nombre="Fecha de inicio">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Fecha Estimada Recuperación</label>
-                            <input type="date" name="fecha_estimada_recup" id="fecha_estimada_recup" class="w-full input-dark rounded-xl px-4 py-3">
+                            <input type="date" name="fecha_estimada_recup" id="fecha_estimada_recup" class="w-full input-dark rounded-xl px-4 py-3" data-validar="fecha_logica" data-nombre="Fecha estimada de recuperación" data-depende="fecha_inicio" data-mensaje="La fecha estimada no puede ser anterior a la fecha de inicio">
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Zona Anatómica *</label>
-                            <select name="zona_anatomica" id="zona_anatomica" class="w-full input-dark rounded-xl px-4 py-3" required>
+                            <select name="zona_anatomica" id="zona_anatomica" class="w-full input-dark rounded-xl px-4 py-3" required data-validar="requerido" data-nombre="Zona anatómica">
                                 <option value="">Seleccione...</option>
                                 <option value="Hombro">Hombro</option>
                                 <option value="Rodilla">Rodilla</option>
@@ -259,7 +259,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Lado Afectado</label>
-                            <select name="lado" id="lado" class="w-full input-dark rounded-xl px-4 py-3">
+                            <select name="lado" id="lado" class="w-full input-dark rounded-xl px-4 py-3" data-validar="" data-nombre="Lado afectado">
                                 <option value="">No especificado</option>
                                 <option value="Izquierdo">Izquierdo</option>
                                 <option value="Derecho">Derecho</option>
@@ -269,7 +269,7 @@
 
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Tipo de Lesión *</label>
-                            <select name="tipo" id="tipo" class="w-full input-dark rounded-xl px-4 py-3" required>
+                            <select name="tipo" id="tipo" class="w-full input-dark rounded-xl px-4 py-3" required data-validar="requerido" data-nombre="Tipo de lesión">
                                 <option value="">Seleccione el tipo...</option>
                                 <option value="Sobreuso">Sobrecarga / Sobreuso</option>
                                 <option value="Aguda">Aguda (Traumática)</option>
@@ -278,26 +278,26 @@
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Nivel de Molestia (1-10) *</label>
-                            <input type="number" name="nivel_molestia" id="nivel_molestia" min="1" max="10" class="w-full input-dark rounded-xl px-4 py-3" required>
+                            <input type="number" name="nivel_molestia" id="nivel_molestia" min="1" max="10" class="w-full input-dark rounded-xl px-4 py-3" required data-validar="requerido|rango" data-nombre="Nivel de molestia" data-min-num="1" data-max-num="10">
                         </div>
 
                         <div class="md:col-span-2">
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Diagnóstico Clínico *</label>
-                            <textarea name="diagnostico" id="diagnostico" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none" required></textarea>
+                            <textarea name="diagnostico" id="diagnostico" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none" required data-validar="requerido|texto" data-nombre="Diagnóstico" data-min="10" data-max="500"></textarea>
                         </div>
 
                         <div class="md:col-span-1">
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Tratamiento Asignado</label>
-                            <textarea name="tratamiento" id="tratamiento" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none"></textarea>
+                            <textarea name="tratamiento" id="tratamiento" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none" data-validar="texto" data-nombre="Tratamiento" data-max="1000"></textarea>
                         </div>
                         <div class="md:col-span-1">
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Profesional Responsable</label>
-                            <input type="text" name="profesional" id="profesional" class="w-full input-dark rounded-xl px-4 py-3">
+                            <input type="text" name="profesional" id="profesional" class="w-full input-dark rounded-xl px-4 py-3" data-validar="letras|texto" data-nombre="Profesional responsable" data-min="3" data-max="100">
                         </div>
 
                         <div class="md:col-span-2" id="campoEstadoEdicion" style="display:none;">
                             <label class="block text-xs font-bold text-amber-400 uppercase tracking-wide mb-2">Actualizar Estado Clínico</label>
-                            <select name="estado" id="estado" class="w-full input-dark rounded-xl px-4 py-3 border-amber-500/50 focus:border-amber-500">
+                            <select name="estado" id="estado" class="w-full input-dark rounded-xl px-4 py-3 border-amber-500/50 focus:border-amber-500" data-validar="requerido" data-nombre="Estado clínico">
                                 <option value="Activa">🟢 Activa</option>
                                 <option value="EnRehabilitacion">🟡 En Rehabilitación</option>
                                 <option value="Recuperada">✅ Recuperada</option>
@@ -307,7 +307,7 @@
 
                         <div class="md:col-span-2">
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Observaciones</label>
-                            <textarea name="observaciones" id="observaciones" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none"></textarea>
+                            <textarea name="observaciones" id="observaciones" rows="2" class="w-full input-dark rounded-xl px-4 py-3 resize-none" data-validar="texto" data-nombre="Observaciones" data-max="500"></textarea>
                         </div>
                     </div>
 
