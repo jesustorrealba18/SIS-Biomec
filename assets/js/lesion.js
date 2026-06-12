@@ -19,6 +19,126 @@ const API_URL = 'index.php?p=lesion';
 let instanciaGrafica = null;
 let modoPapelera = false; // Estado: false = Activos, true = Inactivos (Papelera)
 
+// ================== VALIDACIONES PERSONALIZADAS (sin modificar validador.js) ==================
+function validarCampoPersonalizado(campo) {
+    if (!campo.hasAttribute('data-validar')) return true;
+    
+    const reglas = campo.getAttribute('data-validar').split('|');
+    const valor = campo.value.trim();
+    let valido = true;
+    let mensaje = '';
+
+    // Reiniciar estilos y título
+    campo.style.borderColor = '';
+    campo.title = '';
+
+    // 1. Requerido
+    if (reglas.includes('requerido') && valor === '') {
+        valido = false;
+        mensaje = 'Este campo es obligatorio.';
+    }
+
+    // Si está vacío y no es requerido, es válido
+    if (valor === '') {
+        campo.style.borderColor = valido ? '' : '#f87171';
+        return valido;
+    }
+
+    // 2. Reglas de texto (solo letras, números, etc.)
+    if (reglas.includes('letras') && !/^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/.test(valor)) {
+        valido = false;
+        mensaje = 'Solo se permiten letras.';
+    }
+    if (reglas.includes('numeros') && !/^[0-9]+$/.test(valor)) {
+        valido = false;
+        mensaje = 'Solo se permiten números.';
+    }
+    if (reglas.includes('texto') && !/^[A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s.,;:()\-\#\/]+$/.test(valor)) {
+        valido = false;
+        mensaje = 'Contiene caracteres no permitidos.';
+    }
+
+    // 3. Longitud mínima y máxima
+    if (campo.hasAttribute('data-min')) {
+        let min = parseInt(campo.getAttribute('data-min'));
+        if (valor.length < min) {
+            valido = false;
+            mensaje = `Mínimo ${min} caracteres.`;
+        }
+    }
+    if (campo.hasAttribute('data-max')) {
+        let max = parseInt(campo.getAttribute('data-max'));
+        if (valor.length > max) {
+            valido = false;
+            mensaje = `Máximo ${max} caracteres.`;
+        }
+    }
+
+    // 4. Rango numérico (data-min-num / data-max-num) para nivel_molestia
+    if (reglas.includes('rango')) {
+        let num = parseFloat(valor);
+        if (!isNaN(num)) {
+            let min = campo.hasAttribute('data-min-num') ? parseFloat(campo.getAttribute('data-min-num')) : -Infinity;
+            let max = campo.hasAttribute('data-max-num') ? parseFloat(campo.getAttribute('data-max-num')) : Infinity;
+            if (num < min || num > max) {
+                valido = false;
+                mensaje = `Debe estar entre ${min} y ${max}.`;
+            }
+        } else {
+            valido = false;
+            mensaje = 'Debe ser un número.';
+        }
+    }
+
+    // 5. Fecha lógica (no futuro, no mayor a 120 años)
+    if (reglas.includes('fecha_logica') && valor !== '') {
+        const hoy = new Date();
+        const año = hoy.getFullYear();
+        const fecha = new Date(valor);
+        if (fecha > hoy) {
+            valido = false;
+            mensaje = 'La fecha no puede ser futura.';
+        } else if (fecha < new Date(año - 120, 0, 1)) {
+            valido = false;
+            mensaje = 'Fecha demasiado antigua (más de 120 años).';
+        }
+    }
+
+    // 6. Fecha posterior a otro campo (para fecha_estimada_recup)
+    if (reglas.includes('fecha_posterior') && valor !== '') {
+        const dependencia = campo.getAttribute('data-depende');
+        if (dependencia) {
+            const campoBase = document.getElementById(dependencia);
+            if (campoBase && campoBase.value) {
+                if (new Date(valor) < new Date(campoBase.value)) {
+                    valido = false;
+                    mensaje = campo.getAttribute('data-mensaje') || 'Debe ser posterior a la fecha de inicio.';
+                }
+            }
+        }
+    }
+
+    // Aplicar estilo visual
+    campo.style.borderColor = valido ? '#34d399' : '#f87171';
+    if (!valido) campo.title = mensaje;
+    
+    return valido;
+}
+
+function validarFormularioPersonalizado(formulario) {
+    let errores = [];
+    const campos = formulario.querySelectorAll('[data-validar]');
+    campos.forEach(campo => {
+        if (!validarCampoPersonalizado(campo)) {
+            const nombre = campo.getAttribute('data-nombre') || campo.name;
+            const mensaje = campo.title || 'Valor inválido.';
+            errores.push(`- <b>${nombre}</b>: ${mensaje}`);
+        }
+    });
+    return errores.length ? errores.join('<br>') : false;
+}
+
+
 // ---------------------------------------------------------------------
 // Petición AJAX Centralizada (Fetch API)
 // ---------------------------------------------------------------------
@@ -226,8 +346,12 @@ function cerrarModal() {
 
 formulario.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (typeof Validador !== 'undefined' && Validador.validarFormulario(formulario).length) return;
-    
+   const errores = validarFormularioPersonalizado(formulario);
+    if (errores !== false) {
+    UI.error('Errores de validación', errores);
+    return;
+    }
+
     const originalText = btnGuardar.innerHTML;
     btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
     btnGuardar.disabled = true;
@@ -397,6 +521,23 @@ document.addEventListener('DOMContentLoaded', () => {
     
     cargarAtletas();
     cargarTabla();
+
+    // Validación proactiva para todos los campos del formulario (incluye selects y fechas)
+const camposFormulario = formulario.querySelectorAll('[data-validar]');
+camposFormulario.forEach(campo => {
+    // Eventos para validar mientras el usuario interactúa
+    campo.addEventListener('input', () => validarCampoPersonalizado(campo));
+    campo.addEventListener('change', () => validarCampoPersonalizado(campo));
+    campo.addEventListener('blur', () => validarCampoPersonalizado(campo));
+    
+    // Si es un campo de fecha y depende de otro (ej: fecha_estimada_recup), también validar cuando cambie el padre
+    if (campo.hasAttribute('data-depende')) {
+        const dependencia = document.getElementById(campo.getAttribute('data-depende'));
+        if (dependencia) {
+            dependencia.addEventListener('change', () => validarCampoPersonalizado(campo));
+        }
+    }
+});
     
     // Toggle Papelera con cambio de título en la tabla
     btnPapelera?.addEventListener('click', () => {
