@@ -73,7 +73,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($accionPost === 'registrar') {
         Autorizacion::exigir('marcas', 'registrar');
 
-         // El controlador manda a guardar. El modelo retorna 'false' y entra al bloque ELSE.
         if ($objMarca->registrarMarca($_POST)) {
 
                 $datosGuardados = $_POST;
@@ -82,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Bitacora::registrar(
                     $id_usuario, 
                     'Marcas', 
-                    'CREATE', // Respeta estrictamente tu ENUM
+                    'CREATE', 
                     null, 
                     'Múltiples campos (Registro Completo)', 
                     null, 
@@ -126,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
             echo json_encode(['status' => 'success']);
         } else {
-            // Si validaciones fallan, extraemos el primer error del Trait
+            
             $errores = $objMarca->obtenerErrores();
             $mensaje = !empty($errores) ? reset($errores) : 'Error al actualizar la marca.';
             echo json_encode(['status' => 'error', 'message' => $mensaje]);
@@ -138,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($accionPost === 'eliminar') {
         Autorizacion::exigir('marcas', 'registrar');
         $id = (int)($_POST['id_marca'] ?? 0);
-        $motivo = $_POST['motivo'] ?? 'Sin justificación'; // Capturamos el motivo
+        $motivo = $_POST['motivo'] ?? 'Sin justificación'; 
 
         if ($objMarca->eliminarMarca($id, $motivo)) {
             Bitacora::registrar($id_usuario, 'Marcas', 'DELETE', $id, 'estado', 'Activo', "Inactivo (Motivo: $motivo)");
