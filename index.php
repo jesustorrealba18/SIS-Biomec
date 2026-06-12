@@ -159,9 +159,9 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
 
 $paginasPermitidas = [
     'login', 'inicio', 'entrenador', 'drills', 'atleta', 'eventos', 'marcas',
-    'periodizacion', 'temporadas', 'antropometria', 'representante', 'calendario', 'salir', 'sesiones', 'grupo',
+    'periodizacion', 'temporadas', 'antropometria', 'representante', 'calendario', 'salir', 'sesiones',
     'lesion', 'categorias', 'grupo', 'bitacora', 'usuarios', 'roles', 'mantenimiento', 'cargaBienestar', 'mi_perfil', 'asistencia',
-    'lesion', 'categorias', 'bitacora', 'usuarios', 'roles', 'mantenimiento', 'cargaBienestar', 'mi_perfil', 'asistencia','normalizacion'
+    'observacionesTecnicas', 'testFisico', 'normalizacion'
 ];
 
 $pagina = "inicio";

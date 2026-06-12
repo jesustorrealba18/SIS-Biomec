@@ -684,7 +684,12 @@ INSERT INTO `reglas_ia` (`id_regla`, `codigo`, `nombre`, `antecedente`, `consecu
 (12, 'R-012', 'Desacondicionamiento por baja carga', '{\"condiciones\":[{\"campo\":\"acwr\",\"operador\":\"<\",\"valor\":0.8}],\"logica\":\"AND\"}', 'Atleta sub-entrenado. Incrementar progresivamente la carga.', 6, 1, NULL, 'ACWR menor a 0.8 indica carga aguda muy por debajo de la crónica.', '2026-05-17 16:39:25', NULL),
 (13, 'R-013', 'Alerta por asistencia irregular', '{\"condiciones\":[{\"campo\":\"inasistencias_consecutivas\",\"operador\":\">=\",\"valor\":3},{\"campo\":\"inasistencias_justificadas\",\"operador\":\"=\",\"valor\":false}],\"logica\":\"AND\"}', '3+ inasistencias consecutivas sin justificación. Contactar al representante.', 5, 1, NULL, 'Atleta con 3 o más inasistencias consecutivas sin justificar.', '2026-05-17 16:39:25', NULL),
 (14, 'R-014', 'Variación de peso relevante', '{\"condiciones\":[{\"campo\":\"variacion_peso_30d\",\"operador\":\">\",\"valor\":5}],\"logica\":\"AND\"}', 'Variación de peso mayor al 5% en 30 días. Evaluar con médico.', 7, 1, NULL, 'Cambio significativo de peso corporal en período corto.', '2026-05-17 16:39:25', NULL),
-(15, 'R-015', 'Riesgo en competición próxima', '{\"condiciones\":[{\"campo\":\"dias_para_competencia\",\"operador\":\"<=\",\"valor\":7},{\"campo\":\"acwr\",\"operador\":\">\",\"valor\":1.3},{\"campo\":\"lesion_activa\",\"operador\":\"=\",\"valor\":true}],\"logica\":\"AND\"}', 'Competencia próxima (≤7 días) con carga elevada y lesión activa. Reevaluar participación.', 10, 1, NULL, 'Condiciones de riesgo a menos de 7 días de competencia.', '2026-05-17 16:39:25', NULL);
+(15, 'R-015', 'Riesgo en competición próxima', '{\"condiciones\":[{\"campo\":\"dias_para_competencia\",\"operador\":\"<=\",\"valor\":7},{\"campo\":\"acwr\",\"operador\":\">\",\"valor\":1.3},{\"campo\":\"lesion_activa\",\"operador\":\"=\",\"valor\":true}],\"logica\":\"AND\"}', 'Competencia próxima (≤7 días) con carga elevada y lesión activa. Reevaluar participación.', 10, 1, NULL, 'Condiciones de riesgo a menos de 7 días de competencia.', '2026-05-17 16:39:25', NULL),
+(16, 'R-016', 'Degradación de lactato en tests consecutivos', '{\"condiciones\":[{\"campo\":\"degradacion_lactato_pct\",\"operador\":\">\",\"valor\":15},{\"campo\":\"tests_consecutivos\",\"operador\":\">=\",\"valor\":2}],\"logica\":\"AND\"}', 'Evaluar reducción de intensidad en fase de acumulación.', 7, 1, NULL, 'Degradación mayor al 15% del lactato en tests consecutivos.', '2026-06-11 00:00:00', NULL),
+(17, 'R-017', 'Aspecto técnico deficiente persistente', '{\"condiciones\":[{\"campo\":\"calificacion_aspecto\",\"operador\":\"<\",\"valor\":3},{\"campo\":\"sesiones_consecutivas\",\"operador\":\">=\",\"valor\":3},{\"campo\":\"drill_correccion_ejecutado\",\"operador\":\"=\",\"valor\":false}],\"logica\":\"AND\"}', 'Requiere atención técnica específica en <aspecto>. Revisar drills.', 8, 1, NULL, 'Calificación menor a 3 durante 3+ sesiones consecutivas sin drills de corrección ejecutados.', '2026-06-11 00:00:00', NULL),
+(18, 'R-018', 'Lactato umbral en zona anaeróbica extrema', '{\"condiciones\":[{\"campo\":\"lactato_umbral\",\"operador\":\">\",\"valor\":8}],\"logica\":\"AND\"}', 'Zona anaeróbica extrema. Detener test. Evaluar recuperación.', 10, 1, NULL, 'Lactato umbral mayor a 8 mmol/L indica zona anaeróbica extrema.', '2026-06-11 00:00:00', NULL),
+(19, 'R-019', 'Buena salida pero viraje deficiente', '{\"condiciones\":[{\"campo\":\"calificacion_salida\",\"operador\":\">\",\"valor\":4},{\"campo\":\"calificacion_viraje\",\"operador\":\"<\",\"valor\":2}],\"logica\":\"AND\"}', 'Buena salida pero viraje deficiente. Corregir antes de próxima competencia.', 6, 1, NULL, 'Salida calificada como muy buena o excelente (4+) combinada con viraje deficiente (<2).', '2026-06-11 00:00:00', NULL),
+(20, 'R-020', 'VO2máx mejora pero marca estancada', '{\"condiciones\":[{\"campo\":\"mejora_vo2max_pct\",\"operador\":\">\",\"valor\":5},{\"campo\":\"marca_estancada\",\"operador\":\"=\",\"valor\":true}],\"logica\":\"AND\"}', 'Capacidad aeróbica mejoró pero no se refleja en tiempos. Evaluar técnica.', 7, 1, NULL, 'VO2máx estimado mejora más del 5% pero las marcas no reflejan la mejora.', '2026-06-11 00:00:00', NULL);
 
 -- --------------------------------------------------------
 
@@ -1393,7 +1398,7 @@ ALTER TABLE `registro_rpe`
 -- AUTO_INCREMENT de la tabla `reglas_ia`
 --
 ALTER TABLE `reglas_ia`
-  MODIFY `id_regla` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id_regla` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT de la tabla `reglas_log`
@@ -1604,6 +1609,313 @@ ALTER TABLE `sesiones`
 ALTER TABLE `tiempos_corte_evento`
   ADD CONSTRAINT `fk_tce_categoria` FOREIGN KEY (`id_categoria`) REFERENCES `categorias_feveda` (`id_categoria`),
   ADD CONSTRAINT `fk_tce_evento` FOREIGN KEY (`id_evento`) REFERENCES `eventos` (`id_evento`) ON DELETE CASCADE;
+
+-- --------------------------------------------------------
+--
+-- RF-21: Registro de Tests Físicos Complementarios
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tipos_test_predefinidos`
+--
+
+CREATE TABLE `tipos_test_predefinidos` (
+  `id_tipo_test` int(11) NOT NULL,
+  `nombre` varchar(150) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `tipo_medicion` varchar(100) DEFAULT NULL,
+  `unidad_medida` varchar(30) DEFAULT NULL,
+  `valor_referencia_min` decimal(10,2) DEFAULT NULL,
+  `valor_referencia_max` decimal(10,2) DEFAULT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `es_personalizado` tinyint(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `tipos_test_predefinidos`
+--
+
+INSERT INTO `tipos_test_predefinidos` (`id_tipo_test`, `nombre`, `descripcion`, `tipo_medicion`, `unidad_medida`, `valor_referencia_min`, `valor_referencia_max`, `activo`, `es_personalizado`) VALUES
+(1, 'Lactato 4x200 Acum', 'Lactato en sangre tras 4x200m acumulativo paso a paso', 'Lactato', 'mmol/L', 2.00, 12.00, 1, 0),
+(2, 'Sit and Reach', 'Flexibilidad de espalda posterior', 'Distancia', 'cm', -15.00, 15.00, 1, 0),
+(3, 'Flexiones', 'Fuerza tren superior', 'Repeticiones', 'reps', 0.00, 100.00, 1, 0),
+(4, 'Dominadas', 'Fuerza tren superior', 'Repeticiones', 'reps', 0.00, 50.00, 1, 0),
+(5, 'Salto Horizontal', 'Potencia de tren inferior', 'Distancia', 'cm', 0.00, 300.00, 1, 0),
+(6, 'Salto Vertical', 'Potencia explosiva', 'Altura', 'cm', 0.00, 80.00, 1, 0),
+(7, 'VO2máx Cooper', 'Capacidad aeróbica estimada', 'VO2máx', 'ml/kg/min', 20.00, 80.00, 1, 0),
+(8, 'Plancha Abdominal', 'Resistencia core', 'Segundos', 'seg', 0.00, 300.00, 1, 0),
+(9, 'Sprint 30m Seco', 'Velocidad en seco', 'Tiempo', 'seg', 0.00, 6.00, 1, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tests_personalizados`
+--
+
+CREATE TABLE `tests_personalizados` (
+  `id_test_pers` int(11) NOT NULL,
+  `nombre` varchar(150) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `id_usuario_creador` int(11) DEFAULT NULL,
+  `fecha_creacion` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `variables_test`
+--
+
+CREATE TABLE `variables_test` (
+  `id_variable` int(11) NOT NULL,
+  `id_tipo_test` int(11) DEFAULT NULL,
+  `id_test_pers` int(11) DEFAULT NULL,
+  `nombre_variable` varchar(100) NOT NULL,
+  `unidad` varchar(30) DEFAULT NULL,
+  `orden_mostrar` int(11) NOT NULL DEFAULT 1,
+  `activa` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `variables_test`
+--
+
+INSERT INTO `variables_test` (`id_variable`, `id_tipo_test`, `id_test_pers`, `nombre_variable`, `unidad`, `orden_mostrar`, `activa`) VALUES
+(1, 1, NULL, 'Lactato final', 'mmol/L', 1, 1),
+(2, 1, NULL, 'Frecuencia cardíaca final', 'bpm', 2, 1),
+(3, 1, NULL, 'Frecuencia cardíaca 1 min post', 'bpm', 3, 1),
+(4, 2, NULL, 'Sin flexión', 'cm', 1, 1),
+(5, 2, NULL, 'Con flexión', 'cm', 2, 1),
+(6, 2, NULL, 'Diferencia', 'cm', 3, 1),
+(7, 3, NULL, 'Repeticiones', 'reps', 1, 1),
+(8, 4, NULL, 'Repeticiones', 'reps', 1, 1),
+(9, 5, NULL, 'Distancia', 'cm', 1, 1),
+(10, 6, NULL, 'Altura', 'cm', 1, 1),
+(11, 7, NULL, 'Distancia recorrida', 'm', 1, 1),
+(12, 7, NULL, 'VO2máx estimado', 'ml/kg/min', 2, 1),
+(13, 8, NULL, 'Tiempo', 'seg', 1, 1),
+(14, 9, NULL, 'Tiempo', 'seg', 1, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `registros_test`
+--
+
+CREATE TABLE `registros_test` (
+  `id_registro_test` int(11) NOT NULL,
+  `id_atleta` int(11) NOT NULL,
+  `id_tipo_test` int(11) DEFAULT NULL,
+  `id_test_pers` int(11) DEFAULT NULL,
+  `fecha` date NOT NULL,
+  `id_usuario_toma` int(11) DEFAULT NULL,
+  `observaciones` text DEFAULT NULL,
+  `estado` enum('Completo','Parcial','Cancelado') NOT NULL DEFAULT 'Completo',
+  `fecha_creacion` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `valores_test`
+--
+
+CREATE TABLE `valores_test` (
+  `id_valor` int(11) NOT NULL,
+  `id_registro_test` int(11) NOT NULL,
+  `id_variable` int(11) NOT NULL,
+  `valor` decimal(10,2) DEFAULT NULL,
+  `unidad_medida` varchar(30) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+--
+-- RF-22: Registro de Observaciones Técnicas del Entrenador
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `aspectos_tecnicos`
+--
+
+CREATE TABLE `aspectos_tecnicos` (
+  `id_aspecto` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `aspectos_tecnicos`
+--
+
+INSERT INTO `aspectos_tecnicos` (`id_aspecto`, `nombre`, `descripcion`, `activo`) VALUES
+(1, 'Viraje', 'Calidad del giro en la pared', 1),
+(2, 'Salida', 'Reacción, vuelo, entrada al agua, underwaters', 1),
+(3, 'Brazada (técnica)', 'Técnica de tracción, punto muerto, alta del codo', 1),
+(4, 'Brazada (tiempo)', 'Frecuencia de ciclos por minuto', 1),
+(5, 'Patada (técnica)', 'Técnica de la pierna, propulsión', 1),
+(6, 'Patada (tiempo)', 'Frecuencia de ciclos por minuto', 1),
+(7, 'Respiración', 'Timing de la respiración, bilateralidad', 1),
+(8, 'Posición Corporal', 'Alineación, rotación, estabilidad', 1),
+(9, 'Ritmo', 'Consistencia de velocidad entre parciales', 1),
+(10, 'Recuperación Activa', 'Capacidad de reducir ritmo entre series', 1),
+(11, 'Resistencia Mental', 'Actitud durante series largas/difíciles', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `observaciones_tecnicas`
+--
+
+CREATE TABLE `observaciones_tecnicas` (
+  `id_observacion` int(11) NOT NULL,
+  `id_atleta` int(11) NOT NULL,
+  `id_sesion` int(11) DEFAULT NULL,
+  `id_aspecto_tecnico` int(11) NOT NULL,
+  `calificacion` int(11) DEFAULT NULL,
+  `observacion_texto` text DEFAULT NULL,
+  `id_usuario` int(11) DEFAULT NULL,
+  `fecha_registro` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Indices de la tabla `tipos_test_predefinidos`
+--
+ALTER TABLE `tipos_test_predefinidos`
+  ADD PRIMARY KEY (`id_tipo_test`),
+  ADD UNIQUE KEY `nombre` (`nombre`);
+
+--
+-- Indices de la tabla `tests_personalizados`
+--
+ALTER TABLE `tests_personalizados`
+  ADD PRIMARY KEY (`id_test_pers`);
+
+--
+-- Indices de la tabla `variables_test`
+--
+ALTER TABLE `variables_test`
+  ADD PRIMARY KEY (`id_variable`),
+  ADD KEY `fk_vt_tipo_test` (`id_tipo_test`),
+  ADD KEY `fk_vt_test_pers` (`id_test_pers`);
+
+--
+-- Indices de la tabla `registros_test`
+--
+ALTER TABLE `registros_test`
+  ADD PRIMARY KEY (`id_registro_test`),
+  ADD KEY `fk_rt_atleta` (`id_atleta`),
+  ADD KEY `fk_rt_tipo_test` (`id_tipo_test`),
+  ADD KEY `fk_rt_test_pers` (`id_test_pers`),
+  ADD KEY `fk_rt_usuario` (`id_usuario_toma`);
+
+--
+-- Indices de la tabla `valores_test`
+--
+ALTER TABLE `valores_test`
+  ADD PRIMARY KEY (`id_valor`),
+  ADD KEY `fk_vt_registro` (`id_registro_test`),
+  ADD KEY `fk_vt_variable` (`id_variable`);
+
+--
+-- Indices de la tabla `aspectos_tecnicos`
+--
+ALTER TABLE `aspectos_tecnicos`
+  ADD PRIMARY KEY (`id_aspecto`);
+
+--
+-- Indices de la tabla `observaciones_tecnicas`
+--
+ALTER TABLE `observaciones_tecnicas`
+  ADD PRIMARY KEY (`id_observacion`),
+  ADD KEY `fk_ot_atleta` (`id_atleta`),
+  ADD KEY `fk_ot_sesion` (`id_sesion`),
+  ADD KEY `fk_ot_aspecto` (`id_aspecto_tecnico`),
+  ADD KEY `fk_ot_usuario` (`id_usuario`);
+
+-- --------------------------------------------------------
+
+--
+-- AUTO_INCREMENT de la tabla `tipos_test_predefinidos`
+--
+ALTER TABLE `tipos_test_predefinidos`
+  MODIFY `id_tipo_test` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT de la tabla `tests_personalizados`
+--
+ALTER TABLE `tests_personalizados`
+  MODIFY `id_test_pers` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `variables_test`
+--
+ALTER TABLE `variables_test`
+  MODIFY `id_variable` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT de la tabla `registros_test`
+--
+ALTER TABLE `registros_test`
+  MODIFY `id_registro_test` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `valores_test`
+--
+ALTER TABLE `valores_test`
+  MODIFY `id_valor` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `aspectos_tecnicos`
+--
+ALTER TABLE `aspectos_tecnicos`
+  MODIFY `id_aspecto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT de la tabla `observaciones_tecnicas`
+--
+ALTER TABLE `observaciones_tecnicas`
+  MODIFY `id_observacion` int(11) NOT NULL AUTO_INCREMENT;
+
+-- --------------------------------------------------------
+
+--
+-- Filtros para la tabla `variables_test`
+--
+ALTER TABLE `variables_test`
+  ADD CONSTRAINT `fk_vt_tipo_test` FOREIGN KEY (`id_tipo_test`) REFERENCES `tipos_test_predefinidos` (`id_tipo_test`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_vt_test_pers` FOREIGN KEY (`id_test_pers`) REFERENCES `tests_personalizados` (`id_test_pers`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `registros_test`
+--
+ALTER TABLE `registros_test`
+  ADD CONSTRAINT `fk_rt_atleta` FOREIGN KEY (`id_atleta`) REFERENCES `atletas` (`id_atleta`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_rt_tipo_test` FOREIGN KEY (`id_tipo_test`) REFERENCES `tipos_test_predefinidos` (`id_tipo_test`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_rt_test_pers` FOREIGN KEY (`id_test_pers`) REFERENCES `tests_personalizados` (`id_test_pers`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `valores_test`
+--
+ALTER TABLE `valores_test`
+  ADD CONSTRAINT `fk_vt_registro` FOREIGN KEY (`id_registro_test`) REFERENCES `registros_test` (`id_registro_test`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_vt_variable` FOREIGN KEY (`id_variable`) REFERENCES `variables_test` (`id_variable`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `observaciones_tecnicas`
+--
+ALTER TABLE `observaciones_tecnicas`
+  ADD CONSTRAINT `fk_ot_atleta` FOREIGN KEY (`id_atleta`) REFERENCES `atletas` (`id_atleta`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_ot_sesion` FOREIGN KEY (`id_sesion`) REFERENCES `sesiones` (`id_sesion`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_ot_aspecto` FOREIGN KEY (`id_aspecto_tecnico`) REFERENCES `aspectos_tecnicos` (`id_aspecto`) ON DELETE CASCADE;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
