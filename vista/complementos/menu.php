@@ -76,6 +76,13 @@
         </a>
         <?php endif; ?>
 
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('testFisico', 'ver')): ?>
+        <a href="?p=testFisico" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'testFisico') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-heartbeat w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'testFisico') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Tests Fisicos</span>
+        </a>
+        <?php endif; ?>
+
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'ver')): ?>
         <a href="?p=cargaBienestar" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'cargaBienestar') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-notes-medical w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'cargaBienestar') ? 'text-white' : ''; ?>"></i> 

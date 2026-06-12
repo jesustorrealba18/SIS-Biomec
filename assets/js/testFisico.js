@@ -112,6 +112,14 @@ async function abrirModalTest(id_registro = null) {
         btnGuardar.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
         document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-edit text-amber-400"></i> Editar Test Fisico';
     } else {
+        document.getElementById('accion_form').value = 'registrar';
+        document.getElementById('id_registro_test').value = '';
+        document.getElementById('origen_test').value = 'predefinido';
+        document.getElementById('contenedorPredefinido').classList.remove('hidden');
+        document.getElementById('contenedorPersonalizado').classList.add('hidden');
+        document.getElementById('id_test_pers').value = '';
+        document.getElementById('rejillaVariables').innerHTML = '';
+        document.getElementById('contenedorVariables').classList.add('hidden');
         document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-dumbbell text-indigo-400"></i> Registrar Test Fisico';
         btnGuardar.innerHTML = 'GUARDAR TEST <i class="fas fa-save ml-2"></i>';
         btnGuardar.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
@@ -148,31 +156,83 @@ async function cargarTiposSelect() {
 }
 
 async function cargarVariables() {
+    const origen = document.getElementById('origen_test').value;
     const id_tipo_test = parseInt(document.getElementById('id_tipo_test').value);
+    const id_test_pers = parseInt(document.getElementById('id_test_pers').value);
     const rejilla = document.getElementById('rejillaVariables');
     const contenedor = document.getElementById('contenedorVariables');
     const contador = document.getElementById('contadorVariables');
 
-    if (!id_tipo_test || id_tipo_test <= 0) {
-        rejilla.innerHTML = '';
-        contenedor.classList.add('hidden');
+    let idVar, origenLabel;
+    if (origen === 'personalizado') {
+        if (!id_test_pers || id_test_pers <= 0) {
+            rejilla.innerHTML = '';
+            contenedor.classList.add('hidden');
+            return;
+        }
+        idVar = `id_test_pers=${id_test_pers}`;
+        origenLabel = 'personalizado';
+    } else {
+        if (!id_tipo_test || id_tipo_test <= 0) {
+            rejilla.innerHTML = '';
+            contenedor.classList.add('hidden');
+            return;
+        }
+        idVar = `id_tipo_test=${id_tipo_test}`;
+        origenLabel = 'predefinido';
+    }
+
+    const cacheKey = `${origenLabel}_${origenLabel === 'personalizado' ? id_test_pers : id_tipo_test}`;
+    if (variablesCache[cacheKey]) {
+        renderVariables(variablesCache[cacheKey]);
         return;
     }
 
-    if (variablesCache[id_tipo_test]) {
-        renderVariables(variablesCache[id_tipo_test]);
-        return;
-    }
-
-    const variables = await peticionAjax(`obtenerVariables&id_tipo_test=${id_tipo_test}`);
+    const variables = await peticionAjax(`obtenerVariables&${idVar}`);
     if (!variables || variables.length === 0) {
         rejilla.innerHTML = '<p class="text-gray-500 text-xs col-span-full">No hay variables configuradas para este test.</p>';
         contenedor.classList.remove('hidden');
         return;
     }
 
-    variablesCache[id_tipo_test] = variables;
+    variablesCache[cacheKey] = variables;
     renderVariables(variables);
+}
+
+function cambiarOrigenTest() {
+    const origen = document.getElementById('origen_test').value;
+    const contPredefinido = document.getElementById('contenedorPredefinido');
+    const contPersonalizado = document.getElementById('contenedorPersonalizado');
+
+    if (origen === 'personalizado') {
+        contPredefinido.classList.add('hidden');
+        contPersonalizado.classList.remove('hidden');
+        document.getElementById('id_tipo_test').value = '';
+        document.getElementById('rejillaVariables').innerHTML = '';
+        document.getElementById('contenedorVariables').classList.add('hidden');
+        cargarVariables();
+    } else {
+        contPredefinido.classList.remove('hidden');
+        contPersonalizado.classList.add('hidden');
+        document.getElementById('id_test_pers').value = '';
+        document.getElementById('rejillaVariables').innerHTML = '';
+        document.getElementById('contenedorVariables').classList.add('hidden');
+        cargarVariables();
+    }
+}
+
+async function cargarTestsPersonalizadosDropdown() {
+    const select = document.getElementById('id_test_pers');
+    if (!select) return;
+    while (select.options.length > 1) select.remove(select.options.length - 1);
+    const tests = await peticionAjax('listarTestsPersonalizados');
+    if (!tests || tests.length === 0) return;
+    tests.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id_test_pers;
+        opt.textContent = t.nombre + (t.unidad_medida ? ' (' + t.unidad_medida + ')' : '');
+        select.appendChild(opt);
+    });
 }
 
 function renderVariables(variables) {
@@ -281,10 +341,20 @@ formTest.addEventListener('submit', async (e) => {
         return;
     }
 
+    const origen = document.getElementById('origen_test').value;
     const idTipoTest = parseInt(document.getElementById('id_tipo_test').value);
-    if (!idTipoTest || idTipoTest <= 0) {
-        UI.error('Test Requerido', 'Debe seleccionar un tipo de test.');
-        return;
+    const idTestPers = parseInt(document.getElementById('id_test_pers').value);
+
+    if (origen === 'personalizado') {
+        if (!idTestPers || idTestPers <= 0) {
+            UI.error('Test Requerido', 'Debe seleccionar un test personalizado.');
+            return;
+        }
+    } else {
+        if (!idTipoTest || idTipoTest <= 0) {
+            UI.error('Test Requerido', 'Debe seleccionar un tipo de test.');
+            return;
+        }
     }
 
     let datosFormulario = new FormData(formTest);
@@ -563,12 +633,338 @@ async function cargarFiltrosAtletas() {
     });
 }
 
+// =====================================================================
+// GESTION DE TIPOS DE TESTS
+// =====================================================================
+
+function abrirModalTipo(id = null) {
+    const modal = document.getElementById('modalTipo');
+    document.getElementById('formTipo').reset();
+    document.getElementById('id_tipo_test_edit').value = '';
+    document.getElementById('rejillaVariablesTipo').innerHTML = '';
+    document.getElementById('modalTipoTitulo').innerHTML = '<i class="fas fa-flask text-cyan-400"></i> Nuevo Tipo Predefinido';
+
+    if (id) {
+        document.getElementById('modalTipoTitulo').innerHTML = '<i class="fas fa-edit text-cyan-400"></i> Editar Tipo Predefinido';
+        cargarDatosTipo(id);
+    }
+
+    modal.classList.remove('hidden');
+    setTimeout(() => { modal.querySelector('.relative').classList.remove('scale-95', 'opacity-0'); }, 10);
+}
+
+function cerrarModalTipo() {
+    const modal = document.getElementById('modalTipo');
+    modal.querySelector('.relative').classList.add('scale-95', 'opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function agregarVariableTipo() {
+    const cont = document.getElementById('rejillaVariablesTipo');
+    const idx = cont.children.length + 1;
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2';
+    row.innerHTML = `
+        <input type="text" placeholder="Nombre variable" class="flex-1 input-dark p-2.5 rounded-lg text-xs nombre_var" required>
+        <input type="text" placeholder="Unidad" class="w-24 input-dark p-2.5 rounded-lg text-xs unidad_var">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-2 cursor-pointer"><i class="fas fa-trash text-xs"></i></button>
+    `;
+    cont.appendChild(row);
+}
+
+async function cargarDatosTipo(id) {
+    const datos = await peticionAjax(`obtenerTipoTest&id=${id}`);
+    if (!datos || !datos.id_tipo_test) return;
+
+    document.getElementById('id_tipo_test_edit').value = datos.id_tipo_test;
+    document.getElementById('tipo_nombre').value = datos.nombre;
+    document.getElementById('tipo_medicion').value = datos.tipo_medicion || '';
+    document.getElementById('tipo_unidad').value = datos.unidad_medida || '';
+    document.getElementById('tipo_ref_min').value = datos.valor_referencia_min || '';
+    document.getElementById('tipo_ref_max').value = datos.valor_referencia_max || '';
+    document.getElementById('tipo_descripcion').value = datos.descripcion || '';
+
+    const cont = document.getElementById('rejillaVariablesTipo');
+    cont.innerHTML = '';
+    if (datos.variables) {
+        datos.variables.forEach(v => {
+            agregarVariableTipo();
+            const row = cont.lastElementChild;
+            row.querySelector('.nombre_var').value = v.nombre_variable;
+            row.querySelector('.unidad_var').value = v.unidad || '';
+        });
+    }
+}
+
+async function guardarTipo(e) {
+    e.preventDefault();
+    const id = document.getElementById('id_tipo_test_edit').value;
+    const accion = id ? 'editarTipoTest' : 'crearTipoTest';
+
+    const datos = {
+        nombre: document.getElementById('tipo_nombre').value.trim(),
+        descripcion: document.getElementById('tipo_descripcion').value.trim(),
+        tipo_medicion: document.getElementById('tipo_medicion').value.trim(),
+        unidad_medida: document.getElementById('tipo_unidad').value.trim(),
+        valor_referencia_min: document.getElementById('tipo_ref_min').value,
+        valor_referencia_max: document.getElementById('tipo_ref_max').value,
+    };
+
+    const vars = [];
+    document.querySelectorAll('#rejillaVariablesTipo > div').forEach(row => {
+        const nombre = row.querySelector('.nombre_var').value.trim();
+        if (nombre) {
+            vars.push({ nombre_variable: nombre, unidad: row.querySelector('.unidad_var').value.trim() });
+        }
+    });
+
+    if (!datos.nombre) { UI.error('Error', 'El nombre es obligatorio.'); return; }
+    if (vars.length === 0) { UI.error('Error', 'Debe agregar al menos una variable.'); return; }
+
+    const formData = new FormData();
+    formData.append('accion', accion);
+    formData.append('datos', JSON.stringify(datos));
+    formData.append('variables', JSON.stringify(vars));
+    if (id) formData.append('id_tipo_test', id);
+
+    const resultado = await peticionAjax(accion, formData);
+    if (resultado && resultado.status === 'success') {
+        UI.exito('Exito', resultado.message);
+        cerrarModalTipo();
+        cargarTiposPredefinidos();
+        cargarTiposSelect();
+    } else {
+        UI.error('Error', resultado?.message || 'No se pudo guardar el tipo.');
+    }
+}
+
+async function eliminarTipoPredefinido(id, nombre) {
+    const confirmado = await Swal.fire({
+        title: 'Eliminar tipo',
+        text: `Se eliminara "${nombre}" y sus variables. Esta accion no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar',
+        ...UI.config
+    });
+    if (!confirmado.isConfirmed) return;
+
+    const formData = new FormData();
+    formData.append('accion', 'eliminarTipoTest');
+    formData.append('id_tipo_test', id);
+
+    const resultado = await peticionAjax('eliminarTipoTest', formData);
+    if (resultado && resultado.status === 'success') {
+        UI.exito('Eliminado', resultado.message);
+        cargarTiposPredefinidos();
+        cargarTiposSelect();
+    } else {
+        UI.error('Error', resultado?.message || 'No se pudo eliminar.');
+    }
+}
+
+async function cargarTiposPredefinidos() {
+    const cont = document.getElementById('tablaTiposPredefinidos');
+    if (!cont) return;
+
+    const tipos = await peticionAjax('listarTiposTests');
+    if (!tipos || tipos.length === 0) {
+        cont.innerHTML = '<p class="text-gray-500 text-xs text-center py-4">No hay tipos predefinidos.</p>';
+        return;
+    }
+
+    cont.innerHTML = tipos.map(t => `
+        <div class="flex items-center justify-between p-3 bg-[#0f0d23] rounded-xl border border-[#252345]">
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-white font-medium truncate">${t.nombre}</p>
+                <p class="text-[10px] text-gray-500">${t.tipo_medicion || ''} ${t.unidad_medida ? '(' + t.unidad_medida + ')' : ''}</p>
+            </div>
+            <div class="flex gap-1 ml-2">
+                <button onclick="abrirModalTipo(${t.id_tipo_test})" class="p-1.5 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition cursor-pointer" title="Editar">
+                    <i class="fas fa-pen text-xs"></i>
+                </button>
+                <button onclick="eliminarTipoPredefinido(${t.id_tipo_test}, '${t.nombre.replace(/'/g, "\\'")}')" class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer" title="Eliminar">
+                    <i class="fas fa-trash text-xs"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function cargarTestsPersonalizados() {
+    const cont = document.getElementById('tablaTestsPersonalizados');
+    if (!cont) return;
+
+    const tests = await peticionAjax('listarTestsPersonalizados');
+    if (!tests || tests.length === 0) {
+        cont.innerHTML = '<p class="text-gray-500 text-xs text-center py-4">No hay tests personalizados.</p>';
+        return;
+    }
+
+    cont.innerHTML = tests.map(t => `
+        <div class="flex items-center justify-between p-3 bg-[#0f0d23] rounded-xl border border-[#252345]">
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-white font-medium truncate">${t.nombre}</p>
+                <p class="text-[10px] text-gray-500">${t.variables ? t.variables.length + ' variables' : ''} ${t.unidad_medida ? '(' + t.unidad_medida + ')' : ''} - Creado: ${t.fecha_creacion ? t.fecha_creacion.substring(0, 10) : ''}</p>
+            </div>
+            <div class="flex items-center gap-1">
+                <button onclick="editarTestPers(${t.id_test_pers})" class="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition cursor-pointer" title="Editar">
+                    <i class="fas fa-pen text-xs"></i>
+                </button>
+                <button onclick="eliminarTestPers(${t.id_test_pers}, '${t.nombre.replace(/'/g, "\\'")}')" class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer" title="Eliminar">
+                    <i class="fas fa-trash text-xs"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function editarTestPers(id) {
+    const datos = await peticionAjax(`obtenerTestPersonalizado&id=${id}`);
+    if (!datos || datos.status === 'error') {
+        UI.error('Error', datos?.message || 'No se pudo cargar el test.');
+        return;
+    }
+
+    const modal = document.getElementById('modalPersonalizado');
+    document.getElementById('pers_id_edit').value = datos.id_test_pers;
+    document.getElementById('pers_nombre').value = datos.nombre || '';
+    document.getElementById('pers_tipo_medicion').value = datos.tipo_medicion || '';
+    document.getElementById('pers_unidad').value = datos.unidad_medida || '';
+    document.getElementById('pers_ref_min').value = datos.valor_referencia_min || '';
+    document.getElementById('pers_ref_max').value = datos.valor_referencia_max || '';
+    document.getElementById('pers_descripcion').value = datos.descripcion || '';
+
+    document.getElementById('rejillaVariablesPers').innerHTML = '';
+    if (datos.variables && datos.variables.length > 0) {
+        datos.variables.forEach(v => agregarVariablePers(v.nombre_variable, v.unidad || ''));
+    }
+
+    document.getElementById('persModalTitulo').textContent = 'Editar Test Personalizado';
+    document.getElementById('persBtnSubmit').innerHTML = 'ACTUALIZAR TEST <i class="fas fa-save ml-2"></i>';
+
+    modal.classList.remove('hidden');
+    setTimeout(() => { modal.querySelector('.relative').classList.remove('scale-95', 'opacity-0'); }, 10);
+}
+
+async function eliminarTestPers(id, nombre) {
+    const confirmado = await Swal.fire({
+        title: 'Eliminar test personalizado',
+        text: `Se eliminara "${nombre}" y sus variables. Esta accion no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar',
+        ...UI.config
+    });
+    if (!confirmado.isConfirmed) return;
+
+    const formData = new FormData();
+    formData.append('accion', 'eliminarTestPersonalizado');
+    formData.append('id_test_pers', id);
+
+    const resultado = await peticionAjax('eliminarTestPersonalizado', formData);
+    if (resultado && resultado.status === 'success') {
+        UI.exito('Eliminado', resultado.message);
+        cargarTestsPersonalizados();
+    } else {
+        UI.error('Error', resultado?.message || 'No se pudo eliminar.');
+    }
+}
+
+function abrirModalPersonalizado() {
+    const modal = document.getElementById('modalPersonalizado');
+    document.getElementById('formPersonalizado').reset();
+    document.getElementById('pers_id_edit').value = '';
+    document.getElementById('rejillaVariablesPers').innerHTML = '';
+    document.getElementById('persModalTitulo').textContent = 'Nuevo Test Personalizado';
+    document.getElementById('persBtnSubmit').innerHTML = 'CREAR TEST <i class="fas fa-save ml-2"></i>';
+
+    modal.classList.remove('hidden');
+    setTimeout(() => { modal.querySelector('.relative').classList.remove('scale-95', 'opacity-0'); }, 10);
+}
+
+function cerrarModalPersonalizado() {
+    const modal = document.getElementById('modalPersonalizado');
+    modal.querySelector('.relative').classList.add('scale-95', 'opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function agregarVariablePers(nombre = '', unidad = '') {
+    const cont = document.getElementById('rejillaVariablesPers');
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2';
+    row.innerHTML = `
+        <input type="text" placeholder="Nombre variable" class="flex-1 input-dark p-2.5 rounded-lg text-xs nombre_var" required>
+        <input type="text" placeholder="Unidad" class="w-24 input-dark p-2.5 rounded-lg text-xs unidad_var">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-2 cursor-pointer"><i class="fas fa-trash text-xs"></i></button>
+    `;
+    if (nombre) row.querySelector('.nombre_var').value = nombre;
+    if (unidad) row.querySelector('.unidad_var').value = unidad;
+    cont.appendChild(row);
+}
+
+async function guardarPersonalizado(e) {
+    e.preventDefault();
+
+    const editandoId = document.getElementById('pers_id_edit').value;
+    const datos = {
+        nombre: document.getElementById('pers_nombre').value.trim(),
+        descripcion: document.getElementById('pers_descripcion').value.trim(),
+        tipo_medicion: document.getElementById('pers_tipo_medicion').value.trim(),
+        unidad_medida: document.getElementById('pers_unidad').value.trim(),
+        valor_referencia_min: document.getElementById('pers_ref_min').value,
+        valor_referencia_max: document.getElementById('pers_ref_max').value,
+    };
+
+    const vars = [];
+    document.querySelectorAll('#rejillaVariablesPers > div').forEach(row => {
+        const nombre = row.querySelector('.nombre_var').value.trim();
+        if (nombre) {
+            vars.push({ nombre_variable: nombre, unidad: row.querySelector('.unidad_var').value.trim() });
+        }
+    });
+
+    if (!datos.nombre) { UI.error('Error', 'El nombre es obligatorio.'); return; }
+    if (vars.length === 0) { UI.error('Error', 'Debe agregar al menos una variable.'); return; }
+
+    const formData = new FormData();
+    formData.append('datos', JSON.stringify(datos));
+    formData.append('variables', JSON.stringify(vars));
+
+    let resultado;
+    if (editandoId) {
+        formData.append('accion', 'editarTestPersonalizado');
+        formData.append('id_test_pers', editandoId);
+        resultado = await peticionAjax('editarTestPersonalizado', formData);
+    } else {
+        formData.append('accion', 'crearTestPersonalizado');
+        resultado = await peticionAjax('crearTestPersonalizado', formData);
+    }
+
+    if (resultado && resultado.status === 'success') {
+        UI.exito('Exito', resultado.message);
+        cerrarModalPersonalizado();
+        cargarTestsPersonalizados();
+        cargarTestsPersonalizadosDropdown();
+    } else {
+        UI.error('Error', resultado?.message || 'No se pudo guardar el test personalizado.');
+    }
+}
+
 async function cargarRecursos() {
     await Promise.all([
         cargarFiltrosAtletas(),
-        cargarTiposSelect()
+        cargarTiposSelect(),
+        cargarTestsPersonalizadosDropdown()
     ]);
+    cargarTiposPredefinidos();
+    cargarTestsPersonalizados();
 }
+
+document.getElementById('formTipo').addEventListener('submit', guardarTipo);
+document.getElementById('formPersonalizado').addEventListener('submit', guardarPersonalizado);
 
 cargarRecursos().then(() => cargarTabla());
 Validador.vincularTiempoReal(formTest);
