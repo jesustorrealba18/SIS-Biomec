@@ -25,6 +25,8 @@
 
     <main class="flex-1 p-8 overflow-y-auto">
 
+        <?php $PERMISOS_MODULO_REGISTRAR = \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('testFisico', 'registrar'); ?>
+
         <header class="flex justify-between items-center mb-12">
             <h1 class="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
                 <i class="fas fa-dumbbell text-indigo-500"></i> Tests Fisicos Complementarios
@@ -139,6 +141,40 @@
             </div>
         </div>
 
+        <?php if ($PERMISOS_MODULO_REGISTRAR): ?>
+        <div class="mt-8">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-cogs text-indigo-400"></i>
+                    <h2 class="text-lg font-bold text-white">Gestionar Tipos de Tests</h2>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="abrirModalTipo()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer text-xs">
+                        <i class="fas fa-plus"></i> Nuevo Tipo Predefinido
+                    </button>
+                    <button onclick="abrirModalPersonalizado()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer text-xs">
+                        <i class="fas fa-plus"></i> Test Personalizado
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="tarjeta p-5">
+                    <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i class="fas fa-flask text-cyan-400 text-xs"></i> Tests Predefinidos
+                    </h3>
+                    <div id="tablaTiposPredefinidos" class="space-y-2 max-h-80 overflow-y-auto"></div>
+                </div>
+                <div class="tarjeta p-5">
+                    <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i class="fas fa-user-pen text-emerald-400 text-xs"></i> Tests Personalizados
+                    </h3>
+                    <div id="tablaTestsPersonalizados" class="space-y-2 max-h-80 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
     </main>
 
     <!-- Modal Crear/Editar -->
@@ -174,10 +210,25 @@
                         </div>
                     </div>
 
-                    <div>
+                     <div>
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Origen del Test *</label>
+                        <select id="origen_test" onchange="cambiarOrigenTest()" class="w-full input-dark p-3 rounded-xl text-sm">
+                            <option value="predefinido">Test Predefinido</option>
+                            <option value="personalizado">Test Personalizado</option>
+                        </select>
+                    </div>
+
+                    <div id="contenedorPredefinido">
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Tipo de Test *</label>
                         <select id="id_tipo_test" name="id_tipo_test" onchange="cargarVariables()" class="w-full input-dark p-3 rounded-xl text-sm">
                             <option value="">Seleccione un test...</option>
+                        </select>
+                    </div>
+
+                    <div id="contenedorPersonalizado" class="hidden">
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Test Personalizado *</label>
+                        <select id="id_test_pers" name="id_test_pers" onchange="cargarVariables()" class="w-full input-dark p-3 rounded-xl text-sm">
+                            <option value="">Cargando...</option>
                         </select>
                     </div>
 
@@ -216,6 +267,131 @@
                     <button type="button" onclick="cerrarModalTest()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-3.5 rounded-xl font-bold transition cursor-pointer uppercase text-xs tracking-wider">CANCELAR</button>
                     <button type="submit" id="btnGuardar" class="flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 cursor-pointer uppercase text-xs tracking-wider">
                         GUARDAR TEST <i class="fas fa-save ml-2"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Gestionar Tipo Predefinido -->
+    <div id="modalTipo" class="fixed inset-0 z-50 hidden bg-black/20 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="relative bg-[#161430] border border-white/5 w-full max-w-2xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
+                <h3 id="modalTipoTitulo" class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-flask text-cyan-400"></i> Nuevo Tipo Predefinido
+                </h3>
+                <button onclick="cerrarModalTipo()" class="text-gray-400 hover:text-white transition cursor-pointer">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="formTipo" autocomplete="off">
+                <input type="hidden" id="id_tipo_test_edit" value="">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Nombre *</label>
+                        <input type="text" id="tipo_nombre" name="nombre" class="w-full input-dark p-3 rounded-xl text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Tipo de Medicion</label>
+                        <input type="text" id="tipo_medicion" name="tipo_medicion" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: Lactato, Distancia, Tiempo">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Unidad de Medida</label>
+                        <input type="text" id="tipo_unidad" name="unidad_medida" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: mmol/L, cm, seg">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Valores de Referencia</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" step="0.01" id="tipo_ref_min" name="valor_referencia_min" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Min">
+                            <input type="number" step="0.01" id="tipo_ref_max" name="valor_referencia_max" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Max">
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Descripcion</label>
+                    <textarea id="tipo_descripcion" name="descripcion" rows="2" class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                </div>
+                <div class="mt-4 bg-black/30 p-4 rounded-2xl border border-dashed border-gray-700">
+                    <div class="flex justify-between items-center mb-3">
+                        <p class="text-[11px] uppercase text-cyan-400 font-bold tracking-widest">
+                            <i class="fas fa-vials mr-2"></i>Variables del Tipo
+                        </p>
+                        <button type="button" onclick="agregarVariableTipo()" class="text-xs bg-cyan-600/20 text-cyan-400 px-3 py-1 rounded-lg hover:bg-cyan-600/30 transition cursor-pointer">
+                            <i class="fas fa-plus mr-1"></i> Agregar Variable
+                        </button>
+                    </div>
+                    <div id="rejillaVariablesTipo" class="space-y-2">
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="cerrarModalTipo()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-3.5 rounded-xl font-bold transition cursor-pointer uppercase text-xs tracking-wider">CANCELAR</button>
+                    <button type="submit" class="flex-[2] bg-cyan-600 hover:bg-cyan-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-cyan-500/20 cursor-pointer uppercase text-xs tracking-wider">
+                        GUARDAR TIPO <i class="fas fa-save ml-2"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Test Personalizado -->
+    <div id="modalPersonalizado" class="fixed inset-0 z-50 hidden bg-black/20 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="relative bg-[#161430] border border-white/5 w-full max-w-2xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-user-pen text-emerald-400"></i> <span id="persModalTitulo">Nuevo Test Personalizado</span>
+                </h3>
+                <button onclick="cerrarModalPersonalizado()" class="text-gray-400 hover:text-white transition cursor-pointer">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="formPersonalizado" autocomplete="off">
+                <input type="hidden" id="pers_id_edit" value="">
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Nombre del Test *</label>
+                        <input type="text" id="pers_nombre" name="nombre" class="w-full input-dark p-3 rounded-xl text-sm" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Tipo de Medicion</label>
+                            <input type="text" id="pers_tipo_medicion" name="tipo_medicion" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: Velocidad, Fuerza">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Unidad de Medida</label>
+                            <input type="text" id="pers_unidad" name="unidad_medida" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: seg, cm, reps">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Referencia Min</label>
+                            <input type="number" step="0.01" id="pers_ref_min" name="valor_referencia_min" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Min">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Referencia Max</label>
+                            <input type="number" step="0.01" id="pers_ref_max" name="valor_referencia_max" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Max">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Descripcion</label>
+                        <textarea id="pers_descripcion" name="descripcion" rows="2" class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                    </div>
+                </div>
+                <div class="mt-4 bg-black/30 p-4 rounded-2xl border border-dashed border-gray-700">
+                    <div class="flex justify-between items-center mb-3">
+                        <p class="text-[11px] uppercase text-emerald-400 font-bold tracking-widest">
+                            <i class="fas fa-vials mr-2"></i>Variables del Test
+                        </p>
+                        <button type="button" onclick="agregarVariablePers()" class="text-xs bg-emerald-600/20 text-emerald-400 px-3 py-1 rounded-lg hover:bg-emerald-600/30 transition cursor-pointer">
+                            <i class="fas fa-plus mr-1"></i> Agregar Variable
+                        </button>
+                    </div>
+                    <div id="rejillaVariablesPers" class="space-y-2">
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="cerrarModalPersonalizado()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-3.5 rounded-xl font-bold transition cursor-pointer uppercase text-xs tracking-wider">CANCELAR</button>
+                    <button type="submit" id="persBtnSubmit" class="flex-[2] bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-500/20 cursor-pointer uppercase text-xs tracking-wider">
+                        CREAR TEST <i class="fas fa-save ml-2"></i>
                     </button>
                 </div>
             </form>

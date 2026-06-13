@@ -409,4 +409,275 @@ class TestFisico extends Conexion {
             return '';
         }
     }
+
+    public function crearTipoPredefinido(array $datos, array $variables): bool {
+        try {
+            $this->pdo->beginTransaction();
+
+            $sql = "INSERT INTO tipos_test_predefinidos (nombre, descripcion, tipo_medicion, unidad_medida, valor_referencia_min, valor_referencia_max, activo, es_personalizado)
+                    VALUES (:nombre, :descripcion, :tipo_medicion, :unidad_medida, :ref_min, :ref_max, 1, 0)";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':nombre'       => $datos['nombre'],
+                ':descripcion'  => $datos['descripcion'] ?? null,
+                ':tipo_medicion' => $datos['tipo_medicion'] ?? null,
+                ':unidad_medida' => $datos['unidad_medida'] ?? null,
+                ':ref_min'      => !empty($datos['valor_referencia_min']) ? (float)$datos['valor_referencia_min'] : null,
+                ':ref_max'      => !empty($datos['valor_referencia_max']) ? (float)$datos['valor_referencia_max'] : null,
+            ]);
+            $idTipo = (int)$this->pdo->lastInsertId();
+
+            $sqlVar = "INSERT INTO variables_test (id_tipo_test, nombre_variable, unidad, orden_mostrar, activa)
+                       VALUES (:id_tipo, :nombre, :unidad, :orden, 1)";
+            $stmtVar = $this->pdo->prepare($sqlVar);
+            $orden = 1;
+            foreach ($variables as $v) {
+                $stmtVar->execute([
+                    ':id_tipo' => $idTipo,
+                    ':nombre'  => $v['nombre_variable'],
+                    ':unidad'  => $v['unidad'] ?? null,
+                    ':orden'   => $orden++,
+                ]);
+            }
+
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error en crearTipoPredefinido: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function editarTipoPredefinido(int $id, array $datos, array $variables): bool {
+        try {
+            $this->pdo->beginTransaction();
+
+            $sql = "UPDATE tipos_test_predefinidos SET nombre=:nombre, descripcion=:descripcion, tipo_medicion=:tipo_medicion, unidad_medida=:unidad_medida, valor_referencia_min=:ref_min, valor_referencia_max=:ref_max
+                    WHERE id_tipo_test=:id";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':nombre'         => $datos['nombre'],
+                ':descripcion'    => $datos['descripcion'] ?? null,
+                ':tipo_medicion'  => $datos['tipo_medicion'] ?? null,
+                ':unidad_medida'  => $datos['unidad_medida'] ?? null,
+                ':ref_min'        => !empty($datos['valor_referencia_min']) ? (float)$datos['valor_referencia_min'] : null,
+                ':ref_max'        => !empty($datos['valor_referencia_max']) ? (float)$datos['valor_referencia_max'] : null,
+                ':id'             => $id,
+            ]);
+
+            $this->pdo->exec("DELETE FROM variables_test WHERE id_tipo_test = $id AND id_test_pers IS NULL");
+
+            $sqlVar = "INSERT INTO variables_test (id_tipo_test, nombre_variable, unidad, orden_mostrar, activa)
+                       VALUES (:id_tipo, :nombre, :unidad, :orden, 1)";
+            $stmtVar = $this->pdo->prepare($sqlVar);
+            $orden = 1;
+            foreach ($variables as $v) {
+                $stmtVar->execute([
+                    ':id_tipo' => $id,
+                    ':nombre'  => $v['nombre_variable'],
+                    ':unidad'  => $v['unidad'] ?? null,
+                    ':orden'   => $orden++,
+                ]);
+            }
+
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error en editarTipoPredefinido: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function eliminarTipoPredefinido(int $id): bool {
+        try {
+            $this->pdo->beginTransaction();
+            $count = $this->pdo->query("SELECT COUNT(*) FROM registros_test WHERE id_tipo_test = $id")->fetchColumn();
+            if ($count > 0) {
+                $this->pdo->rollBack();
+                $this->agregarError('eliminar', 'No se puede eliminar un tipo de test que tiene registros asociados.');
+                return false;
+            }
+            $this->pdo->exec("DELETE FROM variables_test WHERE id_tipo_test = $id AND id_test_pers IS NULL");
+            $this->pdo->exec("DELETE FROM tipos_test_predefinidos WHERE id_tipo_test = $id");
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error en eliminarTipoPredefinido: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function obtenerTipoConVariables(int $id): ?array {
+        try {
+            $stmt = $this->pdo->prepare("SELECT * FROM tipos_test_predefinidos WHERE id_tipo_test = :id");
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            $tipo = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$tipo) return null;
+
+            $stmtVar = $this->pdo->prepare("SELECT * FROM variables_test WHERE id_tipo_test = :id AND id_test_pers IS NULL AND activa = 1 ORDER BY orden_mostrar ASC");
+            $stmtVar->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmtVar->execute();
+            $tipo['variables'] = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
+
+            return $tipo;
+        } catch (PDOException $e) {
+            return null;
+        }
+    }
+
+    public function crearTestPersonalizado(array $datos, array $variables): int {
+        try {
+            $this->pdo->beginTransaction();
+
+            $sql = "INSERT INTO tests_personalizados (nombre, descripcion, tipo_medicion, unidad_medida, valor_referencia_min, valor_referencia_max, activo, id_usuario_creador)
+                    VALUES (:nombre, :descripcion, :tipo_medicion, :unidad_medida, :ref_min, :ref_max, 1, :id_usuario)";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':nombre'          => $datos['nombre'],
+                ':descripcion'     => $datos['descripcion'] ?? null,
+                ':tipo_medicion'   => $datos['tipo_medicion'] ?? null,
+                ':unidad_medida'   => $datos['unidad_medida'] ?? null,
+                ':ref_min'        => !empty($datos['valor_referencia_min']) ? (float)$datos['valor_referencia_min'] : null,
+                ':ref_max'        => !empty($datos['valor_referencia_max']) ? (float)$datos['valor_referencia_max'] : null,
+                ':id_usuario'      => (int)$datos['id_usuario_creador'],
+            ]);
+            $idPers = (int)$this->pdo->lastInsertId();
+
+            $sqlVar = "INSERT INTO variables_test (id_test_pers, nombre_variable, unidad, orden_mostrar, activa)
+                       VALUES (:id_pers, :nombre, :unidad, :orden, 1)";
+            $stmtVar = $this->pdo->prepare($sqlVar);
+            $orden = 1;
+            foreach ($variables as $v) {
+                $stmtVar->execute([
+                    ':id_pers' => $idPers,
+                    ':nombre'  => $v['nombre_variable'],
+                    ':unidad'  => $v['unidad'] ?? null,
+                    ':orden'   => $orden++,
+                ]);
+            }
+
+            $this->pdo->commit();
+            return $idPers;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error en crearTestPersonalizado: " . $e->getMessage());
+            $this->agregarError('bd', 'Error interno al crear test personalizado.');
+            return 0;
+        }
+    }
+
+    public function listarTestsPersonalizados(int $id_usuario = 0): array {
+        try {
+            $sql = "SELECT * FROM tests_personalizados WHERE activo = 1";
+            if ($id_usuario > 0) {
+                $sql .= " AND id_usuario_creador = :id_usuario";
+            }
+            $sql .= " ORDER BY fecha_creacion DESC";
+            $stmt = $this->pdo->prepare($sql);
+            if ($id_usuario > 0) {
+                $stmt->bindValue(':id_usuario', $id_usuario, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+            $tests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($tests as &$t) {
+                $stmtVar = $this->pdo->prepare("SELECT * FROM variables_test WHERE id_test_pers = :id AND id_tipo_test IS NULL AND activa = 1 ORDER BY orden_mostrar");
+                $stmtVar->bindValue(':id', $t['id_test_pers'], PDO::PARAM_INT);
+                $stmtVar->execute();
+                $t['variables'] = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
+            }
+            return $tests;
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    public function editarTestPersonalizado(int $id, array $datos, array $variables): bool {
+        try {
+            $this->pdo->beginTransaction();
+
+            $sql = "UPDATE tests_personalizados SET nombre = :nombre, descripcion = :descripcion, tipo_medicion = :tipo_medicion,
+                    unidad_medida = :unidad_medida, valor_referencia_min = :ref_min, valor_referencia_max = :ref_max
+                    WHERE id_test_pers = :id AND activo = 1";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':id'            => $id,
+                ':nombre'        => $datos['nombre'],
+                ':descripcion'   => $datos['descripcion'] ?? null,
+                ':tipo_medicion' => $datos['tipo_medicion'] ?? null,
+                ':unidad_medida' => $datos['unidad_medida'] ?? null,
+                ':ref_min'       => !empty($datos['valor_referencia_min']) ? (float)$datos['valor_referencia_min'] : null,
+                ':ref_max'       => !empty($datos['valor_referencia_max']) ? (float)$datos['valor_referencia_max'] : null,
+            ]);
+
+            $this->pdo->exec("DELETE FROM variables_test WHERE id_test_pers = $id AND id_tipo_test IS NULL AND activa = 1");
+
+            if (!empty($variables)) {
+                $sqlVar = "INSERT INTO variables_test (id_test_pers, nombre_variable, unidad, orden_mostrar, activa)
+                           VALUES (:id_pers, :nombre, :unidad, :orden, 1)";
+                $stmtVar = $this->pdo->prepare($sqlVar);
+                $orden = 1;
+                foreach ($variables as $v) {
+                    $stmtVar->execute([
+                        ':id_pers' => $id,
+                        ':nombre'  => $v['nombre_variable'],
+                        ':unidad'  => $v['unidad'] ?? null,
+                        ':orden'   => $orden++,
+                    ]);
+                }
+            }
+
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error en editarTestPersonalizado: " . $e->getMessage());
+            $this->agregarError('bd', 'Error interno al editar test personalizado.');
+            return false;
+        }
+    }
+
+    public function obtenerTestPersonalizado(int $id): ?array {
+        try {
+            $stmt = $this->pdo->prepare("SELECT * FROM tests_personalizados WHERE id_test_pers = :id AND activo = 1");
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            $test = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$test) return null;
+
+            $stmtVar = $this->pdo->prepare("SELECT * FROM variables_test WHERE id_test_pers = :id AND id_tipo_test IS NULL AND activa = 1 ORDER BY orden_mostrar");
+            $stmtVar->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmtVar->execute();
+            $test['variables'] = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
+            return $test;
+        } catch (PDOException $e) {
+            return null;
+        }
+    }
+
+    public function eliminarTestPersonalizado(int $id): bool {
+        try {
+            $this->pdo->beginTransaction();
+
+            $count = $this->pdo->query("SELECT COUNT(*) FROM registros_test WHERE id_test_pers = $id")->fetchColumn();
+            if ($count > 0) {
+                $this->pdo->rollBack();
+                $this->agregarError('eliminar', 'No se puede eliminar un test personalizado que tiene registros asociados.');
+                return false;
+            }
+
+            $this->pdo->exec("DELETE FROM variables_test WHERE id_test_pers = $id AND id_tipo_test IS NULL");
+            $this->pdo->exec("DELETE FROM tests_personalizados WHERE id_test_pers = $id");
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error en eliminarTestPersonalizado: " . $e->getMessage());
+            return false;
+        }
+    }
 }
