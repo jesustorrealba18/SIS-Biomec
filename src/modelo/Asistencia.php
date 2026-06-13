@@ -121,6 +121,22 @@ public function registrarPorQR(): array {
                 return ['exito' => false, 'mensaje' => 'Token de seguridad inválido.'];
             }
 
+            $id_sesion = $this->datos['id_sesion'] ?? 0;
+
+            $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
+            $stmtCheck = $this->pdo->prepare($sqlCheck);
+            $stmtCheck->execute([':id_sesion' => $id_sesion, ':id_atleta' => $atleta['id_atleta']]);
+            $registroPrevio = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+            if ($registroPrevio && $registroPrevio['estado'] === 'Presente') {
+                return [
+                    'exito' => false, 
+                    'status_http' => 'info', // Este status pinta la alerta azul
+                    'nombre_atleta' => $atleta['nombres'] . ' ' . $atleta['apellidos'],
+                    'mensaje' => "¡Ya estaba presente! Registrado vía {$registroPrevio['tipo']}."
+                ];
+            }
+
             // Hidratamos el objeto internamente simulando un envío de formulario
             $this->datos['id_atleta'] = $atleta['id_atleta'];
             $this->datos['estado_asistencia'] = 'Presente';
@@ -157,11 +173,20 @@ public function registrarPorQR(): array {
 
             if (!$id_sesion || !$id_atleta || !$estado) return false;
 
-            $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, tipo, fecha) 
+          /*   $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, tipo, fecha) 
                     VALUES (:id_sesion, :id_atleta, :estado, :justificacion, :tipo, NOW())
                     ON DUPLICATE KEY UPDATE 
                     estado = VALUES(estado), justificacion = VALUES(justificacion), tipo = VALUES(tipo), fecha = NOW()";
-
+             */
+            
+            $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, tipo, fecha) 
+                    VALUES (:id_sesion, :id_atleta, :estado, :justificacion, :tipo, NOW())
+                    ON DUPLICATE KEY UPDATE 
+                    estado = VALUES(estado), 
+                    justificacion = VALUES(justificacion), 
+                    tipo = IF(asistencia.estado = 'Presente' AND VALUES(estado) = 'Presente' AND asistencia.tipo = 'QR', 'QR', VALUES(tipo)), 
+                    fecha = NOW()";
+                    
             $stmt = $this->pdo->prepare($sql);
             
             // Si en el futuro configuras AutoBinderTrait aquí, podrías omitir estos bindValue
