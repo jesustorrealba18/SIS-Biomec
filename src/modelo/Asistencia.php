@@ -16,7 +16,7 @@ class Asistencia extends Conexion {
 
     // Lista blanca para evitar inyecciones masivas por POST
     private array $camposPermitidos = [
-        'id_sesion', 'id_atleta', 'estado_asistencia', 'justificacion'
+        'id_sesion', 'id_atleta', 'estado_asistencia', 'justificacion','token_qr'
     ];
 
     // NO SE DECLARA CONSTRUCTOR: PHP invoca automáticamente el de la clase Conexion.
@@ -105,11 +105,17 @@ class Asistencia extends Conexion {
     /**
      * Identifica el QR, autohidrata el objeto y dispara el guardado
      */
-    public function registrarPorQR(string $token_qr): array {
+    public function registrarPorQR(string $token_qr, int $id_sesion): array {
+
+       
+        $tokenLimpio = str_replace('/^token/', '', $token_qr);
+    $this->datos['id_sesion'] = $id_sesion;
+   
+
         try {
             $sqlBuscar = "SELECT id_atleta, nombres, apellidos FROM atletas WHERE token_asistencia = :token";
             $stmtBuscar = $this->pdo->prepare($sqlBuscar);
-            $stmtBuscar->bindValue(':token', $token_qr);
+            $stmtBuscar->bindValue(':token', $tokenLimpio, PDO::PARAM_STR);
             $stmtBuscar->execute();
             
             $atleta = $stmtBuscar->fetch(PDO::FETCH_ASSOC);
@@ -152,10 +158,10 @@ class Asistencia extends Conexion {
 
             if (!$id_sesion || !$id_atleta || !$estado) return false;
 
-            $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, fecha_registro) 
+            $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, fecha) 
                     VALUES (:id_sesion, :id_atleta, :estado, :justificacion, NOW())
                     ON DUPLICATE KEY UPDATE 
-                    estado = VALUES(estado), justificacion = VALUES(justificacion), fecha_registro = NOW()";
+                    estado = VALUES(estado), justificacion = VALUES(justificacion), fecha = NOW()";
 
             $stmt = $this->pdo->prepare($sql);
             

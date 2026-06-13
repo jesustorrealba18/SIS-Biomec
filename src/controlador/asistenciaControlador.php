@@ -69,10 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id_sesion = $_POST['id_sesion'] ?? null;
 
         // Hidratamos la propiedad id_sesion
-        $objAsistencia->setDatos(['id_sesion' => $id_sesion]);
+        //$objAsistencia->setDatos(['id_sesion' => $id_sesion]);
         
         // El método interno busca al atleta y hace el guardado
-        $resultado = $objAsistencia->registrarPorQR($token_qr);
+        $resultado = $objAsistencia->registrarPorQR($token_qr,$id_sesion);
         
         if ($resultado['exito']) {
             Bitacora::registrar($id_usuario, 'Asistencia', 'INSERT', 0, 'asistencia_qr', '', "Escaneo QR exitoso: {$resultado['nombre_atleta']}");

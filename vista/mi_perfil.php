@@ -15,6 +15,10 @@
         /* .estado-badge { padding: 4px 12px; border-radius: 9999px; font-weight: 700; font-size: 0.75rem; tracking-wide; } */
         .estado-Activo { background-color: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
         .estado-Inactivo { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+         ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0d23; }
+        ::-webkit-scrollbar-thumb { background: #252345; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
     </style>
 </head>
 <body class="flex min-h-screen bg-[#0f0d23]">

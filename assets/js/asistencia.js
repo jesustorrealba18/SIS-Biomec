@@ -26,6 +26,7 @@ const Asistencia = {
         // Evento al cambiar de sesión en el dropdown
         document.getElementById('selectSesion').addEventListener('change', (e) => {
             Asistencia.idSesionActual = e.target.value;
+
             if (Asistencia.idSesionActual) {
                 Asistencia.cargarListaAtletas();
             } else {
@@ -122,6 +123,7 @@ const Asistencia = {
         txtEstado.innerHTML = '<span class="text-indigo-400">Procesando token...</span>';
 
         const formData = new FormData();
+       // alert( Asistencia.idSesionActua+' token'+tokenCapturado);
         formData.append('id_sesion', Asistencia.idSesionActual);
         formData.append('token_qr', tokenCapturado);
 
@@ -142,7 +144,7 @@ const Asistencia = {
             document.getElementById('beepError')?.play();
             Swal.fire({
                 toast: true, position: 'top-end', icon: 'error',
-                title: respuesta?.message || ' Token inválido',
+                title: respuesta?.message || ' Token inválido ',
                 showConfirmButton: false, timer: 3000, background: '#ef4444', color: '#fff'
             });
         }
