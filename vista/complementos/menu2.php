@@ -1,6 +1,5 @@
-<aside class="sidebar flex flex-col p-6 overflow-y-auto w-full h-full">
-    <!-- Este bloque del logo SOLO se muestra en escritorio (lg:flex) para no duplicar en móvil -->
-    <div class="flex items-center gap-3 mb-10 hidden lg:flex">
+<aside class="sidebar hidden lg:flex flex-col p-6 overflow-y-auto max-h-screen">
+    <div class="flex items-center gap-3 mb-10">
         <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-lg shadow-indigo-500/20">
             <i class="fas fa-swimmer text-xl"></i>
         </div>
@@ -74,13 +73,6 @@
         <a href="?p=lesion" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'lesion') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-notes-medical w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'lesion') ? 'text-white' : ''; ?>"></i> 
             <span class="font-medium">Control de Lesiones</span>
-        </a>
-        <?php endif; ?>
-
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('testFisico', 'ver')): ?>
-        <a href="?p=testFisico" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'testFisico') ? 'bg-white/10 text-white' : ''; ?>">
-            <i class="fas fa-heartbeat w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'testFisico') ? 'text-white' : ''; ?>"></i> 
-            <span class="font-medium">Tests Fisicos</span>
         </a>
         <?php endif; ?>
 

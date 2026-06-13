@@ -16,7 +16,7 @@ class Asistencia extends Conexion {
 
     // Lista blanca para evitar inyecciones masivas por POST
     private array $camposPermitidos = [
-        'id_sesion', 'id_atleta', 'estado_asistencia', 'justificacion'
+        'id_sesion', 'id_atleta', 'estado_asistencia', 'justificacion','token_qr','tipo'
     ];
 
     // NO SE DECLARA CONSTRUCTOR: PHP invoca automáticamente el de la clase Conexion.
@@ -105,11 +105,14 @@ class Asistencia extends Conexion {
     /**
      * Identifica el QR, autohidrata el objeto y dispara el guardado
      */
-    public function registrarPorQR(string $token_qr): array {
+public function registrarPorQR(): array {
+       
+        $tokenLimpio = str_replace('/^token/', '', $this->datos['token_qr']);
+
         try {
             $sqlBuscar = "SELECT id_atleta, nombres, apellidos FROM atletas WHERE token_asistencia = :token";
             $stmtBuscar = $this->pdo->prepare($sqlBuscar);
-            $stmtBuscar->bindValue(':token', $token_qr);
+            $stmtBuscar->bindValue(':token', $tokenLimpio, PDO::PARAM_STR);
             $stmtBuscar->execute();
             
             $atleta = $stmtBuscar->fetch(PDO::FETCH_ASSOC);
@@ -118,10 +121,27 @@ class Asistencia extends Conexion {
                 return ['exito' => false, 'mensaje' => 'Token de seguridad inválido.'];
             }
 
+            $id_sesion = $this->datos['id_sesion'] ?? 0;
+
+            $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
+            $stmtCheck = $this->pdo->prepare($sqlCheck);
+            $stmtCheck->execute([':id_sesion' => $id_sesion, ':id_atleta' => $atleta['id_atleta']]);
+            $registroPrevio = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+            if ($registroPrevio && $registroPrevio['estado'] === 'Presente') {
+                return [
+                    'exito' => false, 
+                    'status_http' => 'info', // Este status pinta la alerta azul
+                    'nombre_atleta' => $atleta['nombres'] . ' ' . $atleta['apellidos'],
+                    'mensaje' => "¡Ya estaba presente! Registrado vía {$registroPrevio['tipo']}."
+                ];
+            }
+
             // Hidratamos el objeto internamente simulando un envío de formulario
             $this->datos['id_atleta'] = $atleta['id_atleta'];
             $this->datos['estado_asistencia'] = 'Presente';
             $this->datos['justificacion'] = 'Validación Biométrica QR';
+            $this->datos['tipo'] = 'QR';
 
             // Llamamos al método unificado
             $exito = $this->guardar();
@@ -149,14 +169,24 @@ class Asistencia extends Conexion {
             $id_atleta = $this->datos['id_atleta'] ?? null;
             $estado = $this->datos['estado_asistencia'] ?? null;
             $justif = $this->datos['justificacion'] ?? 'Sin justificación';
+            $tipo = $this->datos['tipo'] ?? 'Manual';
 
             if (!$id_sesion || !$id_atleta || !$estado) return false;
 
-            $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, fecha_registro) 
-                    VALUES (:id_sesion, :id_atleta, :estado, :justificacion, NOW())
+          /*   $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, tipo, fecha) 
+                    VALUES (:id_sesion, :id_atleta, :estado, :justificacion, :tipo, NOW())
                     ON DUPLICATE KEY UPDATE 
-                    estado = VALUES(estado), justificacion = VALUES(justificacion), fecha_registro = NOW()";
-
+                    estado = VALUES(estado), justificacion = VALUES(justificacion), tipo = VALUES(tipo), fecha = NOW()";
+             */
+            
+            $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, tipo, fecha) 
+                    VALUES (:id_sesion, :id_atleta, :estado, :justificacion, :tipo, NOW())
+                    ON DUPLICATE KEY UPDATE 
+                    estado = VALUES(estado), 
+                    justificacion = VALUES(justificacion), 
+                    tipo = IF(asistencia.estado = 'Presente' AND VALUES(estado) = 'Presente' AND asistencia.tipo = 'QR', 'QR', VALUES(tipo)), 
+                    fecha = NOW()";
+                    
             $stmt = $this->pdo->prepare($sql);
             
             // Si en el futuro configuras AutoBinderTrait aquí, podrías omitir estos bindValue
@@ -164,6 +194,7 @@ class Asistencia extends Conexion {
             $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
             $stmt->bindValue(':estado', $estado, PDO::PARAM_STR);
             $stmt->bindValue(':justificacion', $justif, PDO::PARAM_STR);
+            $stmt->bindValue(':tipo', $tipo, PDO::PARAM_STR);
 
             return $stmt->execute();
 

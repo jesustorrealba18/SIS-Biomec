@@ -167,7 +167,7 @@
                 <div class="bg-[#0f0d23] p-4 rounded-xl border border-[#252345]">
                     <div class="flex justify-between items-center mb-3">
                         <h4 class="text-xs uppercase text-indigo-400 font-bold tracking-widest">
-                            <i class="fas fa-list-ol mr-1"></i> Series de Nado Planificadas
+                            <i class="fas fa-list-ol mr-1"></i> Series Planificadas
                         </h4>
                         <button type="button" onclick="agregarFilaSerie()" class="text-xs bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 px-3 py-1.5 rounded-lg transition cursor-pointer font-bold flex items-center gap-1">
                             <i class="fas fa-plus"></i> Añadir Serie
@@ -259,6 +259,14 @@
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
-    <script src="assets/js/sesion.js"></script>
+    <script>
+        const PERMISOS_MODULO = {
+            gestionar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sesiones', 'ver') ? 'true' : 'false'; ?>,
+        };
+    </script>
+  <script>
+    const API_URL = '?p=sesiones';
+</script>
+<script src="assets/js/sesion.js"></script>
 </body>
 </html>

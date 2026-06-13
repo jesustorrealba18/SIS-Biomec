@@ -47,7 +47,7 @@ class Sesiones extends Conexion {
         $this->resetearErrores();
 
         $this->requerido($datos['bloque'] ?? '', 'bloque');
-        $this->enEnum($datos['bloque'] ?? '', 'bloque', ['Calentamiento', 'Principal', 'VueltaCalma']);
+        $this->enEnum($datos['bloque'] ?? '', 'bloque', ['Calentamiento', 'Principal', 'VuletaCalma']);
 
         if (empty($datos['id_drill'])) {
             $this->requerido($datos['ejercicio_descripcion'] ?? '', 'ejercicio_descripcion');
@@ -78,51 +78,53 @@ class Sesiones extends Conexion {
     }
 
     public function registrarSesion(array $datosSesion, array $series): bool {
+        error_log("=== INICIO registrarSesion EN MODELO ===");
+        error_log("datosSesion: " . print_r($datosSesion, true));
+        error_log("series: " . print_r($series, true));
+        
         $conex = $this->pdo;
         try {
             $conex->beginTransaction();
+            error_log("Transacción iniciada");
 
             $volumen_calentamiento = 0;
             $volumen_principal = 0;
             $volumen_vuelta_calma = 0;
 
             foreach ($series as &$serie) {
-                // Cálculo por serie individual: repeticiones * distancia en metros
                 $volumen_serie = (int)$serie['repeticiones'] * (int)$serie['distancia_m'];
                 $serie['volumen_calculado'] = $volumen_serie;
+                error_log("Serie: bloque={$serie['bloque']}, rep={$serie['repeticiones']}, dist={$serie['distancia_m']}, vol={$volumen_serie}");
 
-                // Suma por bloque de sesión
                 if ($serie['bloque'] === 'Calentamiento') {
                     $volumen_calentamiento += $volumen_serie;
                 } elseif ($serie['bloque'] === 'Principal') {
                     $volumen_principal += $volumen_serie;
-                } elseif ($serie['bloque'] === 'VueltaCalma') {
+                } elseif ($serie['bloque'] === 'VuletaCalma') {
                     $volumen_vuelta_calma += $volumen_serie;
                 }
             }
 
-            // Volumen planificado total de la sesión
             $volumen_planificado = $volumen_calentamiento + $volumen_principal + $volumen_vuelta_calma;
+            error_log("Volumenes: Cal=$volumen_calentamiento, Prin=$volumen_principal, Vuelta=$volumen_vuelta_calma, Total=$volumen_planificado");
 
             $id_fase_actual = $datosSesion['id_fase_actual'] ?? null;
-            if (empty($id_fase_actual)) {
-                $sqlFase = "SELECT id_fase FROM fases_periodizacion 
-                            WHERE :fecha BETWEEN fecha_inicio AND fecha_fin LIMIT 1";
-                $stmtFase = $conex->prepare($sqlFase);
-                $stmtFase->execute([':fecha' => $datosSesion['fecha']]);
-                $faseRow = $stmtFase->fetch(PDO::FETCH_ASSOC);
-                $id_fase_actual = $faseRow ? (int)$faseRow['id_fase'] : null;
-            }
 
-            $sql = "INSERT INTO sesiones (id_microciclo, id_grupo, fecha, tipo_sesion, id_fase_actual, 
-                                          calentamiento, vuelta_calma, volumen_planificado, observaciones, 
-                                          estado, id_usuario_creador)
-                    VALUES (:id_microciclo, :id_grupo, :fecha, :tipo_sesion, :id_fase_actual, 
-                            :calentamiento, :vuelta_calma, :volumen_planificado, :observaciones, 
-                            'Planificada', :id_entrenador)";
+            $sql = "INSERT INTO sesiones (
+                        id_microciclo, id_grupo, fecha, tipo_sesion, 
+                        id_fase_actual, calentamiento, vuelta_calma, 
+                        volumen_planificado, observaciones, estado, id_entrenador, duracion_minutos
+                    ) VALUES (
+                        :id_microciclo, :id_grupo, :fecha, :tipo_sesion, 
+                        :id_fase_actual, :calentamiento, :vuelta_calma, 
+                        :volumen_planificado, :observaciones, 'Planificada', :id_entrenador, :duracion_minutos
+                    )";
 
+            error_log("SQL: " . $sql);
+            
             $stmt = $conex->prepare($sql);
-            $stmt->execute([
+            
+            $params = [
                 ':id_microciclo'      => !empty($datosSesion['id_microciclo']) ? (int)$datosSesion['id_microciclo'] : null,
                 ':id_grupo'           => (int)$datosSesion['id_grupo'],
                 ':fecha'              => $datosSesion['fecha'],
@@ -132,40 +134,62 @@ class Sesiones extends Conexion {
                 ':vuelta_calma'       => $datosSesion['vuelta_calma'] ?? null,
                 ':volumen_planificado'=> $volumen_planificado,
                 ':observaciones'      => $datosSesion['observaciones'] ?? null,
-                ':id_entrenador'      => (int)$datosSesion['id_entrenador'] 
-            ]);
+                ':id_entrenador'      => (int)$datosSesion['id_entrenador'],
+                ':duracion_minutos'   => $datosSesion['duracion_minutos'] ?? null
+            ];
+            
+            error_log("Parámetros: " . print_r($params, true));
+            
+            if (!$stmt->execute($params)) {
+                $errorInfo = $stmt->errorInfo();
+                error_log("ERROR SQL INSERT: " . print_r($errorInfo, true));
+                throw new PDOException("Error en INSERT: " . $errorInfo[2]);
+            }
 
             $id_sesion = (int)$conex->lastInsertId();
+            error_log("ID SESION INSERTADA: " . $id_sesion);
 
-
-            $sqlSerie = "INSERT INTO series_sesion (id_sesion, orden_ejecucion, bloque, id_drill, 
-                                                        ejercicio_descripcion, repeticiones, distancia_m, 
-                                                        descanso_seg, zona_intensidad, ritmo_objetivo)
-                         VALUES (:id_sesion, :orden, :bloque, :id_drill, :descripcion, :repeticiones, 
-                                 :distancia, :descanso, :zona, :ritmo)";
+            $sqlSerie = "INSERT INTO series_sesion (
+                            id_sesion, orden_ejecucion, bloque, id_drill, 
+                            ejercicio_descripcion, repeticiones, distancia_m, 
+                            descanso_seg, zona_intensidad, ritmo_objetivo
+                        ) VALUES (
+                            :id_sesion, :orden, :bloque, :id_drill, 
+                            :descripcion, :repeticiones, :distancia, 
+                            :descanso, :zona, :ritmo
+                        )";
+            
             $stmtSerie = $conex->prepare($sqlSerie);
-
+            
             $orden = 1;
             foreach ($series as $s) {
-                $stmtSerie->execute([
+                $paramsSerie = [
                     ':id_sesion'    => $id_sesion,
                     ':orden'        => $orden++, 
                     ':bloque'       => $s['bloque'],
                     ':id_drill'     => !empty($s['id_drill']) ? (int)$s['id_drill'] : null,
-                    ':descripcion'  => empty($s['id_drill']) ? $s['ejercicio_descripcion'] : null,
+                    ':descripcion'  => empty($s['id_drill']) ? ($s['ejercicio_descripcion'] ?? null) : null,
                     ':repeticiones' => (int)$s['repeticiones'],
                     ':distancia'    => (int)$s['distancia_m'],
                     ':descanso'     => (int)$s['descanso_seg'],
                     ':zona'         => $s['zona_intensidad'],
                     ':ritmo'        => $s['ritmo_objetivo'] ?? null
-                ]);
+                ];
+                error_log("Insertando serie: " . print_r($paramsSerie, true));
+                $stmtSerie->execute($paramsSerie);
             }
 
             $conex->commit();
+            error_log("=== TRANSACCIÓN EXITOSA ===");
             return true;
+            
         } catch (PDOException $e) {
             $conex->rollBack();
-            error_log("Error al registrar sesión completa: " . $e->getMessage());
+            error_log("=== EXCEPCION PDO EN MODELO ===");
+            error_log("Mensaje: " . $e->getMessage());
+            error_log("Código: " . $e->getCode());
+            error_log("Archivo: " . $e->getFile());
+            error_log("Línea: " . $e->getLine());
             return false;
         }
     }
@@ -183,12 +207,12 @@ class Sesiones extends Conexion {
             $stmt = $conex->prepare($sql);
             return $stmt->execute([
                 ':volumen_ejecutado'=> (int)$datosCierre['volumen_ejecutado'],
-                ':estado'           => $datosCierre['estado'] ?? 'Completada', // Completada, Parcial, etc.
+                ':estado'           => $datosCierre['estado'] ?? 'Completada',
                 ':observaciones'    => $datosCierre['observaciones'] ?? null,
                 ':id_sesion'        => (int)$datosCierre['id_sesion']
             ]);
         } catch (PDOException $e) {
-            error_log("Error al completar sesión (modal): " . $e->getMessage());
+            error_log("Error al completar sesión: " . $e->getMessage());
             return false;
         }
     }
@@ -203,35 +227,21 @@ class Sesiones extends Conexion {
             $volumen_vuelta_calma = 0;
 
             foreach ($series as &$serie) {
-                // Cálculo por serie individual: repeticiones * distancia en metros
                 $volumen_serie = (int)$serie['repeticiones'] * (int)$serie['distancia_m'];
                 $serie['volumen_calculado'] = $volumen_serie;
 
-                // Suma por bloque de sesión
                 if ($serie['bloque'] === 'Calentamiento') {
                     $volumen_calentamiento += $volumen_serie;
                 } elseif ($serie['bloque'] === 'Principal') {
                     $volumen_principal += $volumen_serie;
-                } elseif ($serie['bloque'] === 'VueltaCalma') {
+                } elseif ($serie['bloque'] === 'VuletaCalma') {
                     $volumen_vuelta_calma += $volumen_serie;
                 }
             }
 
-            // Volumen planificado total actualizado de la sesión
             $volumen_planificado = $volumen_calentamiento + $volumen_principal + $volumen_vuelta_calma;
-
-            // Buscar la fase de periodización de forma dinámica si no viene explícita
             $id_fase_actual = $datosSesion['id_fase_actual'] ?? null;
-            if (empty($id_fase_actual)) {
-                $sqlFase = "SELECT id_fase FROM fases_periodizacion 
-                            WHERE :fecha BETWEEN fecha_inicio AND fecha_fin LIMIT 1";
-                $stmtFase = $conex->prepare($sqlFase);
-                $stmtFase->execute([':fecha' => $datosSesion['fecha']]);
-                $faseRow = $stmtFase->fetch(PDO::FETCH_ASSOC);
-                $id_fase_actual = $faseRow ? (int)$faseRow['id_fase'] : null;
-            }
 
-            // 1. Actualizar la tabla maestra de la sesión
             $sql = "UPDATE sesiones SET 
                         id_microciclo = :id_microciclo, 
                         id_grupo = :id_grupo, 
@@ -242,6 +252,7 @@ class Sesiones extends Conexion {
                         vuelta_calma = :vuelta_calma, 
                         volumen_planificado = :volumen_planificado, 
                         observaciones = :observaciones,
+                        duracion_minutos = :duracion_minutos,
                         fecha_modificacion = NOW()
                     WHERE id_sesion = :id_sesion";
 
@@ -256,20 +267,23 @@ class Sesiones extends Conexion {
                 ':vuelta_calma'       => $datosSesion['vuelta_calma'] ?? null,
                 ':volumen_planificado'=> $volumen_planificado,
                 ':observaciones'      => $datosSesion['observaciones'] ?? null,
+                ':duracion_minutos'   => $datosSesion['duracion_minutos'] ?? null,
                 ':id_sesion'          => $id_sesion
             ]);
 
-            // 2. Eliminar las series detalladas anteriores asociadas a esta sesión
-            $sqlDeleteDetalles = "DELETE FROM series_sesion WHERE id_sesion = :id_sesion";
-            $stmtDelete = $conex->prepare($sqlDeleteDetalles);
+            $sqlDelete = "DELETE FROM series_sesion WHERE id_sesion = :id_sesion";
+            $stmtDelete = $conex->prepare($sqlDelete);
             $stmtDelete->execute([':id_sesion' => $id_sesion]);
 
-            // 3. Volver a insertar las nuevas series actualizadas
-            $sqlSerie = "INSERT INTO series_sesion (id_sesion, orden_ejecucion, bloque, id_drill, 
-                                                        ejercicio_descripcion, repeticiones, distancia_m, 
-                                                        descanso_seg, zona_intensidad, ritmo_objetivo)
-                         VALUES (:id_sesion, :orden, :bloque, :id_drill, :descripcion, :repeticiones, 
-                                 :distancia, :descanso, :zona, :ritmo)";
+            $sqlSerie = "INSERT INTO series_sesion (
+                            id_sesion, orden_ejecucion, bloque, id_drill, 
+                            ejercicio_descripcion, repeticiones, distancia_m, 
+                            descanso_seg, zona_intensidad, ritmo_objetivo
+                        ) VALUES (
+                            :id_sesion, :orden, :bloque, :id_drill, 
+                            :descripcion, :repeticiones, :distancia, 
+                            :descanso, :zona, :ritmo
+                        )";
             $stmtSerie = $conex->prepare($sqlSerie);
 
             $orden = 1;
@@ -279,7 +293,7 @@ class Sesiones extends Conexion {
                     ':orden'        => $orden++, 
                     ':bloque'       => $s['bloque'],
                     ':id_drill'     => !empty($s['id_drill']) ? (int)$s['id_drill'] : null,
-                    ':descripcion'  => empty($s['id_drill']) ? $s['ejercicio_descripcion'] : null,
+                    ':descripcion'  => empty($s['id_drill']) ? ($s['ejercicio_descripcion'] ?? null) : null,
                     ':repeticiones' => (int)$s['repeticiones'],
                     ':distancia'    => (int)$s['distancia_m'],
                     ':descanso'     => (int)$s['descanso_seg'],
@@ -292,7 +306,7 @@ class Sesiones extends Conexion {
             return true;
         } catch (PDOException $e) {
             $conex->rollBack();
-            error_log("Error al editar la sesión planificada: " . $e->getMessage());
+            error_log("Error al editar sesión: " . $e->getMessage());
             return false;
         }
     }
@@ -312,7 +326,7 @@ class Sesiones extends Conexion {
     public function obtenerDetalleSesion(int $id_sesion): ?array {
         $conex = $this->pdo;
         try {
-            $sqlBase = "SELECT s.*, g.nombre_grupo as grupo_nombre 
+            $sqlBase = "SELECT s.*, g.nombre as grupo_nombre
                         FROM sesiones s
                         INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
                         WHERE s.id_sesion = :id";
@@ -322,8 +336,8 @@ class Sesiones extends Conexion {
 
             if (!$sesion) return null;
 
-            $sqlSeries = "SELECT sd.*, d.nombre_drill as drill_nombre, d.estilo as drill_estilo
-                          FROM sesiones_detalles sd
+            $sqlSeries = "SELECT sd.*, d.nombre as drill_nombre, d.estilo as drill_estilo
+                          FROM series_sesion sd
                           LEFT JOIN drills d ON sd.id_drill = d.id_drill
                           WHERE sd.id_sesion = :id
                           ORDER BY sd.orden_ejecucion ASC";
@@ -333,21 +347,47 @@ class Sesiones extends Conexion {
 
             return $sesion;
         } catch (PDOException $e) {
-            error_log("Error al recuperar el detalle de la sesión: " . $e->getMessage());
+            error_log("Error al recuperar detalle: " . $e->getMessage());
             return null;
         }
     }
 
-    public function listarSesionesPorEntrenador(int $id_entrenador): array {
+    public function listarSesionesPorEntrenador(int $id_entrenador, ?int $id_grupo = null, ?string $estado = null): array {
         $conex = $this->pdo;
         try {
-            $sql = "SELECT s.*, g.nombre_grupo as grupo_nombre 
+            $sql = "SELECT s.*, g.nombre as grupo_nombre
                     FROM sesiones s
                     INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
-                    WHERE s.id_usuario_creador = :id_entrenador
-                    ORDER BY s.fecha DESC, s.id_sesion DESC";
+                    WHERE 1=1";
+            
+            $params = [];
+            
+            if ($id_grupo) {
+                $sql .= " AND s.id_grupo = :id_grupo";
+                $params[':id_grupo'] = $id_grupo;
+            }
+            
+            if ($estado) {
+                $sql .= " AND s.estado = :estado";
+                $params[':estado'] = $estado;
+            }
+            
+            $sql .= " ORDER BY s.fecha DESC, s.id_sesion DESC";
+            
             $stmt = $conex->prepare($sql);
-            $stmt->execute([':id_entrenador' => $id_entrenador]);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error listando sesiones: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function listarMicrociclos(): array {
+        $conex = $this->pdo;
+        try {
+            $sql = "SELECT id_microciclo, nombre FROM microciclos ORDER BY nombre";
+            $stmt = $conex->query($sql);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             return [];

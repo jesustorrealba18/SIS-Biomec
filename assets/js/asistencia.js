@@ -26,6 +26,7 @@ const Asistencia = {
         // Evento al cambiar de sesión en el dropdown
         document.getElementById('selectSesion').addEventListener('change', (e) => {
             Asistencia.idSesionActual = e.target.value;
+
             if (Asistencia.idSesionActual) {
                 Asistencia.cargarListaAtletas();
             } else {
@@ -122,6 +123,7 @@ const Asistencia = {
         txtEstado.innerHTML = '<span class="text-indigo-400">Procesando token...</span>';
 
         const formData = new FormData();
+       // alert( Asistencia.idSesionActua+' token'+tokenCapturado);
         formData.append('id_sesion', Asistencia.idSesionActual);
         formData.append('token_qr', tokenCapturado);
 
@@ -138,11 +140,18 @@ const Asistencia = {
                 title: `Asistencia: ${respuesta.nombre_atleta}`,
                 showConfirmButton: false, timer: 2000, background: '#10b981', color: '#fff'
             });
-        } else {
+        } else if (respuesta && respuesta.status === 'info') {
+            // REGLA 2: Si el QR se escaneó por segunda vez, sale en azulito
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'info',
+                title: respuesta.message,
+                showConfirmButton: false, timer: 3000, background: '#3b82f6', color: '#fff'
+            });
+        }else {
             document.getElementById('beepError')?.play();
             Swal.fire({
                 toast: true, position: 'top-end', icon: 'error',
-                title: respuesta?.message || ' Token inválido',
+                title: respuesta?.message || ' Token inválido ',
                 showConfirmButton: false, timer: 3000, background: '#ef4444', color: '#fff'
             });
         }
@@ -158,16 +167,34 @@ const Asistencia = {
     // ACCIONES MANUALES (Ley de Murphy)
     // =================================================================
 
-    accionManual: async (id_atleta, estado) => {
+    accionManual: async (id_atleta, estado, nombre_atleta) => {
         if (!Asistencia.idSesionActual) return;
+
+        const accionVisual = estado === 'Falto' ? 'FALTA' : estado.toUpperCase();
+        const colorConf = estado === 'Presente' ? '#10b981' : (estado === 'Falto' ? '#ef4444' : '#f59e0b');
+
+        // REGLA 3: Evitar el error de "dedo gordo"
+        const confirmacion = await Swal.fire({
+            title: `¿Registrar ${accionVisual}?`,
+            html: `Atleta seleccionado:<br><b class="text-lg text-indigo-400">${nombre_atleta}</b>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: colorConf,
+            cancelButtonColor: '#374151',
+            confirmButtonText: `Sí, aplicar`,
+            cancelButtonText: 'Cancelar',
+            background: '#161430', color: '#fff'
+        });
+
+        if (!confirmacion.isConfirmed) return;
 
         let justificacion = 'Asistencia validada manualmente';
 
         // Si es Inasistencia o Permiso, OBLIGAMOS a que escriba algo
         if (estado === 'Falto' || estado === 'Permiso') {
             const result = await UI.pedirJustificacion(
-                `Registrar: ${estado.toUpperCase()}`, 
-                `Debe explicar el motivo de la ausencia/permiso para el expediente.`
+                `Motivo del Estado`, 
+                `Explique el motivo por el cual ${nombre_atleta} no participará.`
             );
             
             if (!result.isConfirmed) return; // Canceló la acción
@@ -179,6 +206,7 @@ const Asistencia = {
         formData.append('id_atleta', id_atleta);
         formData.append('estado_asistencia', estado);
         formData.append('justificacion', justificacion);
+        formData.append('tipo', 'Manual');
 
         const respuesta = await peticionAjax('registrar_manual', formData);
 
@@ -247,7 +275,7 @@ const Asistencia = {
             }
 
             // Inyección del <tr> con los botones de acción manuales integrados
-            html += `
+                html += `
                 <tr class="border-b border-[#252345] hover:bg-[#1b1937] transition-colors">
                     <td class="py-3 pl-2">
                         <p class="text-white font-bold text-xs">${atleta.nombres} ${atleta.apellidos}</p>
@@ -264,13 +292,16 @@ const Asistencia = {
                     </td>
                     <td class="py-3 pr-2 text-right">
                         <div class="flex justify-end gap-1.5">
-                            <button onclick="Asistencia.accionManual(${atleta.id_atleta}, 'Presente')" class="w-7 h-7 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all shadow-sm" title="Marcar Presente">
+                            <button onclick="Asistencia.accionManual(${atleta.id_atleta}, 'Presente', '${atleta.nombres} ${atleta.apellidos}')" 
+                                    class="w-7 h-7 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 transition-all shadow-sm ${atleta.estado === 'Presente' ? 'opacity-30 cursor-not-allowed' : 'hover:bg-emerald-500 hover:text-white'}" 
+                                    ${atleta.estado === 'Presente' ? 'disabled' : ''} 
+                                    title="Marcar Presente">
                                 <i class="fas fa-check text-xs"></i>
                             </button>
-                            <button onclick="Asistencia.accionManual(${atleta.id_atleta}, 'Falto')" class="w-7 h-7 rounded border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Marcar Falta">
+                            <button onclick="Asistencia.accionManual(${atleta.id_atleta}, 'Falto', '${atleta.nombres} ${atleta.apellidos}')" class="w-7 h-7 rounded border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Marcar Falta">
                                 <i class="fas fa-times text-xs"></i>
                             </button>
-                            <button onclick="Asistencia.accionManual(${atleta.id_atleta}, 'Permiso')" class="w-7 h-7 rounded border border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-white transition-all shadow-sm" title="Registrar Permiso">
+                            <button onclick="Asistencia.accionManual(${atleta.id_atleta}, 'Permiso', '${atleta.nombres} ${atleta.apellidos}')" class="w-7 h-7 rounded border border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-white transition-all shadow-sm" title="Registrar Permiso">
                                 <i class="fas fa-clock text-xs"></i>
                             </button>
                         </div>

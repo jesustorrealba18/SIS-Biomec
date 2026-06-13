@@ -14,7 +14,6 @@ use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 $objSesiones = new Sesiones();
 $id_entrenador = (int)$_SESSION['id']; 
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $accion = $_GET['accion'] ?? '';
 
@@ -23,14 +22,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $id_grupo = !empty($_GET['id_grupo']) ? (int)$_GET['id_grupo'] : null;
         $estado = !empty($_GET['estado']) ? $_GET['estado'] : null;
         
-        echo json_encode($objSesiones->listarSesionesPorEntrenador($id_entrenador));
+        echo json_encode($objSesiones->listarSesionesPorEntrenador($id_entrenador, $id_grupo, $estado));
         exit;
     }
 
     if ($accion === 'obtenerDetalle') {
         header('Content-Type: application/json');
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        // CORREGIDO: Nombre del método según el modelo
         echo json_encode($objSesiones->obtenerDetalleSesion($id));
         exit;
     }
@@ -88,17 +86,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $series = isset($_POST['series']) ? json_decode($_POST['series'], true) : [];
-        $_POST['id_entrenador'] = $id_entrenador; // Aseguramos la llave que pide tu modelo
+        $_POST['id_entrenador'] = $id_entrenador;
 
-        // CORREGIDO: Nombre del método según el modelo
-        if ($objSesiones->registrarSesion($_POST, $series)) {
-            Bitacora::registrar(
-                $id_entrenador, 'Modulo Sesiones', 'INSERT', null,
-                'sesiones', null, 'Planificada para grupo: ' . $_POST['id_grupo']
-            );
-            echo json_encode(['status' => 'success', 'message' => 'Sesión de entrenamiento planificada exitosamente.']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Ocurrió un error inesperado al procesar la planificación en la BD.']);
+        try {
+            if ($objSesiones->registrarSesion($_POST, $series)) {
+                Bitacora::registrar(
+                    $id_entrenador, 'Modulo Sesiones', 'INSERT', null,
+                    'sesiones', null, 'Planificada para grupo: ' . $_POST['id_grupo']
+                );
+                echo json_encode(['status' => 'success', 'message' => 'Sesión de entrenamiento planificada exitosamente.']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'Ocurrió un error inesperado al procesar la planificación en la BD.']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => 'ERROR: ' . $e->getMessage()]);
         }
         exit;
     }
@@ -130,7 +131,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $series = isset($_POST['series']) ? json_decode($_POST['series'], true) : [];
 
-        // NOTA: Si vas a usar editar, asegúrate de que 'editarSesionPlanificada' exista en tu modelo
         if ($objSesiones->editarSesionPlanificada($id_sesion, $_POST, $series)) {
             Bitacora::registrar(
                 $id_entrenador, 'Modulo Sesiones', 'UPDATE',
@@ -146,11 +146,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($accionPost === 'completarSesion') {
         Autorizacion::exigir('sesiones', 'editar');
 
-        $id_sesion = (int)($_POST['comp_id_sesion'] ?? 0);
+        $id_sesion = (int)($_POST['id_sesion'] ?? 0);
         $volumen_ejecutado = isset($_POST['volumen_ejecutado']) ? (int)$_POST['volumen_ejecutado'] : null;
-        $observaciones = $_POST['comp_observaciones'] ?? '';
+        $observaciones = $_POST['observaciones'] ?? '';
 
-        // CORREGIDO: Empaquetamos los datos en un array asociativo como lo espera el modelo
         $datosCierre = [
             'id_sesion'         => $id_sesion,
             'volumen_ejecutado' => $volumen_ejecutado,
@@ -158,7 +157,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'estado'            => 'Completada'
         ];
 
-        // CORREGIDO: Cambiado al método correcto pasando el array unificado
         if ($objSesiones->completarSesion($datosCierre)) {
             Bitacora::registrar(
                 $id_entrenador, 'Modulo Sesiones', 'UPDATE',
@@ -176,7 +174,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $id_sesion = (int)($_POST['id_sesion'] ?? 0);
 
-        // CORREGIDO: Cambiado al método correcto del modelo
         if ($objSesiones->cancelarSesion($id_sesion)) {
             Bitacora::registrar(
                 $id_entrenador, 'Modulo Sesiones', 'DELETE_LOGIC',

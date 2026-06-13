@@ -1,6 +1,3 @@
-// =====================================================================
-// CONFIGURACIÓN PRINCIPAL - GRUPOS DE ENTRENAMIENTO
-// =====================================================================
 const modalGrupo = document.getElementById('modalGrupo');
 const formGrupo = document.getElementById('formGrupo');
 const btnGuardar = document.getElementById('btnGuardar');
@@ -22,9 +19,6 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
-// =====================================================================
-// MANEJO DE LA INTERFAZ (MODAL)
-// =====================================================================
 function cerrarModalGrupo() {
     modalGrupo.classList.add('hidden');
     modalGrupo.firstElementChild.classList.add('scale-95', 'opacity-0');
@@ -50,11 +44,9 @@ async function abrirModalGrupo(idGrupo = null) {
         modalGrupo.firstElementChild.classList.remove('scale-95', 'opacity-0');
     }, 10);
 
-    // 1. Ubicar el selector de entrenadores e indicar estado de carga
     const selectEntrenador = document.getElementById('id_entrenador');
     selectEntrenador.innerHTML = '<option value="">Cargando entrenadores...</option>';
 
-    // 2. Realizar petición asíncrona directa para poblar el combo de entrenadores globales
     try {
         const respuesta = await fetch('index.php?p=grupo&accion=listarEntrenadoresGlobales');
         if (!respuesta.ok) throw new Error('Error en respuesta de red');
@@ -76,7 +68,6 @@ async function abrirModalGrupo(idGrupo = null) {
         selectEntrenador.innerHTML = '<option value="">Error al cargar entrenadores</option>';
     }
 
-    // MODO EDICIÓN
     if (idGrupo) {
         btnGuardar.innerHTML = 'ACTUALIZAR GRUPO <i class="fas fa-sync-alt ml-2"></i>';
         const grupo = await peticionAjax(`obtenerGrupo&id=${idGrupo}`);
@@ -85,7 +76,6 @@ async function abrirModalGrupo(idGrupo = null) {
             document.getElementById('nombre').value = grupo.nombre;
             document.getElementById('descripcion').value = grupo.descripcion || '';
             
-            // Damos un margen de tiempo seguro para asegurar que las opciones ya existan en el DOM
             setTimeout(() => {
                 selectEntrenador.value = grupo.id_entrenador || '';
             }, 100);
@@ -95,9 +85,6 @@ async function abrirModalGrupo(idGrupo = null) {
     }
 }
 
-// =====================================================================
-// CARGA DINÁMICA DE LA TABLA
-// =====================================================================
 async function cargarTablaGrupos() {
     const tbody = document.getElementById('listaGrupos');
     tbody.innerHTML = `<tr><td colspan="5" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando grupos...</span></td></tr>`;
@@ -162,9 +149,6 @@ async function cargarTablaGrupos() {
     tbody.innerHTML = html;
 }
 
-// =====================================================================
-// BÚSQUEDA Y INICIALIZACIÓN
-// =====================================================================
 const inputBusqueda = document.getElementById('busquedaNombre');
 if (inputBusqueda) {
     inputBusqueda.addEventListener('input', function(e) {

@@ -140,7 +140,7 @@ function agregarFilaSerie(datos = null) {
     const tr = document.createElement('tr');
     tr.className = 'fila-serie hover:bg-white/5 transition';
 
-    const opcionesDrills = `<option value="">-- Ejercicio Libre --</option>` + 
+    const opcionesDrills = `<option value="">Ejercicio Libre</option>` + 
         drillsCache.map(d => `<option value="${d.id_drill}" ${datos && datos.id_drill == d.id_drill ? 'selected' : ''}>${d.nombre}</option>`).join('');
 
     tr.innerHTML = `
@@ -150,7 +150,7 @@ function agregarFilaSerie(datos = null) {
             <select name="serie_bloque[]" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white bloque-select" onchange="calcularVolumenTotalSesion()">
                 <option value="Calentamiento" ${datos && datos.bloque === 'Calentamiento' ? 'selected' : ''}>Calentamiento</option>
                 <option value="Principal" ${datos && datos.bloque === 'Principal' ? 'selected' : (!datos && filasExistentes === 1 ? 'selected' : '')}>Principal</option>
-                <option value="VueltaCalma" ${datos && datos.bloque === 'VueltaCalma' ? 'selected' : (!datos && filasExistentes === 2 ? 'selected' : '')}>Vuelta Calma</option>
+                <option value="VuletaCalma" ${datos && datos.bloque === 'VuletaCalma' ? 'selected' : (!datos && filasExistentes === 2 ? 'selected' : '')}>Vuelta Calma</option>
             </select>
         </td>
 
@@ -248,7 +248,8 @@ function calcularVolumenTotalSesion() {
 
         if (bloque === 'Calentamiento') volCalentamiento += subtotal; 
         else if (bloque === 'Principal') volPrincipal += subtotal;    
-        else if (bloque === 'VueltaCalma') volVueltaCalma += subtotal; 
+        // CORREGIDO: VuletaCalma en lugar de VueltaCalma
+        else if (bloque === 'VuletaCalma') volVueltaCalma += subtotal; 
     });
 
     const volTotal = volCalentamiento + volPrincipal + volVueltaCalma; 
@@ -413,7 +414,7 @@ async function cargarRecursosIniciales() {
         const selectGrupoForm = document.getElementById('id_grupo');
         const selectGrupoFiltro = document.getElementById('filtroGrupo');
         if (selectGrupoForm) {
-            selectGrupoForm.innerHTML = '<option value="">-- Seleccione un Grupo --</option>' +
+            selectGrupoForm.innerHTML = '<option value="">Seleccione un Grupo</option>' +
                 grupos.map(g => `<option value="${g.id_grupo}">${g.nombre}</option>`).join('');
         }
         if (selectGrupoFiltro) {
@@ -425,7 +426,7 @@ async function cargarRecursosIniciales() {
         microciclosCache = microciclos;
         const selectMicroForm = document.getElementById('id_microciclo');
         if (selectMicroForm) {
-            selectMicroForm.innerHTML = '<option value="">-- Sesión Suelta (Ninguno) --</option>' +
+            selectMicroForm.innerHTML = '<option value="">Microciclo (Ninguno)</option>' +
                 microciclos.map(m => `<option value="${m.id_microciclo}">${m.nombre}</option>`).join('');
         }
     }

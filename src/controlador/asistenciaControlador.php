@@ -62,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 1. Registro automático mediante Escáner QR
     if ($accionPost === 'registrar_por_qr') {
+        ob_start();
         // Autorizacion::exigir('asistencia', 'registrar'); // Descomentar al integrar roles
         header('Content-Type: application/json');
         
@@ -69,16 +70,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id_sesion = $_POST['id_sesion'] ?? null;
 
         // Hidratamos la propiedad id_sesion
-        $objAsistencia->setDatos(['id_sesion' => $id_sesion]);
+        $objAsistencia->setDatos($_POST);
         
-        // El método interno busca al atleta y hace el guardado
-        $resultado = $objAsistencia->registrarPorQR($token_qr);
+       $resultado = $objAsistencia->registrarPorQR();
+
+       if ($resultado['status_http'] === 'info') {
+        ob_clean();
+            echo json_encode(['status' => 'info', 'message' => $resultado['mensaje']]);
+            exit;
+        }
         
         if ($resultado['exito']) {
             Bitacora::registrar($id_usuario, 'Asistencia', 'INSERT', 0, 'asistencia_qr', '', "Escaneo QR exitoso: {$resultado['nombre_atleta']}");
+            ob_clean();
             echo json_encode(['status' => 'success', 'nombre_atleta' => $resultado['nombre_atleta']]);
         } else {
-            echo json_encode(['status' => 'error', 'message' => " hola".$resultado['mensaje']]);
+            ob_clean();
+            echo json_encode(['status' => 'error', 'message' => $resultado['mensaje']]);
         }
         exit;
     }
