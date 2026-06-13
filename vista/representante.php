@@ -239,7 +239,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <?php include RAIZ . 'vista/complementos/menu.php'; ?>
+            <?php include RAIZ . 'vista/complementos/menu_responsive.php'; ?>
         </aside>
 
         <!-- Contenido principal -->
