@@ -1,6 +1,5 @@
-<aside class="sidebar flex flex-col p-6 overflow-y-auto w-full h-full">
-    <!-- Este bloque del logo SOLO se muestra en escritorio (lg:flex) para no duplicar en móvil -->
-    <div class="flex items-center gap-3 mb-10 hidden lg:flex">
+<aside class="sidebar hidden lg:flex flex-col p-6 overflow-y-auto max-h-screen">
+    <div class="flex items-center gap-3 mb-10">
         <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-lg shadow-indigo-500/20">
             <i class="fas fa-swimmer text-xl"></i>
         </div>
