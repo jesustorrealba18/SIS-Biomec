@@ -1,3 +1,8 @@
+<?php
+// Establecer el título y el ícono para el header
+$tituloPagina = 'Mi Perfil';
+$iconoPagina = 'fa-id-card'; // opcional, puedes usarlo en el header
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -27,10 +32,9 @@
     <!-- Overlay para móvil cuando el menú está abierto -->
     <div id="menuOverlay" class="fixed inset-0 bg-black/70 z-30 opacity-0 pointer-events-none transition-opacity lg:hidden"></div>
 
-    <!-- Contenedor principal: en móvil columna, en escritorio fila -->
     <div class="flex flex-col lg:flex-row min-h-screen">
         
-        <!-- Sidebar - responsive: fijo en móvil, relativo en escritorio -->
+        <!-- Sidebar -->
         <aside id="sidebarMenu" class="fixed top-0 left-0 h-full w-72 bg-[#0f0d23] border-r border-[#252345] z-40 transform -translate-x-full menu-transition lg:relative lg:translate-x-0 lg:flex-shrink-0 overflow-y-auto">
             <div class="p-4 flex justify-between items-center border-b border-[#252345] lg:hidden">
                 <div class="flex items-center gap-2">
@@ -46,66 +50,17 @@
             <?php include RAIZ . 'vista/complementos/menu.php'; ?>
         </aside>
 
-        <!-- Contenido principal: ocupa el resto del ancho en escritorio -->
+        <!-- Contenido principal -->
         <main class="flex-1 flex flex-col min-h-screen">
             
-            <!-- Header (sticky) con perfil, notificaciones y botón hamburguesa -->
-            <header class="sticky top-0 z-20 bg-[#0f0d23]/80 backdrop-blur-md border-b border-[#252345] py-3 px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center gap-4">
-                    
-                    <!-- Botón hamburguesa (solo móvil) y título -->
-                    <div class="flex items-center gap-3">
-                        <button id="openMenuBtn" class="text-indigo-400 text-2xl focus:outline-none lg:hidden">
-                            <i class="fas fa-bars"></i>
-                        </button>
-                        <h1 class="text-xl sm:text-2xl font-bold text-white tracking-wide flex items-center gap-2">
-                            <i class="fas fa-id-card text-indigo-500"></i> 
-                            <span class="hidden xs:inline">Mi Perfil</span>
-                            <span class="xs:hidden">Perfil</span>
-                        </h1>
-                    </div>
+            <!-- HEADER (incluido desde archivo aparte) -->
+            <?php include RAIZ . 'vista/complementos/header.php'; ?>
 
-                    <!-- Iconos de notificaciones y ayuda (solo UI) -->
-                     <!-- NOTIFICACIONES (siempre visible) -->
-    <div class="relative">
-        <button id="btnNotificaciones" class="text-gray-400 hover:text-indigo-400 transition focus:outline-none">
-            <i class="fas fa-bell text-xl sm:text-2xl"></i>
-            <span id="notifBadge" class="absolute -top-1 -right-2 bg-red-500 w-2.5 h-2.5 rounded-full border border-[#0f0d23]"></span>
-        </button>
-    </div>
-
-    <!-- AYUDA (siempre visible) -->
-    <div class="relative">
-        <button id="btnAyuda" class="text-gray-400 hover:text-indigo-400 transition focus:outline-none">
-            <i class="fas fa-question-circle text-xl sm:text-2xl"></i>
-        </button>
-    </div>
-
-                        <!-- Perfil del usuario y cerrar sesión -->
-                        <div class="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-gray-700">
-                            <div class="text-right hidden sm:block">
-                                <p class="text-xs sm:text-sm text-white font-medium"><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Atleta'); ?></p>
-                                <a href="?p=salir" class="text-[9px] sm:text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-widest transition">
-                                    Cerrar Sesión <i class="fas fa-sign-out-alt ml-1"></i>
-                                </a>
-                            </div>
-                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($_SESSION['nombre'] ?? 'Atleta'); ?>&background=4f46e5&color=fff&bold=true" 
-                                 class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-indigo-500 shadow-lg shadow-indigo-500/20 object-cover">
-                            <a href="?p=salir" class="sm:hidden text-red-400 hover:text-red-300 text-lg ml-1">
-                                <i class="fas fa-sign-out-alt"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Contenido principal (tarjetas) -->
+            <!-- Contenido específico de Mi Perfil -->
             <div class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
-                    
                     <!-- Columna izquierda (2/3 en desktop) -->
                     <div class="lg:col-span-2 space-y-6">
-                        
                         <!-- Tarjeta de identidad -->
                         <div class="tarjeta p-5 sm:p-6 md:p-8 relative overflow-hidden shadow-xl shadow-black/30">
                             <div class="absolute top-0 right-0 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -114,7 +69,7 @@
                                 <div class="space-y-2 flex-1 w-full">
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                         <h2 id="lblNombreCompleto" class="text-xl sm:text-2xl font-black text-white uppercase tracking-tight">Cargando...</h2>
-                                        <span id="badgeEstado" class="estado-badge inline-block text-xs px-3 py-1 rounded-full self-center sm:self-start w-fit">---</span>
+                                        <span id="badgeEstado" class="inline-block text-xs px-3 py-1 rounded-full self-center sm:self-start w-fit">---</span>
                                     </div>
                                     <p id="lblCedula" class="text-indigo-400 font-mono text-sm tracking-widest">V-00000000</p>
                                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/5">
@@ -126,7 +81,7 @@
                             </div>
                         </div>
 
-                        <!-- Contacto y Técnico (grid 2 columnas) -->
+                        <!-- Contacto y Técnico -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div class="tarjeta p-5 sm:p-6 bg-[#161430]/60">
                                 <h3 class="text-xs uppercase text-indigo-400 font-black tracking-widest mb-4 flex items-center gap-2">
@@ -176,7 +131,7 @@
                         </div>
                     </div>
 
-                    <!-- Columna derecha: QR (sticky en desktop) -->
+                    <!-- Columna derecha: QR -->
                     <div class="w-full">
                         <div class="tarjeta p-5 sm:p-6 flex flex-col items-center justify-center border-t-4 border-t-indigo-500 text-center shadow-xl shadow-black/40 bg-gradient-to-b from-[#1b1937] to-[#161430] sticky top-24">
                             <span class="text-[10px] text-indigo-400 font-black uppercase tracking-widest mb-4 flex items-center gap-2 bg-indigo-500/10 py-1.5 px-4 rounded-full">
@@ -198,7 +153,7 @@
         </main>
     </div>
 
-    <!-- Scripts de UI para el menú responsive -->
+    <!-- Scripts del menú responsive (deben estar aquí para poder cerrar el menú) -->
     <script>
         (function() {
             const sidebar = document.getElementById('sidebarMenu');
@@ -232,7 +187,6 @@
             if (closeBtn) closeBtn.addEventListener('click', closeMenu);
             if (overlay) overlay.addEventListener('click', closeMenu);
 
-            // Al redimensionar a desktop, forzar cierre del menú móvil
             window.addEventListener('resize', function() {
                 if (window.innerWidth >= 1024) {
                     if (sidebar && sidebar.classList.contains('translate-x-0')) {
@@ -249,7 +203,7 @@
         })();
     </script>
 
-    <!-- Tus scripts existentes -->
+    <!-- Scripts específicos de mi_perfil -->
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
