@@ -66,24 +66,20 @@
                     </div>
 
                     <!-- Iconos de notificaciones y ayuda (solo UI) -->
-                    <div class="flex items-center gap-2 sm:gap-4">
-                        <div class="relative group cursor-pointer hidden sm:block">
-                            <div class="text-gray-400 group-hover:text-indigo-400 transition">
-                                <i class="fas fa-bell text-xl"></i>
-                                <span class="absolute -top-1 -right-2 bg-red-500 w-2.5 h-2.5 rounded-full border border-[#0f0d23]"></span>
-                            </div>
-                            <div class="absolute right-0 top-8 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition bg-[#1b1937] border border-[#252345] rounded-lg p-2 text-xs text-white whitespace-nowrap z-30">
-                                Notificaciones
-                            </div>
-                        </div>
-                        <div class="relative group cursor-pointer hidden sm:block">
-                            <div class="text-gray-400 group-hover:text-indigo-400 transition">
-                                <i class="fas fa-question-circle text-xl"></i>
-                            </div>
-                            <div class="absolute right-0 top-8 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition bg-[#1b1937] border border-[#252345] rounded-lg p-2 text-xs text-white whitespace-nowrap z-30">
-                                Ayuda
-                            </div>
-                        </div>
+                     <!-- NOTIFICACIONES (siempre visible) -->
+    <div class="relative">
+        <button id="btnNotificaciones" class="text-gray-400 hover:text-indigo-400 transition focus:outline-none">
+            <i class="fas fa-bell text-xl sm:text-2xl"></i>
+            <span id="notifBadge" class="absolute -top-1 -right-2 bg-red-500 w-2.5 h-2.5 rounded-full border border-[#0f0d23]"></span>
+        </button>
+    </div>
+
+    <!-- AYUDA (siempre visible) -->
+    <div class="relative">
+        <button id="btnAyuda" class="text-gray-400 hover:text-indigo-400 transition focus:outline-none">
+            <i class="fas fa-question-circle text-xl sm:text-2xl"></i>
+        </button>
+    </div>
 
                         <!-- Perfil del usuario y cerrar sesión -->
                         <div class="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-gray-700">
