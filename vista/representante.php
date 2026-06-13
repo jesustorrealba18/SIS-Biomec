@@ -17,61 +17,206 @@
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
 
-    <style>
-        body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Inter', sans-serif; }
-        .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 24px; }
-        .input-dark { background: #0f0d23; border: 1px solid #252345; color: white; transition: all 0.3s ease; }
-        .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); outline: none; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0f0d23; }
-        ::-webkit-scrollbar-thumb { background: #252345; border-radius: 10px; }
-        /* Ajustes para DataTables en modo oscuro */
-        .dataTables_wrapper .dataTables_length, 
-        .dataTables_wrapper .dataTables_filter, 
-        .dataTables_wrapper .dataTables_info, 
-        .dataTables_wrapper .dataTables_processing, 
-        .dataTables_wrapper .dataTables_paginate {
-            color: #a0a0c0 !important;
-        }
+<style>
+    /* === ESTILOS BASE === */
+    body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Inter', sans-serif; }
+    .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 24px; }
+    .input-dark { background: #0f0d23; border: 1px solid #252345; color: white; transition: all 0.3s ease; }
+    .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); outline: none; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0f0d23; }
+    ::-webkit-scrollbar-thumb { background: #252345; border-radius: 10px; }
+
+    /* === DATATABLES OSCURO === */
+    .dataTables_wrapper .dataTables_length, 
+    .dataTables_wrapper .dataTables_filter, 
+    .dataTables_wrapper .dataTables_info, 
+    .dataTables_wrapper .dataTables_processing, 
+    .dataTables_wrapper .dataTables_paginate {
+        color: #a0a0c0 !important;
+    }
+
+    /* Input de búsqueda */
+    .dataTables_wrapper .dataTables_filter input {
+        background: #0f0d23;
+        border: 1px solid #252345;
+        color: white;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem 0.75rem 2.5rem !important; /* espacio interno amplio + lugar para ícono */
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        width: 280px;
+        max-width: 100%;
+    }
+
+    /* Select de cantidad de registros */
+    .dataTables_wrapper .dataTables_length select {
+        padding: 0.6rem 1.5rem 0.6rem 0.75rem !important;
+        font-size: 0.875rem;
+        border-radius: 0.75rem;
+        background-color: #0f0d23;
+        border: 1px solid #252345;
+        color: white;
+    }
+
+    /* Espaciado entre labels e inputs */
+    .dataTables_wrapper .dataTables_length label,
+    .dataTables_wrapper .dataTables_filter label {
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    /* Paginación */
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        color: #a0a0c0 !important;
+        background: #161430;
+        border: 1px solid #252345;
+        border-radius: 0.5rem;
+        padding: 0.4rem 0.8rem !important;
+        margin: 0 0.2rem;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: #4f46e5 !important;
+        color: white !important;
+        border-color: #4f46e5;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: #252345 !important;
+        color: white !important;
+    }
+
+    /* Tabla */
+    table.dataTable tbody tr {
+        background-color: transparent;
+    }
+    table.dataTable tbody tr:hover {
+        background-color: rgba(255,255,255,0.05);
+    }
+    table.dataTable thead th {
+        border-bottom: 1px solid #252345;
+        color: #9ca3af;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .dataTables_wrapper .dataTables_scroll {
+        border-radius: 24px;
+    }
+
+    /* === MEJORAS RESPONSIVAS PARA MÓVIL === */
+    @media (max-width: 640px) {
+        /* Buscador ocupa todo el ancho */
         .dataTables_wrapper .dataTables_filter input {
-            background: #0f0d23;
-            border: 1px solid #252345;
-            color: white;
-            border-radius: 0.75rem;
-            padding: 0.5rem 1rem;
+            width: 100% !important;
+        }
+        /* Selector de cantidad de registros ocupa ancho completo */
+        .dataTables_wrapper .dataTables_length {
+            width: 100%;
+            margin-bottom: 0.75rem;
+        }
+        .dataTables_wrapper .dataTables_length label {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        /* Paginación: botones más grandes y separados */
+        .dataTables_wrapper .dataTables_paginate {
+            margin-top: 1rem;
+            text-align: center;
         }
         .dataTables_wrapper .dataTables_paginate .paginate_button {
-            color: #a0a0c0 !important;
-            background: #161430;
-            border: 1px solid #252345;
-            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem !important;
+            margin: 0.2rem !important;
+            font-size: 0.75rem;
         }
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-            background: #4f46e5 !important;
-            color: white !important;
-            border-color: #4f46e5;
+        /* Ajuste del wrapper interno para que no quede pegado */
+        .dataTables_wrapper {
+            padding: 0.5rem 0.25rem;
         }
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            background: #252345 !important;
-            color: white !important;
+    }
+
+    /* === Ajustes de alineación en escritorio === */
+    @media (min-width: 641px) {
+        .dataTables_wrapper .dataTables_filter {
+            text-align: right;
         }
-        table.dataTable tbody tr {
-            background-color: transparent;
+        .dataTables_wrapper .dataTables_length {
+            text-align: left;
         }
-        table.dataTable tbody tr:hover {
-            background-color: rgba(255,255,255,0.05);
+        /* Separación superior de la tabla */
+        .tarjeta .dataTables_wrapper {
+            padding: 1rem 0.75rem 0.75rem 0.75rem;
         }
-        table.dataTable thead th {
-            border-bottom: 1px solid #252345;
-            color: #9ca3af;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .dataTables_wrapper .dataTables_scroll {
-            border-radius: 24px;
-        }
-    </style>
+    }
+
+    /* Estilo para el botón toggle */
+#toggleEstadoBtn {
+    transition: all 0.2s ease;
+}
+#toggleEstadoBtn.active {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+#toggleEstadoBtn.active #toggleIcono {
+    color: #ef4444;
+}
+#toggleEstadoBtn.active #toggleTexto {
+    color: #ef4444;
+}
+#estadoBadge {
+    transition: all 0.2s;
+}
+
+/* ===================================================== */
+/* MEJORAS PARA LA BARRA DE HERRAMIENTAS (BOTONES)       */
+/* ===================================================== */
+
+/* En móvil: botones ocupan todo el ancho y se separan verticalmente */
+@media (max-width: 640px) {
+    /* Contenedor de botones apilados */
+    .flex.flex-col.sm\:flex-row.items-stretch.sm\:items-center.gap-3.w-full.sm\:w-auto {
+        gap: 0.75rem !important;
+    }
+    /* Cada botón ocupa todo el ancho y tiene texto centrado */
+    #toggleEstadoBtn,
+    .bg-indigo-600 {
+        width: 100% !important;
+        justify-content: center !important;
+        margin: 0 !important;
+    }
+    /* Separación extra entre título y botones */
+    .text-indigo-400 {
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* En escritorio: separación horizontal entre botones */
+@media (min-width: 641px) {
+    #toggleEstadoBtn {
+        margin-right: 0.5rem !important;
+    }
+    .bg-indigo-600 {
+        margin-left: 0.25rem !important;
+    }
+}
+
+/* Opcional: efecto hover para el botón toggle */
+#toggleEstadoBtn.active {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+#toggleEstadoBtn.active #toggleIcono {
+    color: #ef4444;
+}
+#toggleEstadoBtn.active #toggleTexto {
+    color: #ef4444;
+}
+#estadoBadge {
+    transition: all 0.2s;
+}
+
+
+</style>
 </head>
 <body class="bg-[#0f0d23]">
 
@@ -109,31 +254,30 @@
             <!-- Contenido específico de representantes -->
             <div class="flex-1 p-4 sm:p-6 lg:p-8 w-full">
                 
-                <!-- Barra de herramientas (filtros y botón nuevo) -->
-<div class="flex flex-col gap-4 mb-6">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div class="flex items-center gap-2 text-sm text-indigo-400">
-            <i class="fas fa-users"></i>
-            <span class="font-medium tracking-wide uppercase text-xs">Directorio Familiar</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <label for="filtroEstado" class="text-xs text-gray-400 uppercase font-bold tracking-wider">Ver:</label>
-            <select id="filtroEstado" class="input-dark p-2 rounded-xl text-xs bg-[#161430] border border-gray-700 text-white">
-                <option value="Activo" selected>👤 Directorio Activo</option>
-                <option value="Inactivo">🗑️ Archivados / Inactivos</option>
-            </select>
-        </div>
+<!-- Barra de herramientas simplificada con mejor separación -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 mb-6">
+    <!-- Título (izquierda) -->
+    <div class="flex items-center gap-2 text-sm text-indigo-400">
+        <i class="fas fa-users"></i>
+        <span class="font-medium tracking-wide uppercase text-xs">Directorio Familiar</span>
     </div>
-
-    <div class="flex flex-col sm:flex-row gap-3">
-        <div class="relative flex-1">
-            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
-            <input type="text" id="busquedaCedula" placeholder="Buscar por cédula o nombre..." 
-                   class="input-dark w-full pl-11 pr-4 py-3 rounded-xl text-sm shadow-inner">
-        </div>
+    
+    <!-- Contenedor de botones (derecha en escritorio, apilados en móvil con espacio) -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+        
+        <!-- Botón toggle (papelera) -->
+        <button id="toggleEstadoBtn" class="group relative flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#161430] border border-[#252345] hover:border-red-500/50 transition-all duration-200 w-full sm:w-auto">
+            <i id="toggleIcono" class="fas fa-trash-alt text-gray-400 group-hover:text-red-400 transition-colors"></i>
+            <span id="toggleTexto" class="text-xs font-medium text-gray-300">Activos</span>
+            <div class="absolute -top-2 -right-2">
+                <span id="estadoBadge" class="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500 text-[10px] font-bold text-white">A</span>
+            </div>
+        </button>
+        
+        <!-- Botón nuevo representante -->
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
-        <button onclick="abrirModalRepresentante()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 sm:w-auto w-full">
-            <i class="fas fa-plus"></i> Nuevo Representante
+        <button onclick="abrirModalRepresentante()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 w-full sm:w-auto">
+            <i class="fas fa-plus"></i> Nuevo
         </button>
         <?php endif; ?>
     </div>
@@ -370,6 +514,39 @@
         // Variable global para la instancia de DataTable
         let dataTableRepresentantes = null;
 
+// Control del toggle de estado (Activos/Inactivos)
+const toggleBtn = document.getElementById('toggleEstadoBtn');
+let estadoActual = 'Activo';
+
+function actualizarToggleUI() {
+    const isActive = estadoActual === 'Activo';
+    if (toggleBtn) {
+        if (isActive) {
+            toggleBtn.classList.remove('active');
+            document.getElementById('toggleTexto').innerText = 'Activos';
+            document.getElementById('toggleIcono').className = 'fas fa-trash-alt text-gray-400 group-hover:text-red-400';
+            document.getElementById('estadoBadge').innerHTML = 'A';
+            document.getElementById('estadoBadge').classList.remove('bg-red-500', 'text-white');
+            document.getElementById('estadoBadge').classList.add('bg-indigo-500', 'text-white');
+        } else {
+            toggleBtn.classList.add('active');
+            document.getElementById('toggleTexto').innerText = 'Inactivos';
+            document.getElementById('toggleIcono').className = 'fas fa-trash-restore text-red-400';
+            document.getElementById('estadoBadge').innerHTML = 'I';
+            document.getElementById('estadoBadge').classList.remove('bg-indigo-500', 'text-white');
+            document.getElementById('estadoBadge').classList.add('bg-red-500', 'text-white');
+        }
+    }
+}
+
+if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+        estadoActual = estadoActual === 'Activo' ? 'Inactivo' : 'Activo';
+        actualizarToggleUI();
+        window.cargarTablaRepresentantes(); // Recargar tabla con el nuevo estado
+    });
+}
+
         // Sobrescribir la función cargarTablaRepresentantes para que use DataTables
         const originalCargarTabla = window.cargarTablaRepresentantes;
         window.cargarTablaRepresentantes = async function() {
@@ -379,8 +556,8 @@
             // Mostrar loading
             tbody.innerHTML = '<tr><td colspan="6" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Cargando datos...</span></td></tr>';
             
-            const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
-            const representantes = await peticionAjax(`listarRepresentantes&estado=${filtroEstado}`);
+            //const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
+            const representantes = await peticionAjax(`listarRepresentantes&estado=${estadoActual}`);
             
             if (!representantes || representantes.length === 0) {
                 if (dataTableRepresentantes) {
@@ -407,16 +584,30 @@
                     }).join('');
                 }
                 
-                let botonAccion = '';
-                if (rep.estado === 'Activo' || !rep.estado) {
-                    botonAccion = `<button onclick="eliminarRepresentante(${rep.id_representante})" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition" title="Archivar"><i class="fas fa-trash-alt text-base"></i></button>`;
-                } else {
-                    botonAccion = `<button onclick="reactivarRepresentante(${rep.id_representante})" class="text-emerald-400 hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-500/10 transition" title="Reactivar"><i class="fas fa-user-check text-base"></i></button>`;
-                }
-                
-                const acciones = PERMISOS_MODULO.gestionar ? 
-                    `<button onclick="abrirModalRepresentante(${rep.id_representante})" class="text-indigo-400 hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-500/10 transition" title="Editar"><i class="fas fa-edit text-base"></i></button> ${botonAccion}` :
-                    '<span class="text-gray-600 text-xs">Solo lectura</span>';
+               let botonAccion = '';
+let mostrarEditar = true;  // Por defecto, sí se muestra el botón editar
+
+if (rep.estado === 'Activo' || !rep.estado) {
+    // Activo: botón eliminar (archivar)
+    botonAccion = `<button onclick="eliminarRepresentante(${rep.id_representante})" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition" title="Archivar"><i class="fas fa-trash-alt text-base"></i></button>`;
+    mostrarEditar = true;
+} else {
+    // Inactivo: botón reactivar, y NO se muestra editar
+    botonAccion = `<button onclick="reactivarRepresentante(${rep.id_representante})" class="text-emerald-400 hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-500/10 transition" title="Reactivar"><i class="fas fa-undo-alt text-base"></i></button>`;
+    mostrarEditar = false;
+}
+
+// Construir las acciones según el estado
+let acciones = '';
+if (PERMISOS_MODULO.gestionar) {
+    if (mostrarEditar) {
+        acciones = `<button onclick="abrirModalRepresentante(${rep.id_representante})" class="text-indigo-400 hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-500/10 transition" title="Editar"><i class="fas fa-edit text-base"></i></button> ${botonAccion}`;
+    } else {
+        acciones = botonAccion;  // Solo el botón de reactivar
+    }
+} else {
+    acciones = '<span class="text-gray-600 text-xs">Solo lectura</span>';
+}
                 
                 htmlFilas += `
                     <tr class="representante-row" data-busqueda="${rep.cedula} ${rep.nombres} ${rep.apellidos} ${textoBusquedaAtletas}".toLowerCase()>
@@ -441,6 +632,7 @@
             // Inicializar DataTable con responsive
             dataTableRepresentantes = $('#tablaRepresentantes').DataTable({
                 responsive: true,
+                dom: '<"flex flex-col sm:flex-row justify-between items-center gap-4 mb-2"lf>rtip',
                 language: {
                     url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json',
                     search: "Buscar:",
@@ -454,15 +646,15 @@
                     { responsivePriority: 3, targets: 5 },  // Acciones
                     { responsivePriority: 4, targets: [1,2,3] }
                 ],
-                autoWidth: false,
-                drawCallback: function() {
+                autoWidth: false
+               /*  drawCallback: function() {
                     // Re-aplicar la búsqueda personalizada si existe
                     const searchVal = document.getElementById('busquedaCedula')?.value;
                     if (searchVal) dataTableRepresentantes.search(searchVal).draw();
-                }
+                } */
             });
             
-            // Vincular el filtro de estado (recarga la tabla completa)
+           /*  // Vincular el filtro de estado (recarga la tabla completa)
             const filtroSelect = document.getElementById('filtroEstado');
             if (filtroSelect && !filtroSelect._listener) {
                 filtroSelect._listener = true;
@@ -478,7 +670,7 @@
                         dataTableRepresentantes.search(this.value).draw();
                     }
                 });
-            }
+            } */
         };
         
         // Asegurar que cuando se edite/elimine/reactivar se recargue la tabla con DataTables

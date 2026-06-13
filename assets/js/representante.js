@@ -336,9 +336,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // =====================================================================
 async function eliminarRepresentante(id_representante) {
     // 1. Actualizamos el texto para reflejar que es un archivado reversible
-    const confirmacion = confirm("Está seguro de archivar este representante? Los atletas a su cargo quedarán libres de vinculación. Podrá reactivarlo después.");
-    
-    if (confirmacion) {
+    const confirmacion =  await  UI.confirmar('Archivar Representante', 'Los atletas a su cargo quedarán libres de vinculación. Podrá reactivarlo después.');
+     if (!confirmacion.isConfirmed) return;
+
+
         let datosDelete = new FormData();
 
         // 2. VITAL: Le decimos explícitamente al controlador POST qué acción ejecutar
@@ -355,29 +356,32 @@ async function eliminarRepresentante(id_representante) {
         } else {
             UI.error('Error', resultado?.message || 'No se pudo desactivar el registro.');
         }
-    }
+   
 }
 
 // =====================================================================
 // EVENTO SECUNDARIO: Reactivar Representante
 // =====================================================================
 async function reactivarRepresentante(id_representante) {
-    const confirmacion = confirm("¿Desea reactivar a este representante y habilitarlo nuevamente en el sistema?");
-
-    if (confirmacion) {
+    //const confirmacion = confirm("¿Desea reactivar a este representante y habilitarlo nuevamente en el sistema?");
+    const confirmacion =  await  UI.confirmar('Reactivar Representante', '¿Desea reactivar a este representante y habilitarlo nuevamente en el sistema?')
+         if (!confirmacion.isConfirmed) return;
+       
+   
         let datosReactivar = new FormData();
         datosReactivar.append('accion', 'reactivar');
         datosReactivar.append('id_representante', id_representante);
 
         const resultado = await peticionAjax('reactivar', datosReactivar);
 
-        if (resultado && resultado.status === 'success') {
-            UI.exito('Reactivado', 'El representante vuelve a estar activo en el directorio.');
-            cargarTablaRepresentantes(); // Recarga silenciosa
-        } else {
-            UI.error('Error', 'No se pudo procesar la reactivación.');
-        }
-    }
+            if (resultado && resultado.status === 'success') {
+                UI.exito('Reactivado', 'El representante vuelve a estar activo en el directorio.');
+                cargarTablaRepresentantes(); // Recarga silenciosa
+            } else {
+                UI.error('Error', 'No se pudo procesar la reactivación.');
+            }
+       
+      
 }
 
 
