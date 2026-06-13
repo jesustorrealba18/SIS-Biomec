@@ -16,7 +16,7 @@ class Asistencia extends Conexion {
 
     // Lista blanca para evitar inyecciones masivas por POST
     private array $camposPermitidos = [
-        'id_sesion', 'id_atleta', 'estado_asistencia', 'justificacion','token_qr'
+        'id_sesion', 'id_atleta', 'estado_asistencia', 'justificacion','token_qr','tipo'
     ];
 
     // NO SE DECLARA CONSTRUCTOR: PHP invoca automáticamente el de la clase Conexion.
@@ -105,12 +105,9 @@ class Asistencia extends Conexion {
     /**
      * Identifica el QR, autohidrata el objeto y dispara el guardado
      */
-    public function registrarPorQR(string $token_qr, int $id_sesion): array {
-
+public function registrarPorQR(): array {
        
-        $tokenLimpio = str_replace('/^token/', '', $token_qr);
-    $this->datos['id_sesion'] = $id_sesion;
-   
+        $tokenLimpio = str_replace('/^token/', '', $this->datos['token_qr']);
 
         try {
             $sqlBuscar = "SELECT id_atleta, nombres, apellidos FROM atletas WHERE token_asistencia = :token";
@@ -128,6 +125,7 @@ class Asistencia extends Conexion {
             $this->datos['id_atleta'] = $atleta['id_atleta'];
             $this->datos['estado_asistencia'] = 'Presente';
             $this->datos['justificacion'] = 'Validación Biométrica QR';
+            $this->datos['tipo'] = 'QR';
 
             // Llamamos al método unificado
             $exito = $this->guardar();
@@ -155,13 +153,14 @@ class Asistencia extends Conexion {
             $id_atleta = $this->datos['id_atleta'] ?? null;
             $estado = $this->datos['estado_asistencia'] ?? null;
             $justif = $this->datos['justificacion'] ?? 'Sin justificación';
+            $tipo = $this->datos['tipo'] ?? 'Manual';
 
             if (!$id_sesion || !$id_atleta || !$estado) return false;
 
-            $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, fecha) 
-                    VALUES (:id_sesion, :id_atleta, :estado, :justificacion, NOW())
+            $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, tipo, fecha) 
+                    VALUES (:id_sesion, :id_atleta, :estado, :justificacion, :tipo, NOW())
                     ON DUPLICATE KEY UPDATE 
-                    estado = VALUES(estado), justificacion = VALUES(justificacion), fecha = NOW()";
+                    estado = VALUES(estado), justificacion = VALUES(justificacion), tipo = VALUES(tipo), fecha = NOW()";
 
             $stmt = $this->pdo->prepare($sql);
             
@@ -170,6 +169,7 @@ class Asistencia extends Conexion {
             $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
             $stmt->bindValue(':estado', $estado, PDO::PARAM_STR);
             $stmt->bindValue(':justificacion', $justif, PDO::PARAM_STR);
+            $stmt->bindValue(':tipo', $tipo, PDO::PARAM_STR);
 
             return $stmt->execute();
 
