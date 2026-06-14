@@ -59,8 +59,16 @@ class Marca extends Conexion {
         $this->requerido((string)($this->datos['fecha'] ?? ''), 'fecha');
         $this->requerido((string)($this->datos['nivel_evento'] ?? ''), 'nivel_evento');
 
+
+
         if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {
             $this->agregarError('fecha', 'La fecha del registro no puede ser futura.');
+        }
+
+        if (!empty($this->datos['id_sesion'] ?? null) && !empty($this->datos['id_evento'] ?? null)) {
+             $this->agregarError('Sesion/Evento', 'Una marca deportiva no puede registrarse simultáneamente en un entrenamiento y en una competencia.');
+           // $this->errores['contexto'] = 'Corrupción de datos: Una marca deportiva no puede registrarse simultáneamente en un entrenamiento y en una competencia.';
+            return false;
         }
 
         return empty($this->obtenerErrores());

@@ -393,4 +393,19 @@ class Sesiones extends Conexion {
             return [];
         }
     }
+
+    // Funcion para el modulo de Marcas No tocar
+    public function listarSesionesSelectMarca(): array {
+         try {
+        
+        $sql = "SELECT s.id_sesion, s.fecha, s.tipo_sesion, g.nombre AS grupo_nombre 
+                FROM sesiones s 
+                INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
+                WHERE s.estado IN ('Completada', 'Parcial')
+                ORDER BY s.fecha DESC LIMIT 30";
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+         } catch (PDOException $e) {
+            return [];
+        }
+    }
 }

@@ -538,4 +538,19 @@ class Evento extends Conexion {
             return false;
         }
     }
+
+     // Funcion para el modulo de Marcas No tocar
+    public function listarEventosSelectMarca(): array {
+        // Eventos activos o recientes
+         try {
+        $sql = "SELECT id_evento, nombre, nivel ,tipo, sede, fecha_inicio, fecha_fin
+                FROM eventos 
+                WHERE estado IN ('En Progreso', 'Finalizado')
+                ORDER BY fecha_inicio DESC";
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+         } catch (PDOException $e) {
+            return [];
+        }
+    }
+
 }

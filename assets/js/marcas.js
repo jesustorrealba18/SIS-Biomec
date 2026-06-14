@@ -50,6 +50,11 @@ function cerrarModalMarca() {
         inputBuscar.removeAttribute('readonly');
         document.getElementById('btnLimpiarAtleta').classList.add('hidden');
     }
+
+    selectSesion.disabled = false;
+    selectSesion.classList.remove('opacity-30', 'cursor-not-allowed');
+    selectEvento.disabled = false;
+    selectEvento.classList.remove('opacity-30', 'cursor-not-allowed');
 }
 
 // Cerrar modal con la tecla Escape
@@ -248,6 +253,64 @@ document.addEventListener('click', (e) => {
         dropdown.classList.add('hidden');
     }
 });
+
+
+// =====================================================================
+// LÓGICA DE EXCLUSIVIDAD: SESIÓN VS EVENTO
+// =====================================================================
+const selectSesion = document.getElementById('id_sesion');
+const selectEvento = document.getElementById('id_evento');
+
+function configurarExclusividadSelects() {
+    selectSesion.addEventListener('change', function() {
+        if (this.value !== "") {
+            // Si elige sesión, bloqueamos evento
+            selectEvento.value = "";
+            selectEvento.disabled = true;
+            selectEvento.classList.add('opacity-30', 'cursor-not-allowed');
+        } else {
+            // Si vuelve a "Ninguna", liberamos evento
+            selectEvento.disabled = false;
+            selectEvento.classList.remove('opacity-30', 'cursor-not-allowed');
+        }
+    });
+
+    selectEvento.addEventListener('change', function() {
+        if (this.value !== "") {
+            // Si elige evento, bloqueamos sesión
+            selectSesion.value = "";
+            selectSesion.disabled = true;
+            selectSesion.classList.add('opacity-30', 'cursor-not-allowed');
+        } else {
+            // Si vuelve a "Ninguno", liberamos sesión
+            selectSesion.disabled = false;
+            selectSesion.classList.remove('opacity-30', 'cursor-not-allowed');
+        }
+    });
+}
+
+// =====================================================================
+// CARGA DINÁMICA DE LOS SELECTS
+// =====================================================================
+async function cargarSelectsContexto() {
+    // 1. Cargar Sesiones (Solo mostramos las completadas o relevantes para toma de marcas)
+    const resSesiones = await peticionAjax('listarSesionesSelect');
+    if (resSesiones && resSesiones.length > 0) {
+        selectSesion.innerHTML = '<option value="">Ninguna - No aplica</option>';
+        resSesiones.forEach(s => {
+            selectSesion.innerHTML += `<option value="${s.id_sesion}">${formatearFecha(s.fecha)} | ${s.grupo_nombre} (${s.tipo_sesion})</option>`;
+        });
+    }
+
+    // 2. Cargar Eventos
+    const resEventos = await peticionAjax('listarEventosSelect');
+    if (resEventos && resEventos.length > 0) {
+        selectEvento.innerHTML = '<option value="">Ninguno - No aplica</option>';
+        resEventos.forEach(e => {
+            selectEvento.innerHTML += `<option value="${e.id_evento}">${e.nombre}| ${e.tipo} (${e.nivel})| ${formatearFecha(e.fecha_inicio)} - ${formatearFecha(e.fecha_fin)} </option>`;
+        });
+    }
+}
 
 
 
@@ -884,6 +947,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Validador.vincularTiempoReal(document.getElementById('formMarca'));
     cargarFiltroAtletas();
+    configurarExclusividadSelects();
+    cargarSelectsContexto();
     cargarTablaMarcas();
 
 });

@@ -8,6 +8,8 @@ if (empty($_SESSION['id'])) {
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\Marca;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\modelo\sesiones;
+use GrupoProyecto\SisBiomec\modelo\Evento;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 
@@ -25,6 +27,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $objAtleta = new Atleta();
         
         echo json_encode($objAtleta->listar());
+        exit;
+    }
+
+    // Selector de Sesiones
+    if ($accion === 'listarSesionesSelect') {
+        header('Content-Type: application/json');
+        $objSesion = new Sesiones();
+        echo json_encode($objSesion->listarSesionesSelectMarca());
+        exit;
+    }
+
+    // Selector de Eventos
+    if ($accion === 'listarEventosSelect') {
+        header('Content-Type: application/json');
+        $objEvento = new Evento();
+        echo json_encode($objEvento->listarEventosSelectMarca());
         exit;
     }
 

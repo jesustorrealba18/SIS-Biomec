@@ -26,48 +26,14 @@
 
    <main class="flex-1 p-8 overflow-y-auto">
 
-           <header class="flex justify-between items-center mb-20">
-             
-                <h1 class="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
-                    <i class="fas fa-stopwatch text-indigo-500"></i> Marcas y Tiempos
-                </h1>
-                
-            <div class="flex items-center gap-6">
+  <!-- Header común -->
+            <?php 
+                $tituloPagina = 'Gestión de Marcas y Tiempos';
+                include RAIZ . 'vista/complementos/header.php'; 
+            ?>
 
-                <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
-                    <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
-                        <i class="fas fa-bell text-xl"></i>
-                        <span class="absolute top-2 right-12 bg-red-500 w-2 h-2 rounded-full border border-[#0f0d23]"></span>
-                    </div>
-                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-                        Notificaciones
-                    </div>
-                </div>
 
-                <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
-                    <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
-                        <i class="fas fa-question-circle text-xl"></i>
-                        <span class="absolute top-2 right-12 bg-red-500 w-2 h-2 rounded-full border border-[#0f0d23]"></span>
-                    </div>
-                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-                        Guía de ayuda
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
-                    <div class="text-right mr-2">
-                        <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre']; ?></p>
-                        <a href="?p=salir" class="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-widest transition">
-                            Cerrar Sesión <i class="fas fa-sign-out-alt ml-1"></i>
-                        </a>
-                    </div>
-                    <img src="https://ui-avatars.com/api/?name=<?php echo $_SESSION['nombre']; ?>&background=4f46e5&color=fff" 
-                         class="w-10 h-10 rounded-full border-2 border-indigo-500 shadow-lg shadow-indigo-500/20">
-                </div>
-            </div>
-        </header>
-
-         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4 mt-6">
              <div>
                 <p class="text-sm text-gray-400 mt-1">Historial de tiempos competitivos, controles técnicos y desgloses de parciales (Splits).</p>
             </div>
