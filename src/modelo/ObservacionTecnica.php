@@ -261,7 +261,7 @@ class ObservacionTecnica extends Conexion {
                            MIN(ot.calificacion) AS minimo,
                            MAX(ot.fecha_registro) AS ultima_evaluacion
                     FROM aspectos_tecnicos at
-                    LEFT JOIN observaciones_tecnicos ot
+                    LEFT JOIN observaciones_tecnicas ot
                         ON at.id_aspecto = ot.id_aspecto_tecnico AND ot.id_atleta = :id_atleta
                     WHERE at.activo = 1
                     GROUP BY at.id_aspecto, at.nombre, at.descripcion

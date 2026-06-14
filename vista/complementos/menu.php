@@ -83,6 +83,13 @@
         </a>
         <?php endif; ?>
 
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('observacionesTecnicas', 'ver')): ?>
+        <a href="?p=observacionesTecnicas" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'observacionesTecnicas') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-clipboard-check w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'observacionesTecnicas') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Observaciones Tecnicas</span>
+        </a>
+        <?php endif; ?>
+
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'ver')): ?>
         <a href="?p=cargaBienestar" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'cargaBienestar') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-notes-medical w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'cargaBienestar') ? 'text-white' : ''; ?>"></i> 
