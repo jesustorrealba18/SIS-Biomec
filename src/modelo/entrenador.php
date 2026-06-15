@@ -26,6 +26,7 @@ class entrenador extends Conexion {
 
         $this->requerido($cedula, 'cedula');
         $this->soloNumeros($cedula, 'cedula');
+        $this->longitud($cedula, 'cedula', 8, 8);
         
         if ($excluirCedula === null) {
             $this->unico($this->getConex1(), $cedula, 'entrenador', 'cedula');
@@ -33,11 +34,11 @@ class entrenador extends Conexion {
 
         $this->requerido($nombres, 'nombres');
         $this->soloLetras($nombres, 'nombres');
-        $this->longitud($nombres, 'nombres', 2, 100);
+        $this->longitud($nombres, 'nombres', 2, 50);
 
         $this->requerido($apellidos, 'apellidos');
         $this->soloLetras($apellidos, 'apellidos');
-        $this->longitud($apellidos, 'apellidos', 2, 100);
+        $this->longitud($apellidos, 'apellidos', 2, 50);
 
         $this->requerido($fecha, 'fecha_nacimiento');
         $this->fechaValida($fecha, 'fecha_nacimiento');
@@ -49,8 +50,12 @@ class entrenador extends Conexion {
         $this->requerido($correo, 'correo');
         $this->correoValido($correo, 'correo');
 
-        $this->requerido($telefono, 'telefono');
+        $this->requerido($telefono, 'teléfono');
+        $this->soloNumeros($telefono, 'teléfono'); 
+        $this->longitud($telefono, 'teléfono', 11, 11);
+
         $this->requerido($direccion, 'direccion');
+        $this->longitud($direccion, 'direccion', 2, 50);
 
         return $this->obtenerErrores();
     }

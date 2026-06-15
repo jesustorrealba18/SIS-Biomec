@@ -118,7 +118,7 @@ protected function soloLetrasyNumeros(string $valor, string $campo): bool {
     }
 
     protected function telefono(string $valor, string $campo): bool {
-        if (!preg_match('/^[\d\-\+\(\)\s]{7,20}$/', trim($valor))) {
+        if (!preg_match('/^[\d\-\+\(\)\s]{7,11}$/', trim($valor))) {
             $this->agregarError($campo, "{$campo} no tiene un formato de teléfono válido.");
             return false;
         }
