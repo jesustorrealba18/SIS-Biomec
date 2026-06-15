@@ -1,12 +1,11 @@
-// CORRECCIÓN DE IDs SEGÚN TU HTML ACTUAL
 const modalEntrenador = document.getElementById('modalEntrenador');
-const modalVer = document.getElementById('modalVerEntrenador'); // <-- Corregido (era modalVer)
+const modalVer = document.getElementById('modalVerEntrenador'); 
 const formEntrenador = document.getElementById('formEntrenador');
 const btnGuardar = document.getElementById('btnGuardar');
 const detalleContenido = document.getElementById('detalleContenido');
 const inputFoto = document.getElementById('foto');
-const fotoPreview = document.getElementById('previsualizarFoto'); // <-- Corregido (era fotoPreview)
-const iconoFotoDefecto = document.getElementById('iconoFotoPorDefecto'); // <-- Añadido para controlar el icono de silueta
+const fotoPreview = document.getElementById('previsualizarFoto'); //
+const iconoFotoDefecto = document.getElementById('iconoFotoPorDefecto'); 
 const totalEntrenador = document.getElementById('totalEntrenador');
 
 const API_URL = 'index.php?p=entrenador'; 
@@ -47,7 +46,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Control dinámico de la foto de perfil en tiempo real al seleccionarla
 if (inputFoto) {
     inputFoto.addEventListener('change', function (e) {
         const file = e.target.files[0];
@@ -73,7 +71,6 @@ async function abrirModalEntrenador(id_entrenador = null) {
     const inputIdHidden = document.getElementById('id_entrenador');
     const modalTitulo = document.getElementById('modalTitulo');
     
-    // Limpiar previsualizaciones al abrir en modo registro
     if (fotoPreview) {
         fotoPreview.src = '';
         fotoPreview.classList.add('hidden');
@@ -118,12 +115,10 @@ async function abrirModalEntrenador(id_entrenador = null) {
     }, 10);
 }
 
-// Ventana detallada del perfil (Modal Ver)
 async function verDetalle(id) {
     const entrenador = await peticionAjax(`obtenerEntrenador&id=${id}`);
     if (!entrenador) return;
 
-    // Actualizamos los nodos individuales del modal estático en lugar de reescribir todo con innerHTML
     document.getElementById("verNombreCompleto").innerText = `${entrenador.nombres} ${entrenador.apellidos}`;
     document.getElementById("verCedula").innerText = entrenador.cedula;
     document.getElementById("verGenero").innerText = entrenador.genero === 'M' ? 'Masculino' : 'Femenino';

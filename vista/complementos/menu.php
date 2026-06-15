@@ -56,9 +56,30 @@
         <?php endif; ?>
 
  <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sesiones', 'ver')): ?>
-        <a href="?p=sesiones" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'representante') ? 'bg-white/10 text-white' : ''; ?>">
+        <a href="?p=sesiones" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'sesiones') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'sesiones') ? 'text-white' : ''; ?>"></i> 
             <span class="font-medium">Sesiones</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('carrriles', 'ver')): ?>
+        <a href="?p=carriles" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'carriles') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'carriles') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Carriles</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('horario', 'ver')): ?>
+        <a href="?p=horario" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'horario') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'horario') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Horario</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('asignacion', 'ver')): ?>
+        <a href="?p=asignacion" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'asignacion') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'asignacion') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Asignacion de Carriles</span>
         </a>
         <?php endif; ?>
 

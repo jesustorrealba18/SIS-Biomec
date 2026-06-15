@@ -36,8 +36,8 @@ class Sesiones extends Conexion {
         if (!empty($datos['id_fase_actual'])) {
             $this->soloNumeros($datos['id_fase_actual'], 'id_fase_actual');
         }
-        $this->longitud($datos['calentamiento'] ?? '', 'calentamiento', 0, 5000);
-        $this->longitud($datos['vuelta_calma'] ?? '', 'vuelta_calma', 0, 5000);
+        $this->longitud($datos['calentamiento'] ?? '', 'calentamiento', 0, 5);
+        $this->longitud($datos['vuelta_calma'] ?? '', 'vuelta_calma', 0, 5);
         $this->longitud($datos['observaciones'] ?? '', 'observaciones', 0, 5000);
 
         return $this->obtenerErrores();

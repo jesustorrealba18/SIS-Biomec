@@ -61,7 +61,7 @@ async function cargarTablaSesiones() {
                 <span class="${coloresEstado[s.estado]} px-2 py-0.5 rounded-full text-[10px] inline-block mt-1">
                     ${s.estado}
                 </span>
-            </td>
+             </td>
             <td class="p-4 text-center font-mono text-indigo-400 font-bold">${s.volumen_planificado || 0}m</td>
             <td class="p-4 text-center font-mono text-emerald-400 font-bold">${s.volumen_ejecutado || 0}m</td>
             <td class="p-4 text-right">
@@ -81,8 +81,8 @@ async function cargarTablaSesiones() {
                         </button>
                     ` : ''}
                 </div>
-            </td>
-        </tr>
+             </td>
+         </tr>
     `).join('');
 }
 
@@ -94,7 +94,10 @@ function abrirModalSesion(id_sesion = null) {
     
     const inputFecha = document.getElementById('fecha');
     const hoy = new Date().toISOString().split('T')[0];
-    if (inputFecha) inputFecha.min = hoy; 
+    if (inputFecha) {
+        inputFecha.min = hoy;
+        if (!id_sesion) inputFecha.value = hoy;
+    }
 
     if (id_sesion) {
         document.getElementById('modalSesionTitulo').innerHTML = '<i class="fas fa-edit text-indigo-400"></i> Editar Sesión';
@@ -117,7 +120,6 @@ function abrirModalSesion(id_sesion = null) {
         });
     } else {
         document.getElementById('modalSesionTitulo').innerHTML = '<i class="fas fa-calendar-plus text-indigo-400"></i> Planificar Sesión';
-        if (inputFecha) inputFecha.value = hoy;
         agregarFilaSerie();
     }
 
@@ -152,30 +154,30 @@ function agregarFilaSerie(datos = null) {
                 <option value="Principal" ${datos && datos.bloque === 'Principal' ? 'selected' : (!datos && filasExistentes === 1 ? 'selected' : '')}>Principal</option>
                 <option value="VuletaCalma" ${datos && datos.bloque === 'VuletaCalma' ? 'selected' : (!datos && filasExistentes === 2 ? 'selected' : '')}>Vuelta Calma</option>
             </select>
-        </td>
+         </td>
 
         <td class="p-2">
             <select name="serie_id_drill[]" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white w-full drill-select" onchange="alternarCampoDescripcion(this)">
                 ${opcionesDrills}
             </select>
             <input type="text" name="serie_ejercicio_descripcion[]" value="${datos ? datos.ejercicio_descripcion || '' : ''}" placeholder="Descripción libre..." class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white w-full mt-1 desc-input">
-        </td>
+         </td>
 
         <td class="p-2">
             <input type="text" name="serie_ritmo_objetivo[]" value="${datos ? datos.ritmo_objetivo || '' : ''}" placeholder="Ej: 1:30" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white text-center font-mono w-full">
-        </td>
+         </td>
 
         <td class="p-2 text-center">
-            <input type="number" min="1" name="serie_repeticiones[]" value="${datos ? datos.repeticiones : '1'}" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white text-center font-mono w-14 rep-input" oninput="calcularVolumenSerie(this)">
-        </td>
+            <input type="number" min="1" max="100" name="serie_repeticiones[]" value="${datos ? datos.repeticiones : '1'}" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white text-center font-mono w-14 rep-input" oninput="calcularVolumenSerie(this)">
+         </td>
 
         <td class="p-2 text-center">
-            <input type="number" min="0" step="25" name="serie_distancia_m[]" value="${datos ? datos.distancia_m : '50'}" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white text-center font-mono w-16 dist-input" oninput="calcularVolumenSerie(this)">
-        </td>
+            <input type="number" min="0" max="10000" step="25" name="serie_distancia_m[]" value="${datos ? datos.distancia_m : '50'}" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white text-center font-mono w-16 dist-input" oninput="calcularVolumenSerie(this)">
+         </td>
 
         <td class="p-2 text-center">
-            <input type="number" min="0" name="serie_descanso_seg[]" value="${datos ? datos.descanso_seg : '15'}" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white text-center font-mono w-14">
-        </td>
+            <input type="number" min="0" max="600" name="serie_descanso_seg[]" value="${datos ? datos.descanso_seg : '15'}" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white text-center font-mono w-14">
+         </td>
 
         <td class="p-2">
             <select name="serie_zona_intensidad[]" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white">
@@ -185,7 +187,7 @@ function agregarFilaSerie(datos = null) {
                 <option value="Z4" ${datos && datos.zona_intensidad === 'Z4' ? 'selected' : ''}>Z4</option>
                 <option value="Z5" ${datos && datos.zona_intensidad === 'Z5' ? 'selected' : ''}>Z5</option>
             </select>
-        </td>
+         </td>
 
         <td class="p-2 text-center font-mono font-bold text-indigo-400 vol-serie-badge">0m</td>
 
@@ -193,7 +195,7 @@ function agregarFilaSerie(datos = null) {
             <button type="button" onclick="removerFilaSerie(this)" class="text-red-400 hover:text-red-300 transition">
                 <i class="fas fa-trash-alt"></i>
             </button>
-        </td>
+         </td>
     `;
 
     contenedor.appendChild(tr);
@@ -248,7 +250,6 @@ function calcularVolumenTotalSesion() {
 
         if (bloque === 'Calentamiento') volCalentamiento += subtotal; 
         else if (bloque === 'Principal') volPrincipal += subtotal;    
-        // CORREGIDO: VuletaCalma en lugar de VueltaCalma
         else if (bloque === 'VuletaCalma') volVueltaCalma += subtotal; 
     });
 
@@ -266,11 +267,41 @@ function calcularVolumenTotalSesion() {
 if (formSesion) {
     formSesion.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
         const id_grupo = document.getElementById('id_grupo').value;
         if (!id_grupo) { 
             Swal.fire('Validación', 'Debe seleccionar un grupo obligatoriamente.', 'warning');
             return;
         }
+
+        const fecha = document.getElementById('fecha').value;
+        if (!fecha) {
+            Swal.fire('Validación', 'Debe seleccionar una fecha para la sesión.', 'warning');
+            return;
+        }
+
+        const duracion = parseInt(document.getElementById('duracion_minutos').value);
+        if (!duracion || duracion < 15) {
+            Swal.fire('Validación', 'La duración mínima de la sesión debe ser de 15 minutos.', 'warning');
+            return;
+        }
+
+        const filasSeries = document.querySelectorAll('.fila-serie');
+        if (filasSeries.length === 0) {
+            Swal.fire('Validación', 'Debe agregar al menos una serie a la sesión.', 'warning');
+            return;
+        }
+
+        let errorSeries = false;
+        filasSeries.forEach((fila, index) => {
+            const repes = parseInt(fila.querySelector('.rep-input').value) || 0;
+            const dist = parseInt(fila.querySelector('.dist-input').value) || 0;
+            if (repes <= 0 || dist <= 0) {
+                errorSeries = true;
+                Swal.fire('Validación', `La serie ${index + 1} debe tener repeticiones y distancia mayores a 0.`, 'warning');
+            }
+        });
+        if (errorSeries) return;
 
         const id_sesion = document.getElementById('id_sesion').value;
         const formData = new FormData(formSesion);
@@ -364,8 +395,21 @@ function cerrarModalCompletar() {
 if(formCompletarSesion) {
     formCompletarSesion.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        const volumenPlanificado = parseInt(document.getElementById('compVolPlanificado').textContent) || 0;
+        const volumenEjecutado = parseInt(document.getElementById('volumen_ejecutado').value) || 0;
+        
+        if (volumenEjecutado > volumenPlanificado) {
+            Swal.fire('Validación', 'El volumen ejecutado no puede superar al volumen planificado.', 'warning');
+            return;
+        }
+        
+        if (volumenEjecutado < 0) {
+            Swal.fire('Validación', 'El volumen ejecutado no puede ser negativo.', 'warning');
+            return;
+        }
+        
         const formData = new FormData(formCompletarSesion);
-
         const resultado = await peticionAjax('completarSesion', formData);
         if (resultado && resultado.status === 'success') {
             Swal.fire('Sesión Cerrada', resultado.message, 'success');

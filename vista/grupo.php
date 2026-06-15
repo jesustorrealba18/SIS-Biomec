@@ -8,11 +8,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Segoe UI', sans-serif; }
+      <style>
+        body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Inter', sans-serif; }
         .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 15px; }
         .input-dark { background: #0f0d23; border: 1px solid #252345; color: white; transition: all 0.3s ease; }
         .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); outline: none; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f0d23; }
+        ::-webkit-scrollbar-thumb { background: #252345; border-radius: 10px; }
     </style>
 </head>
 <body class="flex min-h-screen">

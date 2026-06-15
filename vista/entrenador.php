@@ -127,22 +127,22 @@
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 font-bold ml-1">Cédula</label>
                             <input type="text" id="cedula" name="cedula" 
-                                   data-validar="requerido|numeros" data-nombre="Cédula" data-min="6"
-                                   class="input-dark w-full p-3 rounded-xl" placeholder="Ej: 25888999">
+                                   data-validar="requerido|numeros" data-nombre="Cédula" data-min="7" data-max="8" 
+                                   maxlength="8" class="input-dark w-full p-3 rounded-xl" placeholder="Ej: 25888999">
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1">
                                 <label class="text-[11px] text-gray-500 font-bold ml-1">Nombres</label>
                                 <input type="text" id="nombres" name="nombres" 
-                                       data-validar="requerido|letras" data-nombre="Nombres" data-min="2"
-                                       class="input-dark w-full p-3 rounded-xl">
+                                       data-validar="requerido|letras" data-nombre="Nombres" data-min="2" data-max="50"
+                                       maxlength="50" class="input-dark w-full p-3 rounded-xl">
                             </div>
                             <div class="space-y-1">
                                 <label class="text-[11px] text-gray-500 font-bold ml-1">Apellidos</label>
                                 <input type="text" id="apellidos" name="apellidos" 
-                                       data-validar="requerido|letras" data-nombre="Apellidos" data-min="2"
-                                       class="input-dark w-full p-3 rounded-xl">
+                                       data-validar="requerido|letras" data-nombre="Apellidos" data-min="2" data-max="50"
+                                       maxlength="50" class="input-dark w-full p-3 rounded-xl">
                             </div>
                         </div>
 
@@ -166,8 +166,8 @@
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 font-bold ml-1">Teléfono</label>
                             <input type="text" id="telefono" name="telefono" 
-                                   data-validar="requerido|numeros" data-nombre="Teléfono" data-min="10"
-                                   class="input-dark w-full p-3 rounded-xl">
+                                   data-validar="requerido|numeros" data-nombre="Teléfono" data-min="11" data-max="11"
+                                   maxlength="11" class="input-dark w-full p-3 rounded-xl">
                         </div>
 
                         <div class="space-y-1">
@@ -180,8 +180,8 @@
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 font-bold ml-1">Dirección</label>
                             <textarea id="direccion" name="direccion" rows="4" 
-                                      data-validar="requerido" data-nombre="Dirección" data-min="5"
-                                      class="input-dark w-full p-3 rounded-xl resize-none"></textarea>
+                                      data-validar="requerido" data-nombre="Dirección" data-min="5" data-max="50"
+                                      maxlength="50" class="input-dark w-full p-3 rounded-xl resize-none"></textarea>
                         </div>
                     </div>
                 </div>
