@@ -1,45 +1,8 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesiones de Entrenamiento | SGRD</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Segoe UI', sans-serif; }
-        .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 15px; }
-        .input-dark { background: #0f0d23; border: 1px solid #252345; color: white; transition: all 0.3s ease; }
-        .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); outline: none; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f0d23; }
-        ::-webkit-scrollbar-thumb { background: #252345; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
-    </style>
-</head>
-<body class="flex min-h-screen bg-[#0f0d23]">
-
-    <?php include RAIZ . 'vista/complementos/menu.php'; ?>
-
-    <main class="flex-1 p-8 overflow-y-auto">
-
-        <header class="flex justify-between items-center mb-8">
-            <h1 class="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
-                <i class="fas fa-swimming-pool text-indigo-500"></i> Planificación de Sesiones 
-            </h1>
-            <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
-                <div class="text-right mr-2">
-                    <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre']; ?></p>
-                    <a href="?p=salir" class="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-widest transition">
-                        Cerrar Sesión <i class="fas fa-sign-out-alt ml-1"></i>
-                    </a>
-                </div>
-                <img src="https://ui-avatars.com/api/?name=<?php echo $_SESSION['nombre']; ?>&background=4f46e5&color=fff"
-                     class="w-10 h-10 rounded-full border-2 border-indigo-500 shadow-lg shadow-indigo-500/20">
-            </div>
-        </header>
+<?php
+$tituloPagina = 'Planificación de Sesiones';
+$iconoPagina = 'fa-swimming-pool';
+include RAIZ . 'vista/complementos/layout.php';
+?>
 
         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <p class="text-sm text-gray-400 mt-1">Diseño de entrenamientos</p>
@@ -87,8 +50,6 @@
             </div>
         </div>
 
-    </main>
-
     <div id="modalSesion" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300">
         <div class="relative bg-[#161430] border border-white/5 w-full max-w-6xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8">
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
@@ -97,8 +58,8 @@
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            
-            <form id="formSesion" autocomplete="off"> 
+
+            <form id="formSesion" autocomplete="off">
                 <input type="hidden" id="id_sesion" name="id_sesion" value="">
                 <input type="hidden" id="id_fase_actual" name="id_fase_actual" value="">
                 <input type="hidden" id="volumen_planificado" name="volumen_planificado" value="0">
@@ -225,8 +186,8 @@
                     <i class="fas fa-times text-lg"></i>
                 </button>
             </div>
-            
-            <form id="formCompletar" autocomplete="off"> 
+
+            <form id="formCompletar" autocomplete="off">
                 <input type="hidden" id="id_sesion_completar" name="id_sesion" value="">
 
                 <div class="bg-black/20 border border-[#252345] p-3 rounded-xl mb-4 space-y-1.5 text-xs">
@@ -268,5 +229,5 @@
     const API_URL = '?p=sesiones';
 </script>
 <script src="assets/js/sesion.js"></script>
-</body>
-</html>
+
+<?php include RAIZ . 'vista/complementos/layout_cierre.php'; ?>

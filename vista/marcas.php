@@ -1,39 +1,11 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Marcas | SGRD</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Segoe UI', sans-serif; }
-        .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 15px; }
-        .input-dark { background: #0f0d23; border: 1px solid #252345; color: white; transition: all 0.3s ease; }
-        .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); outline: none; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f0d23; }
-        ::-webkit-scrollbar-thumb { background: #252345; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
-    </style>
-</head>
-<body class="flex min-h-screen bg-[#0f0d23]">
+<?php
+$tituloPagina = 'Gestión de Marcas y Tiempos';
+$iconoPagina = 'fa-stopwatch';
+$headExtra = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+include RAIZ . 'vista/complementos/layout.php';
+?>
 
-    <?php include RAIZ . 'vista/complementos/menu.php'; ?>
-
-   <main class="flex-1 p-8 overflow-y-auto">
-
-  <!-- Header común -->
-            <?php 
-                $tituloPagina = 'Gestión de Marcas y Tiempos';
-                include RAIZ . 'vista/complementos/header.php'; 
-            ?>
-
-
-         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4 mt-6">
+         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
              <div>
                 <p class="text-sm text-gray-400 mt-1">Historial de tiempos competitivos, controles técnicos y desgloses de parciales (Splits).</p>
             </div>
@@ -43,11 +15,10 @@
              </button>
              <?php endif; ?>
          </div>
-        
 
 
 <div class="tarjeta p-5 flex flex-col gap-4 border border-white/5 shadow-lg shadow-black/20">
-    
+
     <div class="flex items-center gap-2 border-b border-[#252345] pb-2">
         <i class="fas fa-filter text-indigo-400 text-sm"></i>
         <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Filtros de Búsqueda</h3>
@@ -57,30 +28,26 @@
         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <i class="fas fa-user-circle text-gray-400 text-lg"></i>
         </div>
-        
+
         <select id="filtroAtleta" onchange="cargarTablaMarcas()" class="w-full input-dark pl-12 pr-10 py-3 rounded-xl text-sm bg-[#0f0d23] border border-[#252345] hover:border-indigo-500/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all cursor-pointer appearance-none shadow-inner">
             <option value="">👤 Todos los Atletas (Búsqueda General)</option>
         </select>
-        
+
         <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
             <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
         </div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
-        
+
         <div class="relative group">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i class="fas fa-ruler-horizontal text-emerald-400/70 group-hover:text-emerald-400 transition-colors text-xs"></i>
             </div>
             <select id="filtroDistancia" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-emerald-500/50 focus:border-emerald-500 transition-all cursor-pointer appearance-none">
                 <option value="">📏 Todas las Distancias</option>
-                <option value="25">25m</option>
-                <option value="50">50m</option>
-                <option value="100">100m</option>
-                <option value="200">200m</option>
-                <option value="400">400m</option>
-                <option value="800">800m</option>
+                <option value="25">25m</option><option value="50">50m</option><option value="100">100m</option>
+                <option value="200">200m</option><option value="400">400m</option><option value="800">800m</option>
                 <option value="1500">1500m</option>
             </select>
             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -94,10 +61,8 @@
             </div>
             <select id="filtroEstilo" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-cyan-500/50 focus:border-cyan-500 transition-all cursor-pointer appearance-none">
                 <option value="">🏊 Todos los Estilos</option>
-                <option value="Libre">Libre</option>
-                <option value="Espalda">Espalda</option>
-                <option value="Pecho">Pecho</option>
-                <option value="Mariposa">Mariposa</option>
+                <option value="Libre">Libre</option><option value="Espalda">Espalda</option>
+                <option value="Pecho">Pecho</option><option value="Mariposa">Mariposa</option>
                 <option value="Combinado">Combinado</option>
             </select>
             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -133,7 +98,7 @@
         </div>
 
     </div>
-</div>        
+</div>
         <div class="tarjeta overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -155,15 +120,9 @@
         </div>
 
 
-</main>
-
-
-    <!-- Empiezan los modales -->
-
-    <!-- <div id="modalMarca" class="fixed inset-0 bg-[#060512]/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40 transition-all duration-300"> -->
-    <div id="modalMarca" class="fixed inset-0 z-50 hidden bg-black/20 backdrop-blur-sm flex items-center justify-center p-4">   
+    <div id="modalMarca" class="fixed inset-0 z-50 hidden bg-black/20 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="relative bg-[#161430] border border-white/5 w-full max-w-3xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8">
-            
+
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
                 <h3 id="modalTitulo" class="text-lg font-bold text-white flex items-center gap-2">
                     <i class="fas fa-stopwatch text-emerald-400"></i> Registrar Control de Tiempo
@@ -175,13 +134,13 @@
 
          <form id="formMarca" autocomplete="off">
                 <input type="hidden" id="accion_form" name="accion" value="registrar">
-                
+
                 <input type="hidden" id="id_marca" name="id_marca" value="">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="relative">
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Atleta *</label>
                         <input type="hidden" id="id_atleta" name="id_atleta" data-validar="requerido" data-nombre="Atleta Seleccionado">
-                        
+
                         <div class="relative">
                             <i class="fas fa-search absolute left-3 top-3.5 text-gray-500"></i>
                             <input type="text" id="inputBuscarAtleta" placeholder="Escriba nombre o cédula..." class="w-full input-dark pl-10 pr-4 py-3 rounded-xl text-sm" autocomplete="off" required>
@@ -216,12 +175,9 @@
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Distancia Total *</label>
                         <select id="distancia_m" name="distancia_m" data-validar="requerido" data-nombre="Distancia" class="w-full input-dark p-3 rounded-xl text-sm">
                             <option value="" disabled selected>Seleccione distancia...</option>
-                            <option value="50">50 Metros</option>
-                            <option value="100">100 Metros</option>
-                            <option value="200">200 Metros</option>
-                            <option value="400">400 Metros</option>
-                            <option value="800">800 Metros</option>
-                            <option value="1500">1500 Metros</option>
+                            <option value="50">50 Metros</option><option value="100">100 Metros</option>
+                            <option value="200">200 Metros</option><option value="400">400 Metros</option>
+                            <option value="800">800 Metros</option><option value="1500">1500 Metros</option>
                         </select>
                     </div>
 
@@ -262,25 +218,25 @@
 
                     <div>
                         <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Reacción (s)</label>
-                        <input type="text" 
-                               inputmode="decimal" 
-                               data-validar="decimal_tiempo" data-nombre="Reacción" 
+                        <input type="text"
+                               inputmode="decimal"
+                               data-validar="decimal_tiempo" data-nombre="Reacción"
                                maxlength="5"
-                               id="tiempo_reaccion_seg" 
-                               name="tiempo_reaccion_seg" 
-                               placeholder="0.00" 
+                               id="tiempo_reaccion_seg"
+                               name="tiempo_reaccion_seg"
+                               placeholder="0.00"
                                class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
                     </div>
-                    
+
                     <div>
                         <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Viraje (s)</label>
-                        <input type="text" 
-                               inputmode="decimal" 
+                        <input type="text"
+                               inputmode="decimal"
                                data-validar="decimal_tiempo" data-nombre="Viraje"
                                maxlength="5"
-                               id="tiempo_viraje_seg" 
-                               name="tiempo_viraje_seg" 
-                               placeholder="0.00" 
+                               id="tiempo_viraje_seg"
+                               name="tiempo_viraje_seg"
+                               placeholder="0.00"
                                class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
                     </div>
                     <div>
@@ -326,14 +282,14 @@
             <button type="button" onclick="cerrarModalVer()" class="absolute top-6 right-6 text-gray-400 hover:text-white hover:rotate-90 transition-all duration-300 z-[100] cursor-pointer p-2">
                 <i class="fas fa-times text-2xl"></i>
             </button>
-            
+
             <div class="p-8 relative z-10" id="detalleContenido">
             </div>
 
         </div>
     </div>
 
-    
+
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
@@ -343,5 +299,5 @@
         };
     </script>
     <script src="assets/js/marcas.js"></script>
-</body>
-</html>
+
+<?php include RAIZ . 'vista/complementos/layout_cierre.php'; ?>

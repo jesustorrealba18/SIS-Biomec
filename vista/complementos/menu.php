@@ -6,10 +6,10 @@
         <span class="text-2xl font-black text-white italic tracking-tighter">SGRD</span>
     </div>
     
-    <nav class="space-y-1">
+    <nav class="flex-1 overflow-y-auto space-y-1 pr-1">
         <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-4">Menú Principal</p>
         
-        <a href="index.php?p=inicio" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group <?php echo ($pagina == 'inicio') ? 'text-indigo-400 bg-indigo-500/10' : 'hover:text-white hover:bg-white/5'; ?>">
+        <a href="?p=inicio" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group <?php echo ($pagina == 'inicio') ? 'text-indigo-400 bg-indigo-500/10' : 'hover:text-white hover:bg-white/5'; ?>">
             <i class="fas fa-home w-5 text-center"></i> <span>Inicio</span>
         </a>
 
@@ -50,13 +50,13 @@
 
          <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('grupo', 'ver')): ?>
         <a href="?p=grupo" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'grupo') ? 'bg-white/10 text-white' : ''; ?>">
-            <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'sesiones') ? 'text-white' : ''; ?>"></i> 
+            <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'grupo') ? 'text-white' : ''; ?>"></i>
             <span class="font-medium">Grupo</span>
         </a>
         <?php endif; ?>
 
  <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sesiones', 'ver')): ?>
-        <a href="?p=sesiones" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'representante') ? 'bg-white/10 text-white' : ''; ?>">
+        <a href="?p=sesiones" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'sesiones') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'sesiones') ? 'text-white' : ''; ?>"></i> 
             <span class="font-medium">Sesiones</span>
         </a>

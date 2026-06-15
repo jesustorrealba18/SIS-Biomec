@@ -1,23 +1,8 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atletas | SGRD</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@master/qrcode.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Inter', sans-serif; }
-        .sidebar { background-color: #161430; width: 260px; border-right: 1px solid #252345; }
-        .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 15px; }
-        .input-dark { background: #0f0d23; border: 1px solid #252345; color: white; transition: all 0.3s ease; }
-        .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); outline: none; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0f0d23; }
-        ::-webkit-scrollbar-thumb { background: #252345; border-radius: 10px; }
+<?php
+$tituloPagina = 'Gestión de Atletas';
+$iconoPagina = 'fa-swimmer';
+$headExtra = '<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@master/qrcode.min.js"></script>';
+$styleExtra = '<style>
         .tab-btn { padding: 10px 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;
                    letter-spacing: 0.1em; color: #6b7280; border-bottom: 2px solid transparent;
                    transition: all 0.3s; cursor: pointer; }
@@ -30,46 +15,9 @@
         .estado-Inactivo { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
         .estado-Retirado { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
         .estado-Transferido { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
-    </style>
-</head>
-<body class="flex min-h-screen">
-
-    <?php include RAIZ . 'vista/complementos/menu.php'; ?>
-
-    <main class="flex-1 p-8 overflow-y-auto">
-        <header class="flex justify-between items-center mb-20">
-            <h1 class="text-2xl font-bold text-white">Gestión de atletas</h1>
-            <div class="flex items-center gap-6">
-                <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
-                    <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
-                        <i class="fas fa-bell text-xl"></i>
-                        <span class="absolute top-2 right-12 bg-red-500 w-2 h-2 rounded-full border border-[#0f0d23]"></span>
-                    </div>
-                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-                        Notificaciones
-                    </div>
-                </div>
-                <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
-                    <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
-                        <i class="fas fa-question-circle text-xl"></i>
-                        <span class="absolute top-2 right-12 bg-red-500 w-2 h-2 rounded-full border border-[#0f0d23]"></span>
-                    </div>
-                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-                        Guía de ayuda
-                    </div>
-                </div>
-                <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
-                    <div class="text-right mr-2">
-                        <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre']; ?></p>
-                        <a href="?p=salir" class="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-widest transition">
-                            Cerrar Sesión <i class="fas fa-sign-out-alt ml-1"></i>
-                        </a>
-                    </div>
-                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($_SESSION['nombre']); ?>&background=4f46e5&color=fff"
-                         class="w-10 h-10 rounded-full border-2 border-indigo-500 shadow-lg shadow-indigo-500/20">
-                </div>
-            </div>
-        </header>
+    </style>';
+include RAIZ . 'vista/complementos/layout.php';
+?>
 
         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <div class="flex items-center gap-2 text-sm text-indigo-400">
@@ -118,7 +66,6 @@
                 </table>
             </div>
         </div>
-    </main>
 
     <div id="modalAtleta" class="fixed inset-0 bg-[#0f0d23]/90 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
         <div class="tarjeta w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl scale-95 opacity-0 transition-all duration-200">
@@ -228,14 +175,10 @@
                             <select name="grupo_sanguineo" id="grupo_sanguineo"
                                     data-validar="requerido" data-nombre="Grupo sanguíneo" class="input-dark w-full p-3 rounded-xl">
                                 <option value="">Sin especificar</option>
-                                <option value="A+">A+</option>
-                                <option value="A-">A-</option>
-                                <option value="B+">B+</option>
-                                <option value="B-">B-</option>
-                                <option value="AB+">AB+</option>
-                                <option value="AB-">AB-</option>
-                                <option value="O+">O+</option>
-                                <option value="O-">O-</option>
+                                <option value="A+">A+</option><option value="A-">A-</option>
+                                <option value="B+">B+</option><option value="B-">B-</option>
+                                <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                                <option value="O+">O+</option><option value="O-">O-</option>
                             </select>
                         </div>
                         <div class="space-y-2">
@@ -272,10 +215,8 @@
                                 <select name="contacto_emergencia_parentesco" id="contacto_emergencia_parentesco"
                                         data-validar="requerido" data-nombre="Parentesco" class="input-dark w-full p-3 rounded-xl">
                                     <option value="">Seleccione...</option>
-                                    <option value="Padre">Padre</option>
-                                    <option value="Madre">Madre</option>
-                                    <option value="Hermano/a">Hermano/a</option>
-                                    <option value="Tutor">Tutor</option>
+                                    <option value="Padre">Padre</option><option value="Madre">Madre</option>
+                                    <option value="Hermano/a">Hermano/a</option><option value="Tutor">Tutor</option>
                                     <option value="Otro">Otro</option>
                                 </select>
                             </div>
@@ -333,5 +274,5 @@
         };
     </script>
     <script src="assets/js/atleta.js"></script>
-</body>
-</html>
+
+<?php include RAIZ . 'vista/complementos/layout_cierre.php'; ?>

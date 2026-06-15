@@ -1,38 +1,9 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grupos de Entrenamiento | SisBiomec</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Segoe UI', sans-serif; }
-        .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 15px; }
-        .input-dark { background: #0f0d23; border: 1px solid #252345; color: white; transition: all 0.3s ease; }
-        .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); outline: none; }
-    </style>
-</head>
-<body class="flex min-h-screen">
+<?php
+$tituloPagina = 'Grupos de Entrenamiento';
+$iconoPagina = 'fa-layer-group';
+include RAIZ . 'vista/complementos/layout.php';
+?>
 
-    <?php include RAIZ . 'vista/complementos/menu.php'; ?>
-
-    <main class="flex-1 p-8 overflow-y-auto">
-        <header class="flex justify-between items-center mb-20">
-            <h1 class="text-2xl font-bold text-white">Grupos de Entrenamiento</h1>
-            <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
-                <div class="text-right mr-2">
-                    <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre']; ?></p>
-                    <a href="?p=salir" class="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-widest transition">
-                        Cerrar Sesión <i class="fas fa-sign-out-alt ml-1"></i>
-                    </a>
-                </div>
-                <img src="https://ui-avatars.com/api/?name=<?php echo $_SESSION['nombre']; ?>&background=4f46e5&color=fff" class="w-10 h-10 rounded-full border-2 border-indigo-500 shadow-lg">
-            </div>
-        </header>
-        
         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
             <div class="flex items-center gap-2 text-sm text-indigo-400">
                 <i class="fas fa-layer-group"></i>
@@ -50,7 +21,8 @@
                         <option value="Activo" selected>✅ Grupos Activos</option>
                         <option value="Inactivo">🗑️ Grupos Archivados</option>
                     </select>
-                </div>                
+                </div>
+
                 <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
                 <button onclick="abrirModalGrupo()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg active:scale-95">
                     <i class="fas fa-plus"></i> Nuevo Grupo
@@ -82,7 +54,6 @@
                 </table>
             </div>
         </div>
-    </main>
 
     <div id="modalGrupo" class="fixed inset-0 bg-[#0f0d23]/95 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="tarjeta w-full max-w-2xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
@@ -105,7 +76,7 @@
                     <div class="space-y-1">
                         <label class="text-[11px] text-gray-500 font-bold ml-1">ENTRENADOR ASIGNADO</label>
                         <select id="id_entrenador" name="id_entrenador" class="input-dark w-full p-3 rounded-xl">
-                            </select>
+                        </select>
                     </div>
 
                     <div class="space-y-1">
@@ -132,5 +103,5 @@
         };
     </script>
     <script src="assets/js/grupo.js"></script>
-</body>
-</html>
+
+<?php include RAIZ . 'vista/complementos/layout_cierre.php'; ?>

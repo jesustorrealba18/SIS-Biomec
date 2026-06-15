@@ -1,68 +1,10 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGRD</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { background-color: #161430; width: 260px; border-right: 1px solid #252345; }
-        .tarjeta { background-color: #161430; border-radius: 15px; border: 1px solid #252345; padding: 1.5rem; }
-        .gradiente-boton { background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%); }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #252345; border-radius: 10px; }
-    </style>
-</head>
-<body class="flex min-h-screen">
-
-    <?php include RAIZ . 'vista/complementos/menu.php'; ?>
-
-    <main class="flex-1 p-8 overflow-y-auto">
-        
-        <header class="flex justify-between items-center mb-8">
-    <h1 class="text-2xl font-bold text-white">Panel de Inicio</h1>
-    <div class="flex items-center gap-6">
-
-        <!-- Botón Notificaciones -->
-        <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
-            <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
-                <i class="fas fa-bell text-xl"></i>
-                <span class="absolute top-2 right-12 bg-red-500 w-2 h-2 rounded-full border border-[#0f0d23]"></span>
-            </div>
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-                Notificaciones
-            </div>
-        </div>
-
-        <!-- Botón Guía de Ayuda -->
-        <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
-            <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
-                <i class="fas fa-question-circle text-xl"></i>
-                <span class="absolute top-2 right-12 bg-red-500 w-2 h-2 rounded-full border border-[#0f0d23]"></span>
-            </div>
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-                Guía de ayuda
-            </div>
-        </div>
-
-        <!-- Perfil y Botón de Salida -->
-        <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
-            <div class="text-right mr-2">
-                <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre']; ?></p>
-                <!-- Enlace de Cerrar Sesión -->
-                <a href="?p=salir" class="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-widest transition">
-                    Cerrar Sesión <i class="fas fa-sign-out-alt ml-1"></i>
-                </a>
-            </div>
-            <img src="https://ui-avatars.com/api/?name=<?php echo $_SESSION['nombre']; ?>&background=4f46e5&color=fff" 
-                 class="w-10 h-10 rounded-full border-2 border-indigo-500 shadow-lg shadow-indigo-500/20">
-        </div>
-    </div>
-</header>
+<?php
+$tituloPagina = 'Panel de Inicio';
+$iconoPagina = 'fa-home';
+$headExtra = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+$styleExtra = '<style>.gradiente-boton { background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%); }</style>';
+include RAIZ . 'vista/complementos/layout.php';
+?>
 
         <div class="grid grid-cols-12 gap-6 mb-8">
             <div class="col-span-12 md:col-span-4 tarjeta">
@@ -152,10 +94,7 @@
             Generar Reporte
         </button>
 
-    </main>
-
     <script>
-        // Lógica de gráficas idéntica a la anterior
         new Chart(document.getElementById('graficaRating'), {
             type: 'line',
             data: {
@@ -199,5 +138,5 @@
             options: { cutout: '85%', plugins: { tooltip: { enabled: false } } }
         });
     </script>
-</body>
-</html>
+
+<?php include RAIZ . 'vista/complementos/layout_cierre.php'; ?>
