@@ -98,6 +98,32 @@ class Validador {
                 if (reglas.includes('decimal_tiempo') && !/^\d{1,2}\.\d{2}$/.test(valor)) {
                     errores.push(`- <b>${nombreCampo}</b> debe tener el formato exacto SS.cc (Ejemplo: 05.50).`);
                 }
+
+                // Validación estricta de Fechas (Máximo un mes atrás, cero futuro)
+                if (reglas.includes('fecha_reciente') && valor !== '') {
+                    // Separar YYYY-MM-DD para evitar el desfase de zona horaria de JavaScript
+                    const partes = valor.split('-');
+                    if (partes.length === 3) {
+                        const fechaInput = new Date(partes[0], partes[1] - 1, partes[2]);
+                        
+                        // Fecha de Hoy a las 00:00:00
+                        const hoy = new Date();
+                        hoy.setHours(0, 0, 0, 0);
+
+                        // Fecha Límite Lógica (Exactamente 1 mes atrás)
+                        const limitePasado = new Date();
+                        limitePasado.setMonth(limitePasado.getMonth() - 1);
+                        limitePasado.setHours(0, 0, 0, 0);
+
+                        if (fechaInput > hoy) {
+                            errores.push(`- <b>${nombreCampo}</b> no puede ser una fecha futura.`);
+                        } else if (fechaInput < limitePasado) {
+                            errores.push(`- <b>${nombreCampo}</b> está fuera de rango. El sistema solo permite registrar marcas de hasta hace un mes atrás.`);
+                        }
+                    } else {
+                        errores.push(`- <b>${nombreCampo}</b> tiene un formato de fecha corrupto.`);
+                    }
+                }
             }
         });
 

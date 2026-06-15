@@ -229,6 +229,29 @@ btnLimpiar.onclick = () => {
 };
 
 inputBuscar.addEventListener('input', (e) => {
+    // 1. EXPRESIÓN REGULAR: Solo letras (incluyendo acentos/ñ), números, espacios y guiones.
+    // Lo que no coincida con esto, se reemplaza por vacío ('') instantáneamente.
+    e.target.value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\-\s]/g, '');
+
+    const texto = e.target.value.toLowerCase();
+    
+    // 2. Si el usuario borra todo o edita, limpiamos el ID oculto para obligarlo a seleccionar de nuevo
+    inputIdOculto.value = '';
+    inputBuscar.classList.remove('text-emerald-400', 'font-bold');
+
+    // 3. Filtrado lógico
+    const filtrados = atletasGlobal.filter(a => 
+        a.nombres.toLowerCase().includes(texto) || 
+        a.apellidos.toLowerCase().includes(texto) ||
+        a.cedula.toLowerCase().includes(texto) // Puesto en toLowerCase() por si escriben "v-"
+    );
+    
+    // 4. Mostrar resultados
+    dropdown.classList.remove('hidden');
+    renderizarDropdown(filtrados);
+});
+
+/* inputBuscar.addEventListener('input', (e) => {
     const texto = e.target.value.toLowerCase();
     
     const filtrados = atletasGlobal.filter(a => 
@@ -239,7 +262,7 @@ inputBuscar.addEventListener('input', (e) => {
     
     dropdown.classList.remove('hidden');
     renderizarDropdown(filtrados);
-});
+}); */
 
 inputBuscar.addEventListener('focus', () => {
     if (!inputIdOculto.value) { 
@@ -950,5 +973,24 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarExclusividadSelects();
     cargarSelectsContexto();
     cargarTablaMarcas();
+
+   // Bloqueo Inteligente del Calendario de Marcas (Corregido Zona Horaria)
+    const inputFecha = document.getElementById('fecha');
+    if (inputFecha) {
+        const hoy = new Date();
+        const haceUnMes = new Date();
+        haceUnMes.setMonth(hoy.getMonth() - 1);
+
+        // NUEVO: Formateador estricto a YYYY-MM-DD extrayendo la hora LOCAL del sistema
+        const formatoLocalISO = (fecha) => {
+            const año = fecha.getFullYear();
+            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+            const dia = String(fecha.getDate()).padStart(2, '0');
+            return `${año}-${mes}-${dia}`;
+        };
+
+        inputFecha.max = formatoLocalISO(hoy);
+        inputFecha.min = formatoLocalISO(haceUnMes);
+    }
 
 });

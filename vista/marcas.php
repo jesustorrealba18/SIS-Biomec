@@ -184,7 +184,7 @@
                         
                         <div class="relative">
                             <i class="fas fa-search absolute left-3 top-3.5 text-gray-500"></i>
-                            <input type="text" id="inputBuscarAtleta" placeholder="Escriba nombre o cédula..." class="w-full input-dark pl-10 pr-4 py-3 rounded-xl text-sm" autocomplete="off" required>
+                            <input type="text" id="inputBuscarAtleta" placeholder="Escriba nombre o cédula..." class="w-full input-dark pl-10 pr-4 py-3 rounded-xl text-sm" autocomplete="off" maxlength="50" required>
                             <button type="button" id="btnLimpiarAtleta" class="absolute right-3 top-3.5 text-gray-500 hover:text-red-400 hidden transition cursor-pointer">
                                 <i class="fas fa-times"></i>
                             </button>
@@ -195,10 +195,15 @@
                                 </ul>
                         </div>
                     </div>
+<?php
+// Define tu zona horaria local (ejemplo: America/New_York)
+date_default_timezone_set('America/Caracas'); 
 
+
+?>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Fecha del Registro *</label>
-                        <input type="date" id="fecha" name="fecha" max="<?php echo date('Y-m-d'); ?>" data-validar="requerido" required  data-nombre="Fecha" class="w-full input-dark p-3 rounded-xl text-sm font-mono">
+                        <input type="date" id="fecha" name="fecha"  max="<?php echo date('Y-m-d'); ?>" data-validar="requerido|fecha_reciente" required  data-nombre="Fecha" class="w-full input-dark p-3 rounded-xl text-sm font-mono">
                     </div>
 
                     <div>
