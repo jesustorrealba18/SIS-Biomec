@@ -283,6 +283,11 @@ class Marca extends Conexion {
 
         } catch (PDOException $e) {
             $this->pdo->rollBack();
+
+            if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta, Sesión o Evento) fueron alterados y no existen en el sistema.');
+                return false;
+            }
            error_log("ERROR REAL DE SQL: " . $e->getMessage()); 
             error_log("TRACE: " . $e->getTraceAsString());
             return false;
@@ -411,6 +416,10 @@ class Marca extends Conexion {
 
         } catch (PDOException $e) {
             $this->pdo->rollBack();
+             if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta, Sesión o Evento) fueron alterados y no existen en el sistema.');
+                return false;
+            }
             error_log("Error en actualizacion de marca: " . $e->getMessage());
             return false;
         }
@@ -435,6 +444,10 @@ class Marca extends Conexion {
             return $stmt->execute();
             
         } catch (PDOException $e) {
+             if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta, Sesión o Evento) fueron alterados y no existen en el sistema.');
+                return false;
+            }
             error_log("Error en eliminarMarca: " . $e->getMessage());
             return false;
         }
@@ -455,6 +468,12 @@ class Marca extends Conexion {
             return $stmt->execute();
             
         } catch (PDOException $e) {
+
+             if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta, Sesión o Evento) fueron alterados y no existen en el sistema.');
+                return false;
+            }
+            
             error_log("Error en reactivarMarca: " . $e->getMessage());
             return false;
         }

@@ -152,10 +152,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
             echo json_encode(['status' => 'success']);
         } else {
-            
+
             $errores = $objMarca->obtenerErrores();
-            $mensaje = !empty($errores) ? reset($errores) : 'Error al actualizar la marca.';
+            $mensaje = !empty($errores) ? reset($errores) : 'Error al actualizar el registro.';
             echo json_encode(['status' => 'error', 'message' => $mensaje]);
+            
+            // $errores = $objMarca->obtenerErrores();
+            // $mensaje = !empty($errores) ? reset($errores) : 'Error al actualizar la marca.';
+            // echo json_encode(['status' => 'error', 'message' => $mensaje]);
         }
         exit;
     }
