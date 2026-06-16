@@ -1,16 +1,19 @@
 <?php
 
-if (empty($_SESSION['id'])) { 
-    header('Location: ?p=login'); 
-    exit; 
-}
-
-use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\Marca;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
 use GrupoProyecto\SisBiomec\modelo\sesiones;
 use GrupoProyecto\SisBiomec\modelo\Evento;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+use GrupoProyecto\SisBiomec\seguridad\Bitacora;
+
+
+if (empty($_SESSION['id'])) { 
+    header('Location: ?p=login'); 
+    exit; 
+}
+
+
 
 
 $objMarca = new Marca();
@@ -91,10 +94,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($accionPost === 'registrar') {
         Autorizacion::exigir('marcas', 'registrar');
 
-        if ($objMarca->registrarMarca($_POST)) {
+        $objMarca->setAtributos($_POST);
 
-                $datosGuardados = $_POST;
-                unset($datosGuardados['accion']);
+        if ($objMarca->getRegistrarMarca()) {
+
+                $datosFiltrados = $objMarca->obtenerDatos();
+                unset($datosFiltrados['accion']);
 
                 Bitacora::registrar(
                     $id_usuario, 
@@ -103,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     null, 
                     'Múltiples campos (Registro Completo)', 
                     null, 
-                    json_encode($datosGuardados, JSON_UNESCAPED_UNICODE) 
+                    json_encode($datosFiltrados, JSON_UNESCAPED_UNICODE) 
                 );           
 
             echo json_encode(['status' => 'success', 'message' => 'Marca registrada.']);
@@ -124,12 +129,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Actualizar registro existente
     if ($accionPost === 'actualizar') {
         Autorizacion::exigir('marcas', 'registrar');
-        $id_marca = (int)($_POST['id_marca'] ?? 0);
-        
-        if ($id_marca > 0 && $objMarca->actualizarMarca($_POST, $id_marca)) {
 
-            $datosNuevos = $_POST;
-            unset($datosNuevos['accion'], $datosNuevos['id_marca']);
+        
+
+            $objMarca->setAtributos($_POST);
+        if ($objMarca->getActualizarMarca()) {
+            
+            
+            $id_marca = $objMarca->getCampo('id_marca');
+            $datosFiltrados = $objMarca->obtenerDatos();
+            unset($datosFiltrados['id_marca'], $datosFiltrados['accion']);
 
            Bitacora::registrar(
                     $id_usuario, 
@@ -138,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $id_marca, 
                     'Datos de la Marca', 
                     'Ver historial previo', 
-                    json_encode($datosNuevos, JSON_UNESCAPED_UNICODE)
+                    json_encode($datosFiltrados, JSON_UNESCAPED_UNICODE)
                 );
                 
             echo json_encode(['status' => 'success']);
@@ -154,14 +163,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     //Archivar (Borrado lógico con justificación)
     if ($accionPost === 'eliminar') {
         Autorizacion::exigir('marcas', 'registrar');
-        $id = (int)($_POST['id_marca'] ?? 0);
-        $motivo = $_POST['motivo'] ?? 'Sin justificación'; 
+        
 
-        if ($objMarca->eliminarMarca($id, $motivo)) {
+        $objMarca->setAtributos($_POST);
+
+        if ($objMarca->getEliminarMarca()) {
+            
+            $id = $objMarca->getCampo('id_marca');
+            $motivo = $objMarca->getCampo('motivo_eliminacion');
+            
             Bitacora::registrar($id_usuario, 'Marcas', 'DELETE', $id, 'estado', 'Activo', "Inactivo (Motivo: $motivo)");
+            
             echo json_encode(['status' => 'success']);
         } else {
-            echo json_encode(['status' => 'error', 'message' => 'No se pudo archivar la marca.']);
+
+            $errores = $objMarca->obtenerErrores();
+            
+            if (!empty($errores)) {
+                echo json_encode(['status' => 'warning', 'message' => reset($errores),'errores' => $errores]);
+            } else {
+                echo json_encode(['status' => 'error','message' => 'El servidor no pudo consolidar Archivar registro por un problema de infraestructura interna.'
+                ]);
+            }
+
+
         }
         exit;
     }
@@ -169,8 +194,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Reactivar registro
     if ($accionPost === 'reactivar') {
         Autorizacion::exigir('marcas', 'registrar');
-        $id = (int)($_POST['id_marca'] ?? 0);
-        if ($objMarca->reactivarMarca($id)) {
+
+        $objMarca->setAtributos($_POST);
+
+        if ($objMarca->getReactivarMarca()) {
+            $id = $objMarca->getCampo('id_marca');
             Bitacora::registrar($id_usuario, 'Marcas', 'RESTORE', $id, 'estado', 'Inactivo', 'Activo');
             echo json_encode(['status' => 'success']);
         } else {

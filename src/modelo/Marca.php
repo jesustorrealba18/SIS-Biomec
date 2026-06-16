@@ -20,15 +20,15 @@ class Marca extends Conexion {
         'id_atleta', 'id_sesion', 'id_evento', 'estilo', 'distancia_m',
         'tipo_piscina', 'tiempo_final_seg', 'tiempo_reaccion_seg',
         'tiempo_viraje_seg', 'nivel_evento', 'fecha', 'observaciones',
-        'num_brazadas', 'splits','brazadas_por_largo','id_marca','accion'
+        'num_brazadas', 'splits','brazadas_por_largo','id_marca','accion','motivo_eliminacion'
     ];
 
     
     /**
-     * Mapea el payload externo al arreglo privado filtrando campos basura.
+     * Mapea el payload externo  filtrando campos basura.
      * Soporta de forma segura variables escalares y arreglos estructurados (Splits).
      */
-    private function setAtributos(array $payload): void {
+    public function setAtributos(array $payload): void {
         foreach ($this->camposPermitidos as $campo) {
             if (isset($payload[$campo])) {
                 // Si el campo es un arreglo (como los splits), lo guardamos directo sin comparar con string
@@ -45,6 +45,14 @@ class Marca extends Conexion {
                 $this->datos[$campo] = null;
             }
         }
+    }
+
+    public function getCampo(string $clave) {
+        return $this->datos[$clave] ?? null;
+    }
+
+    public function obtenerDatos(): array {
+        return $this->datos;
     }
 
    
@@ -65,11 +73,24 @@ class Marca extends Conexion {
             $this->agregarError('fecha', 'La fecha del registro no puede ser futura.');
         }
 
+  
+
+        return empty($this->obtenerErrores());
+    }
+
+
+    /**
+     * Valida reglas que son exclusivas de Marcas
+     */
+    private function validarReglasDeNegocio(): bool {
+
+        // Validamos la regla XOR (O es sesión, o es evento, no ambas)
         if (!empty($this->datos['id_sesion'] ?? null) && !empty($this->datos['id_evento'] ?? null)) {
              $this->agregarError('Sesion/Evento', 'Una marca deportiva no puede registrarse simultáneamente en un entrenamiento y en una competencia.');
-           // $this->errores['contexto'] = 'Corrupción de datos: Una marca deportiva no puede registrarse simultáneamente en un entrenamiento y en una competencia.';
             return false;
         }
+
+        // Aquí puedes agregar más if() con reglas personalizadas en el futuro...
 
         return empty($this->obtenerErrores());
     }
@@ -78,14 +99,72 @@ class Marca extends Conexion {
     // OPERACIÓN TRANSACCIONAL (BACKEND)
     // =====================================================================
    
-   
-    public function registrarMarca(array $payload): bool {
-      
-        $this->setAtributos($payload);
+   public function getRegistrarMarca(){
 
         if (!$this->validarAtributosInternos()) {
             return false; 
         }
+
+        
+        if (!$this->validarReglasDeNegocio()) {
+            return false;
+        }
+
+    return $this->registrarMarca();
+   }
+
+    public function getActualizarMarca(){
+
+        $id = (int)($this->datos['id_marca'] ?? 0);
+        if ($id <= 0) {
+            
+            $this->agregarError('id', 'No se proporcionó un identificador de marca válido para actualizar.');
+            return false;
+        }
+
+        if (!$this->validarAtributosInternos()) {
+            return false; 
+        }
+
+        
+        if (!$this->validarReglasDeNegocio()) {
+            return false;
+        }
+
+        return $this->actualizarMarca();
+   }
+
+    public function getEliminarMarca(){
+
+
+        $id = (int)($this->datos['id_marca'] ?? 0);
+        if ($id <= 0) {
+            $this->agregarError('id_marca', 'No se proporcionó un identificador válido para archivar el registro.');
+            return false;
+        }
+
+        // Usamos mb_strlen para contar bien los caracteres con acentos
+        $motivo = $this->datos['motivo_eliminacion'] ?? '';
+        if (empty($motivo) || mb_strlen($motivo) < 5) {
+            $this->agregarError('motivo_eliminacion', 'Debe proporcionar una justificación detallada (mínimo 5 letras) para archivar la marca.');
+            return false;
+        }
+
+
+        return $this->eliminarMarca();
+   }
+
+    public function getReactivarMarca(){
+         $id = (int)($this->datos['id_marca'] ?? 0);
+        if ($id <= 0) {
+            $this->agregarError('id_marca', 'No se proporcionó un identificador válido para archivar el registro.');
+            return false;
+        }
+        return $this->reactivarMarca();
+   }
+
+    private function registrarMarca(): bool {
+      
         
        try {
             $this->pdo->beginTransaction();
@@ -211,14 +290,9 @@ class Marca extends Conexion {
     }
 
    
-    public function actualizarMarca(array $payload, int $id_marca): bool {
+    private function actualizarMarca(): bool {
         
-       
-        $this->setAtributos($payload);
-
-        if (!$this->validarAtributosInternos()) {
-            return false; 
-        }
+        $id_marca = (int)$this->datos['id_marca'];
 
         try {
             $this->pdo->beginTransaction();
@@ -345,6 +419,46 @@ class Marca extends Conexion {
   // =====================================================================
     // MÉTODOS DE CONSULTA Y ESTADO (Listados y Soft Delete)
     // =====================================================================
+    
+    private function eliminarMarca(): bool {
+        try {
+            $sql = "UPDATE marcas 
+                    SET estado = 'Inactivo', motivo_eliminacion = :motivo 
+                    WHERE id_marca = :id";
+            
+            $stmt = $this->pdo->prepare($sql);
+            
+            $stmt->bindValue(':id', (int)$this->datos['id_marca'], PDO::PARAM_INT);
+            $stmt->bindValue(':motivo', trim($this->datos['motivo_eliminacion']), PDO::PARAM_STR);
+            
+            
+            return $stmt->execute();
+            
+        } catch (PDOException $e) {
+            error_log("Error en eliminarMarca: " . $e->getMessage());
+            return false;
+        }
+    }
+
+   
+    private function reactivarMarca(): bool {
+        try {
+            $sql = "UPDATE marcas 
+                    SET estado = 'Activo', motivo_eliminacion = NULL 
+                    WHERE id_marca = :id";
+            
+            $stmt = $this->pdo->prepare($sql);
+            
+            $stmt->bindValue(':id', (int)$this->datos['id_marca'], PDO::PARAM_INT);
+           
+            
+            return $stmt->execute();
+            
+        } catch (PDOException $e) {
+            error_log("Error en reactivarMarca: " . $e->getMessage());
+            return false;
+        }
+    }
 
     public function listarMarcas(string $estado = 'Activo', int $id_atleta = 0, int $distancia = 0, string $estilo = '', string $piscina = ''): array {
         
@@ -404,46 +518,6 @@ class Marca extends Conexion {
         }
     }
 
-    
-    public function eliminarMarca(int $id, string $motivo): bool {
-        try {
-            $sql = "UPDATE marcas 
-                    SET estado = 'Inactivo', motivo_eliminacion = :motivo 
-                    WHERE id_marca = :id";
-            
-            $stmt = $this->pdo->prepare($sql);
-            
-            
-            $stmt->bindValue(':motivo', trim($motivo), PDO::PARAM_STR);
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-            
-            return $stmt->execute();
-            
-        } catch (PDOException $e) {
-            error_log("Error en eliminarMarca: " . $e->getMessage());
-            return false;
-        }
-    }
-
-   
-    public function reactivarMarca(int $id): bool {
-        try {
-            $sql = "UPDATE marcas 
-                    SET estado = 'Activo', motivo_eliminacion = NULL 
-                    WHERE id_marca = :id";
-            
-            $stmt = $this->pdo->prepare($sql);
-            
-            
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-            
-            return $stmt->execute();
-            
-        } catch (PDOException $e) {
-            error_log("Error en reactivarMarca: " . $e->getMessage());
-            return false;
-        }
-    }
 
    /**
      * Extrae el desglose científico de una marca y la cronología evolutiva del atleta.

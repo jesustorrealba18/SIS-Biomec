@@ -1,6 +1,7 @@
 <?php
 // =====================================================================
-// CONTROLADOR: CARGA DE BIENESTAR (RPE)
+// CONTROLADOR: CARGA INTERNA Y BIENESTAR (RPE)
+// Protegido contra caídas en JMeter mediante Buffering (ob_start)
 // =====================================================================
 
 if (empty($_SESSION['id'])) { 
@@ -9,168 +10,194 @@ if (empty($_SESSION['id'])) {
 }
 
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 use GrupoProyecto\SisBiomec\modelo\CargaBienestar;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
-use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 $objCarga = new CargaBienestar();
+$id_usuario = $_SESSION['id'];
 
 // =====================================================================
-// RUTAS GET: Para cargar vistas y pedir datos (Listados)
+// RUTAS GET (Listados, detalles y utilerías)
 // =====================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $accion = $_GET['accion'] ?? '';
 
-    // Buscador predictivo de atletas (para formularios)
+    // Selector de atletas para combos
     if ($accion === 'listarAtletasSelect') {
         header('Content-Type: application/json');
-        $objAtleta = new Atleta();
-        echo json_encode($objAtleta->listar());
+        echo json_encode((new Atleta())->listar());
         exit;
     }
 
-    // Listar registros de carga (para DataTable)
-    if ($accion === 'listarCargas') {
+    // Listado principal (activos / papelera)
+    if ($accion === 'listarRPE') {
         header('Content-Type: application/json');
-        $estado       = $_GET['estado']       ?? 'Activo';
-        $id_atleta    = !empty($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : null;
-        $fecha_desde  = $_GET['fecha_desde'] ?? null;
-        $fecha_hasta  = $_GET['fecha_hasta'] ?? null;
-
-        $registros = $objCarga->listar($estado, $id_atleta, $fecha_desde, $fecha_hasta);
+        $fechaInicio = trim($_GET['fechaInicio'] ?? '');
+        $fechaFin    = trim($_GET['fechaFin'] ?? '');
+        $id_atleta   = (int)($_GET['id_atleta'] ?? 0);
+        $modo        = $_GET['modo'] ?? 'activos';   // 'activos' o 'papelera'
+        $modoPapelera = ($modo === 'papelera');
+        
+        $registros = $objCarga->listarRPE($fechaInicio, $fechaFin, $id_atleta, $modoPapelera);
         echo json_encode($registros);
         exit;
     }
 
-    // Obtener detalle completo de un registro (para edición o visualización)
-    if ($accion === 'obtenerDetalleCarga') {
+    // Obtener un registro para edición o detalle
+    if ($accion === 'obtenerRPE') {
         header('Content-Type: application/json');
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        $detalle = $objCarga->obtenerPorId($id);
-        echo json_encode($detalle);
+        $id = (int)($_GET['id'] ?? 0);
+        if ($id > 0) {
+            echo json_encode($objCarga->obtenerRPEPorId($id));
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'ID de registro inválido']);
+        }
         exit;
     }
 
-    // Si no hay acción específica, cargar la vista principal
+    // Promedio RPE últimos 3 días (para cruce con lesiones)
+    if ($accion === 'rpePromedioReciente') {
+        header('Content-Type: application/json');
+        $id_atleta = (int)($_GET['id_atleta'] ?? 0);
+        $dias = (int)($_GET['dias'] ?? 3);
+        if ($id_atleta > 0) {
+            $promedio = $objCarga->obtenerRpePromedioUltimosDias($id_atleta, $dias);
+            echo json_encode(['promedio' => $promedio]);
+        } else {
+            echo json_encode(['promedio' => null, 'error' => 'ID de atleta requerido']);
+        }
+        exit;
+    }
+
+    // Listar inconsistencias biológicas (RPE=1 y récord personal)
+    if ($accion === 'listarInconsistencias') {
+        header('Content-Type: application/json');
+        $inconsistencias = $objCarga->listarInconsistencias();
+        echo json_encode($inconsistencias);
+        exit;
+    }
+
+    // Cargar la vista HTML por defecto
     require_once 'vista/cargaBienestar.php';
     exit;
 }
 
 // =====================================================================
-// RUTAS POST: Para Guardar, Actualizar, Anular o Reactivar
+// RUTAS POST (Transacciones ACID)
 // =====================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
-    $accionPost = $_POST['accion'] ?? '';
-    $id_usuario = $_SESSION['id'] ?? 0;
+    $accion = $_GET['accion'] ?? $_POST['accion'] ?? '';
+    
+    ob_start(); // Buffer para proteger JSON
 
-    // -----------------------------------------------------------------
-    // Guardar (insertar o actualizar)
-    // -----------------------------------------------------------------
-    if ($accionPost === 'guardar') {
-        Autorizacion::exigir('carga_bienestar', 'registrar');
-
-        $resultado = $objCarga->guardar($_POST);
-
-        if ($resultado['exito']) {
-            // Registrar en bitácora según sea inserción o actualización
-            $esNuevo = empty($_POST['id_rpe']);
-            $id_registro = $resultado['id'];
-
-            if ($esNuevo) {
-                $datosGuardados = $_POST;
-                unset($datosGuardados['accion']);
-                Bitacora::registrar(
-                    $id_usuario,
-                    'CargaBienestar',
-                    'CREATE',
-                    $id_registro,
-                    'Registro RPE',
-                    null,
-                    json_encode($datosGuardados, JSON_UNESCAPED_UNICODE)
-                );
-            } else {
-                $datosActualizados = $_POST;
-                unset($datosActualizados['accion'], $datosActualizados['id_rpe']);
-                Bitacora::registrar(
-                    $id_usuario,
-                    'CargaBienestar',
-                    'UPDATE',
-                    $id_registro,
-                    'Actualización RPE',
-                    null,
-                    json_encode($datosActualizados, JSON_UNESCAPED_UNICODE)
-                );
-            }
-
-            echo json_encode(['status' => 'success', 'message' => $resultado['mensaje'], 'id' => $id_registro]);
+    // 1. REGISTRAR
+    if ($accion === 'registrar') {
+        Autorizacion::exigir('rpe', 'registrar');
+        $res = $objCarga->registrarRPE($_POST);
+        ob_end_clean();
+        
+        if ($res && is_array($res) && $res['exito']) {
+            Bitacora::registrar($id_usuario, 'RegistroRPE', 'INSERT', $res['id_rpe'], 'Nuevo registro RPE', null, json_encode($_POST));
+            echo json_encode(['status' => 'success', 'message' => 'Registro RPE guardado con éxito.']);
         } else {
-            // Si hay errores de validación
-            if (isset($resultado['errores'])) {
-                echo json_encode(['status' => 'warning', 'errores' => $resultado['errores']]);
-            } else {
-                echo json_encode(['status' => 'error', 'message' => $resultado['mensaje']]);
-            }
+            $err = $objCarga->obtenerErrores();
+            echo json_encode(['status' => 'error', 'message' => reset($err) ?: 'Error al guardar el registro.']);
         }
         exit;
     }
 
-    // -----------------------------------------------------------------
-    // Anular (soft delete)
-    // -----------------------------------------------------------------
-    if ($accionPost === 'anular') {
-        Autorizacion::exigir('carga_bienestar', 'anular');
-
-        $id_rpe   = (int)($_POST['id_rpe'] ?? 0);
-        $motivo   = trim($_POST['motivo'] ?? '');
-        $id_usuario = $_SESSION['id'] ?? 0;
-
-        $resultado = $objCarga->anularRegistro($id_rpe, $motivo, $id_usuario);
-
-        if ($resultado['exito']) {
-            Bitacora::registrar(
-                $id_usuario,
-                'CargaBienestar',
-                'DELETE',
-                $id_rpe,
-                'estado',
-                'Activo',
-                "Anulado. Motivo: $motivo"
-            );
-            echo json_encode(['status' => 'success', 'message' => $resultado['mensaje']]);
+    // 2. ACTUALIZAR
+    if ($accion === 'actualizar') {
+        Autorizacion::exigir('rpe', 'editar');
+        $id = (int)($_POST['id_rpe'] ?? 0);
+        if ($id <= 0) {
+            ob_end_clean();
+            echo json_encode(['status' => 'error', 'message' => 'ID inválido']);
+            exit;
+        }
+        $res = $objCarga->actualizarRPE($_POST, $id);
+        ob_end_clean();
+        
+        if ($res) {
+            Bitacora::registrar($id_usuario, 'RegistroRPE', 'UPDATE', $id, 'Actualización de registro RPE', null, json_encode($_POST));
+            echo json_encode(['status' => 'success', 'message' => 'Registro RPE actualizado.']);
         } else {
-            echo json_encode(['status' => 'error', 'message' => $resultado['mensaje']]);
+            $err = $objCarga->obtenerErrores();
+            echo json_encode(['status' => 'error', 'message' => reset($err) ?: 'Error al actualizar.']);
         }
         exit;
     }
 
-    // -----------------------------------------------------------------
-    // Reactivar (cambiar de Anulado a Activo)
-    // -----------------------------------------------------------------
-    if ($accionPost === 'reactivar') {
-        Autorizacion::exigir('carga_bienestar', 'registrar');
-
-        $id_rpe = (int)($_POST['id_rpe'] ?? 0);
-        $resultado = $objCarga->reactivarRegistro($id_rpe, $_SESSION['id']);
-
-        if ($resultado['exito']) {
-            Bitacora::registrar(
-                $_SESSION['id'],
-                'CargaBienestar',
-                'RESTORE',
-                $id_rpe,
-                'estado',
-                'Anulado',
-                'Activo'
-            );
-            echo json_encode(['status' => 'success', 'message' => $resultado['mensaje']]);
+    // 3. ANULAR (Soft delete -> papelera)
+    if ($accion === 'anularRPE') {
+        Autorizacion::exigir('rpe', 'eliminar');
+        $id = (int)($_POST['id_rpe'] ?? 0);
+        $motivo = trim($_POST['motivo'] ?? '');
+        if ($id <= 0 || strlen($motivo) < 5) {
+            ob_end_clean();
+            echo json_encode(['status' => 'error', 'message' => 'Debe proveer un ID válido y un motivo justificado (mínimo 10 caracteres).']);
+            exit;
+        }
+        $res = $objCarga->anularRPE($id, $motivo);
+        ob_end_clean();
+        
+        if ($res) {
+            Bitacora::registrar($id_usuario, 'RegistroRPE', 'SOFT_DELETE', $id, 'Movido a papelera', null, "Motivo: $motivo");
+            echo json_encode(['status' => 'success', 'message' => 'Registro movido a la papelera.']);
         } else {
-            echo json_encode(['status' => 'error', 'message' => $resultado['mensaje']]);
+            $err = $objCarga->obtenerErrores();
+            echo json_encode(['status' => 'error', 'message' => reset($err) ?: 'Error al anular.']);
         }
         exit;
     }
 
-    // Si ninguna acción coincide
-    echo json_encode(['status' => 'error', 'message' => 'Acción no válida']);
+    // 4. REACTIVAR
+    if ($accion === 'reactivarRPE') {
+        Autorizacion::exigir('rpe', 'reactivar');
+        $id = (int)($_POST['id_rpe'] ?? 0);
+        if ($id <= 0) {
+            ob_end_clean();
+            echo json_encode(['status' => 'error', 'message' => 'ID inválido']);
+            exit;
+        }
+        $res = $objCarga->reactivarRPE($id);
+        ob_end_clean();
+        
+        if ($res) {
+            Bitacora::registrar($id_usuario, 'RegistroRPE', 'REACTIVATE', $id, 'Restaurado desde papelera', null, null);
+            echo json_encode(['status' => 'success', 'message' => 'Registro reactivado exitosamente.']);
+        } else {
+            $err = $objCarga->obtenerErrores();
+            echo json_encode(['status' => 'error', 'message' => reset($err) ?: 'Error al reactivar.']);
+        }
+        exit;
+    }
+
+    // 5. ELIMINACIÓN FÍSICA PERMANENTE (solo si ya estaba en papelera)
+    if ($accion === 'eliminarFisicoRPE') {
+        Autorizacion::exigir('rpe', 'eliminardb');
+        $id = (int)($_POST['id_rpe'] ?? 0);
+        if ($id <= 0) {
+            ob_end_clean();
+            echo json_encode(['status' => 'error', 'message' => 'ID inválido']);
+            exit;
+        }
+        $res = $objCarga->eliminarFisicoRPE($id);
+        ob_end_clean();
+        
+        if ($res) {
+            Bitacora::registrar($id_usuario, 'RegistroRPE', 'DELETE_PHYSICAL', $id, 'Eliminación física', null, 'Registro borrado permanentemente');
+            echo json_encode(['status' => 'success', 'message' => 'Registro eliminado físicamente del sistema.']);
+        } else {
+            $err = $objCarga->obtenerErrores();
+            echo json_encode(['status' => 'error', 'message' => reset($err) ?: 'Error: No se pudo eliminar físicamente.']);
+        }
+        exit;
+    }
+
+    ob_end_clean();
+    echo json_encode(['status' => 'error', 'message' => 'Acción POST no soportada.']);
     exit;
 }

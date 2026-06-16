@@ -929,14 +929,14 @@ async function eliminarMarca(id_marca) {
         let datosDelete = new FormData();
         datosDelete.append('accion', 'eliminar');
         datosDelete.append('id_marca', id_marca);
-        datosDelete.append('motivo', alerta.value); 
+        datosDelete.append('motivo_eliminacion', alerta.value); 
         const resultado = await peticionAjax('eliminar', datosDelete);
         
         if (resultado && resultado.status === 'success') {
             UI.exito('Archivado', 'El registro y su justificación han sido guardados en el historial.');
             cargarTablaMarcas();
         } else {
-            UI.error('Error', resultado?.message || 'No se pudo desactivar el registro.');
+            UI.error('Error', resultado?.message || 'No se pudo Archivar el registro.');
         }
     }
 }

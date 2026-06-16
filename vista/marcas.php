@@ -184,7 +184,7 @@
                         
                         <div class="relative">
                             <i class="fas fa-search absolute left-3 top-3.5 text-gray-500"></i>
-                            <input type="text" id="inputBuscarAtleta" placeholder="Escriba nombre o cédula..." class="w-full input-dark pl-10 pr-4 py-3 rounded-xl text-sm" autocomplete="off" maxlength="50" required>
+                            <input type="text" id="inputBuscarAtleta" placeholder="Escriba nombre o cédula..." class="w-full input-dark pl-10 pr-4 py-3 rounded-xl text-sm" autocomplete="off" maxlength="40" required>
                             <button type="button" id="btnLimpiarAtleta" class="absolute right-3 top-3.5 text-gray-500 hover:text-red-400 hidden transition cursor-pointer">
                                 <i class="fas fa-times"></i>
                             </button>
