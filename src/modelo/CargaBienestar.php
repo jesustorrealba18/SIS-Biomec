@@ -198,26 +198,26 @@ class CargaBienestar extends Conexion {
         }
     }
 
-    /**
-     * Lista inconsistencias biológicas: RPE=1 con récord personal el mismo día
+   /**
+     * Detecta inconsistencias cruzando RPE = 1 con récords en marcas el mismo día.
      */
-    public function listarInconsistencias(): array {
+    public function auditarInconsistenciasBiologicas(int $id_atleta): array {
         try {
-            $sql = "SELECT r.id_rpe, r.fecha, r.id_atleta,
-                           CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta,
-                           m.estilo, m.distancia_m, m.tiempo_final_seg AS marca_segundos
+            // Unimos el módulo de salud con el módulo de rendimiento (RF-06)
+            $sql = "SELECT r.id_registro, r.fecha_registro, m.prueba 
                     FROM registro_rpe r
-                    JOIN atletas a ON r.id_atleta = a.id_atleta
-                    JOIN marcas m ON m.id_atleta = r.id_atleta AND m.fecha = r.fecha
-                    WHERE r.rpe = 1
-                      AND r.deleted_at IS NULL
-                      AND m.es_pb = 1
-                    ORDER BY r.fecha DESC";
+                    INNER JOIN marcas m ON r.id_atleta = m.id_atleta AND r.fecha_registro = m.fecha_competencia
+                    WHERE r.id_atleta = :id_atleta 
+                    AND r.rpe = 1 
+                    AND m.es_record = 1 
+                    AND r.activo = 1";
+                    
             $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Error listarInconsistencias: " . $e->getMessage());
+            error_log("Error auditando inconsistencias: " . $e->getMessage());
             return [];
         }
     }

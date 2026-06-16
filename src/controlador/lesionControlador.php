@@ -59,6 +59,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
+    if ($accion === 'verDetalle') {
+        ob_start(); // Buffer para proteger el JSON
+        $id_lesion = (int)($_GET['id_lesion'] ?? 0);
+        
+        $detalleLesion = $objLesion->obtenerPorId($id_lesion);
+        
+        // --- INYECCIÓN DE INTELIGENCIA ---
+        if ($detalleLesion) {
+            $promedioRPE = $objLesion->obtenerPromedioRPEPrevio($detalleLesion['id_atleta'], $detalleLesion['fecha_evento']);
+            $detalleLesion['rpe_promedio_3_dias'] = round($promedioRPE, 1);
+        }
+        
+        ob_end_clean();
+        echo json_encode(['status' => 'success', 'data' => $detalleLesion]);
+        exit;
+    }
+
     // Cargar la vista HTML por defecto
     require_once 'vista/lesion.php';
     exit;

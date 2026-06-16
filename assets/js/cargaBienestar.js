@@ -399,6 +399,36 @@ async function cargarTablaInconsistenciasRPE() {
     tbody.innerHTML = html;
 }
 
+// Función para anular con motivo automático pre-llenado
+async function anularPorInconsistencia(id_registro) {
+    const motivoAutomatico = "Inconsistencia biológica detectada: RPE (Reposo) incongruente con marcas de rendimiento (Récord) registradas este día.";
+    
+    // Mostramos un SweetAlert configurado para este caso especial
+    const confirmacion = await Swal.fire({
+        title: '¿Anular Registro Inválido?',
+        text: motivoAutomatico,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Sí, Anular y Auditar',
+        cancelButtonText: 'Mantener'
+    });
+
+    if (confirmacion.isConfirmed) {
+        let datos = new FormData();
+        datos.append('id_registro', id_registro);
+        datos.append('motivo', motivoAutomatico); // Se envía directamente al backend para el Soft Delete
+        
+        const res = await peticionAjax('?c=carga&accion=anular', datos, 'POST');
+        if (res.status === 'success') cargarTablaRPE();
+    }
+}
+
+// Al generar la tabla, si detectas la bandera 'inconsistencia', inyectas este botón:
+// <button onclick="anularPorInconsistencia(${registro.id_registro})" class="bg-red-500 text-white p-2 rounded animate-pulse shadow-[0_0_10px_red]">
+//     <i class="fas fa-exclamation-triangle"></i> Corregir Inconsistencia
+// </button>
+
 // ================== UTILIDAD ==================
 function formatearFecha(fechaISO) {
     if (!fechaISO) return '—';

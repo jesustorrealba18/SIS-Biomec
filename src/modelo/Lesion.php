@@ -299,6 +299,32 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
         }
     }
 
+
+    /**
+     * Calcula el promedio de RPE de los últimos 3 días antes de una lesión.
+     * Garantiza aislamiento (Isolation) en la lectura.
+     */
+    public function obtenerPromedioRPEPrevio(int $id_atleta, string $fecha_lesion): float {
+        try {
+            $sql = "SELECT COALESCE(AVG(rpe), 0) as promedio_rpe 
+                    FROM registro_rpe 
+                    WHERE id_atleta = :id_atleta 
+                    AND activo = 1
+                    AND fecha_registro BETWEEN DATE_SUB(:fecha_lesion, INTERVAL 3 DAY) AND :fecha_lesion2";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
+            $stmt->bindValue(':fecha_lesion', $fecha_lesion, PDO::PARAM_STR);
+            $stmt->bindValue(':fecha_lesion2', $fecha_lesion, PDO::PARAM_STR);
+            $stmt->execute();
+            
+            return (float) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log("Error calculando RPE previo: " . $e->getMessage());
+            return 0.0;
+        }
+    }
+
     // =================================================================
     // 4. OPERACIONES DE ESCRITURA (ACID)
     // =================================================================

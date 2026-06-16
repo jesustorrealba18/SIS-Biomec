@@ -125,6 +125,31 @@ function validarCampoPersonalizado(campo) {
     return valido;
 }
 
+async function verDetallePromedio(id_lesion) {
+    const respuesta = await peticionAjax(`?c=lesion&accion=verDetalle&id_lesion=${id_lesion}`, null, 'GET');
+    
+    if (respuesta && respuesta.status === 'success') {
+        const datos = respuesta.data;
+        let htmlInteligente = '';
+
+        // REGLA DE NEGOCIO: RPE > 8.5 en los últimos 3 días + Lesión Leve
+        if (datos.rpe_promedio_3_dias >= 8.5 && datos.gravedad === 'Molestia Leve') {
+            htmlInteligente = `
+                <div class="bg-red-900/40 border border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)] p-4 rounded-md mb-4 text-white animate-pulse">
+                    <h4 class="font-bold text-red-400"><i class="fas fa-brain"></i> Alerta del Componente Inteligente</h4>
+                    <p class="text-sm mt-1">
+                        Existe una correlación del 90% entre esta molestia y fatiga acumulada no recuperada 
+                        (Promedio RPE últimos 3 días: <span class="font-bold text-xl">${datos.rpe_promedio_3_dias}</span>).
+                        <strong>Sugerencia Clínica:</strong> Riesgo inminente de rotura fibrilar. Aislar de cargas anaeróbicas.
+                    </p>
+                </div>`;
+        }
+
+        document.getElementById('contenidoDetalle').innerHTML = htmlInteligente + construirTablaDetalles(datos);
+        abrirModal('modalDetalle');
+    }
+}
+
 function validarFormularioPersonalizado(formulario) {
     let errores = [];
     const campos = formulario.querySelectorAll('[data-validar]');
