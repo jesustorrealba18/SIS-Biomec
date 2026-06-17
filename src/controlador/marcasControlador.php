@@ -17,6 +17,7 @@ if (empty($_SESSION['id'])) {
 
 
 $objMarca = new Marca();
+$objAtleta = new Atleta();
 
 // =====================================================================
 // RUTAS GET: Para cargar vistas y pedir datos (Listados)
@@ -27,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // El Buscador Predictivo pide los atletas
     if ($accion === 'listarAtletasSelect') {
         header('Content-Type: application/json');
-        $objAtleta = new Atleta();
+        
         
         echo json_encode($objAtleta->listar());
         exit;
@@ -210,5 +211,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+    // =====================================================================
+    // RUTAS PARA LISTADOS DINÁMICOS EN CASCADA (AJAX POST)
+    // =====================================================================
+
+    $accionURL = $_GET['accion'] ?? ($_POST['accion'] ?? '');
+
+    // Listar Atletas Presentes en una Sesión
+    if ($accionURL === 'listarAtletasPorSesion') {
+        header('Content-Type: application/json');
+        
+        // Atrapamos el id_contexto que envía el FormData desde el JS
+        $id_sesion = (int)($_POST['id_contexto'] ?? 0);
+        
+        $atletas = $objAtleta->obtenerAtletasPorSesion($id_sesion);
+        echo json_encode($atletas);
+        exit;
+    }
+
+    // Listar Atletas Inscritos en un Evento
+    if ($accionURL === 'listarAtletasPorEvento') {
+        header('Content-Type: application/json');
+        
+        $id_evento = (int)($_POST['id_contexto'] ?? 0);
+        
+        $atletas = $objAtleta->obtenerAtletasPorEvento($id_evento);
+        echo json_encode($atletas);
+        exit;
+    }
+
+
 }
 

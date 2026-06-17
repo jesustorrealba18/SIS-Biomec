@@ -178,7 +178,45 @@
                 
                 <input type="hidden" id="id_marca" name="id_marca" value="">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-indigo-300 uppercase font-bold mb-2">Contexto de la Marca *</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-black/20 p-4 rounded-xl border border-white/5">
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Entrenamiento (Sesión)</label>
+                                <select id="id_sesion" name="id_sesion" class="w-full input-dark p-3 rounded-xl text-sm transition-all">
+                                    <option value="">Ninguna - No aplica</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">Competencia (Evento)</label>
+                                <select id="id_evento" name="id_evento" class="w-full input-dark p-3 rounded-xl text-sm transition-all">
+                                    <option value="">Ninguno - No aplica</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>      
+                    
                     <div class="relative">
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Atleta Participante *</label>
+                        <input type="hidden" id="id_atleta" name="id_atleta" data-validar="requerido" data-nombre="Atleta Seleccionado">
+                        
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-3.5 text-gray-500"></i>
+                            <input type="text" id="inputBuscarAtleta" disabled placeholder="Seleccione sesión o evento primero..." class="w-full input-dark pl-10 pr-4 py-3 rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all" autocomplete="off" maxlength="40" required>
+                            
+                            <button type="button" id="btnLimpiarAtleta" class="absolute right-3 top-3.5 text-gray-500 hover:text-red-400 hidden transition cursor-pointer">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div id="dropdownAtletas" class="absolute z-50 w-full mt-1 bg-[#111026] border border-[#252345] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] max-h-52 overflow-y-auto hidden transition-all">
+                            <ul id="ulAtletas" class="text-sm text-gray-300 divide-y divide-[#252345]"></ul>
+                        </div>
+                    </div>
+
+
+<!--                     <div class="relative">
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Atleta *</label>
                         <input type="hidden" id="id_atleta" name="id_atleta" data-validar="requerido" data-nombre="Atleta Seleccionado">
                         
@@ -194,13 +232,11 @@
                             <ul id="ulAtletas" class="text-sm text-gray-300 divide-y divide-[#252345]">
                                 </ul>
                         </div>
-                    </div>
-<?php
-// Define tu zona horaria local (ejemplo: America/New_York)
-date_default_timezone_set('America/Caracas'); 
-
-
-?>
+                    </div> -->
+                            <?php
+                            // Define tu zona horaria local (ejemplo: America/New_York)
+                            date_default_timezone_set('America/Caracas'); 
+                            ?>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Fecha del Registro *</label>
                         <input type="date" id="fecha" name="fecha"  max="<?php echo date('Y-m-d'); ?>" data-validar="requerido|fecha_reciente" required  data-nombre="Fecha" class="w-full input-dark p-3 rounded-xl text-sm font-mono">
@@ -248,7 +284,7 @@ date_default_timezone_set('America/Caracas');
                         </select>
                     </div>
 
-                    <div>
+                   <!--  <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Sesión de Entrenamiento (Opcional)</label>
                         <select id="id_sesion" name="id_sesion" class="w-full input-dark p-3 rounded-xl text-sm">
                             <option value="">Ninguna - No aplica</option>
@@ -260,7 +296,7 @@ date_default_timezone_set('America/Caracas');
                         <select id="id_evento" name="id_evento" class="w-full input-dark p-3 rounded-xl text-sm">
                             <option value="">Ninguno - No aplica</option>
                         </select>
-                    </div>
+                    </div> -->
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 p-4 bg-black/20 rounded-xl border border-white/5">

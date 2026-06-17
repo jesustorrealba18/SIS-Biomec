@@ -92,7 +92,7 @@ async function abrirModalMarca(id_marca = null) {
         modalMarca.firstElementChild.classList.remove('scale-95', 'opacity-0');
     }, 10);
 
-    cargarAtletasBuscador();
+    // cargarAtletasBuscador();
 
     // =====================================================================
     // MODO EDICIÓN: Si recibimos un ID, la función "Muta" el formulario
@@ -174,13 +174,13 @@ const ulAtletas = document.getElementById('ulAtletas');
 const inputIdOculto = document.getElementById('id_atleta');
 const btnLimpiar = document.getElementById('btnLimpiarAtleta');
 
-async function cargarAtletasBuscador() {
+/* async function cargarAtletasBuscador() {
     const respuesta = await peticionAjax('listarAtletasSelect');
     if (respuesta) {
         atletasGlobal = respuesta;
         
     }
-}
+} */
 
 // Función para dibujar los cuadritos de los atletas en la lista
 function renderizarDropdown(lista) {
@@ -279,9 +279,98 @@ document.addEventListener('click', (e) => {
 
 
 // =====================================================================
-// LÓGICA DE EXCLUSIVIDAD: SESIÓN VS EVENTO
+// LÓGICA DE EXCLUSIVIDAD Y CASCADA: SESIÓN / EVENTO -> ATLETAS
 // =====================================================================
 const selectSesion = document.getElementById('id_sesion');
+const selectEvento = document.getElementById('id_evento');
+
+function configurarExclusividadSelects() {
+    selectSesion.addEventListener('change', function() {
+        if (this.value !== "") {
+            // Bloqueamos evento
+            selectEvento.value = "";
+            selectEvento.disabled = true;
+            selectEvento.classList.add('opacity-30', 'cursor-not-allowed');
+            
+            // Cargar atletas de esta sesión
+            cargarAtletasPorContexto('sesion', this.value);
+        } else {
+            // Liberamos evento
+            selectEvento.disabled = false;
+            selectEvento.classList.remove('opacity-30', 'cursor-not-allowed');
+            resetearBuscadorAtleta();
+        }
+    });
+
+    selectEvento.addEventListener('change', function() {
+        if (this.value !== "") {
+            // Bloqueamos sesión
+            selectSesion.value = "";
+            selectSesion.disabled = true;
+            selectSesion.classList.add('opacity-30', 'cursor-not-allowed');
+            
+            // Cargar atletas de este evento
+            cargarAtletasPorContexto('evento', this.value);
+        } else {
+            // Liberamos sesión
+            selectSesion.disabled = false;
+            selectSesion.classList.remove('opacity-30', 'cursor-not-allowed');
+            resetearBuscadorAtleta();
+        }
+    });
+}
+
+// =====================================================================
+// NUEVAS FUNCIONES PARA EL BUSCADOR PREDICTIVO EN CASCADA
+// =====================================================================
+
+async function cargarAtletasPorContexto(tipo, id_contexto, preseleccionarAtleta = null) {
+    // 1. Damos feedback visual mientras carga
+    inputBuscar.disabled = true;
+    inputBuscar.placeholder = "Cargando atletas confirmados...";
+    btnLimpiar.click(); // Limpiamos el buscador si había alguien
+    atletasGlobal = []; // Vaciamos la caché anterior
+
+    // 2. Pedimos los datos al backend
+    const accion = tipo === 'sesion' ? 'listarAtletasPorSesion' : 'listarAtletasPorEvento';
+    const datos = new FormData();
+    datos.append('id_contexto', id_contexto);
+
+    const respuesta = await peticionAjax(accion, datos);
+
+    // 3. Llenamos el buscador predictivo
+    if (respuesta && respuesta.length > 0) {
+        atletasGlobal = respuesta; // Llenamos tu caché
+        inputBuscar.disabled = false;
+        inputBuscar.placeholder = "Escriba nombre o cédula...";
+        
+        // Si estamos editando un registro viejo, lo autoseleccionamos
+        if (preseleccionarAtleta) {
+            seleccionarAtleta(preseleccionarAtleta);
+        } else {
+            inputBuscar.focus();
+        }
+    } else {
+        inputBuscar.disabled = true;
+        inputBuscar.placeholder = `No hay atletas confirmados en este ${tipo}.`;
+    }
+}
+
+function resetearBuscadorAtleta() {
+    atletasGlobal = [];
+    btnLimpiar.click();
+    inputBuscar.disabled = true;
+    inputBuscar.placeholder = "Seleccione sesión o evento primero...";
+}
+
+// IMPORTANTE: Ya NO llames a cargarAtletasBuscador() en tu DOMContentLoaded. 
+// Bórrala, porque ahora se cargan dinámicamente con cargarAtletasPorContexto().
+
+
+// =====================================================================
+// LÓGICA DE EXCLUSIVIDAD: SESIÓN VS EVENTO
+// =====================================================================
+/* const selectSesion = document.getElementById('id_sesion');
 const selectEvento = document.getElementById('id_evento');
 
 function configurarExclusividadSelects() {
@@ -310,10 +399,10 @@ function configurarExclusividadSelects() {
             selectSesion.classList.remove('opacity-30', 'cursor-not-allowed');
         }
     });
-}
+} */
 
 // =====================================================================
-// CARGA DINÁMICA DE LOS SELECTS
+// CARGA DINÁMICA DE LOS SELECTS Eventos y Sesiones
 // =====================================================================
 async function cargarSelectsContexto() {
     // 1. Cargar Sesiones (Solo mostramos las completadas o relevantes para toma de marcas)

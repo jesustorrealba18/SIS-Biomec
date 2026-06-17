@@ -461,6 +461,53 @@ class Atleta extends Conexion {
     }
 } 
 
+/**
+     * Obtiene los atletas que asistieron ('Presente') a un entrenamiento específico
+     */
+    public function obtenerAtletasPorSesion(int $id_sesion): array {
+        try {
+            // Unimos Atletas con Asistencia y filtramos por los Presentes
+            $sql = "SELECT a.id_atleta, a.nombres, a.apellidos, a.cedula 
+                    FROM atletas a
+                    INNER JOIN asistencia asi ON a.id_atleta = asi.id_atleta
+                    WHERE asi.id_sesion = :id_sesion 
+                    AND asi.estado = 'Presente'
+                    ORDER BY a.nombres ASC";
+                    
+            $stmt = $this->pdo->prepare($sql);
+            $this->vincular($stmt, ':id_sesion', $id_sesion, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Error al listar atletas por sesión: " . $e->getMessage());
+            return []; // Retornamos arreglo vacío en caso de error para no romper el JS
+        }
+    }
+
+    /**
+     * Obtiene los atletas que están inscritos formalmente en un evento
+     */
+    public function obtenerAtletasPorEvento(int $id_evento): array {
+        try {
+            // Unimos Atletas con evento_inscripcion
+            $sql = "SELECT a.id_atleta, a.nombres, a.apellidos, a.cedula 
+                    FROM atletas a
+                    INNER JOIN evento_inscripcion ei ON a.id_atleta = ei.id_atleta
+                    WHERE ei.id_evento = :id_evento
+                    ORDER BY a.nombres ASC";
+                    
+            $stmt = $this->pdo->prepare($sql);
+            $this->vincular($stmt, ':id_evento', $id_evento, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Error al listar atletas por evento: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function procesarFoto(array $archivo, ?string $fotoActual = null): ?string {
         if ($archivo['error'] === UPLOAD_ERR_NO_FILE || !isset($archivo['tmp_name'])) {
             return $fotoActual;
