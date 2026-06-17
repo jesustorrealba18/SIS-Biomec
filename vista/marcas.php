@@ -18,6 +18,7 @@
         ::-webkit-scrollbar-track { background: #0f0d23; }
         ::-webkit-scrollbar-thumb { background: #252345; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
+        .input-dark::-webkit-calendar-picker-indicator {filter: invert(1);  /* convierte el icono negro en blanco */ }
     </style>
 </head>
 <body class="flex min-h-screen bg-[#0f0d23]">

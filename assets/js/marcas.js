@@ -78,7 +78,7 @@ document.addEventListener('keydown', (e) => {
 // =====================================================================
 // ABRIR MODAL (INTELIGENTE: ORQUESTA EL CREATE Y EL UPDATE)
 // =====================================================================
-async function abrirModalMarca(id_marca = null) {
+/* async function abrirModalMarca(id_marca = null) {
     formMarca.reset(); 
     try { Validador.limpiarEstilos(formMarca); } catch(e) {}
     
@@ -117,6 +117,19 @@ async function abrirModalMarca(id_marca = null) {
         }
 
         document.getElementById('id_marca').value = data.id_marca;
+
+        if (data.id_sesion) {
+            document.getElementById('id_sesion').value = data.id_sesion;
+            document.getElementById('id_evento').disabled = true;
+            // Cargamos los atletas de esa sesión, pasando el id del atleta a seleccionar
+            await cargarAtletasPorContexto('sesion', data.id_sesion, data.id_atleta);
+        } else if (data.id_evento) {
+            document.getElementById('id_evento').value = data.id_evento;
+            document.getElementById('id_sesion').disabled = true;
+            await cargarAtletasPorContexto('evento', data.id_evento, data.id_atleta);
+        }
+
+
         
         document.querySelector('[name="fecha"]').value = data.fecha;
         document.querySelector('[name="estilo"]').value = data.estilo;
@@ -130,15 +143,15 @@ async function abrirModalMarca(id_marca = null) {
 
         document.querySelector('[name="tiempo_reaccion_seg"]').value = data.tiempo_reaccion_seg || '';
         document.querySelector('[name="tiempo_viraje_seg"]').value = data.tiempo_viraje_seg || '';
-        document.querySelector('[name="nivel_evento"]').value = data.nivel_evento;
+        //document.querySelector('[name="nivel_evento"]').value = data.nivel_evento;
         document.querySelector('[name="observaciones"]').value = data.observaciones || '';
 
        
-        document.getElementById('id_atleta').value = data.id_atleta;
-        inputAtleta.value = `${data.nombre_atleta} (CI: ${data.cedula})`;
+        //document.getElementById('id_atleta').value = data.id_atleta;
+        //inputAtleta.value = `${data.nombre_atleta} (CI: ${data.cedula})`;
         
-        inputAtleta.readOnly = true; 
-        inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-800'); 
+        //inputAtleta.readOnly = true; 
+        //inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-800'); 
         document.getElementById('btnLimpiarAtleta').classList.add('hidden'); 
 
 
@@ -165,6 +178,135 @@ async function abrirModalMarca(id_marca = null) {
 
         document.getElementById('accion_form').value = 'actualizar';
         
+        btnGuardar.innerHTML = 'ACTUALIZAR REGISTRO <i class="fas fa-sync-alt ml-2"></i>';
+        btnGuardar.classList.replace('bg-indigo-600', 'bg-emerald-600');
+        btnGuardar.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-500');
+    }
+} */
+
+    // =====================================================================
+// ABRIR MODAL (INTELIGENTE: ORQUESTA EL CREATE Y EL UPDATE)
+// =====================================================================
+async function abrirModalMarca(id_marca = null) {
+    // 1. Limpieza inicial del modal
+    formMarca.reset(); 
+    try { Validador.limpiarEstilos(formMarca); } catch(e) {}
+    resetearContexto(); // Aprovechamos la función que ya creaste para limpiar los selects y el buscador
+    
+    document.getElementById('id_marca').value = '';
+    document.getElementById('accion_form').value = 'registrar';
+    
+    const btnGuardar = document.getElementById('btnGuardar');
+    btnGuardar.innerHTML = 'GUARDAR REGISTRO <i class="fas fa-save ml-2"></i>';
+    btnGuardar.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+    btnGuardar.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+    
+    const rejillaSplits = document.getElementById('rejillaSplits');
+    if(rejillaSplits) rejillaSplits.innerHTML = '';
+
+    modalMarca.classList.remove('hidden');
+    setTimeout(() => {
+        modalMarca.firstElementChild.classList.remove('scale-95', 'opacity-0');
+    }, 10);
+
+    // =====================================================================
+    // MODO EDICIÓN: La función "Muta" el formulario y recrea el estado
+    // =====================================================================
+    if (id_marca) {
+        const data = await peticionAjax(`obtenerDetalleMarca&id=${id_marca}`);
+        
+        if (!data) {
+            UI.error('Error', 'No se pudieron cargar los datos para edición.');
+            cerrarModalMarca();
+            return;
+        }
+
+        document.getElementById('id_marca').value = data.id_marca;
+
+        // --- INICIO DE RECREACIÓN DE CONTEXTO (CASCADA Y FECHAS) ---
+        const selectSesion = document.getElementById('id_sesion');
+        const selectEvento = document.getElementById('id_evento');
+        const inputFecha = document.getElementById('fecha');
+
+        // Armamos el objeto del atleta para el buscador predictivo
+        // Nota: Asegúrate de que tu PHP devuelva estos campos en obtenerDetalleMarca
+        const atletaPreseleccionado = {
+            id_atleta: data.id_atleta,
+            nombres: data.atleta_nombres || data.nombres, 
+            apellidos: data.atleta_apellidos || data.apellidos,
+            cedula: data.atleta_cedula || data.cedula
+        };
+
+        if (data.id_sesion) {
+            // Recrear estado de Sesión
+            selectSesion.value = data.id_sesion;
+            selectEvento.disabled = true;
+            selectEvento.classList.add('opacity-30', 'cursor-not-allowed');
+
+            inputFecha.value = data.fecha;
+            inputFecha.readOnly = true;
+            inputFecha.classList.add('opacity-70', 'pointer-events-none');
+
+            await cargarAtletasPorContexto('sesion', data.id_sesion, atletaPreseleccionado);
+
+        } else if (data.id_evento) {
+            // Recrear estado de Evento
+            selectEvento.value = data.id_evento;
+            selectSesion.disabled = true;
+            selectSesion.classList.add('opacity-30', 'cursor-not-allowed');
+
+            // Extraer min y max del option de este evento para blindar el input fecha
+            const optionEvento = selectEvento.options[selectEvento.selectedIndex];
+            inputFecha.value = data.fecha;
+            inputFecha.min = optionEvento.getAttribute('data-inicio');
+            inputFecha.max = optionEvento.getAttribute('data-fin');
+            inputFecha.readOnly = false;
+            inputFecha.classList.remove('opacity-70', 'pointer-events-none');
+
+            await cargarAtletasPorContexto('evento', data.id_evento, atletaPreseleccionado);
+        }
+        // --- FIN DE RECREACIÓN DE CONTEXTO ---
+
+        // Llenar datos básicos
+        document.querySelector('[name="estilo"]').value = data.estilo;
+        document.querySelector('[name="tiempo_final_seg"]').value = data.tiempo_final_seg;
+        
+        if (typeof formatearTiempoDesdeSegundos === 'function') {
+            document.getElementById('tiempo_final_humano').value = formatearTiempoDesdeSegundos(data.tiempo_final_seg);
+        } else {
+            document.getElementById('tiempo_final_humano').value = data.tiempo_final_seg;
+        }
+
+        document.querySelector('[name="tiempo_reaccion_seg"]').value = data.tiempo_reaccion_seg || '';
+        document.querySelector('[name="tiempo_viraje_seg"]').value = data.tiempo_viraje_seg || '';
+        document.querySelector('[name="observaciones"]').value = data.observaciones || '';
+
+        // Llenamos el SWOLF
+        const inputBrazadas = document.querySelector('[name="brazadas_por_largo"]');
+        if (inputBrazadas) {
+            inputBrazadas.value = data.swolf_data ? data.swolf_data.num_brazadas : '';
+        }
+
+        // Llenar y disparar cálculos de distancias y splits
+        const selectDistancia = document.querySelector('[name="distancia_m"]');
+        const selectPiscina = document.querySelector('[name="tipo_piscina"]');
+        
+        selectDistancia.value = data.distancia_m;
+        selectPiscina.value = data.tipo_piscina;
+
+        // Al disparar el change, se construye la rejilla de splits vacía en el DOM
+        selectDistancia.dispatchEvent(new Event('change'));
+
+        // Llenar los splits construidos
+        if (data.splits && data.splits.length > 0) {
+            data.splits.forEach(split => {
+                const inputSplit = document.querySelector(`[name="splits[${split.distancia_parcial_m}]"]`);
+                if (inputSplit) inputSplit.value = split.tiempo_parcial_seg;
+            });
+        }
+
+        // Mutar visualmente el botón
+        document.getElementById('accion_form').value = 'actualizar';
         btnGuardar.innerHTML = 'ACTUALIZAR REGISTRO <i class="fas fa-sync-alt ml-2"></i>';
         btnGuardar.classList.replace('bg-indigo-600', 'bg-emerald-600');
         btnGuardar.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-500');
@@ -339,38 +481,33 @@ function configurarExclusividadSelects() {
         }
     });
 
-inputFecha.addEventListener('change', function() {
-    const value = this.value;
-    if (!value) return;
+// Usamos 'blur' (pérdida de foco) en lugar de 'change' para no interrumpir al usuario mientras teclea
+    inputFecha.addEventListener('blur', function() {
+        const value = this.value;
+        if (!value) return; 
 
-    // 1. Asegurar formato YYYY-MM-DD (año de 4 dígitos)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        // Si no cumple el formato, no hacemos nada (podría estar escribiendo)
-        return;
-    }
+        // 1. Extraemos el año para bloquear años absurdos (como 0002) que el navegador deja pasar
+        const year = parseInt(value.split('-')[0]);
+        if (year < 2000 || year > 2100) {
+            UI.error('Año Inválido', 'Por favor, ingrese un año lógico y real.');
+            this.value = this.max || this.min; // Lo forzamos a un límite seguro
+            return;
+        }
 
-    // 2. Validar que la fecha sea real (ej. 31 de febrero)
-    const date = new Date(value);
-    if (isNaN(date.getTime())) {
-        UI.error('Fecha Inválida', 'La fecha ingresada no es válida.');
-        // No forzamos nada, dejamos que corrija
-        return;
-    }
+        // 2. Validar límite inferior (Min)
+        if (this.min && value < this.min) {
+            UI.error('Fecha Inválida', 'La fecha ingresada es anterior al inicio del evento.');
+            this.value = this.min;
+            return;
+        }
 
-    // 3. Validar límite inferior
-    if (this.min && value < this.min) {
-        UI.error('Fecha Inválida', 'La fecha ingresada es anterior al inicio del evento.');
-        this.value = this.min;
-        return;
-    }
-
-    // 4. Validar límite superior
-    if (this.max && value > this.max) {
-        UI.error('Fecha Inválida', 'La fecha ingresada es en el futuro o posterior al evento.');
-        this.value = this.max;
-        return;
-    }
-});
+        // 3. Validar límite superior (Max)
+        if (this.max && value > this.max) {
+            UI.error('Fecha Inválida', 'La fecha ingresada es en el futuro o posterior al evento.');
+            this.value = this.max;
+            return;
+        }
+    });
 }
 
 function resetearContexto() {

@@ -65,8 +65,7 @@ class Marca extends Conexion {
         $this->requerido((string)($this->datos['tipo_piscina'] ?? ''), 'tipo_piscina');
         $this->requerido((string)($this->datos['tiempo_final_seg'] ?? ''), 'tiempo_final_seg');
         $this->requerido((string)($this->datos['fecha'] ?? ''), 'fecha');
-        $this->requerido((string)($this->datos['nivel_evento'] ?? ''), 'nivel_evento');
-
+        
 
 
         if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {
@@ -82,7 +81,7 @@ class Marca extends Conexion {
     /**
      * Valida reglas que son exclusivas de Marcas
      */
-    private function validarReglasDeNegocio(): bool {
+/*     private function validarReglasDeNegocio(): bool {
 
         // Validamos la regla XOR (O es sesión, o es evento, no ambas)
         if (!empty($this->datos['id_sesion'] ?? null) && !empty($this->datos['id_evento'] ?? null)) {
@@ -91,6 +90,63 @@ class Marca extends Conexion {
         }
 
         // Aquí puedes agregar más if() con reglas personalizadas en el futuro...
+
+        return empty($this->obtenerErrores());
+    } */
+
+
+    /**
+     * Valida reglas que son exclusivas de Marcas e Integridad Logística
+     */
+    private function validarReglasDeNegocio(): bool {
+        
+        $id_sesion = $this->datos['id_sesion'] ?? null;
+        $id_evento = $this->datos['id_evento'] ?? null;
+        $id_atleta = $this->datos['id_atleta'] ?? null;
+
+        // Regla 1: Validar la regla XOR Estricta
+        if (!empty($id_sesion) && !empty($id_evento)) {
+            $this->agregarError('contexto', 'Una marca no puede pertenecer a un entrenamiento y competencia a la vez.');
+        } elseif (empty($id_sesion) && empty($id_evento)) {
+            $this->agregarError('contexto', 'Debe especificar si la marca se registró durante una sesión de entrenamiento o un evento competitivo.');
+        }
+
+        // Regla 2: Integridad Logística (Validar Asistencia Real a la Sesión)
+        if (!empty($id_sesion) && !empty($id_atleta)) {
+            $sqlAsistencia = "SELECT estado FROM asistencia WHERE id_sesion = :sesion AND id_atleta = :atleta";
+            $stmtA = $this->pdo->prepare($sqlAsistencia);
+
+             $mapaAsis = [
+                ':sesion' => ['id_sesion', PDO::PARAM_INT],
+                ':atleta'    => ['id_atleta', PDO::PARAM_INT]
+            ];
+
+            $this->autoBind($stmtA, $mapaAsis, $this->datos); 
+            
+            $stmtA->execute(); 
+            
+
+            $estado_asistencia = $stmtA->fetchColumn();
+
+            if (!$estado_asistencia || $estado_asistencia !== 'Presente') {
+                // Si el profesor inyectó un ID por consola, el sistema lo atrapa aquí
+                $this->agregarError('integridad_asistencia', 'Fraude Logístico: El atleta seleccionado no figura como "Presente" en la lista de asistencia de esta sesión.');
+            }
+        }
+
+        // Regla 3: Integridad Logística (Validar Inscripción al Evento)
+        // NOTA: Aquí asumo que tienes una tabla llamada 'inscripciones_evento'. Adapta el nombre.
+        if (!empty($id_evento) && !empty($id_atleta)) {
+            $sqlEvento = "SELECT COUNT(*) FROM evento_inscripcion WHERE id_evento = :evento AND id_atleta = :atleta";
+            $stmtE = $this->pdo->prepare($sqlEvento);
+            $stmtE->bindValue(':evento', (int)$this->datos['id_evento'], PDO::PARAM_INT);
+            $stmtE->bindValue(':atleta', (int)$this->datos['id_atleta'], PDO::PARAM_INT);
+            $stmtE->execute();
+
+            if ($stmtE->fetchColumn() == 0) {
+                $this->agregarError('integridad_evento', 'Fraude Logístico: El atleta seleccionado no se encuentra formalmente inscrito en este evento.');
+            }
+        }
 
         return empty($this->obtenerErrores());
     }
@@ -199,8 +255,8 @@ class Marca extends Conexion {
             // -------------------------------------------------------------
             // INSERTAR EN TABLA PRINCIPAL: `marcas`
             // -------------------------------------------------------------
-            $sqlInsert = "INSERT INTO marcas (id_atleta, id_sesion, id_evento, estilo, distancia_m, tipo_piscina, tiempo_final_seg, tiempo_reaccion_seg, tiempo_viraje_seg, nivel_evento, es_pb, fecha, observaciones) 
-                          VALUES (:id_atleta, :id_sesion, :id_evento, :estilo, :distancia, :piscina, :tiempo, :reaccion, :viraje, :nivel, :es_pb, :fecha, :obs)";
+            $sqlInsert = "INSERT INTO marcas (id_atleta, id_sesion, id_evento, estilo, distancia_m, tipo_piscina, tiempo_final_seg, tiempo_reaccion_seg, tiempo_viraje_seg, es_pb, fecha, observaciones) 
+                          VALUES (:id_atleta, :id_sesion, :id_evento, :estilo, :distancia, :piscina, :tiempo, :reaccion, :viraje, :es_pb, :fecha, :obs)";
             
             $stmt = $this->pdo->prepare($sqlInsert);
             
@@ -215,7 +271,7 @@ class Marca extends Conexion {
                 ':tiempo'    => ['tiempo_final_seg', PDO::PARAM_STR],
                 ':reaccion'  => ['tiempo_reaccion_seg', PDO::PARAM_STR],
                 ':viraje'    => ['tiempo_viraje_seg', PDO::PARAM_STR],
-                ':nivel'     => ['nivel_evento', PDO::PARAM_STR],
+            //    ':nivel'     => ['nivel_evento', PDO::PARAM_STR],
                 ':es_pb'     => ['es_pb_local', PDO::PARAM_INT], 
                 ':fecha'     => ['fecha', PDO::PARAM_STR],
                 ':obs'       => ['observaciones', PDO::PARAM_STR]
@@ -337,7 +393,7 @@ class Marca extends Conexion {
                             id_sesion = :id_sesion, id_evento = :id_evento, estilo = :estilo, 
                             distancia_m = :distancia, tipo_piscina = :piscina, tiempo_final_seg = :tiempo, 
                             tiempo_reaccion_seg = :reaccion, tiempo_viraje_seg = :viraje, 
-                            nivel_evento = :nivel, es_pb = :es_pb, fecha = :fecha, observaciones = :obs
+                            es_pb = :es_pb, fecha = :fecha, observaciones = :obs
                           WHERE id_marca = :id_marca_condicion";
             
             $stmt = $this->pdo->prepare($sqlUpdate);
@@ -351,7 +407,7 @@ class Marca extends Conexion {
                 ':tiempo'    => ['tiempo_final_seg', PDO::PARAM_STR],
                 ':reaccion'  => ['tiempo_reaccion_seg', PDO::PARAM_STR],
                 ':viraje'    => ['tiempo_viraje_seg', PDO::PARAM_STR],
-                ':nivel'     => ['nivel_evento', PDO::PARAM_STR],
+                //':nivel'     => ['nivel_evento', PDO::PARAM_STR],
                 ':es_pb'     => ['es_pb_local', PDO::PARAM_INT], 
                 ':fecha'     => ['fecha', PDO::PARAM_STR],
                 ':obs'       => ['observaciones', PDO::PARAM_STR],
@@ -554,7 +610,7 @@ class Marca extends Conexion {
     public function obtenerDetallePorId(int $id_marca): ?array {
         
         try {
-            $sqlBase = "SELECT m.*, CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta, a.cedula 
+            $sqlBase = "SELECT m.*, a.nombres as atleta_nombres, a.apellidos as atleta_apellidos, a.cedula 
                         FROM marcas m 
                         INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
                         WHERE m.id_marca = :id_marca";
