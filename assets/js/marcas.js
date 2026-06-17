@@ -24,6 +24,14 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
+function obtenerFechaLocal() {
+    const fecha = new Date();
+    const año = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    return `${año}-${mes}-${dia}`;
+}
+
 
 // =====================================================================
 // MANEJO DE LA INTERFAZ (MODAL)
@@ -35,6 +43,8 @@ function cerrarModalMarca() {
     
     // 1. Resetear el formulario tradicional
     formMarca.reset();
+
+    resetearContexto();
     
     // 2. Limpiar el contenedor dinámico de Splits (RF-06)
     document.getElementById('rejillaSplits').innerHTML = '';
@@ -285,6 +295,104 @@ const selectSesion = document.getElementById('id_sesion');
 const selectEvento = document.getElementById('id_evento');
 
 function configurarExclusividadSelects() {
+    const inputFecha = document.getElementById('fecha');
+
+    selectSesion.addEventListener('change', function() {
+        if (this.value !== "") {
+            // 1. Bloqueamos evento
+            selectEvento.value = "";
+            selectEvento.disabled = true;
+            selectEvento.classList.add('opacity-30', 'cursor-not-allowed');
+            
+            // 2. LÓGICA DE FECHA (Autollenado estricto)
+            const optionSeleccionada = this.options[this.selectedIndex];
+            inputFecha.value = optionSeleccionada.getAttribute('data-fecha');
+            inputFecha.readOnly = true; // El entrenador no puede cambiar la fecha de una sesión
+            inputFecha.classList.add('opacity-70', 'pointer-events-none');
+            
+            // 3. Cargar atletas
+            cargarAtletasPorContexto('sesion', this.value);
+        } else {
+            resetearContexto();
+        }
+    });
+
+    selectEvento.addEventListener('change', function() {
+        if (this.value !== "") {
+            // 1. Bloqueamos sesión
+            selectSesion.value = "";
+            selectSesion.disabled = true;
+            selectSesion.classList.add('opacity-30', 'cursor-not-allowed');
+            
+            // 2. LÓGICA DE FECHA (Rango permitido)
+            const optionSeleccionada = this.options[this.selectedIndex];
+            inputFecha.value = ""; // Limpiamos para que elija
+            inputFecha.min = optionSeleccionada.getAttribute('data-inicio');
+            inputFecha.max = optionSeleccionada.getAttribute('data-fin');
+            inputFecha.readOnly = false; // Aquí sí puede elegir (ej. un evento dura 3 días)
+            inputFecha.classList.remove('opacity-70', 'pointer-events-none');
+            
+            // 3. Cargar atletas
+            cargarAtletasPorContexto('evento', this.value);
+        } else {
+            resetearContexto();
+        }
+    });
+
+inputFecha.addEventListener('change', function() {
+    const value = this.value;
+    if (!value) return;
+
+    // 1. Asegurar formato YYYY-MM-DD (año de 4 dígitos)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        // Si no cumple el formato, no hacemos nada (podría estar escribiendo)
+        return;
+    }
+
+    // 2. Validar que la fecha sea real (ej. 31 de febrero)
+    const date = new Date(value);
+    if (isNaN(date.getTime())) {
+        UI.error('Fecha Inválida', 'La fecha ingresada no es válida.');
+        // No forzamos nada, dejamos que corrija
+        return;
+    }
+
+    // 3. Validar límite inferior
+    if (this.min && value < this.min) {
+        UI.error('Fecha Inválida', 'La fecha ingresada es anterior al inicio del evento.');
+        this.value = this.min;
+        return;
+    }
+
+    // 4. Validar límite superior
+    if (this.max && value > this.max) {
+        UI.error('Fecha Inválida', 'La fecha ingresada es en el futuro o posterior al evento.');
+        this.value = this.max;
+        return;
+    }
+});
+}
+
+function resetearContexto() {
+    // Liberar evento
+    selectEvento.disabled = false;
+    selectEvento.classList.remove('opacity-30', 'cursor-not-allowed');
+    // Liberar sesión
+    selectSesion.disabled = false;
+    selectSesion.classList.remove('opacity-30', 'cursor-not-allowed');
+    
+    // Liberar Fecha
+   const inputFecha = document.getElementById('fecha');
+    inputFecha.value = "";
+    inputFecha.min = "";
+    inputFecha.max = obtenerFechaLocal(); // ¡Adiós al .toISOString()!
+    inputFecha.readOnly = false;
+    inputFecha.classList.remove('opacity-70', 'pointer-events-none');
+
+    resetearBuscadorAtleta();
+}
+
+/* function configurarExclusividadSelects() {
     selectSesion.addEventListener('change', function() {
         if (this.value !== "") {
             // Bloqueamos evento
@@ -318,7 +426,7 @@ function configurarExclusividadSelects() {
             resetearBuscadorAtleta();
         }
     });
-}
+} */
 
 // =====================================================================
 // NUEVAS FUNCIONES PARA EL BUSCADOR PREDICTIVO EN CASCADA
@@ -404,7 +512,7 @@ function configurarExclusividadSelects() {
 // =====================================================================
 // CARGA DINÁMICA DE LOS SELECTS Eventos y Sesiones
 // =====================================================================
-async function cargarSelectsContexto() {
+/* async function cargarSelectsContexto() {
     // 1. Cargar Sesiones (Solo mostramos las completadas o relevantes para toma de marcas)
     const resSesiones = await peticionAjax('listarSesionesSelect');
     if (resSesiones && resSesiones.length > 0) {
@@ -420,6 +528,32 @@ async function cargarSelectsContexto() {
         selectEvento.innerHTML = '<option value="">Ninguno - No aplica</option>';
         resEventos.forEach(e => {
             selectEvento.innerHTML += `<option value="${e.id_evento}">${e.nombre}| ${e.tipo} (${e.nivel})| ${formatearFecha(e.fecha_inicio)} - ${formatearFecha(e.fecha_fin)} </option>`;
+        });
+    }
+} */
+
+
+// =====================================================================
+// CARGA DINÁMICA DE LOS SELECTS (CON ATRIBUTOS DE FECHA)
+// =====================================================================
+async function cargarSelectsContexto() {
+    // 1. Cargar Sesiones
+    const resSesiones = await peticionAjax('listarSesionesSelect');
+    if (resSesiones && resSesiones.length > 0) {
+        selectSesion.innerHTML = '<option value="">Ninguna - No aplica</option>';
+        resSesiones.forEach(s => {
+            // INYECTAMOS data-fecha
+            selectSesion.innerHTML += `<option value="${s.id_sesion}" data-fecha="${s.fecha}">${formatearFecha(s.fecha)} | ${s.grupo_nombre} (${s.tipo_sesion})</option>`;
+        });
+    }
+
+    // 2. Cargar Eventos
+    const resEventos = await peticionAjax('listarEventosSelect');
+    if (resEventos && resEventos.length > 0) {
+        selectEvento.innerHTML = '<option value="">Ninguno - No aplica</option>';
+        resEventos.forEach(e => {
+            // INYECTAMOS data-inicio y data-fin
+            selectEvento.innerHTML += `<option value="${e.id_evento}" data-inicio="${e.fecha_inicio}" data-fin="${e.fecha_fin}">${e.nombre} | ${e.tipo} (${e.nivel})</option>`;
         });
     }
 }
@@ -1064,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarTablaMarcas();
 
    // Bloqueo Inteligente del Calendario de Marcas (Corregido Zona Horaria)
-    const inputFecha = document.getElementById('fecha');
+  /*   const inputFecha = document.getElementById('fecha');
     if (inputFecha) {
         const hoy = new Date();
         const haceUnMes = new Date();
@@ -1080,6 +1214,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         inputFecha.max = formatoLocalISO(hoy);
         inputFecha.min = formatoLocalISO(haceUnMes);
-    }
+    } */
 
 });

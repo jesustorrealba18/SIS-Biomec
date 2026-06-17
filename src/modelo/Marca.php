@@ -488,12 +488,21 @@ class Marca extends Conexion {
 
         try {
             $sql = "SELECT m.id_marca, m.estilo, m.distancia_m, m.tipo_piscina, 
+                        m.tiempo_final_seg, m.fecha, m.es_pb, 
+                        IF(m.id_evento IS NOT NULL, e.tipo, 'Control') AS nivel_evento,
+                        CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta, a.cedula 
+                    FROM marcas m 
+                    LEFT JOIN eventos e ON m.id_evento = e.id_evento
+                    INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
+                    WHERE m.estado = :estado";
+
+            /*  $sql = "SELECT m.id_marca, m.estilo, m.distancia_m, m.tipo_piscina, 
                         m.tiempo_final_seg, m.nivel_evento, m.fecha, m.es_pb, 
                         CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta, a.cedula 
                     FROM marcas m 
                     INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
-                    WHERE m.estado = :estado";
-            
+                    WHERE m.estado = :estado";        
+             */
            
             if ($id_atleta > 0) {
                 $sql .= " AND m.id_atleta = :id_atleta";

@@ -274,7 +274,7 @@
                         </select>
                     </div>
 
-                    <div>
+                   <!--  <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Nivel / Contexto *</label>
                         <select id="nivel_evento" name="nivel_evento" data-validar="requerido" data-nombre="Nivel del Evento" class="w-full input-dark p-3 rounded-xl text-sm">
                             <option value="Control">Control Técnico Interno</option>
@@ -282,7 +282,7 @@
                             <option value="Nacional">Campeonato Nacional</option>
                             <option value="Internacional">Cita Internacional</option>
                         </select>
-                    </div>
+                    </div> -->
 
                    <!--  <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Sesión de Entrenamiento (Opcional)</label>
