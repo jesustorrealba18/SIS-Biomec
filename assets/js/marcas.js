@@ -223,7 +223,57 @@ async function abrirModalMarca(id_marca = null) {
 
         document.getElementById('id_marca').value = data.id_marca;
 
-        // --- INICIO DE RECREACIÓN DE CONTEXTO (CASCADA Y FECHAS) ---
+       // --- INICIO DE MODO INMUTABLE (BLOQUEO INTELIGENTE) ---
+        const selectSesion = document.getElementById('id_sesion');
+        const selectEvento = document.getElementById('id_evento');
+        const inputAtleta = document.getElementById('inputBuscarAtleta');
+        const inputFecha = document.getElementById('fecha');
+
+        // 1. CONGELAR CONTEXTO (El "Falso Disabled" para los select)
+        if (data.id_sesion) {
+            selectSesion.value = data.id_sesion;
+        } else if (data.id_evento) {
+            selectEvento.value = data.id_evento;
+        }
+        
+        // Aseguramos que NO estén disabled para que viajen a PHP
+        selectSesion.disabled = false;
+        selectEvento.disabled = false;
+        // Los bloqueamos visualmente y evitamos clics/teclado
+        selectSesion.classList.add('opacity-50', 'pointer-events-none', 'bg-[#0f0d23]');
+        selectEvento.classList.add('opacity-50', 'pointer-events-none', 'bg-[#0f0d23]');
+        selectSesion.tabIndex = -1;
+        selectEvento.tabIndex = -1;
+
+
+        // 2. CONGELAR ATLETA (Llenamos el Hidden, bloqueamos el visual)
+        document.getElementById('id_atleta').value = data.id_atleta; // ESTE VIAJA A PHP
+
+        const nombreCompleto = `${data.atleta_nombres || data.nombres} ${data.atleta_apellidos || data.apellidos}`;
+        inputAtleta.value = `${nombreCompleto} (C.I: ${data.atleta_cedula || data.cedula})`;
+        // ESTE ES VISUAL, LO PODEMOS APAGAR CON DISABLED
+        inputAtleta.disabled = true; 
+        inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'text-emerald-400', 'font-bold');
+        document.getElementById('btnLimpiarAtleta').classList.add('hidden');
+
+
+        // 3. Configurar la Fecha (Permitimos corregir la fecha solo dentro de los límites originales)
+        inputFecha.value = data.fecha;
+        if (data.id_evento) {
+            const optionEvento = selectEvento.options[selectEvento.selectedIndex];
+            inputFecha.min = optionEvento.getAttribute('data-inicio');
+            inputFecha.max = optionEvento.getAttribute('data-fin');
+        } else {
+          // 3. CONGELAR FECHA (Usamos ReadOnly)
+            inputFecha.value = data.fecha;
+            inputFecha.readOnly = true; // ESTO GARANTIZA QUE VIAJE A PHP
+            // Le ponemos pointer-events-none para que no se abra el calendario flotante al darle clic
+            inputFecha.classList.add('opacity-50', 'pointer-events-none'); 
+        }
+
+        // --- FIN DE MODO INMUTABLE ---
+
+/*         // --- INICIO DE RECREACIÓN DE CONTEXTO (CASCADA Y FECHAS) ---
         const selectSesion = document.getElementById('id_sesion');
         const selectEvento = document.getElementById('id_evento');
         const inputFecha = document.getElementById('fecha');
@@ -265,7 +315,7 @@ async function abrirModalMarca(id_marca = null) {
 
             await cargarAtletasPorContexto('evento', data.id_evento, atletaPreseleccionado);
         }
-        // --- FIN DE RECREACIÓN DE CONTEXTO ---
+        // --- FIN DE RECREACIÓN DE CONTEXTO --- */
 
         // Llenar datos básicos
         document.querySelector('[name="estilo"]').value = data.estilo;
@@ -511,12 +561,18 @@ function configurarExclusividadSelects() {
 }
 
 function resetearContexto() {
-    // Liberar evento
+
+    const selectEvento = document.getElementById('id_evento');
+    const selectSesion = document.getElementById('id_sesion');
+   // 1. Liberar Evento (Limpiamos disabled, tabIndex y TODAS las clases de bloqueo)
     selectEvento.disabled = false;
-    selectEvento.classList.remove('opacity-30', 'cursor-not-allowed');
-    // Liberar sesión
+    selectEvento.classList.remove('opacity-30', 'opacity-50', 'cursor-not-allowed', 'pointer-events-none', 'bg-[#0f0d23]');
+    selectEvento.tabIndex = 0;
+    
+    // 2. Liberar Sesión
     selectSesion.disabled = false;
-    selectSesion.classList.remove('opacity-30', 'cursor-not-allowed');
+    selectSesion.classList.remove('opacity-30', 'opacity-50', 'cursor-not-allowed', 'pointer-events-none', 'bg-[#0f0d23]');
+    selectSesion.tabIndex = 0;
     
     // Liberar Fecha
    const inputFecha = document.getElementById('fecha');
@@ -1117,7 +1173,7 @@ async function verDetallesMarca(id_marca) {
             <span class="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold rounded-md uppercase tracking-widest">
                 <i class="fas fa-microscope mr-1"></i> Telemetría Deportiva
             </span>
-            <h2 class="text-xl font-bold text-white mt-2">${data.nombre_atleta}</h2>
+            <h2 class="text-xl font-bold text-white mt-2">${data.atleta_nombres} ${data.atleta_apellidos}</h2>
             <p class="text-xs text-gray-400 font-mono mt-0.5">C.I: ${data.cedula} • Registro: ${formatearFecha(data.fecha)}</p>
         </div>
 

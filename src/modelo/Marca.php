@@ -390,7 +390,7 @@ class Marca extends Conexion {
             // ACTUALIZACIÓN DE LA TABLA PRINCIPAL
             // -------------------------------------------------------------
             $sqlUpdate = "UPDATE marcas SET 
-                            id_sesion = :id_sesion, id_evento = :id_evento, estilo = :estilo, 
+                            /* id_sesion = :id_sesion, id_evento = :id_evento, */ estilo = :estilo, 
                             distancia_m = :distancia, tipo_piscina = :piscina, tiempo_final_seg = :tiempo, 
                             tiempo_reaccion_seg = :reaccion, tiempo_viraje_seg = :viraje, 
                             es_pb = :es_pb, fecha = :fecha, observaciones = :obs
@@ -399,8 +399,8 @@ class Marca extends Conexion {
             $stmt = $this->pdo->prepare($sqlUpdate);
             
             $mapaPrincipal = [
-                ':id_sesion' => ['id_sesion', PDO::PARAM_INT],
-                ':id_evento' => ['id_evento', PDO::PARAM_INT],
+                // ':id_sesion' => ['id_sesion', PDO::PARAM_INT],
+                // ':id_evento' => ['id_evento', PDO::PARAM_INT],
                 ':estilo'    => ['estilo', PDO::PARAM_STR],
                 ':distancia' => ['distancia_m', PDO::PARAM_INT],
                 ':piscina'   => ['tipo_piscina', PDO::PARAM_STR],
