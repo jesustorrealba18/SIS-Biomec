@@ -66,6 +66,55 @@ class Marca extends Conexion {
         $this->requerido((string)($this->datos['tiempo_final_seg'] ?? ''), 'tiempo_final_seg');
         $this->requerido((string)($this->datos['fecha'] ?? ''), 'fecha');
         
+        // 1. Validaciones Obligatorias Básicas
+        if ($this->requerido($id_atleta, 'Atleta Seleccionado')) {
+            $this->soloNumeros($id_atleta, 'Atleta Seleccionado');
+        }
+
+        if ($this->requerido($tiempo, 'Tiempo Final')) {
+            $this->decimalValido($tiempo, 'Tiempo Final');
+        }
+
+        if ($this->requerido($fecha, 'Fecha del Registro')) {
+            if ($this->fechaValida($fecha, 'Fecha del Registro')) {
+                $this->fechaNoFutura($fecha, 'Fecha del Registro');
+            }
+        }
+
+        // 2. Validaciones de Dominio Restringido (Listas Select)
+        if ($this->requerido($estilo, 'Estilo')) {
+            $this->enEnum($estilo, 'Estilo', ['Libre', 'Espalda', 'Braza', 'Mariposa', 'Combinado']);
+        }
+
+        if ($this->requerido($distancia, 'Distancia')) {
+            // Lo pasamos a string porque enEnum compara estrictamente (===)
+            $this->enEnum($distancia, 'Distancia', ['50', '100', '200', '400', '800', '1500']);
+        }
+
+        if ($this->requerido($piscina, 'Tipo de Piscina')) {
+            $this->enEnum($piscina, 'Tipo de Piscina', ['50m', '25m']);
+        }
+
+        // 3. Validaciones Opcionales (Solo se validan si el usuario escribió algo)
+        if ($reaccion !== '') {
+            $this->decimalValido($reaccion, 'Tiempo de Reacción');
+            $this->longitud($reaccion, 'Tiempo de Reacción', 1, 5);
+        }
+
+        if ($viraje !== '') {
+            $this->decimalValido($viraje, 'Tiempo de Viraje');
+            $this->longitud($viraje, 'Tiempo de Viraje', 1, 5);
+        }
+
+        if ($brazadas !== '') {
+            $this->soloNumeros($brazadas, 'Brazadas por Largo');
+            $this->longitud($brazadas, 'Brazadas por Largo', 1, 3);
+        }
+
+        if ($obs !== '') {
+            // Protección máxima contra inyecciones largas en textos libres
+            $this->longitud($obs, 'Observaciones Técnicas', 1, 255);
+        }
 
 
         if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {

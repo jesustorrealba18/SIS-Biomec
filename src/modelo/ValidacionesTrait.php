@@ -124,4 +124,13 @@ protected function soloLetrasyNumeros(string $valor, string $campo): bool {
         }
         return true;
     }
+
+    protected function decimalValido(string $valor, string $campo): bool {
+        // Permite números enteros o decimales con punto (ej: 12 o 12.55)
+        if (!preg_match('/^[0-9]+(\.[0-9]+)?$/', trim($valor))) {
+            $this->agregarError($campo, "El campo {$campo} debe ser un número decimal válido.");
+            return false;
+        }
+        return true;
+    }
 }
