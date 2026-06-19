@@ -59,12 +59,26 @@ class Marca extends Conexion {
     private function validarAtributosInternos(): bool {
         $this->resetearErrores();
 
-        $this->requerido((string)($this->datos['id_atleta'] ?? ''), 'id_atleta');
+        $id_atleta = (string)($this->datos['id_atleta'] ?? '');
+        $estilo = (string)($this->datos['estilo'] ?? '');
+        $distancia = (string)($this->datos['distancia_m'] ?? '');
+        $piscina = (string)($this->datos['tipo_piscina'] ?? '');
+        $tiempo = (string)($this->datos['tiempo_final_seg'] ?? '');
+        $fecha = (string)($this->datos['fecha'] ?? '');
+        $reaccion = (string)($this->datos['tiempo_reaccion_seg'] ?? '');
+        $viraje = (string)($this->datos['tiempo_viraje_seg'] ?? '');
+        $brazadas = (string)($this->datos['brazadas_por_largo'] ?? '');
+        $obs = (string)($this->datos['observaciones'] ?? '');
+        $splits = $this->datos['splits'] ?? [];
+
+
+        
+        /* $this->requerido((string)($this->datos['id_atleta'] ?? ''), 'id_atleta');
         $this->requerido((string)($this->datos['estilo'] ?? ''), 'estilo');
         $this->requerido((string)($this->datos['distancia_m'] ?? ''), 'distancia_m');
         $this->requerido((string)($this->datos['tipo_piscina'] ?? ''), 'tipo_piscina');
         $this->requerido((string)($this->datos['tiempo_final_seg'] ?? ''), 'tiempo_final_seg');
-        $this->requerido((string)($this->datos['fecha'] ?? ''), 'fecha');
+        $this->requerido((string)($this->datos['fecha'] ?? ''), 'fecha'); */
         
         // 1. Validaciones Obligatorias Básicas
         if ($this->requerido($id_atleta, 'Atleta Seleccionado')) {
@@ -116,10 +130,35 @@ class Marca extends Conexion {
             $this->longitud($obs, 'Observaciones Técnicas', 1, 255);
         }
 
+        // 2. VALIDACIÓN ESTRICTA DE SPLITS (Dependiente de la distancia)
+        if (!empty($distancia) && is_numeric($distancia)) {
+            $distanciaInt = (int)$distancia;
+            $tramosEsperados = $distanciaInt / 25; // Ej: 100 / 25 = 4
 
-        if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {
-            $this->agregarError('fecha', 'La fecha del registro no puede ser futura.');
+            if (is_array($splits) && !empty($splits)) {
+                // Verificar que la cantidad de cajas enviadas coincida con la matemática
+                if (count($splits) !== $tramosEsperados) {
+                    $this->agregarError('splits', "Incoherencia: Una prueba de {$distanciaInt}m requiere exactamente {$tramosEsperados} tiempos parciales.");
+                } else {
+                    // Verificar que cada tramo sea múltiplo de 25 y sea un decimal válido
+                    foreach ($splits as $distancia_parcial => $tiempo_parcial) {
+                        $dist_parcial_int = (int)$distancia_parcial;
+                        
+                        if ($dist_parcial_int % 25 !== 0 || $dist_parcial_int > $distanciaInt) {
+                            $this->agregarError('splits', "El tramo de {$distancia_parcial}m está corrupto o no pertenece a esta prueba.");
+                        }
+                        
+                        // Validar que el tiempo ingresado en la caja sea correcto
+                        $this->decimalValido((string)$tiempo_parcial, "Parcial {$distancia_parcial}m");
+                    }
+                }
+            }
         }
+
+
+        // if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {
+        //     $this->agregarError('fecha', 'La fecha del registro no puede ser futura.');
+        // }
 
   
 
@@ -160,9 +199,69 @@ class Marca extends Conexion {
             $this->agregarError('contexto', 'Debe especificar si la marca se registró durante una sesión de entrenamiento o un evento competitivo.');
         }
 
-        // Regla 2: Integridad Logística (Validar Asistencia Real a la Sesión)
+        // Reglas 2 y 4 FUSIONADAS: Integridad de Asistencia y Cronológica (Sesión)
         if (!empty($id_sesion) && !empty($id_atleta)) {
-            $sqlAsistencia = "SELECT estado FROM asistencia WHERE id_sesion = :sesion AND id_atleta = :atleta";
+            // INNER JOIN garantiza que si el registro existe en asistencia, traiga la fecha de la sesión
+            $sqlAsistencia = "SELECT a.estado, s.fecha 
+                              FROM asistencia a 
+                              INNER JOIN sesiones s ON a.id_sesion = s.id_sesion 
+                              WHERE a.id_sesion = :sesion AND a.id_atleta = :atleta";
+            
+            $stmtA = $this->pdo->prepare($sqlAsistencia);
+            
+            $mapaAsis = [
+                ':sesion' => ['id_sesion', PDO::PARAM_INT],
+                ':atleta' => ['id_atleta', PDO::PARAM_INT]
+            ];
+
+            $this->autoBind($stmtA, $mapaAsis, $this->datos); 
+            $stmtA->execute(); 
+            
+            // Usamos FETCH_ASSOC para traer todo el arreglo (estado y fecha)
+            $resultadoAsistencia = $stmtA->fetch(PDO::FETCH_ASSOC);
+
+            // Validar la Logística (Asistencia)
+            if (!$resultadoAsistencia || $resultadoAsistencia['estado'] !== 'Presente') {
+                $this->agregarError('integridad_asistencia', 'Fraude Logístico: El atleta seleccionado no figura como "Presente" en la lista de asistencia de esta sesión.');
+            } 
+            // Validar la Cronología (Solo si pasó la prueba anterior y hay fecha ingresada)
+            elseif (!empty($fecha_ingresada) && $fecha_ingresada !== $resultadoAsistencia['fecha']) {
+                $this->agregarError('fecha', 'Inconsistencia Cronológica: La fecha seleccionada no coincide con el día en que se realizó esta sesión.');
+            }
+        }
+
+        // Reglas 3 y 5 FUSIONADAS: Integridad de Inscripción y Cronológica (Evento)
+        if (!empty($id_evento) && !empty($id_atleta)) {
+            // Ya no usamos COUNT(*), simplemente pedimos las fechas si existe la inscripción
+            $sqlEvento = "SELECT e.fecha_inicio, e.fecha_fin 
+                          FROM evento_inscripcion ei 
+                          INNER JOIN eventos e ON ei.id_evento = e.id_evento 
+                          WHERE ei.id_evento = :evento AND ei.id_atleta = :atleta";
+            
+            $stmtE = $this->pdo->prepare($sqlEvento);
+            $stmtE->bindValue(':evento', (int)$this->datos['id_evento'], PDO::PARAM_INT);
+            $stmtE->bindValue(':atleta', (int)$this->datos['id_atleta'], PDO::PARAM_INT);
+            $stmtE->execute();
+
+            // Usamos FETCH_ASSOC para traer el rango de fechas
+            $resultadoEvento = $stmtE->fetch(PDO::FETCH_ASSOC);
+
+            // Validar la Logística (Si es false, significa que el conteo es 0, no está inscrito)
+            if (!$resultadoEvento) {
+                $this->agregarError('integridad_evento', 'Fraude Logístico: El atleta seleccionado no se encuentra formalmente inscrito en este evento.');
+            } 
+            // Validar la Cronología (Solo si está inscrito y hay fecha ingresada)
+            elseif (!empty($fecha_ingresada)) {
+                if ($fecha_ingresada < $resultadoEvento['fecha_inicio'] || $fecha_ingresada > $resultadoEvento['fecha_fin']) {
+                    $this->agregarError('fecha', 'Inconsistencia Cronológica: La fecha ingresada está fuera del rango de días de esta competencia.');
+                }
+            }
+        }
+
+       /*  // Regla 2: Integridad Logística (Validar Asistencia Real a la Sesión)
+        if (!empty($id_sesion) && !empty($id_atleta)) {
+           // $sqlAsistencia = "SELECT estado FROM asistencia WHERE id_sesion = :sesion AND id_atleta = :atleta";
+           $sqlAsistencia = "SELECT a.estado, s.fecha FROM asistencia a LEFT join sesiones s on a.id_sesion=s.id_sesion WHERE a.id_sesion = :sesion AND a.id_atleta = :atleta;";
             $stmtA = $this->pdo->prepare($sqlAsistencia);
 
              $mapaAsis = [
@@ -186,7 +285,10 @@ class Marca extends Conexion {
         // Regla 3: Integridad Logística (Validar Inscripción al Evento)
         // NOTA: Aquí asumo que tienes una tabla llamada 'inscripciones_evento'. Adapta el nombre.
         if (!empty($id_evento) && !empty($id_atleta)) {
-            $sqlEvento = "SELECT COUNT(*) FROM evento_inscripcion WHERE id_evento = :evento AND id_atleta = :atleta";
+           // $sqlEvento = "SELECT COUNT(*) FROM evento_inscripcion WHERE id_evento = :evento AND id_atleta = :atleta";
+            $sqlEvento = "SELECT COUNT(*), e.fecha_inicio, e.fecha_fin FROM evento_inscripcion ei LEFT JOIN eventos e on ei.id_evento=e.id_evento WHERE ei.id_evento = :evento AND ei.id_atleta = :atleta;";
+
+            
             $stmtE = $this->pdo->prepare($sqlEvento);
             $stmtE->bindValue(':evento', (int)$this->datos['id_evento'], PDO::PARAM_INT);
             $stmtE->bindValue(':atleta', (int)$this->datos['id_atleta'], PDO::PARAM_INT);
@@ -195,7 +297,7 @@ class Marca extends Conexion {
             if ($stmtE->fetchColumn() == 0) {
                 $this->agregarError('integridad_evento', 'Fraude Logístico: El atleta seleccionado no se encuentra formalmente inscrito en este evento.');
             }
-        }
+        } */
 
         return empty($this->obtenerErrores());
     }
