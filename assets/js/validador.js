@@ -291,7 +291,8 @@ class Validador {
             const reglas = campo.getAttribute('data-validar').split('|');
 
             // Dejamos pasar teclas de control: Backspace, Tab, Flechas, Ctrl, etc.
-            if (e.key.length !== 1 || e.ctrlKey || e.altKey || e.metaKey) return;
+            //if (e.key.length !== 1 || e.ctrlKey || e.altKey || e.metaKey) return;
+            if (!e.key || e.key.length !== 1 || e.ctrlKey || e.altKey || e.metaKey) return;
 
             // Regla 'letras': Bloquea números
             if (reglas.includes('letras') && /[0-9]/.test(e.key)) e.preventDefault();

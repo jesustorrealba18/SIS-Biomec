@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
     Validador.vincularTiempoReal(formRep);
 
     // 1. Cargar la tabla dinámicamente al abrir la pantalla
-    cargarTablaRepresentantes();
+    //cargarTablaRepresentantes();
 
     // 2. Encender validador...
    try {
@@ -305,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnGuardar.innerHTML = 'Procesando... <i class="fas fa-spinner fa-spin ml-2"></i>';
 
         const datosForm = new FormData(formRep);
+        datosForm.append('accion', 'guardar');
 
         // ENVÍO AL SERVIDOR
         const resultado = await peticionAjax('guardar', datosForm);

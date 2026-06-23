@@ -1,5 +1,9 @@
 <?php
 // src/controlador/representanteControlador.php
+// Traemos el Modelo que sí es una clase y hace el trabajo pesado
+use GrupoProyecto\SisBiomec\modelo\Representante;
+use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 // 1. Filtro de Reglas Básicas (El pivote ataja a los intrusos)
 if (empty($_SESSION['id'])) { 
@@ -7,10 +11,7 @@ if (empty($_SESSION['id'])) {
     exit; 
 }
 
-// Traemos el Modelo que sí es una clase y hace el trabajo pesado
-use GrupoProyecto\SisBiomec\modelo\Representante;
-use GrupoProyecto\SisBiomec\modelo\Atleta;
-use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+
 $objRepresentante = new Representante();
 $objAtleta = new Atleta();
 
@@ -22,11 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
      // Si la acción es eliminar (Atrapamos la petición de SweetAlert)
     if (isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
         Autorizacion::exigir('representantes', 'gestionar');
-        $id = isset($_POST['id_representante']) ? (int)$_POST['id_representante'] : 0;
+       // $id = isset($_POST['id_representante']) ? (int)$_POST['id_representante'] : 0;
 
-      
+       $objRepresentante->setAtributos($_POST);
 
-        if ($objRepresentante->eliminarRepresentante($id)) {
+        if ($objRepresentante->Eliminar()) {
             echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'No se pudo desactivar el registro.']);
@@ -36,47 +37,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
 
-        if (isset($_POST['accion']) && $_POST['accion'] === 'reactivar') {
+    if (isset($_POST['accion']) && $_POST['accion'] === 'reactivar') {
             Autorizacion::exigir('representantes', 'gestionar');
-            $id = isset($_POST['id_representante']) ? (int)$_POST['id_representante'] : 0;
-            if ($objRepresentante->reactivarRepresentante($id)) {
+          //  $id = isset($_POST['id_representante']) ? (int)$_POST['id_representante'] : 0;
+           $objRepresentante->setAtributos($_POST);
+
+        if ($objRepresentante->Reactivar()) {
                 echo json_encode(['status' => 'success']);
-            } else {
-                echo json_encode(['status' => 'error', 'message' => 'No se pudo reactivar el registro.']);
-            }
-            exit;
-        }    
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'No se pudo reactivar el registro.']);
+        }
+        exit;
+    }    
     
+
+   if (isset($_POST['accion']) && $_POST['accion'] === 'guardar') {
     // Verificamos si es una actualización (si trae ID) o un registro nuevo
     Autorizacion::exigir('representantes', 'gestionar');
     $excluirCedula = !empty($_POST['cedula_original']) ? $_POST['cedula_original'] : null;
     
-    // El pivote NO valida, le pasa la pelota al Modelo
-    $errores = $objRepresentante->validarDatos($_POST, $excluirCedula);
 
-    if (!empty($errores)) {
-        // Si el modelo dice que hay errores, el pivote los devuelve al Frontend
-        echo json_encode(['status' => 'warning', 'errores' => $errores]);
-        exit;
-    }
 
     // SOLUCIÓN A LA ADVERTENCIA: Inicializamos la variable por defecto
     $resultado = false; 
 
+    $objRepresentante->setAtributos($_POST);
+
     // Si todo está bien, el pivote le ordena al Modelo que guarde en la BD
     if ($excluirCedula) {
         // Lógica de actualizar (Descomentar cuando esté lista en el modelo)
-        $resultado = $objRepresentante->actualizarRepresentante($_POST, $excluirCedula);
+        $resultado = $objRepresentante->Actualizar();
+        //  echo json_encode(['status' => 'warning', 'errores' => 'Act '.$resultado]);
     } else {
-        $resultado = $objRepresentante->registrarRepresentante($_POST);
+        $resultado = $objRepresentante->Registrar();
+        // echo json_encode(['status' => 'warning', 'errores' => 'Reg '.$resultado]);
     }
+
+    
 
     if ($resultado) {
         echo json_encode(['status' => 'success', 'message' => 'Operación exitosa.']);
     } else {
-        echo json_encode(['status' => 'error', 'message' => 'Error en BD o función en desarrollo.']);
+
+         $errores = $objRepresentante->obtenerErrores(); 
+            if (!empty($errores)) {
+                echo json_encode(['status' => 'warning', 'errores' => $errores]);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'Error con el servidor.']);
+            }
     }
     exit; // Cortamos ejecución, el pivote no hace más nada
+    }
+
+
 }
 
 // 3. Pivote para acciones GET (UNIFICADO - Consultas, AJAX y Vistas)
@@ -106,21 +119,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     
     // A) Petición de JavaScript (Fetch) para listar atletas en los checkboxes
+    /*  if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {
+        header('Content-Type: application/json');
+         $id_rep = !empty($_GET['id_representante']) ? (int)$_GET['id_representante'] : 0;
+        echo json_encode($objAtleta->listarMenoresParaRepresentante($id_rep));
+        exit;
+    }  */
+
     if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {
         header('Content-Type: application/json');
-        echo json_encode($objAtleta->listarMenoresSinRepresentante());
+        
+        $id_rep = !empty($_GET['id_representante']) ? (int)$_GET['id_representante'] : 0;
+
+        if ($id_rep > 0) {
+            // Si viene un ID (Modo Edición), traemos los propios y los huérfanos
+            echo json_encode($objAtleta->listarMenoresParaRepresentante($id_rep));
+        } else {
+            // Si el ID es 0 (Modo Nuevo), traemos SOLO a los huérfanos (Más rápido)
+            echo json_encode($objAtleta->listarMenoresSinRepresentante());
+        }
         exit;
     }
-        // if (isset($_GET['accion']) && $_GET['accion'] === 'listarAtletas') {
-        //         header('Content-Type: application/json');
-                
-        //         // Aquí pregunta: ¿Me mandaron un ID para editar? Si no, pongo 0 (Registrar)
-        //         $id_rep = isset($_GET['id_representante']) ? (int)$_GET['id_representante'] : 0;
-                
-        //         // Le pasamos el número al Modelo y él se encarga de cambiar el SQL internamente
-        //         echo json_encode($objAtleta->listarMenoresParaRepresentante($id_rep));
-        //         exit;
-        //     }
+
 
     // ACCIÓN: Petición de JavaScript para rellenar el formulario al Editar
     if (isset($_GET['accion']) && $_GET['accion'] === 'obtenerRepresentante' && isset($_GET['id'])) {

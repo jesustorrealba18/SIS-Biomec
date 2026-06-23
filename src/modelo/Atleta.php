@@ -422,21 +422,33 @@ class Atleta extends Conexion {
         }
     }
 
+ 
+
     public function listarMenoresParaRepresentante(int $id_representante = 0): array {
-        $conex = $this->pdo;
+        $conex = $this->pdo; 
         try {
+           
             $sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos,
-                           (CASE WHEN ar.id_representante = :id_rep THEN 1 ELSE 0 END) as seleccionado
+                           (CASE WHEN ar.id_representante = :id_rep1 THEN 1 ELSE 0 END) as seleccionado
                     FROM atletas a
-                    LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta
-                    WHERE (ar.id_atleta IS NULL OR ar.id_representante = :id_rep)
-                      AND TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) < 18
+                    LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta AND ar.id_representante = :id_rep2
+                    WHERE TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) < 18
+                      AND (
+                           a.id_atleta NOT IN (SELECT id_atleta FROM atleta_representante WHERE id_representante != :id_rep3)
+                           OR ar.id_representante = :id_rep4
+                      )
                     ORDER BY a.nombres ASC";
+                    
             $stmt = $conex->prepare($sql);
-            $this->vincular($stmt, ':id_rep', $id_representante, PDO::PARAM_INT);
+            $stmt->bindValue(':id_rep1', $id_representante, \PDO::PARAM_INT);
+            $stmt->bindValue(':id_rep2', $id_representante, \PDO::PARAM_INT);
+            $stmt->bindValue(':id_rep3', $id_representante, \PDO::PARAM_INT);
+            $stmt->bindValue(':id_rep4', $id_representante, \PDO::PARAM_INT);
+           
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
+            
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
             error_log("Error en listarMenoresParaRepresentante: " . $e->getMessage());
             return [];
         }
