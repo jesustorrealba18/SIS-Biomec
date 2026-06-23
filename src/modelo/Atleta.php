@@ -428,7 +428,7 @@ class Atleta extends Conexion {
         $conex = $this->pdo; 
         try {
            
-            $sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos,
+/*             $sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos,
                            (CASE WHEN ar.id_representante = :id_rep1 THEN 1 ELSE 0 END) as seleccionado
                     FROM atletas a
                     LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta AND ar.id_representante = :id_rep2
@@ -437,7 +437,20 @@ class Atleta extends Conexion {
                            a.id_atleta NOT IN (SELECT id_atleta FROM atleta_representante WHERE id_representante != :id_rep3)
                            OR ar.id_representante = :id_rep4
                       )
-                    ORDER BY a.nombres ASC";
+                    ORDER BY a.nombres ASC"; */
+
+$sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos,
+                   (CASE WHEN ar.id_representante = :id_rep1 THEN 1 ELSE 0 END) as seleccionado,
+                   IFNULL(ar.autorizacion_medica, 0) as aut_medica,
+                   IFNULL(ar.autorizacion_imagen, 0) as aut_imagen
+            FROM atletas a
+            LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta AND ar.id_representante = :id_rep2
+            WHERE TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) < 18
+              AND (
+                   a.id_atleta NOT IN (SELECT id_atleta FROM atleta_representante WHERE id_representante != :id_rep3)
+                   OR ar.id_representante = :id_rep4
+              )
+            ORDER BY a.nombres ASC";                    
                     
             $stmt = $conex->prepare($sql);
             $stmt->bindValue(':id_rep1', $id_representante, \PDO::PARAM_INT);

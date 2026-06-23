@@ -76,6 +76,42 @@ async function abrirModalRepresentante(idRepresentante = null) {
     if (atletas && atletas.length > 0) {
         contenedor.innerHTML = ''; 
         atletas.forEach(atleta => {
+            const marcado = (atleta.seleccionado == 1) ? 'checked' : '';
+            const medMarcado = (atleta.aut_medica == 1) ? 'checked' : '';
+            const imgMarcado = (atleta.aut_imagen == 1) ? 'checked' : '';
+            
+            const div = document.createElement('div');
+            // Cambiamos a flex-col para que los permisos queden debajo del nombre
+            div.className = "flex flex-col p-2 hover:bg-white/5 rounded-lg transition border border-transparent hover:border-gray-700";
+            
+            div.innerHTML = `
+                <div class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" name="atletas_ids[]" value="${atleta.id_atleta}" 
+                           id="atleta_${atleta.id_atleta}" ${marcado}
+                           onchange="document.getElementById('permisos_${atleta.id_atleta}').classList.toggle('hidden', !this.checked)"
+                           class="w-4 h-4 rounded border-gray-700 bg-gray-900 text-indigo-600 focus:ring-indigo-500">
+                    <label for="atleta_${atleta.id_atleta}" class="text-xs text-gray-300 cursor-pointer flex-1 font-bold">
+                        ${atleta.nombres} ${atleta.apellidos} 
+                        <span class="text-[10px] text-gray-500 ml-1">(${atleta.cedula})</span>
+                    </label>
+                </div>
+                
+                <div id="permisos_${atleta.id_atleta}" class="pl-7 pt-2 flex gap-4 ${marcado ? '' : 'hidden'}">
+                    <label class="text-[10px] text-gray-400 flex items-center gap-1 cursor-pointer hover:text-indigo-300">
+                        <input type="checkbox" name="aut_medica[${atleta.id_atleta}]" value="1" ${medMarcado}
+                               class="w-3 h-3 rounded bg-gray-800 border-gray-600 text-emerald-500"> 
+                        Aut. Médica/Antropométrica
+                    </label>
+                    <label class="text-[10px] text-gray-400 flex items-center gap-1 cursor-pointer hover:text-indigo-300">
+                        <input type="checkbox" name="aut_imagen[${atleta.id_atleta}]" value="1" ${imgMarcado}
+                               class="w-3 h-3 rounded bg-gray-800 border-gray-600 text-emerald-500"> 
+                        Uso de Imagen/Fotos
+                    </label>
+                </div>
+            `;
+            contenedor.appendChild(div);
+        });
+       /*  atletas.forEach(atleta => {
             // Si la base de datos dice que ya es su hijo (seleccionado = 1), lo marcamos
             const marcado = (atleta.seleccionado == 1) ? 'checked' : '';
             
@@ -91,7 +127,7 @@ async function abrirModalRepresentante(idRepresentante = null) {
                 </label>
             `;
             contenedor.appendChild(div);
-        });
+        }); */
     } else {
         contenedor.innerHTML = '<p class="text-[11px] text-yellow-500 p-2">No hay atletas menores disponibles.</p>';
     }

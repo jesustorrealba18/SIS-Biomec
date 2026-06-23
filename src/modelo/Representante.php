@@ -27,7 +27,8 @@ class Representante extends Conexion {
         // ¡AGREGADOS PARA QUE NO SE BORREN AL LIMPIAR EL PAYLOAD!
         'autorizacion_medica', 'fecha_aut_medica', 
         'autorizacion_imagen', 'fecha_aut_imagen', 
-        'recibe_notificaciones'
+        'recibe_notificaciones', 
+        'aut_medica', 'aut_imagen'
     ];
 
     
@@ -118,9 +119,9 @@ class Representante extends Conexion {
 
     public function Registrar(): bool {
        
-       /*  if (!$this->validarDatos()) {
+        if (!$this->validarDatos()) {
             return false; 
-        } */
+        } 
         return $this->registrarRepresentante();
     }
 
@@ -265,7 +266,7 @@ class Representante extends Conexion {
     /**
      * Tabla intermedia: atleta_representante
      */
-     private function vincularAtletas(PDO $conex, int $id_representante, array $datos) {
+  /*    private function vincularAtletas(PDO $conex, int $id_representante, array $datos) {
         $sql = "INSERT INTO atleta_representante (
                     id_atleta, 
                     id_representante, 
@@ -297,7 +298,102 @@ class Representante extends Conexion {
                 ':notificaciones'   => $datos['recibe_notificaciones'] ?? 'No'
             ]);
         }
-    } 
+    }  */
+
+  /*   private function vincularAtletas(\PDO $conex, int $id_representante, array $datos) {
+    $sql = "INSERT INTO atleta_representante (
+                id_atleta, 
+                id_representante, 
+                autorizacion_medica, 
+                fecha_aut_medica, 
+                autorizacion_imagen, 
+                fecha_aut_imagen, 
+                recibe_notificaciones
+            ) VALUES (
+                :id_atleta, 
+                :id_representante, 
+                :aut_medica, 
+                :fecha_medica, 
+                :aut_imagen, 
+                :fecha_imagen, 
+                :notificaciones
+            )";
+            
+    $stmt = $conex->prepare($sql);
+    
+    $mapa = [
+        ':id_atleta'        => ['id_atleta_local', \PDO::PARAM_INT],
+        ':id_representante' => ['id_rep_local', \PDO::PARAM_INT],
+        ':aut_medica'       => ['aut_medica_local', \PDO::PARAM_INT], 
+        ':fecha_medica'     => ['fecha_medica_local', \PDO::PARAM_STR], // STR para fechas
+        ':aut_imagen'       => ['aut_img_local', \PDO::PARAM_INT],    
+        ':fecha_imagen'     => ['fecha_img_local', \PDO::PARAM_STR],    // STR para fechas
+        ':notificaciones'   => ['notif_local', \PDO::PARAM_INT]       
+    ];
+    
+    $fechaHoy = date('Y-m-d'); // Capturamos la fecha del sistema
+
+    foreach ($datos['atletas_ids'] as $id_atleta) {
+        // ¿El representante marcó la autorización para ESTE atleta específico?
+        $tieneAutMedica = !empty($datos['aut_medica'][$id_atleta]) ? 1 : 0;
+        $tieneAutImagen = !empty($datos['aut_imagen'][$id_atleta]) ? 1 : 0;
+
+        $locales = [
+            'id_atleta_local'    => $id_atleta,
+            'id_rep_local'       => $id_representante,
+            
+            'aut_medica_local'   => $tieneAutMedica,
+            'fecha_medica_local' => $tieneAutMedica ? $fechaHoy : null, // Si autoriza, estampa la fecha
+            
+            'aut_img_local'      => $tieneAutImagen,
+            'fecha_img_local'    => $tieneAutImagen ? $fechaHoy : null, // Si autoriza, estampa la fecha
+            
+            'notif_local'        => 1 // Por defecto le activamos las notificaciones
+        ];
+        
+        $this->autoBind($stmt, $mapa, $datos, $locales);
+        $stmt->execute();
+    }
+} */
+
+private function vincularAtletas(\PDO $conex, int $id_representante, array $datos) {
+    // Fíjate cómo el SQL ahora es puro y limpio. 
+    // Las fechas se calcularán solas gracias al Trigger en la Base de Datos.
+    $sql = "INSERT INTO atleta_representante (
+                id_atleta, 
+                id_representante, 
+                autorizacion_medica, 
+                autorizacion_imagen
+            ) VALUES (
+                :id_atleta, 
+                :id_representante, 
+                :aut_medica, 
+                :aut_imagen
+            )";
+            
+    $stmt = $conex->prepare($sql);
+    
+    // El mapa se reduce solo a 4 variables INT
+    $mapa = [
+        ':id_atleta'        => ['id_atleta_local', \PDO::PARAM_INT],
+        ':id_representante' => ['id_rep_local', \PDO::PARAM_INT],
+        ':aut_medica'       => ['aut_medica_local', \PDO::PARAM_INT], 
+        ':aut_imagen'       => ['aut_img_local', \PDO::PARAM_INT]
+    ];
+    
+    foreach ($datos['atletas_ids'] as $id_atleta) {
+        $locales = [
+            'id_atleta_local'  => $id_atleta,
+            'id_rep_local'     => $id_representante,
+            // Solo enviamos 1 o 0. El Trigger decidirá si pone la fecha o no.
+            'aut_medica_local' => !empty($datos['aut_medica'][$id_atleta]) ? 1 : 0,
+            'aut_img_local'    => !empty($datos['aut_imagen'][$id_atleta]) ? 1 : 0
+        ];
+        
+        $this->autoBind($stmt, $mapa, $datos, $locales);
+        $stmt->execute();
+    }
+}
 
 
     /**
