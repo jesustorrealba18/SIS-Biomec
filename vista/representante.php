@@ -337,7 +337,8 @@
                     <div>
                         <label class="block text-[11px] text-gray-500 font-bold ml-1 mb-1">CÉDULA *</label>
                         <input type="text" id="cedula" name="cedula" 
-                               data-validar="requerido|numeros" data-nombre="Cédula" data-min="6"
+                               data-validar="requerido|cedula" data-nombre="Cédula" data-min="6" data-max="10"
+                               minlength="9" maxlength="10"
                                class="input-dark w-full p-3 rounded-xl text-sm" placeholder="Ej: 25888999">
                     </div>
 
@@ -345,13 +346,15 @@
                         <div>
                             <label class="block text-[11px] text-gray-500 font-bold ml-1 mb-1">NOMBRES *</label>
                             <input type="text" id="nombres" name="nombres" 
-                                   data-validar="requerido|letras" data-nombre="Nombres" data-min="2"
+                                   data-validar="requerido|letras" data-nombre="Nombres" data-min="3" data-max="40"
+                                    minlength="3" maxlength="40"
                                    class="input-dark w-full p-3 rounded-xl text-sm">
                         </div>
                         <div>
                             <label class="block text-[11px] text-gray-500 font-bold ml-1 mb-1">APELLIDOS *</label>
                             <input type="text" id="apellidos" name="apellidos" 
-                                   data-validar="requerido|letras" data-nombre="Apellidos" data-min="2"
+                                   data-validar="requerido|letras" data-nombre="Apellidos" data-min="3" data-max="40"
+                                    minlength="3" maxlength="40"
                                    class="input-dark w-full p-3 rounded-xl text-sm">
                         </div>
                     </div>
@@ -360,20 +363,24 @@
                         <div>
                             <label class="block text-[11px] text-gray-500 font-bold ml-1 mb-1">TELÉFONO PRINCIPAL *</label>
                             <input type="text" id="telefono_principal" name="telefono_principal" 
-                                   data-validar="requerido|numeros" data-nombre="Teléfono Principal" data-min="10"
+                                   data-validar="requerido|numeros" data-nombre="Teléfono Principal" data-min="11" data-max="11"
+                                    minlength="11" maxlength="11"
                                    class="input-dark w-full p-3 rounded-xl text-sm">
                         </div>
                         <div>
                             <label class="block text-[11px] text-gray-500 font-bold ml-1 mb-1">TELÉFONO EMERGENCIA</label>
                             <input type="text" id="telefono_emergencia" name="telefono_emergencia" 
-                                   data-validar="numeros" data-nombre="Teléfono de Emergencia" data-min="10"
+                                   data-validar="numeros" data-nombre="Teléfono de Emergencia" data-min="11" data-max="11"
+                                    minlength="11" maxlength="11"
                                    class="input-dark w-full p-3 rounded-xl text-sm">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-[11px] text-gray-500 font-bold ml-1 mb-1">CORREO ELECTRÓNICO</label>
+                        <label class="block text-[11px] text-gray-500 font-bold ml-1 mb-1">CORREO ELECTRÓNICO *</label>
                         <input type="email" id="correo" name="correo" 
+                               data-validar="requerido|correo" data-nombre="Correo Electrónico" data-min="5" data-max="40"
+                                    minlength="5" maxlength="40"
                                class="input-dark w-full p-3 rounded-xl text-sm">
                     </div>
                 </div>
@@ -400,7 +407,8 @@
                     <div>
                         <label class="block text-[11px] text-gray-500 font-bold ml-1 mb-1">DIRECCIÓN DE RESIDENCIA *</label>
                         <textarea id="direccion_residencia" name="direccion_residencia" rows="2" 
-                                  data-validar="requerido" data-nombre="Dirección de Residencia" data-min="5"
+                                  data-validar="requerido" data-nombre="Dirección de Residencia" data-min="10" data-max="200"
+                                    minlength="10" maxlength="200"
                                   class="input-dark w-full p-3 rounded-xl resize-none text-sm"></textarea>
                     </div>
 
