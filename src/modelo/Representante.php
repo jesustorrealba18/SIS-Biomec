@@ -166,10 +166,7 @@ private function validarDatos(): bool {
             $this->longitud($direccion, 'direccion_residencia', 10, 200);
         }
 
-        if (!empty(trim($autMedica))) {
-            $this->soloNumeros($telEmer, 'telefono_emergencia');
-            $this->longitud($telEmer, 'telefono_emergencia', 11, 11);
-        }
+       
 
         // Si el arreglo de errores está vacío, devuelve TRUE (todo perfecto)
         return empty($this->obtenerErrores());
@@ -228,23 +225,49 @@ private function validarDatos(): bool {
             if ($conteoValidos !== count($idsLimpios)) {
                 $this->agregarError('atletas_ids', 'Violación de Integridad: Uno o más atletas seleccionados no existen, son mayores de edad o ya pertenecen a otro representante.');
             } else {
+              
+
                 // ========================================================================
                 // BLINDAJE NIVEL 6: PROTECCIÓN CONTRA INYECCIÓN EN CHECKBOXES DE PERMISOS
                 // ========================================================================
-                // Si los IDs principales son válidos, auditamos las llaves de los permisos
+                
                 $autMedica = $this->datos['aut_medica'] ?? [];
                 $autImagen = $this->datos['aut_imagen'] ?? [];
 
-                // Extraemos solo los números que están entre los corchetes []
+                // 1. AUDITORÍA DE LLAVES (Evita que inyecten IDs falsos)
                 $llavesMedica = is_array($autMedica) ? array_keys($autMedica) : [];
                 $llavesImagen = is_array($autImagen) ? array_keys($autImagen) : [];
 
-                // array_diff detecta si hay alguna llave inyectada que no esté en la lista limpia
                 $trampaMedica = array_diff($llavesMedica, $idsLimpios);
                 $trampaImagen = array_diff($llavesImagen, $idsLimpios);
 
-                if (!empty($trampaMedica) || !empty($trampaImagen)) {
-                    $this->agregarError('atletas_ids', 'Violación de Seguridad (Error 400): Se detectó una manipulación maliciosa en los parámetros de autorización.');
+                // 2. AUDITORÍA DE VALORES (Evita inyección de strings maliciosos en el value)
+                $valoresAlterados = false;
+                // Solo aceptamos '1' o '0' (en formato string o entero, por seguridad del protocolo HTTP)
+                $valoresPermitidos = ['1', '0', 1, 0]; 
+
+                if (is_array($autMedica)) {
+                    foreach ($autMedica as $val) {
+                        // El true al final fuerza a que el tipo de dato también coincida estrictamente
+                        if (!in_array($val, $valoresPermitidos, true)) {
+                            $valoresAlterados = true; 
+                            break;
+                        }
+                    }
+                }
+                
+                if (is_array($autImagen)) {
+                    foreach ($autImagen as $val) {
+                        if (!in_array($val, $valoresPermitidos, true)) {
+                            $valoresAlterados = true; 
+                            break;
+                        }
+                    }
+                }
+
+                // EL VEREDICTO DE CIBERSEGURIDAD
+                if (!empty($trampaMedica) || !empty($trampaImagen) || $valoresAlterados) {
+                    $this->agregarError('atletas_ids', 'Violación de Seguridad (Error 400): Se detectó una manipulación maliciosa en la estructura o valores de las autorizaciones.');
                 }
             }
         }
