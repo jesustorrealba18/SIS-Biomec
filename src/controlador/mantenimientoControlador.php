@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode([
                     'status' => 'success', 
                     // Se asume que tienes una carpeta pública para descargas temporales
-                    'url_descarga' => 'assets/backups/' . basename($archivoGenerado) 
+                    'url_descarga' => 'src/config/backups/' . basename($archivoGenerado) 
                 ]);
             } else {
                 echo json_encode(['status' => 'error', 'message' => 'No se pudo generar el archivo de respaldo.']);
