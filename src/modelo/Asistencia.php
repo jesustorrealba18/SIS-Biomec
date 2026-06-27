@@ -38,6 +38,74 @@ class Asistencia extends Conexion {
     }
 
     // =====================================================================
+    //  MOTOR DE VALIDACIONES (Blindaje del Backend)
+    // =====================================================================
+    private function validarDatos(): bool {
+        $this->resetearErrores();
+
+        $id_sesion = $this->datos['id_sesion'] ?? '';
+        $id_atleta = $this->datos['id_atleta'] ?? '';
+        $estado    = $this->datos['estado_asistencia'] ?? '';
+        $justif    = $this->datos['justificacion'] ?? '';
+        $tipo      = $this->datos['tipo'] ?? 'Manual';
+
+        // Validar Sesión y Atleta
+        $this->requerido((string)$id_sesion, 'id_sesion');
+        $this->soloNumeros((string)$id_sesion, 'id_sesion');
+        
+        $this->requerido((string)$id_atleta, 'id_atleta');
+        $this->soloNumeros((string)$id_atleta, 'id_atleta');
+
+        // Validar Estado contra el diccionario permitido (Lista Blanca Absoluta)
+        $estadosPermitidos = ['Presente', 'Ausente', 'Justificado', 'Retardo'];
+        if (!in_array($estado, $estadosPermitidos, true)) {
+            $this->agregarError('estado_asistencia', 'Violación: El estado de asistencia no es válido.');
+        }
+
+        // Condicional: Si es justificado, DEBE tener una justificación
+       if ($estado === 'Justificado') {
+            $this->requerido($justif, 'justificacion');
+            $this->longitud($justif, 'justificacion', 5, 255);
+        } else {
+            // Si es 'Presente', 'Ausente' o 'Retardo', limpiamos la base de datos automáticamente
+            $this->datos['justificacion'] = 'No aplica'; 
+        }
+
+        // Validar Tipo (Protección contra manipulación del DOM)
+        $tiposPermitidos = ['Manual', 'QR'];
+        if (!in_array($tipo, $tiposPermitidos, true)) {
+            $this->agregarError('tipo', 'Violación: Tipo de registro no autorizado.');
+        }
+
+        return empty($this->obtenerErrores());
+    }
+
+
+
+    public function RegistrarManual(): bool {
+        if (!$this->validarDatos()) {
+            return false;
+        }
+        return $this->guardar();
+    }
+    
+    public function RegistrarPorQR(): array {
+
+      $this->resetearErrores();
+        
+        // 1. Validamos que el JS nos haya enviado lo mínimo necesario
+        $id_sesion = $this->datos['id_sesion'] ?? '';
+        $token = $this->datos['token_qr'] ?? '';
+
+        if (empty($id_sesion) || empty($token)) {
+            return ['exito' => false, 'mensaje' => 'Falta el token o la sesión.'];
+        }
+
+
+        return $this->TransaccionRegistrarQR();
+    }
+
+    // =====================================================================
     // 3. CONSULTAS Y LÓGICA DE NEGOCIO
     // =====================================================================
 
@@ -51,7 +119,7 @@ class Asistencia extends Conexion {
             // =====================================================================
             $sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos, 
                            c.nombre AS categoria_nombre, 
-                           ast.estado, ast.justificacion
+                           ast.estado, ast.justificacion, ast.tipo
                     FROM sesiones s
                     -- 1. Conectamos la sesión con el grupo planificado
                     INNER JOIN grupo_atleta ga ON s.id_grupo = ga.id_grupo
@@ -105,9 +173,10 @@ class Asistencia extends Conexion {
     /**
      * Identifica el QR, autohidrata el objeto y dispara el guardado
      */
-public function registrarPorQR(): array {
+/* private function TransaccionRegistrarQR(): array {
        
-        $tokenLimpio = str_replace('/^token/', '', $this->datos['token_qr']);
+        // $tokenLimpio = str_replace('/^token/', '', $this->datos['token_qr']);
+        $tokenLimpio = preg_replace('/^token/', '', trim($this->datos['token_qr']));
 
         try {
             $sqlBuscar = "SELECT id_atleta, nombres, apellidos FROM atletas WHERE token_asistencia = :token";
@@ -137,6 +206,8 @@ public function registrarPorQR(): array {
                 ];
             }
 
+          
+
             // Hidratamos el objeto internamente simulando un envío de formulario
             $this->datos['id_atleta'] = $atleta['id_atleta'];
             $this->datos['estado_asistencia'] = 'Presente';
@@ -144,12 +215,28 @@ public function registrarPorQR(): array {
             $this->datos['tipo'] = 'QR';
 
             // Llamamos al método unificado
-            $exito = $this->guardar();
+          $exito = $this->guardar(); */
+
+            /*   return [
+                'exito' => $exito,
+                'nombre_atleta' => $atleta['nombres'] . ' ' . $atleta['apellidos'],
+                'mensaje' => $exito ? 'Asistencia registrada' : 'Error al guardar.'
+            ]; */
+
+            // Preparamos el mensaje dinámicamente
+       /*      if ($exito) {
+                $mensajeFinal = 'Asistencia registrada exitosamente.';
+            } else {
+                // Si falló, extraemos el error exacto que generó la función guardar()
+                $errores = $this->obtenerErrores();
+                // reset() toma el primer error del arreglo (ej: 'Error interno al procesar...')
+                $mensajeFinal = !empty($errores) ? reset($errores) : 'Error de validación al guardar.';
+            }
 
             return [
                 'exito' => $exito,
                 'nombre_atleta' => $atleta['nombres'] . ' ' . $atleta['apellidos'],
-                'mensaje' => $exito ? 'Asistencia registrada' : 'Error al guardar.'
+                'mensaje' => $mensajeFinal
             ];
 
         } catch (PDOException $e) {
@@ -157,13 +244,101 @@ public function registrarPorQR(): array {
             // return ['exito' => false, 'mensaje' => 'Error de infraestructura.'];
             return ['exito' => false, 'mensaje' => 'Error BD: ' . $e->getMessage()];
         }
+    } */
+
+
+        private function TransaccionRegistrarQR(): array {
+        // CORRECCIÓN: preg_replace es el correcto para expresiones regulares
+        $tokenLimpio = preg_replace('/^token/', '', trim($this->datos['token_qr']));
+
+        try {
+            // 1. Buscar Atleta por su Token
+            $sqlBuscar = "SELECT id_atleta, nombres, apellidos FROM atletas WHERE token_asistencia = :token";
+            $stmtBuscar = $this->pdo->prepare($sqlBuscar);
+            $stmtBuscar->bindValue(':token', $tokenLimpio, PDO::PARAM_STR);
+            $stmtBuscar->execute();
+            
+            $atleta = $stmtBuscar->fetch(PDO::FETCH_ASSOC);
+
+            if (!$atleta) {
+                return ['exito' => false, 'mensaje' => 'Token de seguridad inválido o no registrado.'];
+            }
+
+            $id_sesion = $this->datos['id_sesion'];
+            $nombreCompleto = $atleta['nombres'] . ' ' . $atleta['apellidos'];
+
+            // 2. Verificar si ya estaba presente (Para la alerta azul de info)
+            $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
+            $stmtCheck = $this->pdo->prepare($sqlCheck);
+            $stmtCheck->execute([':id_sesion' => $id_sesion, ':id_atleta' => $atleta['id_atleta']]);
+            $registroPrevio = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+            if ($registroPrevio && $registroPrevio['estado'] === 'Presente') {
+                return [
+                    'exito' => false, 
+                    'status_http' => 'info', // Gatilla la alerta azul
+                    'nombre_atleta' => $nombreCompleto,
+                    'mensaje' => "¡Ya estaba presente! Registrado vía {$registroPrevio['tipo']}."
+                ];
+            }
+
+            // 3. Si no estaba presente, hidratamos el objeto a la fuerza simulando el POST
+            $this->datos['id_atleta'] = $atleta['id_atleta'];
+            $this->datos['estado_asistencia'] = 'Presente';
+            $this->datos['justificacion'] = 'Validación Biométrica QR';
+            $this->datos['tipo'] = 'QR';
+
+            // 4. Llamamos a guardar() 
+            $exito = $this->guardar();
+
+            if ($exito) {
+                return [
+                    'exito' => true,
+                    'status_http' => 'success',
+                    'nombre_atleta' => $nombreCompleto,
+                    'mensaje' => 'Asistencia registrada exitosamente.'
+                ];
+            } else {
+                $errores = $this->obtenerErrores();
+                $mensajeFinal = !empty($errores) ? reset($errores) : 'Error de integridad al guardar.';
+                return ['exito' => false, 'mensaje' => $mensajeFinal];
+            }
+
+        } catch (PDOException $e) {
+            return ['exito' => false, 'mensaje' => 'Error BD: ' . $e->getMessage()];
+        }
     }
 
     /**
      * MOTOR SQL (UPSERT UNIFICADO)
      */
-    public function guardar(): bool {
+    private function guardar(): bool {
         try {
+
+        $this->pdo->beginTransaction();
+
+
+        // ========================================================================
+            // NUEVO CANDADO: Prevenir edición de registros QR
+            // ========================================================================
+            $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
+            $stmtCheck = $this->pdo->prepare($sqlCheck);
+            $stmtCheck->execute([
+                ':id_sesion' => $this->datos['id_sesion'],
+                ':id_atleta' => $this->datos['id_atleta']
+            ]);
+            $registroPrevio = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
+
+            // Si el registro previo existe, y fue hecho por QR, y el niño está presente: ¡BLOQUEO!
+            if ($registroPrevio && $registroPrevio['tipo'] === 'QR' && $registroPrevio['estado'] === 'Presente') {
+                $this->agregarError('estado_asistencia', 'Acción denegada: Este atleta ya validó su presencia mediante el Escáner QR de forma inmutable.');
+                $this->pdo->rollBack();
+                return false;
+            }
+            // ========================================================================
+
+
+
             // Utilizamos los datos encapsulados
             $id_sesion = $this->datos['id_sesion'] ?? null;
             $id_atleta = $this->datos['id_atleta'] ?? null;
@@ -173,11 +348,6 @@ public function registrarPorQR(): array {
 
             if (!$id_sesion || !$id_atleta || !$estado) return false;
 
-          /*   $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, tipo, fecha) 
-                    VALUES (:id_sesion, :id_atleta, :estado, :justificacion, :tipo, NOW())
-                    ON DUPLICATE KEY UPDATE 
-                    estado = VALUES(estado), justificacion = VALUES(justificacion), tipo = VALUES(tipo), fecha = NOW()";
-             */
             
             $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, tipo, fecha) 
                     VALUES (:id_sesion, :id_atleta, :estado, :justificacion, :tipo, NOW())
@@ -196,12 +366,31 @@ public function registrarPorQR(): array {
             $stmt->bindValue(':justificacion', $justif, PDO::PARAM_STR);
             $stmt->bindValue(':tipo', $tipo, PDO::PARAM_STR);
 
-            return $stmt->execute();
+            $stmt->execute();
+
+            $this->pdo->commit();
+            return true;
 
         } catch (PDOException $e) {
             //error_log("Error Modelo Asistencia (Guardar): " . $e->getMessage());
-            throw new \Exception($e->getMessage());
+           // throw new \Exception($e->getMessage());
            // return false;
+
+           
+
+           if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+
+             if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta o Sesión) fueron alterados y no existen en el sistema.');
+                return false;
+            }
+
+
+            error_log("Error de Transacción en Asistencia (Guardar): " . $e->getMessage());
+            $this->agregarError('bd', 'Error interno al procesar la asistencia.');
+            return false;
         }
     }
 }
