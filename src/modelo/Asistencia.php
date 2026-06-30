@@ -1,5 +1,4 @@
 <?php
-// Ruta: modelo/Asistencia.php
 namespace GrupoProyecto\SisBiomec\modelo;
 
 use PDO;
@@ -9,9 +8,7 @@ class Asistencia extends Conexion {
     use ValidacionesTrait;
     use AutoBinderTrait;
 
-    // =====================================================================
-    // 1. ENCAPSULAMIENTO ESTRICTO (El estándar de tu proyecto)
-    // =====================================================================
+   
     private array $datos = [];
 
     // Lista blanca para evitar inyecciones masivas por POST
@@ -19,11 +16,7 @@ class Asistencia extends Conexion {
         'id_sesion', 'id_atleta', 'estado_asistencia', 'justificacion','token_qr','tipo'
     ];
 
-    // NO SE DECLARA CONSTRUCTOR: PHP invoca automáticamente el de la clase Conexion.
-
-    // =====================================================================
-    // 2. HIDRATACIÓN DEL OBJETO
-    // =====================================================================
+    
     public function setDatos(array $datos): self {
         foreach ($datos as $clave => $valor) {
             if (in_array($clave, $this->camposPermitidos)) {
@@ -37,9 +30,7 @@ class Asistencia extends Conexion {
         return $this->datos[$clave] ?? $default;
     }
 
-    // =====================================================================
-    //  MOTOR DE VALIDACIONES (Blindaje del Backend)
-    // =====================================================================
+    
     private function validarDatos(): bool {
         $this->resetearErrores();
 
@@ -93,7 +84,6 @@ class Asistencia extends Conexion {
 
       $this->resetearErrores();
         
-        // 1. Validamos que el JS nos haya enviado lo mínimo necesario
         $id_sesion = $this->datos['id_sesion'] ?? '';
         $token = $this->datos['token_qr'] ?? '';
 
@@ -105,29 +95,24 @@ class Asistencia extends Conexion {
         return $this->TransaccionRegistrarQR();
     }
 
-    // =====================================================================
-    // 3. CONSULTAS Y LÓGICA DE NEGOCIO
-    // =====================================================================
-
+  
     /**
      * Trae todos los atletas y cruza su estado actual de asistencia en la sesión
      */
    public function obtenerAtletasPorSesion(int $id_sesion): array {
         try {
-            // =====================================================================
-            // LÓGICA DE CONVOCATORIA REAL: Sesión -> Grupo -> Atleta -> Asistencia
-            // =====================================================================
+           
             $sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos, 
                            c.nombre AS categoria_nombre, 
                            ast.estado, ast.justificacion, ast.tipo
                     FROM sesiones s
-                    -- 1. Conectamos la sesión con el grupo planificado
+                    -- . Conectamos la sesión con el grupo planificado
                     INNER JOIN grupo_atleta ga ON s.id_grupo = ga.id_grupo
-                    -- 2. Conectamos el grupo con los atletas que pertenecen a él
+                    -- . Conectamos el grupo con los atletas que pertenecen a él
                     INNER JOIN atletas a ON ga.id_atleta = a.id_atleta
-                    -- 3. Traemos la categoría federativa del atleta si posee
+                    -- . Traemos la categoría federativa del atleta si posee
                     LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
-                    -- 4. LEFT JOIN crítico: Muestra el estado de asistencia si ya fue capturado
+                    -- . LEFT JOIN crítico: Muestra el estado de asistencia si ya fue capturado
                     LEFT JOIN asistencia ast ON a.id_atleta = ast.id_atleta AND ast.id_sesion = s.id_sesion
                     WHERE s.id_sesion = :id_sesion 
                       AND a.estado = 'Activo'
@@ -135,7 +120,6 @@ class Asistencia extends Conexion {
 
             $stmt = $this->pdo->prepare($sql);
             
-            // Inyección estricta con tipado explícito para cumplir el estándar de infraestructura
             $stmt->bindValue(':id_sesion', $id_sesion, PDO::PARAM_INT);
             $stmt->execute();
             
@@ -152,7 +136,6 @@ class Asistencia extends Conexion {
      */
     public function obtenerSesionesActivas(): array {
         try {
-            // Unimos con grupos_entrenamiento para armar una etiqueta limpia en la interfaz
             $sql = "SELECT s.id_sesion, g.nombre AS grupo_nombre,
              s.fecha, s.estado FROM sesiones s 
              INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo 
@@ -170,89 +153,11 @@ class Asistencia extends Conexion {
         }
     }
 
-    /**
-     * Identifica el QR, autohidrata el objeto y dispara el guardado
-     */
-/* private function TransaccionRegistrarQR(): array {
-       
-        // $tokenLimpio = str_replace('/^token/', '', $this->datos['token_qr']);
-        $tokenLimpio = preg_replace('/^token/', '', trim($this->datos['token_qr']));
-
-        try {
-            $sqlBuscar = "SELECT id_atleta, nombres, apellidos FROM atletas WHERE token_asistencia = :token";
-            $stmtBuscar = $this->pdo->prepare($sqlBuscar);
-            $stmtBuscar->bindValue(':token', $tokenLimpio, PDO::PARAM_STR);
-            $stmtBuscar->execute();
-            
-            $atleta = $stmtBuscar->fetch(PDO::FETCH_ASSOC);
-
-            if (!$atleta) {
-                return ['exito' => false, 'mensaje' => 'Token de seguridad inválido.'];
-            }
-
-            $id_sesion = $this->datos['id_sesion'] ?? 0;
-
-            $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
-            $stmtCheck = $this->pdo->prepare($sqlCheck);
-            $stmtCheck->execute([':id_sesion' => $id_sesion, ':id_atleta' => $atleta['id_atleta']]);
-            $registroPrevio = $stmtCheck->fetch(PDO::FETCH_ASSOC);
-
-            if ($registroPrevio && $registroPrevio['estado'] === 'Presente') {
-                return [
-                    'exito' => false, 
-                    'status_http' => 'info', // Este status pinta la alerta azul
-                    'nombre_atleta' => $atleta['nombres'] . ' ' . $atleta['apellidos'],
-                    'mensaje' => "¡Ya estaba presente! Registrado vía {$registroPrevio['tipo']}."
-                ];
-            }
-
-          
-
-            // Hidratamos el objeto internamente simulando un envío de formulario
-            $this->datos['id_atleta'] = $atleta['id_atleta'];
-            $this->datos['estado_asistencia'] = 'Presente';
-            $this->datos['justificacion'] = 'Validación Biométrica QR';
-            $this->datos['tipo'] = 'QR';
-
-            // Llamamos al método unificado
-          $exito = $this->guardar(); */
-
-            /*   return [
-                'exito' => $exito,
-                'nombre_atleta' => $atleta['nombres'] . ' ' . $atleta['apellidos'],
-                'mensaje' => $exito ? 'Asistencia registrada' : 'Error al guardar.'
-            ]; */
-
-            // Preparamos el mensaje dinámicamente
-       /*      if ($exito) {
-                $mensajeFinal = 'Asistencia registrada exitosamente.';
-            } else {
-                // Si falló, extraemos el error exacto que generó la función guardar()
-                $errores = $this->obtenerErrores();
-                // reset() toma el primer error del arreglo (ej: 'Error interno al procesar...')
-                $mensajeFinal = !empty($errores) ? reset($errores) : 'Error de validación al guardar.';
-            }
-
-            return [
-                'exito' => $exito,
-                'nombre_atleta' => $atleta['nombres'] . ' ' . $atleta['apellidos'],
-                'mensaje' => $mensajeFinal
-            ];
-
-        } catch (PDOException $e) {
-            // error_log("Error Modelo Asistencia (QR): " . $e->getMessage());
-            // return ['exito' => false, 'mensaje' => 'Error de infraestructura.'];
-            return ['exito' => false, 'mensaje' => 'Error BD: ' . $e->getMessage()];
-        }
-    } */
-
 
         private function TransaccionRegistrarQR(): array {
-        // CORRECCIÓN: preg_replace es el correcto para expresiones regulares
         $tokenLimpio = preg_replace('/^token/', '', trim($this->datos['token_qr']));
 
         try {
-            // 1. Buscar Atleta por su Token
             $sqlBuscar = "SELECT id_atleta, nombres, apellidos FROM atletas WHERE token_asistencia = :token";
             $stmtBuscar = $this->pdo->prepare($sqlBuscar);
             $stmtBuscar->bindValue(':token', $tokenLimpio, PDO::PARAM_STR);
@@ -267,7 +172,6 @@ class Asistencia extends Conexion {
             $id_sesion = $this->datos['id_sesion'];
             $nombreCompleto = $atleta['nombres'] . ' ' . $atleta['apellidos'];
 
-            // 2. Verificar si ya estaba presente (Para la alerta azul de info)
             $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
             $stmtCheck = $this->pdo->prepare($sqlCheck);
             $stmtCheck->execute([':id_sesion' => $id_sesion, ':id_atleta' => $atleta['id_atleta']]);
@@ -282,13 +186,11 @@ class Asistencia extends Conexion {
                 ];
             }
 
-            // 3. Si no estaba presente, hidratamos el objeto a la fuerza simulando el POST
             $this->datos['id_atleta'] = $atleta['id_atleta'];
             $this->datos['estado_asistencia'] = 'Presente';
             $this->datos['justificacion'] = 'Validación Biométrica QR';
             $this->datos['tipo'] = 'QR';
 
-            // 4. Llamamos a guardar() 
             $exito = $this->guardar();
 
             if ($exito) {
@@ -309,18 +211,12 @@ class Asistencia extends Conexion {
         }
     }
 
-    /**
-     * MOTOR SQL (UPSERT UNIFICADO)
-     */
+   
     private function guardar(): bool {
         try {
 
         $this->pdo->beginTransaction();
 
-
-        // ========================================================================
-            // NUEVO CANDADO: Prevenir edición de registros QR
-            // ========================================================================
             $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
             $stmtCheck = $this->pdo->prepare($sqlCheck);
             $stmtCheck->execute([
@@ -329,17 +225,14 @@ class Asistencia extends Conexion {
             ]);
             $registroPrevio = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
 
-            // Si el registro previo existe, y fue hecho por QR, y el niño está presente: ¡BLOQUEO!
             if ($registroPrevio && $registroPrevio['tipo'] === 'QR' && $registroPrevio['estado'] === 'Presente') {
                 $this->agregarError('estado_asistencia', 'Acción denegada: Este atleta ya validó su presencia mediante el Escáner QR de forma inmutable.');
                 $this->pdo->rollBack();
                 return false;
             }
-            // ========================================================================
 
 
 
-            // Utilizamos los datos encapsulados
             $id_sesion = $this->datos['id_sesion'] ?? null;
             $id_atleta = $this->datos['id_atleta'] ?? null;
             $estado = $this->datos['estado_asistencia'] ?? null;
@@ -359,7 +252,6 @@ class Asistencia extends Conexion {
                     
             $stmt = $this->pdo->prepare($sql);
             
-            // Si en el futuro configuras AutoBinderTrait aquí, podrías omitir estos bindValue
             $stmt->bindValue(':id_sesion', $id_sesion, PDO::PARAM_INT);
             $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
             $stmt->bindValue(':estado', $estado, PDO::PARAM_STR);
@@ -372,11 +264,7 @@ class Asistencia extends Conexion {
             return true;
 
         } catch (PDOException $e) {
-            //error_log("Error Modelo Asistencia (Guardar): " . $e->getMessage());
-           // throw new \Exception($e->getMessage());
-           // return false;
-
-           
+          
 
            if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
