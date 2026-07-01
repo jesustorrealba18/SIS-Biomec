@@ -160,8 +160,10 @@ $paginasPermitidas = [
     'login', 'inicio', 'entrenador', 'drills', 'atleta', 'eventos', 'marcas',
     'periodizacion', 'temporadas', 'antropometria', 'representante', 'calendario', 'salir', 'sesiones', 
     'carriles', 'horario', 'asignacion', 'lesion', 'categorias', 'grupo', 'bitacora', 'usuarios', 'roles', 'mantenimiento', 'cargaBienestar', 'mi_perfil', 'asistencia',
-    'observacionesTecnicas', 'testFisico', 'normalizacion'
+    'observacionesTecnicas', 'testFisico', 'normalizacion','notificaciones'
 ];
+
+
 
 $pagina = "inicio";
 if (!empty($_GET['p']) && in_array($_GET['p'], $paginasPermitidas, true)) {
@@ -169,15 +171,27 @@ if (!empty($_GET['p']) && in_array($_GET['p'], $paginasPermitidas, true)) {
 }
 
 $rutasPublicas = ['login'];
+$rutasGlobalesPrivadas = ['notificaciones'];
 
 if (!in_array($pagina, $rutasPublicas, true) && empty($_SESSION['id'])) {
     header('Location: ?p=login');
     exit;
 }
 
-if (!in_array($pagina, $rutasPublicas, true) && !empty($_SESSION['id'])) {
+/* if (!in_array($pagina, $rutasPublicas, true) && !empty($_SESSION['id'])) {
     if (!\GrupoProyecto\SisBiomec\seguridad\Autorizacion::tieneAcceso($pagina)) {
         mostrarError403();
+    }
+} */
+
+if (!in_array($pagina, $rutasPublicas, true) && !empty($_SESSION['id'])) {
+    
+    // Si la página NO forma parte de los servicios globales, exigimos validación por Rol/Permiso
+    if (!in_array($pagina, $rutasGlobalesPrivadas, true)) {
+        if (!\GrupoProyecto\SisBiomec\seguridad\Autorizacion::tieneAcceso($pagina)) {
+            mostrarError403();
+            exit; // Aseguramos que detenga la ejecución
+        }
     }
 }
 

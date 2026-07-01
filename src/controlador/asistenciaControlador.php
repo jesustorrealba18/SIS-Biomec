@@ -1,6 +1,7 @@
 <?php
 
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
+use GrupoProyecto\SisBiomec\modelo\Notificacion;
 use GrupoProyecto\SisBiomec\modelo\Asistencia;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
@@ -103,12 +104,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $estado = $_POST['estado_asistencia'] ?? 'Desconocido';
             $id_atleta = (int)($_POST['id_atleta'] ?? 0); 
             
+            Notificacion::notificarAtletaYRepresentante(
+            $id_atleta,
+            "Asistencia Registrada", 
+            "Se ha confirmado la entrada a la sesión de entrenamiento.", 
+            "fa-check-circle", 
+            "emerald" // Usamos verde (emerald)
+            );
             Bitacora::registrar($id_usuario, 'Asistencias', 'INSERT', $id_atleta, 'estado', '', "Ajuste manual a: $estado");
             
             ob_clean();
             echo json_encode(['status' => 'success', 'message' => 'Estado actualizado correctamente.']);
         } else {
-            
+
             $errores = $objAsistencia->obtenerErrores();
             $mensajeError = !empty($errores) ? reset($errores) : 'Fallo de integridad al procesar la asistencia.';
             

@@ -21,7 +21,8 @@
             <!-- NOTIFICACIONES -->
             <button id="btnNotificaciones" class="relative inline-flex items-center justify-center text-gray-400 hover:text-indigo-400 transition focus:outline-none">
     <i class="fas fa-bell text-lg sm:text-xl"></i>
-     <span id="notifBadge" class="absolute -top-1 -right-2 bg-red-500 w-2.5 h-2.5 rounded-full border border-[#0f0d23]"></span>
+     <!-- <span id="notifBadge" class="absolute -top-1 -right-2 bg-red-500 w-2.5 h-2.5 rounded-full border border-[#0f0d23]"></span> -->
+     <span id="badgeNotificaciones" class="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center border border-[#0f0d23] hidden">0</span>
 </button>
 
             <!-- AYUDA -->
@@ -190,7 +191,7 @@
         }
 
         // ========== CARGAR NOTIFICACIONES DE EJEMPLO ==========
-        function cargarNotificaciones() {
+  /*       function cargarNotificaciones() {
             const contenedor = document.getElementById('listaNotificaciones');
             if (!contenedor) return;
             const notificaciones = [
@@ -214,6 +215,113 @@
                 `;
             });
         }
+        cargarNotificaciones(); */
+// ========== CARGAR NOTIFICACIONES REALES POR AJAX ==========
+        async function cargarNotificaciones() {
+            const contenedor = document.getElementById('listaNotificaciones');
+            // Si tienes un circulito rojo o contador en el icono de la campana, ponle este ID
+            const badgeContador = document.getElementById('badgeNotificaciones'); 
+            
+            if (!contenedor) return;
+
+            // Mostramos un spinner mientras carga
+            contenedor.innerHTML = '<div class="p-4 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl"></i></div>';
+
+            try {
+                // Suponiendo que creamos una ruta para esto. Ajusta la URL a tu enrutador.
+                const respuesta = await fetch('index.php?p=notificaciones&accion=listar');
+                const resultado = await respuesta.json();
+
+                if (resultado.status === 'success' && resultado.data.length > 0) {
+                    contenedor.innerHTML = ''; // Limpiamos el spinner
+                    
+                    resultado.data.forEach(notif => {
+                        // Si no está leída, le damos un fondito más claro para que resalte
+                        const fondoNoLeida = notif.leida == 0 ? 'bg-white/5 border-l-2 border-indigo-500' : '';
+                        
+                        contenedor.innerHTML += `
+                            <div class="p-4 hover:bg-[#1b1937] transition flex gap-3 ${fondoNoLeida} cursor-pointer" onclick="marcarComoLeida(${notif.id_notificacion}, this)">
+                                <div class="flex-shrink-0 w-8 h-8 bg-${notif.color}-500/20 rounded-full flex items-center justify-center text-${notif.color}-400">
+                                    <i class="fas ${notif.icono} text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-white font-medium">${notif.titulo}</p>
+                                    <p class="text-xs text-gray-400 mt-1">${notif.mensaje}</p>
+                                    <span class="text-[10px] text-gray-500 mt-2 block"><i class="fas fa-clock mr-1"></i> ${notif.tiempo_relativo}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    // Actualizar el numerito de la campana si existe
+                    if (badgeContador) {
+                        if (resultado.no_leidas > 0) {
+                            badgeContador.textContent = resultado.no_leidas;
+                            badgeContador.classList.remove('hidden');
+                        } else {
+                            badgeContador.classList.add('hidden');
+                        }
+                    }
+
+                } else {
+                    contenedor.innerHTML = `
+                        <div class="p-6 text-center">
+                            <i class="fas fa-bell-slash text-3xl text-gray-600 mb-3 block"></i>
+                            <p class="text-sm text-gray-500">No tienes notificaciones nuevas.</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error("Error obteniendo notificaciones", error);
+                contenedor.innerHTML = '<p class="p-4 text-center text-red-400 text-sm">Error al cargar datos.</p>';
+            }
+        }
+
+        // Llamamos a la función al cargar la página
         cargarNotificaciones();
+
+        // Opcional: Actualizar las notificaciones cada 60 segundos automáticamente (Polling)
+        // setInterval(cargarNotificaciones, 60000);
+
+        // ========== MARCAR COMO LEÍDA EN TIEMPO REAL ==========
+        // Recibe el ID para la BD y el elemento HTML para cambiarle el color al instante
+        window.marcarComoLeida = async function(id_notif, elementoHtml) {
+            
+            // 1. Si ya está opaca (ya la había leído), no hacemos peticiones a la BD para no saturar el servidor
+            if (elementoHtml.classList.contains('opacity-60')) return;
+
+            try {
+                // 2. Avisamos al Backend
+                const respuesta = await fetch('index.php?p=notificaciones&accion=marcar_leida', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id_notif })
+                });
+                
+                const resultado = await respuesta.json();
+
+                // 3. Si la BD se actualizó con éxito, hacemos la magia visual (DOM)
+                if (resultado.status === 'success') {
+                    // Le quitamos el fondo iluminado y el borde
+                    elementoHtml.classList.remove('bg-white/5', 'border-l-2', 'border-indigo-500');
+                    // La ponemos opaca para que parezca "leída"
+                    elementoHtml.classList.add('opacity-60');
+
+                    // 4. Actualizamos el numerito rojo de la campanita
+                    const badgeContador = document.getElementById('badgeNotificaciones');
+                    if (badgeContador && !badgeContador.classList.contains('hidden')) {
+                        let actuales = parseInt(badgeContador.textContent) - 1;
+                        if (actuales > 0) {
+                            badgeContador.textContent = actuales;
+                        } else {
+                            // Si llegó a cero, ocultamos el círculo rojo
+                            badgeContador.classList.add('hidden'); 
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Fallo de red al marcar leída", error);
+            }
+        };
+
     })();
 </script>
