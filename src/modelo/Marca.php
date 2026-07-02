@@ -486,6 +486,29 @@ class Marca extends Conexion {
             }
 
             $this->pdo->commit();
+
+            // -------------------------------------------------------------
+            // DEEP LINKING Y NOTIFICACIONES
+            // -------------------------------------------------------------
+            try {
+                $deepLink = "?p=marcas&h=" . $id_marca_insertada;
+                $mensaje = "Se ha registrado un tiempo de {$tiempo_final}s en {$this->datos['distancia_m']}m {$this->datos['estilo']}.";
+
+                // Llamamos a tu orquestador limpio
+                \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarAtletaYRepresentante(
+                    (int)$this->datos['id_atleta'],
+                    "¡Nueva Marca Registrada!",
+                    $mensaje,
+                    "fa-stopwatch",
+                    "emerald",
+                    $deepLink
+                );
+            } catch (\Throwable $th) {
+                // Si falla la notificación, no deshacemos la marca, solo registramos el error silencioso
+                error_log("Aviso: La marca se guardó, pero falló la notificación. " . $th->getMessage());
+            }
+
+
             return true;
 
         } catch (PDOException $e) {

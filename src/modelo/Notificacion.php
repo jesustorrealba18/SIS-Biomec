@@ -98,18 +98,19 @@ class Notificacion extends Conexion {
     /**
      * 1. MÉTODO CORE: Guarda la notificación en sis_seguridad
      */
-    public static function enviar(int $id_usuario, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo'): bool {
+    public static function enviar(int $id_usuario, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): bool {
         try {
             $instancia = new self(); // Se conecta a sis_seguridad
-            $sql = "INSERT INTO notificaciones (id_usuario, titulo, mensaje, icono, color) 
-                    VALUES (:id_usuario, :titulo, :mensaje, :icono, :color)";
+            $sql = "INSERT INTO notificaciones (id_usuario, titulo, mensaje, icono, color, enlace_url) 
+                    VALUES (:id_usuario, :titulo, :mensaje, :icono, :color, :enlace_url)";
             $stmt = $instancia->pdo->prepare($sql);
             return $stmt->execute([
                 ':id_usuario' => $id_usuario,
                 ':titulo' => $titulo,
                 ':mensaje' => $mensaje,
                 ':icono' => $icono,
-                ':color' => $color
+                ':color' => $color,
+                ':enlace_url' => $enlace_url
             ]);
         } catch (PDOException $e) {
             error_log("Error Notificacion (Seguridad): " . $e->getMessage());
@@ -120,7 +121,49 @@ class Notificacion extends Conexion {
     /**
      * 2. MÉTODO INTELIGENTE: Busca en sis_natacion y escribe en sis_seguridad
      */
-    public static function notificarAtletaYRepresentante(int $id_atleta, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo'): void {
+
+    public static function notificarAtletaYRepresentante(int $id_atleta, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): void {
+        try {
+            // Para BUSCAR a los usuarios, necesitamos conectarnos temporalmente a sis_natacion
+            $dbNegocio = new Conexion('sis_natacion'); 
+
+            // A) Buscar el id_usuario del Atleta Y SU EDAD
+            $sqlAtleta = "SELECT id_usuario, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad 
+                          FROM atletas 
+                          WHERE id_atleta = :id_atleta";
+            $stmtA = $dbNegocio->pdo->prepare($sqlAtleta);
+            $stmtA->execute([':id_atleta' => $id_atleta]);
+            $userAtleta = $stmtA->fetch(\PDO::FETCH_ASSOC);
+
+            if ($userAtleta) {
+                // 1. Notificar al Atleta (Si tiene un usuario web asignado)
+                if (!empty($userAtleta['id_usuario'])) {
+                    self::enviar($userAtleta['id_usuario'], $titulo, $mensaje, $icono, $color, $enlace_url);
+                }
+
+                // 2. REGLA DE NEGOCIO: Solo notificar al representante si el atleta es menor de 18 años
+                if ($userAtleta['edad'] < 18) {
+                    $sqlRep = "SELECT r.id_usuario 
+                               FROM representantes r 
+                               INNER JOIN atleta_representante ar ON r.id_representante = ar.id_representante 
+                               WHERE ar.id_atleta = :id_atleta AND r.id_usuario IS NOT NULL";
+                    $stmtR = $dbNegocio->pdo->prepare($sqlRep);
+                    $stmtR->execute([':id_atleta' => $id_atleta]);
+                    $representantes = $stmtR->fetchAll(\PDO::FETCH_ASSOC);
+
+                    // Enviamos copia a cada representante
+                    foreach ($representantes as $rep) {
+                        // Le cambiamos un poco el título para que sepa que es sobre su representado
+                        self::enviar($rep['id_usuario'], "Atleta a tu cargo: " . $titulo, $mensaje, $icono, $color, $enlace_url);
+                    }
+                }
+            }
+
+        } catch (\PDOException $e) {
+            error_log("Error Routing Notificacion: " . $e->getMessage());
+        }
+    }
+/*     public static function notificarAtletaYRepresentante(int $id_atleta, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo'): void {
         try {
             // Para BUSCAR a los usuarios, necesitamos conectarnos temporalmente a sis_natacion
             // Instanciamos la conexión normal de negocio
@@ -154,7 +197,7 @@ class Notificacion extends Conexion {
         } catch (PDOException $e) {
             error_log("Error Routing Notificacion: " . $e->getMessage());
         }
-    }
+    } */
 
     /**
      * Marca una notificación como leída asegurando que pertenezca al usuario
@@ -227,7 +270,7 @@ class Notificacion extends Conexion {
     public static function listarPorUsuario(int $id_usuario, int $limite = 10): array {
         try {
             $instancia = new self(); // Se conecta a sis_seguridad automáticamente
-            $sql = "SELECT id_notificacion, titulo, mensaje, icono, color, leida, fecha 
+            $sql = "SELECT id_notificacion, titulo, mensaje, icono, color, leida, fecha, enlace_url 
                     FROM notificaciones 
                     WHERE id_usuario = :id_usuario 
                     ORDER BY fecha DESC LIMIT :limite";

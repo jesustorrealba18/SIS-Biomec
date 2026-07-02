@@ -1380,6 +1380,50 @@ async function reactivarMarca(id_marca) {
 }
 
 // =====================================================================
+// DEEP LINKING: Resaltar fila al venir de una notificación
+// =====================================================================
+function procesarDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const idMarcaHighlight = params.get('h');
+    
+    if (!idMarcaHighlight) return;
+
+    // Como la tabla se llena por AJAX (fetch), debemos esperar a que los datos existan.
+    // Usamos un pequeño "Polling" que busca la fila hasta que aparezca.
+    let intentos = 0;
+    const buscarFila = setInterval(() => {
+        // Buscamos cualquier botón que tenga en su onclick el ID de la marca
+        // Ejemplo: onclick="editarMarca(15)" o onclick="eliminarMarca(15)"
+        const botonObjetivo = document.querySelector(`button[onclick*="(${idMarcaHighlight})"]`);
+        
+        if (botonObjetivo) {
+            clearInterval(buscarFila); // ¡Lo encontramos! Detenemos la búsqueda
+            
+            // Subimos hasta encontrar la etiqueta <tr> (la fila de la tabla)
+            const fila = botonObjetivo.closest('tr');
+            
+            // 1. Hacemos scroll suave para que la fila quede en el centro de la pantalla
+            fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // 2. Le inyectamos el color iluminado de Tailwind y le damos transición
+            fila.classList.add('bg-emerald-500/20', 'transition-all', 'duration-1000');
+            
+            // 3. Después de 4 segundos, apagamos la luz para que vuelva a la normalidad
+            setTimeout(() => {
+                fila.classList.remove('bg-emerald-500/20');
+                
+                // Opcional: Limpiar la URL para que no vuelva a alumbrar si el usuario recarga F5
+                window.history.replaceState(null, null, window.location.pathname + '?p=marcas');
+            }, 4000);
+            
+        } else if (intentos > 10) {
+            clearInterval(buscarFila); // Rendirnos después de 5 segundos si no cargó
+        }
+        intentos++;
+    }, 500); // Buscar cada medio segundo
+}
+
+// =====================================================================
 // INICIALIZADOR
 // =====================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1389,6 +1433,7 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarExclusividadSelects();
     cargarSelectsContexto();
     cargarTablaMarcas();
+    procesarDeepLink();
 
    // Bloqueo Inteligente del Calendario de Marcas (Corregido Zona Horaria)
   /*   const inputFecha = document.getElementById('fecha');
