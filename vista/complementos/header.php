@@ -235,12 +235,37 @@
                 if (resultado.status === 'success' && resultado.data.length > 0) {
                     contenedor.innerHTML = ''; // Limpiamos el spinner
                     
-                    resultado.data.forEach(notif => {
+                    /* resultado.data.forEach(notif => {
                         // Si no está leída, le damos un fondito más claro para que resalte
                         const fondoNoLeida = notif.leida == 0 ? 'bg-white/5 border-l-2 border-indigo-500' : '';
                         
                         contenedor.innerHTML += `
                             <div class="p-4 hover:bg-[#1b1937] transition flex gap-3 ${fondoNoLeida} cursor-pointer" onclick="marcarComoLeida(${notif.id_notificacion}, this)">
+                                <div class="flex-shrink-0 w-8 h-8 bg-${notif.color}-500/20 rounded-full flex items-center justify-center text-${notif.color}-400">
+                                    <i class="fas ${notif.icono} text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-white font-medium">${notif.titulo}</p>
+                                    <p class="text-xs text-gray-400 mt-1">${notif.mensaje}</p>
+                                    <span class="text-[10px] text-gray-500 mt-2 block"><i class="fas fa-clock mr-1"></i> ${notif.tiempo_relativo}</span>
+                                </div>
+                            </div>
+                        `;
+                    }); */
+
+                    resultado.data.forEach(notif => {
+                        
+                        /**
+                         * EVALUACIÓN EN TIEMPO DE CARGA:
+                         * Si la notificación ya fue leída en BD (leida == 1), le aplicamos opacidad.
+                         * Si no ha sido leída (leida == 0), le ponemos el fondo iluminado y el borde izquierdo.
+                         */
+                        const clasesEstado = (notif.leida == 1) 
+                            ? 'opacity-60' 
+                            : 'bg-white/5 border-l-2 border-indigo-500';
+                        
+                        contenedor.innerHTML += `
+                            <div class="p-4 hover:bg-[#1b1937] transition flex gap-3 cursor-pointer ${clasesEstado}" onclick="marcarComoLeida(${notif.id_notificacion}, this)">
                                 <div class="flex-shrink-0 w-8 h-8 bg-${notif.color}-500/20 rounded-full flex items-center justify-center text-${notif.color}-400">
                                     <i class="fas ${notif.icono} text-sm"></i>
                                 </div>
@@ -284,7 +309,7 @@
 
         // ========== MARCAR COMO LEÍDA EN TIEMPO REAL ==========
         // Recibe el ID para la BD y el elemento HTML para cambiarle el color al instante
-        window.marcarComoLeida = async function(id_notif, elementoHtml) {
+    /*     window.marcarComoLeida = async function(id_notif, elementoHtml) {
             
             // 1. Si ya está opaca (ya la había leído), no hacemos peticiones a la BD para no saturar el servidor
             if (elementoHtml.classList.contains('opacity-60')) return;
@@ -299,27 +324,86 @@
                 
                 const resultado = await respuesta.json();
 
-                // 3. Si la BD se actualizó con éxito, hacemos la magia visual (DOM)
+
                 if (resultado.status === 'success') {
-                    // Le quitamos el fondo iluminado y el borde
+                    // Magia visual (Éxito)
                     elementoHtml.classList.remove('bg-white/5', 'border-l-2', 'border-indigo-500');
-                    // La ponemos opaca para que parezca "leída"
                     elementoHtml.classList.add('opacity-60');
 
-                    // 4. Actualizamos el numerito rojo de la campanita
+                    // Actualizar campanita...
                     const badgeContador = document.getElementById('badgeNotificaciones');
                     if (badgeContador && !badgeContador.classList.contains('hidden')) {
                         let actuales = parseInt(badgeContador.textContent) - 1;
                         if (actuales > 0) {
                             badgeContador.textContent = actuales;
                         } else {
-                            // Si llegó a cero, ocultamos el círculo rojo
                             badgeContador.classList.add('hidden'); 
                         }
                     }
+                } else {
+                    // ¡NUEVO! Mostrar el error proveniente del ValidacionesTrait
+
+                     UI.error('Error', resultado.message || 'No se pudo cambiar estatus de la notificación.');
+                   
                 }
             } catch (error) {
                 console.error("Fallo de red al marcar leída", error);
+            }
+        }; */
+
+        // ========== MARCAR COMO LEÍDA EN TIEMPO REAL (Seguro) ==========
+        window.marcarComoLeida = async function(id_notif, elementoHtml) {
+            
+            // 1. VALIDACIÓN DE CORDURA JS: Asegurar que sea un número positivo
+            id_notif = parseInt(id_notif);
+            if (isNaN(id_notif) || id_notif <= 0) {
+                 UI.error('Error', "Intento de manipulación de ID bloqueado.");
+                return;
+            }
+
+            // 2. CANDADO CONTRA DOBLE CLIC (Debounce/Lock)
+            // Si ya tiene la clase opaca, O si tiene el atributo 'data-procesando', abortamos.
+            if (elementoHtml.classList.contains('opacity-60') || elementoHtml.dataset.procesando === 'true') {
+                return;
+            }
+
+            // Cerramos el candado para que otros clics no pasen
+            elementoHtml.dataset.procesando = 'true';
+
+            try {
+                // 3. Petición al Servidor
+                const respuesta = await fetch('index.php?p=notificaciones&accion=marcar_leida', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id_notif })
+                });
+                
+                const resultado = await respuesta.json();
+
+                // 4. Procesar respuesta
+                if (resultado.status === 'success') {
+                    // Magia visual
+                    elementoHtml.classList.remove('bg-white/5', 'border-l-2', 'border-indigo-500');
+                    elementoHtml.classList.add('opacity-60');
+
+                    // Actualizar campanita
+                    const badgeContador = document.getElementById('badgeNotificaciones');
+                    if (badgeContador && !badgeContador.classList.contains('hidden')) {
+                        let actuales = parseInt(badgeContador.textContent) - 1;
+                        if (actuales > 0) {
+                            badgeContador.textContent = actuales;
+                        } else {
+                            badgeContador.classList.add('hidden'); 
+                        }
+                    }
+                } else {
+                    UI.error('Error', resultado.message || 'No se pudo cambiar estatus de la notificación.');
+                }
+            } catch (error) {
+                console.error("Fallo de red al marcar leída", error);
+            } finally {
+                // Pase lo que pase (éxito o error), liberamos el candado
+                delete elementoHtml.dataset.procesando;
             }
         };
 

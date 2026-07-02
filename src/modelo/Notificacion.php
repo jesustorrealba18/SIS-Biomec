@@ -5,11 +5,94 @@ use PDO;
 use PDOException;
 
 class Notificacion extends Conexion {
+    use ValidacionesTrait;
+    use AutoBinderTrait;
 
+    private array $datos = [];
+    private array $camposPermitidos = ['id_notificacion', 'id_usuario'];
     
     public function __construct() {
       
         parent::__construct('sis_seguridad'); 
+    }
+
+    public function setDatos(array $datos): self {
+        foreach ($datos as $clave => $valor) {
+            if (in_array($clave, $this->camposPermitidos)) {
+                $this->datos[$clave] = is_string($valor) ? trim($valor) : $valor;
+            }
+        }
+        return $this;
+    }
+
+    private function ValidacionBackend(): bool {
+        $this->resetearErrores();
+
+         // 1. EXTRAER DATOS ENCAPSULADOS
+        $id_notif = $this->datos['id_notificacion'] ?? '';
+        $id_user = $this->datos['id_usuario'] ?? '';
+
+        // 2. VALIDACIONES DE FORMATO (Usando tu Trait)
+        if (!$this->requerido((string)$id_notif, 'ID Notificación') || 
+            !$this->soloNumeros((string)$id_notif, 'ID Notificación')) {
+            return false;
+        }
+
+        if (!$this->requerido((string)$id_user, 'Usuario') || 
+            !$this->soloNumeros((string)$id_user, 'Usuario')) {
+            return false;
+        }
+
+          // 3. VALIDACIÓN DE EXISTENCIA Y PROPIEDAD
+            $sqlCheck = "SELECT leida FROM notificaciones WHERE id_notificacion = :id_notificacion AND id_usuario = :id_usuario";
+            $stmtCheck = $this->pdo->prepare($sqlCheck);
+            $stmtCheck->execute([
+                ':id_notificacion' => (int)$id_notif, 
+                ':id_usuario' => (int)$id_user
+            ]);
+            
+            $notificacion = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$notificacion) {
+                $this->agregarError('Seguridad', 'La notificación no existe o no te pertenece.');
+               // error_log("ALERTA SEGURIDAD: Manipulación detectada. Usuario {$id_user} intentó alterar notificación {$id_notif}.");
+               return false;
+            }
+
+        if (isset($notificacion['leida']) && $notificacion['leida'] == 1) {
+            return true;
+        }
+
+         return empty($this->obtenerErrores());
+     } 
+
+        public function marcarcomoLeida(): bool {
+     
+
+            if (!$this->ValidacionBackend()) {
+                return false; 
+            }
+
+        return $this->marcarLeida();
+        }
+
+
+    private function marcarLeida(): bool {
+       
+        try {
+        $id_notif = $this->datos['id_notificacion'] ?? '';
+        
+
+            // 4. EJECUCIÓN SEGURA
+            $sql = "UPDATE notificaciones SET leida = 1 WHERE id_notificacion = :id_notificacion";
+            $stmt = $this->pdo->prepare($sql);
+            return $stmt->execute([':id_notificacion' => (int)$id_notif]);
+
+        } catch (\Throwable $e) {
+            $this->agregarError('Base de Datos', 'Ocurrió un error interno al actualizar.');
+            error_log("Error crítico en marcarLeida: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -76,7 +159,9 @@ class Notificacion extends Conexion {
     /**
      * Marca una notificación como leída asegurando que pertenezca al usuario
      */
-    public static function marcarComoLeida(int $id_notificacion, int $id_usuario): bool {
+   /*  public static function marcarComoLeida(int $id_notificacion, int $id_usuario): bool {
+
+
         try {
             $instancia = new self();
             $sql = "UPDATE notificaciones SET leida = 1 
@@ -91,7 +176,50 @@ class Notificacion extends Conexion {
             error_log("Error al marcar leída: " . $e->getMessage());
             return false;
         }
-    }
+    } */
+
+    /**
+     * Marca una notificación como leída con VALIDACIÓN ESTRICTA de seguridad.
+     */
+   /*  public static function marcarComoLeida(int $id_notificacion, int $id_usuario): bool {
+        // 1. Validación de cordura básica
+        if ($id_notificacion <= 0 || $id_usuario <= 0) return false;
+
+        try {
+            $instancia = new self();
+            
+            // 2. VALIDACIÓN DE EXISTENCIA Y PROPIEDAD (Evita Hackeo de IDs)
+            $sqlCheck = "SELECT leida FROM notificaciones WHERE id_notificacion = :id_notificacion AND id_usuario = :id_usuario";
+            $stmtCheck = $instancia->pdo->prepare($sqlCheck);
+            $stmtCheck->execute([
+                ':id_notificacion' => $id_notificacion, 
+                ':id_usuario' => $id_usuario
+            ]);
+            
+            $notificacion = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
+
+            // Si devuelve false, significa que el ID no existe o no le pertenece a este usuario
+            if (!$notificacion) {
+                // Registramos el intento de vulneración en los logs del servidor
+                error_log("ALERTA SEGURIDAD: El usuario ID {$id_usuario} intentó manipular la notificación ID {$id_notificacion} (Inexistente o ajena).");
+                return false;
+            }
+
+            // Si ya estaba leída (por un clic anterior), simplemente devolvemos true para no desgastar la BD
+            if ($notificacion['leida'] == 1) {
+                return true;
+            }
+
+            // 3. Ejecución segura (Solo llega aquí si existe, es de él, y no estaba leída)
+            $sql = "UPDATE notificaciones SET leida = 1 WHERE id_notificacion = :id_notificacion";
+            $stmt = $instancia->pdo->prepare($sql);
+            return $stmt->execute([':id_notificacion' => $id_notificacion]);
+
+        } catch (\Throwable $e) {
+            error_log("Error crítico en marcarLeida: " . $e->getMessage());
+            return false;
+        }
+    } */
 
     /**
      * Obtiene la lista de notificaciones de un usuario

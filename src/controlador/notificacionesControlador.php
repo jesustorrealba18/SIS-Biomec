@@ -38,14 +38,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $accion === 'listar') {
 
 
 // ==========================================================
-        // PIVOTE AJAX: Marcar Notificación como Leída
-        // ==========================================================
+// PIVOTE AJAX: Marcar Notificación como Leída
+// ==========================================================
+
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'marcar_leida') {
             try {
-                // 1. Leemos el JSON entrante
                 $input = json_decode(file_get_contents('php://input'), true);
                 
-                // 2. FORZAMOS el casteo a entero (INT) para evitar TypeError
+                // 1. Instanciamos el modelo y lo hidratamos de forma segura
+                $notificacion = new Notificacion();
+                $notificacion->setDatos([
+                    'id_notificacion' => $input['id'] ?? '', // Puede venir basura (letras)
+                    'id_usuario'      => $_SESSION['id'] ?? ''
+                ]);
+    
+                // 2. Ejecutamos el método que contiene el ValidacionesTrait
+                if ($notificacion->marcarcomoLeida()) {
+                    enviarJson(['status' => 'success']);
+                } else {
+                    // 3. ¡LA MAGIA! Extraemos el error exacto y se lo devolvemos al frontend
+                    $errores = $notificacion->obtenerErrores();
+                    $mensajeError = !empty($errores) ? reset($errores) : 'Error de integridad de datos.';
+                    
+                    enviarJson(['status' => 'error', 'message' => $mensajeError]);
+                }
+                
+            } catch (\Throwable $th) {
+                enviarJson(['status' => 'error', 'message' => 'Fallo interno: ' . $th->getMessage()]);
+            }
+        }
+
+/*         if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'marcar_leida') {
+            try {
+                $input = json_decode(file_get_contents('php://input'), true);
+                
                 $id_notificacion = isset($input['id']) ? (int)$input['id'] : 0;
                 $id_usuario_actual = (int)$_SESSION['id']; // Aseguramos que sea entero
     
@@ -62,14 +89,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $accion === 'listar') {
                 enviarJson(['status' => 'error', 'message' => 'ID inválido']);
                 
             } catch (\Throwable $th) {
-                // Si ocurre CUALQUIER error fatal en PHP, evitamos que salga la pantalla HTML 
-                // y devolvemos el error exacto en formato JSON para poder leerlo.
+                
                 enviarJson(['status' => 'error', 'message' => 'Fallo interno: ' . $th->getMessage()]);
             }
-        }
+        } */
 
 
-        function enviarJson($datos) {
+function enviarJson($datos) {
+
+if (ob_get_length()) {
+        ob_clean();
+    }
+
     header('Content-Type: application/json');
     echo json_encode($datos);
     exit; // ← crucial para que no se siga ejecutando HTML
