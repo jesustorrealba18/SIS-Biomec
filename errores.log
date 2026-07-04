@@ -1,86 +1,999 @@
-[15-Jun-2026 06:14:21 Europe/Berlin] LISTAR HORARIO: [{"id_bloque":1,"dia_semana":"Martes","hora_inicio":"00:00:00","hora_fin":"00:00:00"}]
-[15-Jun-2026 06:14:35 Europe/Berlin] === DATOS RECIBIDOS EN POST ===
-[15-Jun-2026 06:14:35 Europe/Berlin] Array
+[02-Jul-2026 20:59:38 Europe/Berlin] [ERR-20260702-75a292] PDOException no capturada: SQLSTATE[HY093]: Invalid parameter number | C:\xampp\htdocs\SIS-Biomec\src\modelo\asignacion.php:122
+[02-Jul-2026 21:00:18 Europe/Berlin] [ERR-20260702-5c3cb1] PDOException no capturada: SQLSTATE[HY093]: Invalid parameter number | C:\xampp\htdocs\SIS-Biomec\src\modelo\asignacion.php:122
+[02-Jul-2026 21:07:19 Europe/Berlin] === POST ASIGNACION ===
+[02-Jul-2026 21:07:19 Europe/Berlin] POST raw: Array
 (
-    [action_type] => registrar
-    [id_bloque] => 
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 4
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-30
+    [activa] => 1
+)
+
+[02-Jul-2026 21:07:19 Europe/Berlin] Datos normalizados: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 4
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-30
+    [activa] => 1
+)
+
+[02-Jul-2026 21:14:09 Europe/Berlin] === POST ASIGNACION ===
+[02-Jul-2026 21:14:09 Europe/Berlin] POST raw: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 4
+    [id_bloque_horario] => 3
+    [id_grupo] => 4
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-21
+    [activa] => 1
+)
+
+[02-Jul-2026 21:14:09 Europe/Berlin] Datos normalizados: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 4
+    [id_bloque_horario] => 3
+    [id_grupo] => 4
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-21
+    [activa] => 1
+)
+
+[02-Jul-2026 21:15:13 Europe/Berlin] === POST ASIGNACION ===
+[02-Jul-2026 21:15:13 Europe/Berlin] POST raw: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 2
+    [id_bloque_horario] => 6
+    [id_grupo] => 5
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-25
+    [activa] => 1
+)
+
+[02-Jul-2026 21:15:13 Europe/Berlin] Datos normalizados: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 2
+    [id_bloque_horario] => 6
+    [id_grupo] => 5
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-25
+    [activa] => 1
+)
+
+[02-Jul-2026 21:17:27 Europe/Berlin] === POST ASIGNACION ===
+[02-Jul-2026 21:17:27 Europe/Berlin] POST raw: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 4
+    [id_bloque_horario] => 7
+    [id_grupo] => 3
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-13
+    [activa] => 1
+)
+
+[02-Jul-2026 21:17:27 Europe/Berlin] Datos normalizados: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 4
+    [id_bloque_horario] => 7
+    [id_grupo] => 3
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-13
+    [activa] => 1
+)
+
+[02-Jul-2026 21:18:53 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:18:53 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:18:54 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:18:54 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:18:54 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:19:27 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:19:27 Europe/Berlin] === POST ASIGNACION ===
+[02-Jul-2026 21:19:27 Europe/Berlin] POST raw: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-03
+    [fecha_vigencia_fin] => 2026-07-27
+    [activa] => 1
+)
+
+[02-Jul-2026 21:19:27 Europe/Berlin] Datos normalizados: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-03
+    [fecha_vigencia_fin] => 2026-07-27
+    [activa] => 1
+)
+
+[02-Jul-2026 21:19:27 Europe/Berlin] === validarDatos() INICIO ===
+[02-Jul-2026 21:19:27 Europe/Berlin] id_carril: 3, id_bloque: 1, id_grupo: 19
+[02-Jul-2026 21:19:27 Europe/Berlin] validarDatos() - errores: Array
+(
+)
+
+[02-Jul-2026 21:19:27 Europe/Berlin] === setDatos() llamado con: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-03
+    [fecha_vigencia_fin] => 2026-07-27
+    [activa] => 1
+)
+
+[02-Jul-2026 21:19:27 Europe/Berlin] Ejecutando REGISTRAR nueva asignación
+[02-Jul-2026 21:19:27 Europe/Berlin] === registrarAsignacion() INICIO ===
+[02-Jul-2026 21:19:27 Europe/Berlin] === registrarAsignacionP() INICIO ===
+[02-Jul-2026 21:19:27 Europe/Berlin] Datos recibidos: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-03
+    [fecha_vigencia_fin] => 2026-07-27
+    [activa] => 1
+)
+
+[02-Jul-2026 21:19:27 Europe/Berlin] Valores extraídos:
+[02-Jul-2026 21:19:27 Europe/Berlin] idCarril: 3, idBloque: 1, idGrupo: 19
+[02-Jul-2026 21:19:27 Europe/Berlin] diaEsp: 2026-07-02
+[02-Jul-2026 21:19:27 Europe/Berlin] fechaInicio: 2026-07-03
+[02-Jul-2026 21:19:27 Europe/Berlin] fechaFin: 2026-07-27
+[02-Jul-2026 21:19:27 Europe/Berlin] activa: 1
+[02-Jul-2026 21:19:27 Europe/Berlin] SQL: INSERT INTO asignacion_carril (
+                id_carril, 
+                id_bloque_horario, 
+                id_grupo, 
+                dia_especifico, 
+                fecha_vigencia_inicio, 
+                fecha_vigencia_fin, 
+                activa
+            ) VALUES (
+                :id_carril, 
+                :id_bloque_horario, 
+                :id_grupo, 
+                :dia_especifico, 
+                :fecha_vigencia_inicio, 
+                :fecha_vigencia_fin, 
+                :activa
+            )
+[02-Jul-2026 21:19:27 Europe/Berlin] Params: Array
+(
+    [:id_carril] => 3
+    [:id_bloque_horario] => 1
+    [:id_grupo] => 19
+    [:dia_especifico] => 2026-07-02
+    [:fecha_vigencia_inicio] => 2026-07-03
+    [:fecha_vigencia_fin] => 2026-07-27
+    [:activa] => 1
+)
+
+[02-Jul-2026 21:19:27 Europe/Berlin] Resultado execute(): TRUE
+[02-Jul-2026 21:19:27 Europe/Berlin] Resultado de la operación: TRUE
+[02-Jul-2026 21:19:28 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:19:32 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:19:32 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:19:32 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:19:32 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:19:43 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:19:43 Europe/Berlin] === POST ASIGNACION ===
+[02-Jul-2026 21:19:43 Europe/Berlin] POST raw: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-04
+    [activa] => 1
+)
+
+[02-Jul-2026 21:19:43 Europe/Berlin] Datos normalizados: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-04
+    [activa] => 1
+)
+
+[02-Jul-2026 21:19:43 Europe/Berlin] === validarDatos() INICIO ===
+[02-Jul-2026 21:19:43 Europe/Berlin] id_carril: 3, id_bloque: 1, id_grupo: 19
+[02-Jul-2026 21:19:43 Europe/Berlin] validarDatos() - errores: Array
+(
+)
+
+[02-Jul-2026 21:19:43 Europe/Berlin] === setDatos() llamado con: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-04
+    [activa] => 1
+)
+
+[02-Jul-2026 21:19:43 Europe/Berlin] Ejecutando EDITAR asignación ID: 6
+[02-Jul-2026 21:19:43 Europe/Berlin] === editarAsignacion() INICIO ===
+[02-Jul-2026 21:19:43 Europe/Berlin] === editarAsignacionP() INICIO ===
+[02-Jul-2026 21:19:43 Europe/Berlin] Resultado de la operación: TRUE
+[02-Jul-2026 21:19:43 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:19:47 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:24:39 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:24:40 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:24:42 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:24:42 Europe/Berlin] === obtenerAsignacionPorId(5) resultado: Array
+(
+    [id_asignacion] => 5
+    [id_carril] => 1
+    [id_bloque_horario] => 3
+    [id_grupo] => 2
+    [dia_especifico] => 2026-06-15
+    [fecha_vigencia_inicio] => 2026-06-15
+    [fecha_vigencia_fin] => 2026-06-29
+    [activa] => 1
+    [carril_numero] => 1
     [dia_semana] => Viernes
-    [hora_inicio] => 05:16
-    [hora_fin] => 05:20
+    [hora_inicio] => 06:17:00
+    [hora_fin] => 16:17:00
+    [grupo_nombre] => prueba 2 
 )
 
-[15-Jun-2026 06:14:35 Europe/Berlin] HORAS NORMALIZADAS: inicio=05:16, fin=05:20
-[15-Jun-2026 06:14:35 Europe/Berlin] [ERR-20260615-27b824] PDOException no capturada: SQLSTATE[HY093]: Invalid parameter number | C:\xampp\htdocs\SIS-Biomec\src\modelo\horario.php:61
-[15-Jun-2026 06:15:57 Europe/Berlin] LISTAR HORARIO: [{"id_bloque":1,"dia_semana":"Martes","hora_inicio":"00:00:00","hora_fin":"00:00:00"}]
-[15-Jun-2026 06:16:09 Europe/Berlin] === DATOS RECIBIDOS EN POST ===
-[15-Jun-2026 06:16:09 Europe/Berlin] Array
+[02-Jul-2026 21:24:45 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:24:45 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:24:45 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:25:00 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:25:00 Europe/Berlin] === POST ASIGNACION ===
+[02-Jul-2026 21:25:00 Europe/Berlin] POST raw: Array
 (
-    [action_type] => registrar
-    [id_bloque] => 
-    [dia_semana] => Sábado
-    [hora_inicio] => 00:16
-    [hora_fin] => 18:16
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 5
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
 )
 
-[15-Jun-2026 06:16:09 Europe/Berlin] HORAS NORMALIZADAS: inicio=00:16, fin=18:16
-[15-Jun-2026 06:16:09 Europe/Berlin] Error en validarDatos: SQLSTATE[HY093]: Invalid parameter number
-[15-Jun-2026 06:17:34 Europe/Berlin] LISTAR HORARIO: [{"id_bloque":1,"dia_semana":"Martes","hora_inicio":"00:00:00","hora_fin":"00:00:00"}]
-[15-Jun-2026 06:17:42 Europe/Berlin] === DATOS RECIBIDOS EN POST ===
-[15-Jun-2026 06:17:42 Europe/Berlin] Array
+[02-Jul-2026 21:25:00 Europe/Berlin] Datos normalizados: Array
 (
-    [action_type] => registrar
-    [id_bloque] => 
-    [dia_semana] => Viernes
-    [hora_inicio] => 06:17
-    [hora_fin] => 16:17
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 5
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
 )
 
-[15-Jun-2026 06:17:42 Europe/Berlin] HORAS NORMALIZADAS: inicio=06:17, fin=16:17
-[15-Jun-2026 06:17:42 Europe/Berlin] EJECUTANDO REGISTRAR
-[15-Jun-2026 06:17:42 Europe/Berlin] RESULTADO REGISTRAR: true
-[15-Jun-2026 06:17:43 Europe/Berlin] LISTAR HORARIO: [{"id_bloque":1,"dia_semana":"Martes","hora_inicio":"00:00:00","hora_fin":"00:00:00"},{"id_bloque":3,"dia_semana":"Viernes","hora_inicio":"06:17:00","hora_fin":"16:17:00"}]
-[15-Jun-2026 06:17:47 Europe/Berlin] OBTENER BLOQUE ID=1: {"id_bloque":1,"dia_semana":"Martes","hora_inicio":"00:00:00","hora_fin":"00:00:00"}
-[15-Jun-2026 06:17:50 Europe/Berlin] === DATOS RECIBIDOS EN POST ===
-[15-Jun-2026 06:17:50 Europe/Berlin] Array
+[02-Jul-2026 21:25:00 Europe/Berlin] === validarDatos() INICIO ===
+[02-Jul-2026 21:25:00 Europe/Berlin] id_carril: 3, id_bloque: 5, id_grupo: 19
+[02-Jul-2026 21:25:00 Europe/Berlin] [ERR-20260702-c0c349] PDOException no capturada: SQLSTATE[HY093]: Invalid parameter number | C:\xampp\htdocs\SIS-Biomec\src\modelo\asignacion.php:81
+[02-Jul-2026 21:26:36 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:26:37 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:14 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:15 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:16 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:16 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:16 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:27 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:27 Europe/Berlin] === POST ASIGNACION ===
+[02-Jul-2026 21:27:27 Europe/Berlin] POST raw: Array
 (
-    [action_type] => actualizar
-    [id_bloque] => 1
+    [id_asignacion] => 
+    [id_carril] => 2
+    [id_bloque_horario] => 5
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-25
+    [activa] => 1
+)
+
+[02-Jul-2026 21:27:27 Europe/Berlin] Datos normalizados: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 2
+    [id_bloque_horario] => 5
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-25
+    [activa] => 1
+)
+
+[02-Jul-2026 21:27:27 Europe/Berlin] === validarDatos() INICIO ===
+[02-Jul-2026 21:27:27 Europe/Berlin] id_carril: 2, id_bloque: 5, id_grupo: 19
+[02-Jul-2026 21:27:27 Europe/Berlin] SQL Duplicado: SELECT COUNT(*) FROM asignacion_carril 
+                                 WHERE id_carril = :id_carril 
+                                 AND id_bloque_horario = :id_bloque_horario
+                                 AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL))
+                                 AND activa = 1
+[02-Jul-2026 21:27:27 Europe/Berlin] Parámetros: id_carril=2, id_bloque=5, dia_especifico=2026-07-02
+[02-Jul-2026 21:27:27 Europe/Berlin] Error en validación de duplicados: SQLSTATE[HY093]: Invalid parameter number
+[02-Jul-2026 21:27:27 Europe/Berlin] validarDatos() - errores: Array
+(
+)
+
+[02-Jul-2026 21:27:27 Europe/Berlin] === setDatos() llamado con: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 2
+    [id_bloque_horario] => 5
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-25
+    [activa] => 1
+)
+
+[02-Jul-2026 21:27:27 Europe/Berlin] Ejecutando REGISTRAR nueva asignación
+[02-Jul-2026 21:27:27 Europe/Berlin] === registrarAsignacion() INICIO ===
+[02-Jul-2026 21:27:27 Europe/Berlin] === registrarAsignacionP() INICIO ===
+[02-Jul-2026 21:27:27 Europe/Berlin] Datos recibidos: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 2
+    [id_bloque_horario] => 5
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-25
+    [activa] => 1
+)
+
+[02-Jul-2026 21:27:27 Europe/Berlin] Valores extraídos:
+[02-Jul-2026 21:27:27 Europe/Berlin] idCarril: 2, idBloque: 5, idGrupo: 19
+[02-Jul-2026 21:27:27 Europe/Berlin] diaEsp: 2026-07-02
+[02-Jul-2026 21:27:27 Europe/Berlin] fechaInicio: 2026-07-02
+[02-Jul-2026 21:27:27 Europe/Berlin] fechaFin: 2026-07-25
+[02-Jul-2026 21:27:27 Europe/Berlin] activa: 1
+[02-Jul-2026 21:27:27 Europe/Berlin] SQL: INSERT INTO asignacion_carril (
+                id_carril, 
+                id_bloque_horario, 
+                id_grupo, 
+                dia_especifico, 
+                fecha_vigencia_inicio, 
+                fecha_vigencia_fin, 
+                activa
+            ) VALUES (
+                :id_carril, 
+                :id_bloque_horario, 
+                :id_grupo, 
+                :dia_especifico, 
+                :fecha_vigencia_inicio, 
+                :fecha_vigencia_fin, 
+                :activa
+            )
+[02-Jul-2026 21:27:27 Europe/Berlin] Params: Array
+(
+    [:id_carril] => 2
+    [:id_bloque_horario] => 5
+    [:id_grupo] => 19
+    [:dia_especifico] => 2026-07-02
+    [:fecha_vigencia_inicio] => 2026-07-02
+    [:fecha_vigencia_fin] => 2026-07-25
+    [:activa] => 1
+)
+
+[02-Jul-2026 21:27:27 Europe/Berlin] Resultado execute(): TRUE
+[02-Jul-2026 21:27:27 Europe/Berlin] Resultado de la operación: TRUE
+[02-Jul-2026 21:27:27 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:29 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:29 Europe/Berlin] === obtenerAsignacionPorId(6) resultado: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-04
+    [activa] => 1
+    [carril_numero] => 3
     [dia_semana] => Martes
-    [hora_inicio] => 00:00:00
-    [hora_fin] => 05:00
+    [hora_inicio] => 02:00:00
+    [hora_fin] => 05:00:00
+    [grupo_nombre] => Equipo juvenil
 )
 
-[15-Jun-2026 06:17:50 Europe/Berlin] HORAS NORMALIZADAS: inicio=00:00, fin=05:00
-[15-Jun-2026 06:17:50 Europe/Berlin] EJECUTANDO ACTUALIZAR para ID: 1
-[15-Jun-2026 06:17:50 Europe/Berlin] RESULTADO ACTUALIZAR: true
-[15-Jun-2026 06:17:50 Europe/Berlin] LISTAR HORARIO: [{"id_bloque":1,"dia_semana":"Martes","hora_inicio":"00:00:00","hora_fin":"05:00:00"},{"id_bloque":3,"dia_semana":"Viernes","hora_inicio":"06:17:00","hora_fin":"16:17:00"}]
-[15-Jun-2026 06:19:05 Europe/Berlin] LISTAR HORARIO: [{"id_bloque":1,"dia_semana":"Martes","hora_inicio":"00:00:00","hora_fin":"05:00:00"},{"id_bloque":3,"dia_semana":"Viernes","hora_inicio":"06:17:00","hora_fin":"16:17:00"}]
-[15-Jun-2026 06:19:17 Europe/Berlin] === DATOS RECIBIDOS EN POST ===
-[15-Jun-2026 06:19:17 Europe/Berlin] Array
+[02-Jul-2026 21:27:32 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:32 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:32 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:33 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:33 Europe/Berlin] === obtenerAsignacionPorId(6) resultado: Array
 (
-    [action_type] => registrar
-    [id_bloque] => 
-    [dia_semana] => Sábado
-    [hora_inicio] => 12:19
-    [hora_fin] => 05:19
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-04
+    [activa] => 1
+    [carril_numero] => 3
+    [dia_semana] => Martes
+    [hora_inicio] => 02:00:00
+    [hora_fin] => 05:00:00
+    [grupo_nombre] => Equipo juvenil
 )
 
-[15-Jun-2026 06:19:17 Europe/Berlin] HORAS NORMALIZADAS: inicio=12:19, fin=05:19
-[15-Jun-2026 06:19:28 Europe/Berlin] === DATOS RECIBIDOS EN POST ===
-[15-Jun-2026 06:19:28 Europe/Berlin] Array
+[02-Jul-2026 21:27:54 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:27:54 Europe/Berlin] === obtenerAsignacionPorId(6) resultado: Array
 (
-    [action_type] => registrar
-    [id_bloque] => 
-    [dia_semana] => Sábado
-    [hora_inicio] => 12:19
-    [hora_fin] => 17:19
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-04
+    [activa] => 1
+    [carril_numero] => 3
+    [dia_semana] => Martes
+    [hora_inicio] => 02:00:00
+    [hora_fin] => 05:00:00
+    [grupo_nombre] => Equipo juvenil
 )
 
-[15-Jun-2026 06:19:28 Europe/Berlin] HORAS NORMALIZADAS: inicio=12:19, fin=17:19
-[15-Jun-2026 06:19:28 Europe/Berlin] Error en validarDatos: SQLSTATE[HY093]: Invalid parameter number
-[15-Jun-2026 06:19:28 Europe/Berlin] EJECUTANDO REGISTRAR
-[15-Jun-2026 06:19:28 Europe/Berlin] RESULTADO REGISTRAR: true
-[15-Jun-2026 06:19:28 Europe/Berlin] LISTAR HORARIO: [{"id_bloque":1,"dia_semana":"Martes","hora_inicio":"00:00:00","hora_fin":"05:00:00"},{"id_bloque":3,"dia_semana":"Viernes","hora_inicio":"06:17:00","hora_fin":"16:17:00"},{"id_bloque":4,"dia_semana":"Sabado","hora_inicio":"12:19:00","hora_fin":"17:19:00"}]
-[15-Jun-2026 06:22:27 Europe/Berlin] Error Listando Asignaciones: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'a.fecha_vigente_inicio' in 'field list'
-[15-Jun-2026 06:28:19 Europe/Berlin] Error Listando Asignaciones: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'a.dg_grupo' in 'field list'
-[15-Jun-2026 06:33:06 Europe/Berlin] Error Listando Asignaciones: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'a.dg_grupo' in 'field list'
+[02-Jul-2026 21:31:26 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:31:26 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:31:29 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:31:29 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:31:29 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:31:29 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:31:29 Europe/Berlin] === obtenerAsignacionPorId(6) resultado: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-04
+    [activa] => 1
+    [carril_numero] => 3
+    [capacidad_maxima] => 6
+    [dia_semana] => Martes
+    [hora_inicio] => 02:00:00
+    [hora_fin] => 05:00:00
+    [grupo_nombre] => Equipo juvenil
+)
+
+[02-Jul-2026 21:31:39 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:31:39 Europe/Berlin] === POST ASIGNACION ===
+[02-Jul-2026 21:31:39 Europe/Berlin] POST raw: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
+)
+
+[02-Jul-2026 21:31:39 Europe/Berlin] Datos normalizados: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
+)
+
+[02-Jul-2026 21:31:39 Europe/Berlin] === validarDatos() INICIO ===
+[02-Jul-2026 21:31:39 Europe/Berlin] id_carril: 3, id_bloque: 1, id_grupo: 19
+[02-Jul-2026 21:31:39 Europe/Berlin] SQL Duplicado: SELECT COUNT(*) FROM asignacion_carril 
+                                 WHERE id_asignacion != :id
+                                 AND id_carril = :id_carril 
+                                 AND id_bloque_horario = :id_bloque_horario
+                                 AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL))
+                                 AND activa = 1
+[02-Jul-2026 21:31:39 Europe/Berlin] Parámetros: id_carril=3, id_bloque=1, dia_especifico=2026-07-02
+[02-Jul-2026 21:31:39 Europe/Berlin] Error en validación de duplicados: SQLSTATE[HY093]: Invalid parameter number
+[02-Jul-2026 21:31:39 Europe/Berlin] validarDatos() - errores: Array
+(
+)
+
+[02-Jul-2026 21:31:39 Europe/Berlin] === setDatos() llamado con: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
+)
+
+[02-Jul-2026 21:31:39 Europe/Berlin] Ejecutando EDITAR asignación ID: 6
+[02-Jul-2026 21:31:39 Europe/Berlin] === editarAsignacion() INICIO ===
+[02-Jul-2026 21:31:39 Europe/Berlin] === editarAsignacionP() INICIO ===
+[02-Jul-2026 21:31:39 Europe/Berlin] EDITAR ID: 6, Carril: 3, Bloque: 1, Grupo: 19
+[02-Jul-2026 21:31:39 Europe/Berlin] Params UPDATE: Array
+(
+    [:id_asignacion] => 6
+    [:id_carril] => 3
+    [:id_bloque_horario] => 1
+    [:id_grupo] => 19
+    [:dia_especifico] => 2026-07-02
+    [:fecha_vigencia_inicio] => 2026-07-02
+    [:fecha_vigencia_fin] => 2026-07-31
+    [:activa] => 1
+)
+
+[02-Jul-2026 21:31:39 Europe/Berlin] Resultado UPDATE: TRUE
+[02-Jul-2026 21:31:39 Europe/Berlin] Resultado de la operación: TRUE
+[02-Jul-2026 21:31:40 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:31:42 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:31:42 Europe/Berlin] === obtenerAsignacionPorId(5) resultado: Array
+(
+    [id_asignacion] => 5
+    [id_carril] => 1
+    [id_bloque_horario] => 3
+    [id_grupo] => 2
+    [dia_especifico] => 2026-06-15
+    [fecha_vigencia_inicio] => 2026-06-15
+    [fecha_vigencia_fin] => 2026-06-29
+    [activa] => 1
+    [carril_numero] => 1
+    [capacidad_maxima] => 6
+    [dia_semana] => Viernes
+    [hora_inicio] => 06:17:00
+    [hora_fin] => 16:17:00
+    [grupo_nombre] => prueba 2 
+)
+
+[02-Jul-2026 21:31:52 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:31:52 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:31:52 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:32:00 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:32:00 Europe/Berlin] === obtenerAsignacionPorId(6) resultado: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
+    [carril_numero] => 3
+    [capacidad_maxima] => 6
+    [dia_semana] => Martes
+    [hora_inicio] => 02:00:00
+    [hora_fin] => 05:00:00
+    [grupo_nombre] => Equipo juvenil
+)
+
+[02-Jul-2026 21:35:02 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:35:03 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:35:06 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:35:06 Europe/Berlin] === obtenerAsignacionPorId(6) resultado: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
+    [carril_numero] => 3
+    [capacidad_maxima] => 6
+    [dia_semana] => Martes
+    [hora_inicio] => 02:00:00
+    [hora_fin] => 05:00:00
+    [grupo_nombre] => Equipo juvenil
+)
+
+[02-Jul-2026 21:35:33 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:35:34 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:35:36 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:35:36 Europe/Berlin] === obtenerAsignacionPorId(6) resultado: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
+    [carril_numero] => 3
+    [capacidad_maxima] => 6
+    [dia_semana] => Martes
+    [hora_inicio] => 02:00:00
+    [hora_fin] => 05:00:00
+    [grupo_nombre] => Equipo juvenil
+)
+
+[02-Jul-2026 21:37:35 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:37:35 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:37:37 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:37:37 Europe/Berlin] === obtenerAsignacionPorId(6) resultado: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
+    [carril_numero] => 3
+    [capacidad_maxima] => 6
+    [dia_semana] => Martes
+    [hora_inicio] => 02:00:00
+    [hora_fin] => 05:00:00
+    [grupo_nombre] => Equipo juvenil
+)
+
+[02-Jul-2026 21:37:47 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:37:47 Europe/Berlin] === obtenerAsignacionPorId(6) resultado: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
+    [carril_numero] => 3
+    [capacidad_maxima] => 6
+    [dia_semana] => Martes
+    [hora_inicio] => 02:00:00
+    [hora_fin] => 05:00:00
+    [grupo_nombre] => Equipo juvenil
+)
+
+[02-Jul-2026 21:37:51 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:37:53 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:37:56 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[02-Jul-2026 21:37:56 Europe/Berlin] === obtenerAsignacionPorId(6) resultado: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
+    [carril_numero] => 3
+    [capacidad_maxima] => 6
+    [dia_semana] => Martes
+    [hora_inicio] => 02:00:00
+    [hora_fin] => 05:00:00
+    [grupo_nombre] => Equipo juvenil
+)
+
+[03-Jul-2026 02:43:37 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 02:43:38 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 02:43:39 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 02:43:39 Europe/Berlin] === obtenerAsignacionPorId(6) resultado: Array
+(
+    [id_asignacion] => 6
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 19
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-02
+    [fecha_vigencia_fin] => 2026-07-31
+    [activa] => 1
+    [carril_numero] => 3
+    [capacidad_maxima] => 6
+    [dia_semana] => Martes
+    [hora_inicio] => 02:00:00
+    [hora_fin] => 05:00:00
+    [grupo_nombre] => Equipo juvenil
+)
+
+[03-Jul-2026 02:43:49 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 02:43:54 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 02:43:56 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 02:44:03 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:14:47 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:14:47 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:14:49 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:14:49 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:14:49 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:15:17 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:15:17 Europe/Berlin] === POST ASIGNACION ===
+[03-Jul-2026 03:15:17 Europe/Berlin] POST raw: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 5
+    [id_bloque_horario] => 6
+    [id_grupo] => 3
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-03
+    [fecha_vigencia_fin] => 2026-08-01
+    [activa] => 1
+)
+
+[03-Jul-2026 03:15:17 Europe/Berlin] Datos normalizados: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 5
+    [id_bloque_horario] => 6
+    [id_grupo] => 3
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-03
+    [fecha_vigencia_fin] => 2026-08-01
+    [activa] => 1
+)
+
+[03-Jul-2026 03:15:17 Europe/Berlin] === validarDatos() INICIO ===
+[03-Jul-2026 03:15:17 Europe/Berlin] id_carril: 5, id_bloque: 6, id_grupo: 3
+[03-Jul-2026 03:15:17 Europe/Berlin] SQL Duplicado: SELECT COUNT(*) FROM asignacion_carril 
+                                 WHERE id_carril = :id_carril 
+                                 AND id_bloque_horario = :id_bloque_horario
+                                 AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL))
+                                 AND activa = 1
+[03-Jul-2026 03:15:17 Europe/Berlin] Parámetros: id_carril=5, id_bloque=6, dia_especifico=2026-07-02
+[03-Jul-2026 03:15:17 Europe/Berlin] Error en validación de duplicados: SQLSTATE[HY093]: Invalid parameter number
+[03-Jul-2026 03:15:17 Europe/Berlin] validarDatos() - errores: Array
+(
+)
+
+[03-Jul-2026 03:15:17 Europe/Berlin] === setDatos() llamado con: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 5
+    [id_bloque_horario] => 6
+    [id_grupo] => 3
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-03
+    [fecha_vigencia_fin] => 2026-08-01
+    [activa] => 1
+)
+
+[03-Jul-2026 03:15:17 Europe/Berlin] Ejecutando REGISTRAR nueva asignación
+[03-Jul-2026 03:15:17 Europe/Berlin] === registrarAsignacion() INICIO ===
+[03-Jul-2026 03:15:17 Europe/Berlin] === registrarAsignacionP() INICIO ===
+[03-Jul-2026 03:15:17 Europe/Berlin] Datos recibidos: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 5
+    [id_bloque_horario] => 6
+    [id_grupo] => 3
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-03
+    [fecha_vigencia_fin] => 2026-08-01
+    [activa] => 1
+)
+
+[03-Jul-2026 03:15:17 Europe/Berlin] Valores extraídos:
+[03-Jul-2026 03:15:17 Europe/Berlin] idCarril: 5, idBloque: 6, idGrupo: 3
+[03-Jul-2026 03:15:17 Europe/Berlin] diaEsp: 2026-07-02
+[03-Jul-2026 03:15:17 Europe/Berlin] fechaInicio: 2026-07-03
+[03-Jul-2026 03:15:17 Europe/Berlin] fechaFin: 2026-08-01
+[03-Jul-2026 03:15:17 Europe/Berlin] activa: 1
+[03-Jul-2026 03:15:17 Europe/Berlin] SQL: INSERT INTO asignacion_carril (
+                id_carril, 
+                id_bloque_horario, 
+                id_grupo, 
+                dia_especifico, 
+                fecha_vigencia_inicio, 
+                fecha_vigencia_fin, 
+                activa
+            ) VALUES (
+                :id_carril, 
+                :id_bloque_horario, 
+                :id_grupo, 
+                :dia_especifico, 
+                :fecha_vigencia_inicio, 
+                :fecha_vigencia_fin, 
+                :activa
+            )
+[03-Jul-2026 03:15:17 Europe/Berlin] Params: Array
+(
+    [:id_carril] => 5
+    [:id_bloque_horario] => 6
+    [:id_grupo] => 3
+    [:dia_especifico] => 2026-07-02
+    [:fecha_vigencia_inicio] => 2026-07-03
+    [:fecha_vigencia_fin] => 2026-08-01
+    [:activa] => 1
+)
+
+[03-Jul-2026 03:15:17 Europe/Berlin] Resultado execute(): TRUE
+[03-Jul-2026 03:15:17 Europe/Berlin] Resultado de la operación: TRUE
+[03-Jul-2026 03:15:17 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:15:23 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:15:24 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:16:03 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:16:07 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:16:12 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:16:17 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[03-Jul-2026 03:16:17 Europe/Berlin] === obtenerAsignacionPorId(5) resultado: Array
+(
+    [id_asignacion] => 5
+    [id_carril] => 1
+    [id_bloque_horario] => 3
+    [id_grupo] => 2
+    [dia_especifico] => 2026-06-15
+    [fecha_vigencia_inicio] => 2026-06-15
+    [fecha_vigencia_fin] => 2026-06-29
+    [activa] => 1
+    [carril_numero] => 1
+    [capacidad_maxima] => 6
+    [dia_semana] => Viernes
+    [hora_inicio] => 06:17:00
+    [hora_fin] => 16:17:00
+    [grupo_nombre] => prueba 2 
+)
+
+[04-Jul-2026 20:31:18 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[04-Jul-2026 20:31:18 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[04-Jul-2026 20:31:23 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[04-Jul-2026 20:31:23 Europe/Berlin] === obtenerAsignacionPorId(8) resultado: Array
+(
+    [id_asignacion] => 8
+    [id_carril] => 5
+    [id_bloque_horario] => 6
+    [id_grupo] => 3
+    [dia_especifico] => 2026-07-02
+    [fecha_vigencia_inicio] => 2026-07-03
+    [fecha_vigencia_fin] => 2026-08-01
+    [activa] => 1
+    [carril_numero] => 5
+    [capacidad_maxima] => 6
+    [dia_semana] => Domingo
+    [hora_inicio] => 05:30:00
+    [hora_fin] => 10:00:00
+    [grupo_nombre] => equipo dinamita
+)
+
+[04-Jul-2026 20:31:28 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[04-Jul-2026 20:31:28 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[04-Jul-2026 20:31:28 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[04-Jul-2026 20:31:50 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===
+[04-Jul-2026 20:31:50 Europe/Berlin] === POST ASIGNACION ===
+[04-Jul-2026 20:31:50 Europe/Berlin] POST raw: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 6
+    [dia_especifico] => 2026-07-04
+    [fecha_vigencia_inicio] => 2026-07-04
+    [fecha_vigencia_fin] => 2026-08-21
+    [activa] => 1
+)
+
+[04-Jul-2026 20:31:50 Europe/Berlin] Datos normalizados: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 6
+    [dia_especifico] => 2026-07-04
+    [fecha_vigencia_inicio] => 2026-07-04
+    [fecha_vigencia_fin] => 2026-08-21
+    [activa] => 1
+)
+
+[04-Jul-2026 20:31:50 Europe/Berlin] === validarDatos() INICIO ===
+[04-Jul-2026 20:31:50 Europe/Berlin] id_carril: 3, id_bloque: 1, id_grupo: 6
+[04-Jul-2026 20:31:50 Europe/Berlin] SQL Duplicado: SELECT COUNT(*) FROM asignacion_carril 
+                                 WHERE id_carril = :id_carril 
+                                 AND id_bloque_horario = :id_bloque_horario
+                                 AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL))
+                                 AND activa = 1
+[04-Jul-2026 20:31:50 Europe/Berlin] Parámetros: id_carril=3, id_bloque=1, dia_especifico=2026-07-04
+[04-Jul-2026 20:31:50 Europe/Berlin] Error en validación de duplicados: SQLSTATE[HY093]: Invalid parameter number
+[04-Jul-2026 20:31:50 Europe/Berlin] validarDatos() - errores: Array
+(
+)
+
+[04-Jul-2026 20:31:50 Europe/Berlin] === setDatos() llamado con: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 6
+    [dia_especifico] => 2026-07-04
+    [fecha_vigencia_inicio] => 2026-07-04
+    [fecha_vigencia_fin] => 2026-08-21
+    [activa] => 1
+)
+
+[04-Jul-2026 20:31:50 Europe/Berlin] Ejecutando REGISTRAR nueva asignación
+[04-Jul-2026 20:31:50 Europe/Berlin] === registrarAsignacion() INICIO ===
+[04-Jul-2026 20:31:50 Europe/Berlin] === registrarAsignacionP() INICIO ===
+[04-Jul-2026 20:31:50 Europe/Berlin] Datos recibidos: Array
+(
+    [id_asignacion] => 
+    [id_carril] => 3
+    [id_bloque_horario] => 1
+    [id_grupo] => 6
+    [dia_especifico] => 2026-07-04
+    [fecha_vigencia_inicio] => 2026-07-04
+    [fecha_vigencia_fin] => 2026-08-21
+    [activa] => 1
+)
+
+[04-Jul-2026 20:31:50 Europe/Berlin] Valores extraídos:
+[04-Jul-2026 20:31:50 Europe/Berlin] idCarril: 3, idBloque: 1, idGrupo: 6
+[04-Jul-2026 20:31:50 Europe/Berlin] diaEsp: 2026-07-04
+[04-Jul-2026 20:31:50 Europe/Berlin] fechaInicio: 2026-07-04
+[04-Jul-2026 20:31:50 Europe/Berlin] fechaFin: 2026-08-21
+[04-Jul-2026 20:31:50 Europe/Berlin] activa: 1
+[04-Jul-2026 20:31:50 Europe/Berlin] SQL: INSERT INTO asignacion_carril (
+                id_carril, 
+                id_bloque_horario, 
+                id_grupo, 
+                dia_especifico, 
+                fecha_vigencia_inicio, 
+                fecha_vigencia_fin, 
+                activa
+            ) VALUES (
+                :id_carril, 
+                :id_bloque_horario, 
+                :id_grupo, 
+                :dia_especifico, 
+                :fecha_vigencia_inicio, 
+                :fecha_vigencia_fin, 
+                :activa
+            )
+[04-Jul-2026 20:31:50 Europe/Berlin] Params: Array
+(
+    [:id_carril] => 3
+    [:id_bloque_horario] => 1
+    [:id_grupo] => 6
+    [:dia_especifico] => 2026-07-04
+    [:fecha_vigencia_inicio] => 2026-07-04
+    [:fecha_vigencia_fin] => 2026-08-21
+    [:activa] => 1
+)
+
+[04-Jul-2026 20:31:50 Europe/Berlin] Resultado execute(): TRUE
+[04-Jul-2026 20:31:50 Europe/Berlin] Resultado de la operación: TRUE
+[04-Jul-2026 20:31:50 Europe/Berlin] === MODELO ASIGNACION CONSTRUIDO ===

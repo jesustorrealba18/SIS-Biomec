@@ -9,10 +9,165 @@ class Sesiones extends Conexion {
 
     use ValidacionesTrait;
 
+    private array $datos = [];
+
     public function __construct() {
         parent::__construct('sis_natacion');
     }
 
+    public function setDatos(array $datos): void {
+        $this->datos = $datos;
+    }
+
+    
+    public function registrarSesion(array $datosSesion, array $series): bool {
+        return $this->registrarSesionP($datosSesion, $series);
+    }
+
+    public function editarSesion(int $id_sesion, array $datosSesion, array $series): bool {
+        return $this->editarSesionP($id_sesion, $datosSesion, $series);
+    }
+
+    public function completarSesion(array $datosCierre): bool {
+        $conex = $this->pdo;
+        try {
+            $sql = "UPDATE sesiones SET 
+                        volumen_ejecutado = :volumen_ejecutado,
+                        estado = :estado,
+                        observaciones = :observaciones,
+                        fecha_modificacion = NOW()
+                    WHERE id_sesion = :id_sesion";
+
+            $stmt = $conex->prepare($sql);
+            return $stmt->execute([
+                ':volumen_ejecutado'=> (int)$datosCierre['volumen_ejecutado'],
+                ':estado'           => $datosCierre['estado'] ?? 'Completada',
+                ':observaciones'    => $datosCierre['observaciones'] ?? null,
+                ':id_sesion'        => (int)$datosCierre['id_sesion']
+            ]);
+        } catch (PDOException $e) {
+            error_log("Error al completar sesión: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function cancelarSesion(int $id_sesion): bool {
+        $conex = $this->pdo;
+        try {
+            $sql = "UPDATE sesiones SET estado = 'Cancelada', fecha_modificacion = NOW() WHERE id_sesion = :id_sesion";
+            $stmt = $conex->prepare($sql);
+            return $stmt->execute([':id_sesion' => $id_sesion]);
+        } catch (PDOException $e) {
+            error_log("Error al cancelar sesión: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function obtenerDetalleSesion(int $id_sesion): ?array {
+        $conex = $this->pdo;
+        try {
+            $sqlBase = "SELECT s.*, g.nombre as grupo_nombre
+                        FROM sesiones s
+                        INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
+                        WHERE s.id_sesion = :id";
+            $stmtBase = $conex->prepare($sqlBase);
+            $stmtBase->execute([':id' => $id_sesion]);
+            $sesion = $stmtBase->fetch(PDO::FETCH_ASSOC);
+
+            if (!$sesion) return null;
+
+            $sqlSeries = "SELECT sd.*, d.nombre as drill_nombre, d.estilo as drill_estilo
+                          FROM series_sesion sd
+                          LEFT JOIN drills d ON sd.id_drill = d.id_drill
+                          WHERE sd.id_sesion = :id
+                          ORDER BY sd.orden_ejecucion ASC";
+            $stmtSeries = $conex->prepare($sqlSeries);
+            $stmtSeries->execute([':id' => $id_sesion]);
+            $sesion['series'] = $stmtSeries->fetchAll(PDO::FETCH_ASSOC);
+
+            return $sesion;
+        } catch (PDOException $e) {
+            error_log("Error al recuperar detalle: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function listarSesionesPorEntrenador(int $id_entrenador, ?int $id_grupo = null, ?string $estado = null): array {
+        $conex = $this->pdo;
+        try {
+            $sql = "SELECT s.*, g.nombre as grupo_nombre
+                    FROM sesiones s
+                    INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
+                    WHERE s.id_entrenador = :id_entrenador";
+            
+            $params = [':id_entrenador' => $id_entrenador];
+            
+            if ($id_grupo) {
+                $sql .= " AND s.id_grupo = :id_grupo";
+                $params[':id_grupo'] = $id_grupo;
+            }
+            
+            if ($estado) {
+                $sql .= " AND s.estado = :estado";
+                $params[':estado'] = $estado;
+            }
+            
+            $sql .= " ORDER BY s.fecha DESC, s.id_sesion DESC";
+            
+            $stmt = $conex->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error listando sesiones: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function obtenerSeriesSesion(int $id_sesion): array {
+        $conex = $this->pdo;
+        try {
+            $sql = "SELECT sd.*, d.nombre as drill_nombre, d.estilo as drill_estilo
+                    FROM series_sesion sd
+                    LEFT JOIN drills d ON sd.id_drill = d.id_drill
+                    WHERE sd.id_sesion = :id_sesion
+                    ORDER BY sd.orden_ejecucion ASC";
+            $stmt = $conex->prepare($sql);
+            $stmt->execute([':id_sesion' => $id_sesion]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error obteniendo series: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function listarMicrociclos(): array {
+        $conex = $this->pdo;
+        try {
+            $sql = "SELECT id_microciclo, nombre FROM microciclos ORDER BY nombre";
+            $stmt = $conex->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error listando microciclos: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    //Listar sesiones para el módulo de Marcas (NO MODIFICAR)
+    
+    public function listarSesionesSelectMarca(): array {
+        try {
+            $sql = "SELECT s.id_sesion, s.fecha, s.tipo_sesion, g.nombre AS grupo_nombre 
+                    FROM sesiones s 
+                    INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
+                    WHERE s.estado IN ('Completada', 'Parcial')
+                    ORDER BY s.fecha DESC LIMIT 30";
+            return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error listando sesiones para marcas: " . $e->getMessage());
+            return [];
+        }
+    }
+    
     public function validarDatosSesion(array $datos): array {
         $this->resetearErrores();
 
@@ -33,9 +188,11 @@ class Sesiones extends Conexion {
         $this->enEnum($datos['tipo_sesion'] ?? '', 'tipo_sesion', [
             'Tecnica', 'Resistencia', 'Velocidad', 'Recuperacion', 'Fuerza', 'Flexibilidad', 'Competencia'
         ]);
+        
         if (!empty($datos['id_fase_actual'])) {
             $this->soloNumeros($datos['id_fase_actual'], 'id_fase_actual');
         }
+        
         $this->longitud($datos['calentamiento'] ?? '', 'calentamiento', 0, 5);
         $this->longitud($datos['vuelta_calma'] ?? '', 'vuelta_calma', 0, 5);
         $this->longitud($datos['observaciones'] ?? '', 'observaciones', 0, 5000);
@@ -77,7 +234,7 @@ class Sesiones extends Conexion {
         return $this->obtenerErrores();
     }
 
-    public function registrarSesion(array $datosSesion, array $series): bool {
+    private function registrarSesionP(array $datosSesion, array $series): bool {
         error_log("=== INICIO registrarSesion EN MODELO ===");
         error_log("datosSesion: " . print_r($datosSesion, true));
         error_log("series: " . print_r($series, true));
@@ -194,30 +351,7 @@ class Sesiones extends Conexion {
         }
     }
 
-    public function completarSesion(array $datosCierre): bool {
-        $conex = $this->pdo;
-        try {
-            $sql = "UPDATE sesiones SET 
-                        volumen_ejecutado = :volumen_ejecutado,
-                        estado = :estado,
-                        observaciones = :observaciones,
-                        fecha_modificacion = NOW()
-                    WHERE id_sesion = :id_sesion";
-
-            $stmt = $conex->prepare($sql);
-            return $stmt->execute([
-                ':volumen_ejecutado'=> (int)$datosCierre['volumen_ejecutado'],
-                ':estado'           => $datosCierre['estado'] ?? 'Completada',
-                ':observaciones'    => $datosCierre['observaciones'] ?? null,
-                ':id_sesion'        => (int)$datosCierre['id_sesion']
-            ]);
-        } catch (PDOException $e) {
-            error_log("Error al completar sesión: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    public function editarSesionPlanificada(int $id_sesion, array $datosSesion, array $series): bool {
+    private function editarSesionP(int $id_sesion, array $datosSesion, array $series): bool {
         $conex = $this->pdo;
         try {
             $conex->beginTransaction();
@@ -308,104 +442,6 @@ class Sesiones extends Conexion {
             $conex->rollBack();
             error_log("Error al editar sesión: " . $e->getMessage());
             return false;
-        }
-    }
-
-    public function cancelarSesion(int $id_sesion): bool {
-        $conex = $this->pdo;
-        try {
-            $sql = "UPDATE sesiones SET estado = 'Cancelada', fecha_modificacion = NOW() WHERE id_sesion = :id_sesion";
-            $stmt = $conex->prepare($sql);
-            return $stmt->execute([':id_sesion' => $id_sesion]);
-        } catch (PDOException $e) {
-            error_log("Error al cancelar sesión: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    public function obtenerDetalleSesion(int $id_sesion): ?array {
-        $conex = $this->pdo;
-        try {
-            $sqlBase = "SELECT s.*, g.nombre as grupo_nombre
-                        FROM sesiones s
-                        INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
-                        WHERE s.id_sesion = :id";
-            $stmtBase = $conex->prepare($sqlBase);
-            $stmtBase->execute([':id' => $id_sesion]);
-            $sesion = $stmtBase->fetch(PDO::FETCH_ASSOC);
-
-            if (!$sesion) return null;
-
-            $sqlSeries = "SELECT sd.*, d.nombre as drill_nombre, d.estilo as drill_estilo
-                          FROM series_sesion sd
-                          LEFT JOIN drills d ON sd.id_drill = d.id_drill
-                          WHERE sd.id_sesion = :id
-                          ORDER BY sd.orden_ejecucion ASC";
-            $stmtSeries = $conex->prepare($sqlSeries);
-            $stmtSeries->execute([':id' => $id_sesion]);
-            $sesion['series'] = $stmtSeries->fetchAll(PDO::FETCH_ASSOC);
-
-            return $sesion;
-        } catch (PDOException $e) {
-            error_log("Error al recuperar detalle: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    public function listarSesionesPorEntrenador(int $id_entrenador, ?int $id_grupo = null, ?string $estado = null): array {
-        $conex = $this->pdo;
-        try {
-            $sql = "SELECT s.*, g.nombre as grupo_nombre
-                    FROM sesiones s
-                    INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
-                    WHERE 1=1";
-            
-            $params = [];
-            
-            if ($id_grupo) {
-                $sql .= " AND s.id_grupo = :id_grupo";
-                $params[':id_grupo'] = $id_grupo;
-            }
-            
-            if ($estado) {
-                $sql .= " AND s.estado = :estado";
-                $params[':estado'] = $estado;
-            }
-            
-            $sql .= " ORDER BY s.fecha DESC, s.id_sesion DESC";
-            
-            $stmt = $conex->prepare($sql);
-            $stmt->execute($params);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error listando sesiones: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    public function listarMicrociclos(): array {
-        $conex = $this->pdo;
-        try {
-            $sql = "SELECT id_microciclo, nombre FROM microciclos ORDER BY nombre";
-            $stmt = $conex->query($sql);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            return [];
-        }
-    }
-
-    // Funcion para el modulo de Marcas No tocar
-    public function listarSesionesSelectMarca(): array {
-         try {
-        
-        $sql = "SELECT s.id_sesion, s.fecha, s.tipo_sesion, g.nombre AS grupo_nombre 
-                FROM sesiones s 
-                INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
-                WHERE s.estado IN ('Completada', 'Parcial')
-                ORDER BY s.fecha DESC LIMIT 30";
-        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-         } catch (PDOException $e) {
-            return [];
         }
     }
 }

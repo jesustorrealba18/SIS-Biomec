@@ -1,4 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 if (empty($_SESSION['id'])) {
     header('Location: ?p=login');
@@ -49,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($accion === 'listarDrillsActivos') {
         header('Content-Type: application/json');
         $objDrills = new Drills();
-        echo json_encode($objDrills->listarDrills());
+        echo json_encode($objDrills->listarDrills(['estado' => 'Activo']));
         exit;
     }
 
@@ -78,6 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($fechaSesion < $fechaHoy) {
                 $errores['fecha'] = 'No se permite crear sesiones para fechas pasadas.';
             }
+        }
+
+        if (empty($_POST['tipo_sesion'])) {
+            $errores['tipo_sesion'] = 'El tipo de sesión es obligatorio.';
         }
 
         if (!empty($errores)) {
@@ -131,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $series = isset($_POST['series']) ? json_decode($_POST['series'], true) : [];
 
-        if ($objSesiones->editarSesionPlanificada($id_sesion, $_POST, $series)) {
+        if ($objSesiones->editarSesion($id_sesion, $_POST, $series)) {
             Bitacora::registrar(
                 $id_entrenador, 'Modulo Sesiones', 'UPDATE',
                 $id_sesion, 'datos sesion', null, 'Modificación de planificación'
@@ -185,4 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+    
+    echo json_encode(['status' => 'error', 'message' => 'Acción no válida']);
+    exit;
 }

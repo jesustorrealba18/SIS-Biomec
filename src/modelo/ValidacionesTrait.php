@@ -44,7 +44,7 @@ trait ValidacionesTrait {
         return true;
     }
 
-protected function soloLetrasyNumeros(string $valor, string $campo): bool {
+    protected function soloLetrasyNumeros(string $valor, string $campo): bool {
         if (!preg_match('/^[\p{L}\d\s\-_.,]+$/u', trim($valor))) {
             $this->agregarError($campo, "El campo {$campo} solo puede contener letras, números y símbolos.");
             return false;
@@ -64,6 +64,30 @@ protected function soloLetrasyNumeros(string $valor, string $campo): bool {
     protected function fechaNoFutura(string $valor, string $campo): bool {
         if (strtotime($valor) > strtotime('today')) {
             $this->agregarError($campo, "{$campo} no puede ser una fecha futura.");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Validar edad mínima
+     */
+    protected function edadMinima(string $valor, string $campo, int $edadMinima = 18): bool {
+        if (empty($valor)) {
+            return true; // No validamos si está vacío, se valida con requerido
+        }
+        
+        $fecha = \DateTime::createFromFormat('Y-m-d', $valor);
+        if (!$fecha) {
+            $this->agregarError($campo, "{$campo} no es una fecha válida.");
+            return false;
+        }
+        
+        $hoy = new \DateTime();
+        $edad = $hoy->diff($fecha)->y;
+        
+        if ($edad < $edadMinima) {
+            $this->agregarError($campo, "Debe tener al menos {$edadMinima} años de edad.");
             return false;
         }
         return true;

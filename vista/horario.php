@@ -1,67 +1,3 @@
-<?php
-// Verificar si es una petición AJAX
-if (isset($_GET['accion']) || isset($_POST['action_type'])) {
-    header('Content-Type: application/json');
-    
-    require_once RAIZ . 'src/modelo/horario.php';
-    $horarioModel = new \GrupoProyecto\SisBiomec\modelo\horario();
-    
-    // Para peticiones GET (listar, obtener)
-    if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['accion'])) {
-        switch ($_GET['accion']) {
-            case 'listarHorario':
-                echo json_encode($horarioModel->listarHorario());
-                break;
-                
-            case 'obtenerBloque':
-                $id = $_GET['id'] ?? 0;
-                echo json_encode($horarioModel->obtenerPorId($id));
-                break;
-        }
-        exit;
-    }
-    
-    // Para peticiones POST (guardar, eliminar)
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $accion = $_POST['action_type'] ?? $_GET['accion'] ?? '';
-        
-        if ($accion === 'guardar' || $accion === 'registrar' || $accion === 'actualizar') {
-            $datos = $_POST;
-            $errores = $horarioModel->validarDatos($datos, $datos['id_bloque'] ?? null);
-            
-            if (empty($errores)) {
-                if ($datos['action_type'] === 'registrar') {
-                    $resultado = $horarioModel->registrarHorario($datos);
-                } else {
-                    $resultado = $horarioModel->actualizarHorario($datos);
-                }
-                
-                if ($resultado) {
-                    echo json_encode(['status' => 'success', 'message' => 'Operación exitosa']);
-                } else {
-                    echo json_encode(['status' => 'error', 'message' => 'Error al guardar']);
-                }
-            } else {
-                echo json_encode(['status' => 'warning', 'errores' => $errores]);
-            }
-            exit;
-        }
-        
-        if ($accion === 'eliminar') {
-            $id = $_POST['id_bloque'] ?? 0;
-            $resultado = $horarioModel->eliminarHorario($id);
-            echo json_encode(['status' => 'success', 'message' => 'Eliminado correctamente']);
-            exit;
-        }
-    }
-    
-    echo json_encode(['error' => 'Acción no válida']);
-    exit;
-}
-
-// Si no es AJAX, mostrar el HTML normalmente
-?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -178,10 +114,10 @@ if (isset($_GET['accion']) || isset($_POST['action_type'])) {
                             <option value="">Seleccione un día</option>
                             <option value="Lunes">Lunes</option>
                             <option value="Martes">Martes</option>
-                            <option value="Miércoles">Miercoles</option>
+                            <option value="Miércoles">Miércoles</option>
                             <option value="Jueves">Jueves</option>
                             <option value="Viernes">Viernes</option>
-                            <option value="Sábado">Sabado</option>
+                            <option value="Sábado">Sábado</option>
                             <option value="Domingo">Domingo</option>
                         </select>
                     </div>
@@ -240,18 +176,10 @@ if (isset($_GET['accion']) || isset($_POST['action_type'])) {
                 <div class="grid grid-cols-2 gap-4">
                     <div class="bg-[#0f0d23] p-4 rounded-xl border border-[#252345]">
                         <p class="text-xs text-gray-500 uppercase">Hora de Inicio</p>
-                        <input type="time" id="hora_inicio" name="hora_inicio" 
-                      data-validar="requerido" data-nombre="Hora de inicio"
-                       class="input-dark w-full p-3 rounded-xl"
-                     onchange="this.value = this.value.substring(0, 5);">
                         <p id="verHoraInicio" class="text-2xl font-bold text-white mt-1">-</p>
                     </div>
                     <div class="bg-[#0f0d23] p-4 rounded-xl border border-[#252345]">
                         <p class="text-xs text-gray-500 uppercase">Hora de Fin</p>
-                        <input type="time" id="hora_fin" name="hora_fin" 
-                        data-validar="requerido" data-nombre="Hora de fin"
-                         class="input-dark w-full p-3 rounded-xl"
-                         onchange="this.value = this.value.substring(0, 5);">
                         <p id="verHoraFin" class="text-2xl font-bold text-white mt-1">-</p>
                     </div>
                 </div>
