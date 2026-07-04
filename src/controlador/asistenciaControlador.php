@@ -1,5 +1,10 @@
 <?php
 
+use GrupoProyecto\SisBiomec\seguridad\Bitacora;
+use GrupoProyecto\SisBiomec\modelo\Notificacion;
+use GrupoProyecto\SisBiomec\modelo\Asistencia;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+
 // =====================================================================
 // CONTROLADOR PIVOTE: CONTROL DE ASISTENCIAS (RF-03)
 // =====================================================================
@@ -10,9 +15,7 @@ if (empty($_SESSION['id'])) {
     exit; 
 }
 
-use GrupoProyecto\SisBiomec\seguridad\Bitacora;
-use GrupoProyecto\SisBiomec\modelo\Asistencia;
-use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+
 
 $objAsistencia = new Asistencia();
 $id_usuario = $_SESSION['id'] ?? 0;
@@ -23,7 +26,6 @@ $id_usuario = $_SESSION['id'] ?? 0;
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $accion = $_GET['accion'] ?? '';
 
-    // Cargar la lista de atletas convocados a una sesión
     if ($accion === 'cargar_atletas') {
         header('Content-Type: application/json');
         
@@ -34,7 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             exit;
         }
 
-        // Llamamos al modelo para listar
         $lista = $objAsistencia->obtenerAtletasPorSesion((int)$id_sesion);
         echo json_encode(['status' => 'success', 'data' => $lista]);
         exit;
@@ -55,60 +56,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 // =====================================================================
 // RUTAS POST: Para procesar inserciones y actualizaciones
 // =====================================================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Capturamos la acción (soporta si viene por FormData o por URL en el fetch)
     $accionPost = $_POST['accion'] ?? $_GET['accion'] ?? '';
 
+    // ==========================================================
     // 1. Registro automático mediante Escáner QR
+    // ==========================================================
+
     if ($accionPost === 'registrar_por_qr') {
-        ob_start();
-        // Autorizacion::exigir('asistencia', 'registrar'); // Descomentar al integrar roles
+        ob_start(); 
+        // Autorizacion::exigir('asistencia', 'registrar'); 
         header('Content-Type: application/json');
         
-        $token_qr = $_POST['token_qr'] ?? null;
-        $id_sesion = $_POST['id_sesion'] ?? null;
-
-        // Hidratamos la propiedad id_sesion
         $objAsistencia->setDatos($_POST);
-        
-       $resultado = $objAsistencia->registrarPorQR();
+        $resultado = $objAsistencia->RegistrarPorQR();
 
-       if ($resultado['status_http'] === 'info') {
-        ob_clean();
+        ob_clean(); 
+
+        if (isset($resultado['status_http']) && $resultado['status_http'] === 'info') {
             echo json_encode(['status' => 'info', 'message' => $resultado['mensaje']]);
             exit;
         }
         
         if ($resultado['exito']) {
             Bitacora::registrar($id_usuario, 'Asistencia', 'INSERT', 0, 'asistencia_qr', '', "Escaneo QR exitoso: {$resultado['nombre_atleta']}");
-            ob_clean();
             echo json_encode(['status' => 'success', 'nombre_atleta' => $resultado['nombre_atleta']]);
         } else {
-            ob_clean();
             echo json_encode(['status' => 'error', 'message' => $resultado['mensaje']]);
         }
         exit;
     }
 
+ 
+    // ==========================================================
     // 2. Registro manual (Botones: Presente, Faltó, Permiso)
+    // ==========================================================
     if ($accionPost === 'registrar_manual') {
+        ob_start(); 
         // Autorizacion::exigir('asistencia', 'registrar');
         header('Content-Type: application/json');
 
-        // Hidratación limpia usando tu Trait
         $objAsistencia->setDatos($_POST);
         
-        if ($objAsistencia->guardar()) {
+        if ($objAsistencia->RegistrarManual()) {
             $estado = $_POST['estado_asistencia'] ?? 'Desconocido';
-            $id_atleta = $_POST['id_atleta'] ?? 0;
+            $id_atleta = (int)($_POST['id_atleta'] ?? 0); 
             
-            // Registro de auditoría para operaciones manuales
-            Bitacora::registrar($id_usuario, 'Asistencias', 'UPSERT', $id_atleta, 'estado', '', "Ajuste manual a: $estado");
+            Notificacion::notificarAtletaYRepresentante(
+            $id_atleta,
+            "Asistencia Registrada", 
+            "Se ha confirmado la entrada a la sesión de entrenamiento.", 
+            "fa-check-circle", 
+            "emerald" // Usamos verde (emerald)
+            );
+            Bitacora::registrar($id_usuario, 'Asistencias', 'INSERT', $id_atleta, 'estado', '', "Ajuste manual a: $estado");
             
+            ob_clean();
             echo json_encode(['status' => 'success', 'message' => 'Estado actualizado correctamente.']);
         } else {
-            echo json_encode(['status' => 'error', 'message' => 'Fallo interno al guardar la asistencia.']);
+
+            $errores = $objAsistencia->obtenerErrores();
+            $mensajeError = !empty($errores) ? reset($errores) : 'Fallo de integridad al procesar la asistencia.';
+            
+            ob_clean();
+            echo json_encode(['status' => 'error', 'message' => $mensajeError]);
         }
         exit;
     }

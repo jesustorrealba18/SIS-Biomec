@@ -64,7 +64,7 @@ class Representante extends Conexion {
     }
 
    
-  private function validarDatos(): bool {
+/*   private function validarDatos(): bool {
         $this->resetearErrores();
 
         $cedula =  $this->datos['cedula'] ?? '';
@@ -88,6 +88,190 @@ class Representante extends Conexion {
         $this->requerido($apellidos, 'apellidos');
         $this->soloLetras($apellidos, 'apellidos');
 
+        return empty($this->obtenerErrores());
+    } */
+
+private function validarDatos(): bool {
+        $this->resetearErrores();
+
+        // 1. Extracción segura de los datos (evita warnings de "undefined index")
+        $cedula        = $this->datos['cedula'] ?? '';
+        $nombres       = $this->datos['nombres'] ?? '';
+        $apellidos     = $this->datos['apellidos'] ?? '';
+        $telPrin       = $this->datos['telefono_principal'] ?? '';
+        $telEmer       = $this->datos['telefono_emergencia'] ?? '';
+        $correo        = $this->datos['correo'] ?? '';
+        $parentesco    = $this->datos['parentesco'] ?? '';
+        $direccion     = $this->datos['direccion_residencia'] ?? '';
+
+        $autMedica     = $this->datos['aut_medica'] ?? [];
+        $autImagen     = $this->datos['aut_imagen'] ?? [];
+        
+        $excluirCedula = $this->datos['cedula_original'] ?? ''; 
+
+        // --- VALIDACIÓN DE CÉDULA ---
+        // Usamos if() para no lanzar error de longitud si el campo viene vacío
+        if ($this->requerido($cedula, 'cedula')) {
+            $this->cedula($cedula, 'cedula');
+            $this->longitud($cedula, 'cedula', 6, 10);
+            
+            // Lógica inteligente de unicidad (Edición vs Registro)
+            // if (!$excluirCedula || $cedula !== $excluirCedula) {
+            //     $this->unico($this->pdo, $cedula, 'representantes', 'cedula');
+            // }
+        }
+
+        // --- VALIDACIÓN DE NOMBRES ---
+        if ($this->requerido($nombres, 'nombres')) {
+            $this->soloLetras($nombres, 'nombres');
+            $this->longitud($nombres, 'nombres', 3, 40);
+        }
+
+        // --- VALIDACIÓN DE APELLIDOS ---
+        if ($this->requerido($apellidos, 'apellidos')) {
+            $this->soloLetras($apellidos, 'apellidos');
+            $this->longitud($apellidos, 'apellidos', 3, 40);
+        }
+
+        // --- VALIDACIÓN DE TELÉFONO PRINCIPAL ---
+        if ($this->requerido($telPrin, 'telefono_principal')) {
+            $this->soloNumeros($telPrin, 'telefono_principal');
+            $this->longitud($telPrin, 'telefono_principal', 11, 11);
+        }
+
+        // --- VALIDACIÓN DE TELÉFONO DE EMERGENCIA (OPCIONAL) ---
+        // Al ser opcional, solo lo validamos si el usuario escribió algo
+        if (!empty(trim($telEmer))) {
+            $this->soloNumeros($telEmer, 'telefono_emergencia');
+            $this->longitud($telEmer, 'telefono_emergencia', 11, 11);
+        }
+
+        // --- VALIDACIÓN DE CORREO ---
+        if ($this->requerido($correo, 'correo')) {
+            $this->correoValido($correo, 'correo');
+            $this->longitud($correo, 'correo', 5, 40);
+        }
+
+        // --- VALIDACIÓN DE PARENTESCO (Protección contra manipulación del HTML) ---
+        if ($this->requerido($parentesco, 'parentesco')) {
+            // Evita que un atacante inyecte valores desde la consola del navegador
+            $parentescosPermitidos = ['Padre', 'Madre', 'Tutor', 'Otro'];
+            if (!in_array($parentesco, $parentescosPermitidos)) {
+                $this->agregarError('parentesco', 'El parentesco seleccionado no es válido.');
+            }
+        }
+
+        // --- VALIDACIÓN DE DIRECCIÓN ---
+        if ($this->requerido($direccion, 'direccion_residencia')) {
+            $this->longitud($direccion, 'direccion_residencia', 10, 200);
+        }
+
+       
+
+        // Si el arreglo de errores está vacío, devuelve TRUE (todo perfecto)
+        return empty($this->obtenerErrores());
+    }
+
+      private function validarReglasDeNegocio(): bool {
+        // ========================================================================
+        // BLINDAJE NIVEL 5: AUDITORÍA DE IDs (Protección contra Inyección en DOM)
+        // ========================================================================
+        
+        // 1. Validar que el ID del Representante exista (Si es una actualización)
+        $idRep = !empty($this->datos['cedula_original']) ? (int)$this->datos['cedula_original'] : 0;
+        
+        if ($idRep > 0) {
+            $stmtRep = $this->pdo->prepare("SELECT COUNT(id_representante) FROM representantes WHERE id_representante = :id");
+            $stmtRep->bindValue(':id', $idRep, \PDO::PARAM_INT);
+            $stmtRep->execute();
+            if ($stmtRep->fetchColumn() == 0) {
+                $this->agregarError('cedula_original', 'El representante que intenta modificar no existe (Posible manipulación de origen).');
+            }
+        }
+
+        // 2. Validar Reglas de Negocio de los Atletas Seleccionados
+        $atletasIds = $this->datos['atletas_ids'] ?? [];
+        
+        if (!empty($atletasIds) && is_array($atletasIds)) {
+            // Sanitizamos asegurando que todos los elementos sean números enteros
+            $idsLimpios = array_map('intval', $atletasIds);
+            
+            // Creamos dinámicamente los marcadores (?, ?, ?) según la cantidad de checkboxes enviados
+            $marcadores = implode(',', array_fill(0, count($idsLimpios), '?'));
+            
+            // LA PREGUNTA MAGISTRAL: 
+            // Buscamos a los atletas en la lista enviada QUE ADEMÁS cumplan las reglas
+            $sqlAtletas = "SELECT COUNT(a.id_atleta) FROM atletas a
+                           LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta
+                           WHERE a.id_atleta IN ($marcadores)
+                             AND TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) < 18
+                             AND (ar.id_representante IS NULL OR ar.id_representante = ?)";
+                             
+            $stmtAtletas = $this->pdo->prepare($sqlAtletas);
+            
+            // Vinculamos cada ID de atleta a sus signos de interrogación (?)
+            $posicion = 1;
+            foreach ($idsLimpios as $idAtleta) {
+                $stmtAtletas->bindValue($posicion++, $idAtleta, \PDO::PARAM_INT);
+            }
+            // El último signo de interrogación es para validar si le pertenecen al papá actual
+            $stmtAtletas->bindValue($posicion, $idRep, \PDO::PARAM_INT);
+            
+            $stmtAtletas->execute();
+            $conteoValidos = (int)$stmtAtletas->fetchColumn();
+            
+            // EL VEREDICTO: Si mandó 3 atletas, la BD debe confirmar que los 3 son válidos.
+          // EL VEREDICTO: Si mandó 3 atletas, la BD debe confirmar que los 3 son válidos.
+            if ($conteoValidos !== count($idsLimpios)) {
+                $this->agregarError('atletas_ids', 'Violación de Integridad: Uno o más atletas seleccionados no existen, son mayores de edad o ya pertenecen a otro representante.');
+            } else {
+              
+
+                // ========================================================================
+                // BLINDAJE NIVEL 6: PROTECCIÓN CONTRA INYECCIÓN EN CHECKBOXES DE PERMISOS
+                // ========================================================================
+                
+                $autMedica = $this->datos['aut_medica'] ?? [];
+                $autImagen = $this->datos['aut_imagen'] ?? [];
+
+                // 1. AUDITORÍA DE LLAVES (Evita que inyecten IDs falsos)
+                $llavesMedica = is_array($autMedica) ? array_keys($autMedica) : [];
+                $llavesImagen = is_array($autImagen) ? array_keys($autImagen) : [];
+
+                $trampaMedica = array_diff($llavesMedica, $idsLimpios);
+                $trampaImagen = array_diff($llavesImagen, $idsLimpios);
+
+                // 2. AUDITORÍA DE VALORES (Evita inyección de strings maliciosos en el value)
+                $valoresAlterados = false;
+                // Solo aceptamos '1' o '0' (en formato string o entero, por seguridad del protocolo HTTP)
+                $valoresPermitidos = ['1', '0', 1, 0]; 
+
+                if (is_array($autMedica)) {
+                    foreach ($autMedica as $val) {
+                        // El true al final fuerza a que el tipo de dato también coincida estrictamente
+                        if (!in_array($val, $valoresPermitidos, true)) {
+                            $valoresAlterados = true; 
+                            break;
+                        }
+                    }
+                }
+                
+                if (is_array($autImagen)) {
+                    foreach ($autImagen as $val) {
+                        if (!in_array($val, $valoresPermitidos, true)) {
+                            $valoresAlterados = true; 
+                            break;
+                        }
+                    }
+                }
+
+                // EL VEREDICTO DE CIBERSEGURIDAD
+                if (!empty($trampaMedica) || !empty($trampaImagen) || $valoresAlterados) {
+                    $this->agregarError('atletas_ids', 'Violación de Seguridad (Error 400): Se detectó una manipulación maliciosa en la estructura o valores de las autorizaciones.');
+                }
+            }
+        }
+      
         return empty($this->obtenerErrores());
     }
 
@@ -122,6 +306,12 @@ class Representante extends Conexion {
         if (!$this->validarDatos()) {
             return false; 
         } 
+
+        if (!$this->validarReglasDeNegocio()) {
+            return false; 
+        } 
+
+
         return $this->registrarRepresentante();
     }
 
@@ -130,6 +320,11 @@ class Representante extends Conexion {
         if (!$this->validarDatos()) {
             return false; 
         } 
+
+        if (!$this->validarReglasDeNegocio()) {
+            return false; 
+        } 
+
         return $this->actualizarRepresentante();
     }
 

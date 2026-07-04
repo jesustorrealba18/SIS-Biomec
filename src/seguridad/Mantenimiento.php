@@ -17,7 +17,7 @@ class Mantenimiento extends Conexion {
 
         // Definimos la ruta donde se guardarán temporalmente los respaldos
         // Se asume que la carpeta 'assets/backups' existe en la raíz de tu proyecto
-        $this->rutaBackups = dirname(__DIR__, 2) . '/assets/backups/';
+        $this->rutaBackups = dirname(__DIR__, 2) . '/src/config/backups/';
     }
 
    /**

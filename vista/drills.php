@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Entrenamientos | SGRD</title>
+		<link rel="icon" type="image/png" href="assets/img/logo_nadador.png">
+    <title>Entrenamiento | SGRD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -244,7 +246,6 @@
                     </div>
                 </div>
 
-                <!-- Pestaña: Configuración -->
                 <div id="tab-configuracion" class="tab-content">
                     <div class="grid grid-cols-2 gap-5">
                         <div class="space-y-2">
