@@ -451,36 +451,38 @@ class Grupo extends Conexion {
     }
 
     public function listarAtletasDisponibles(): array {
-        $conex = $this->pdo;
-        try {
-            $sql = "SELECT 
-                        a.id_atleta,
-                        a.nombres,
-                        a.apellidos,
-                        a.cedula,
-                        a.fecha_nacimiento,
-                        a.id_categoria,
-                        c.nombre as categoria_nombre,
-                        TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad
-                    FROM atletas a
-                    LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
-                    WHERE a.estado = 1
-                    AND NOT EXISTS (
-                        SELECT 1 
-                        FROM grupo_atleta ga 
-                        WHERE ga.id_atleta = a.id_atleta
-                    )
-                    ORDER BY a.apellidos, a.nombres ASC";
-            
-            $stmt = $conex->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            return [];
-        }
+    $conex = $this->pdo;
+    try {
+        $sql = "SELECT 
+                    a.id_atleta,
+                    a.nombres,
+                    a.apellidos,
+                    a.cedula,
+                    a.fecha_nacimiento,
+                    a.id_categoria,
+                    c.nombre as categoria_nombre,
+                    TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad
+                FROM atletas a
+                LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
+                WHERE a.estado = 1
+                AND NOT EXISTS (
+                    SELECT 1 
+                    FROM grupo_atleta ga 
+                    INNER JOIN grupos_entrenamiento g ON ga.id_grupo = g.id_grupo
+                    WHERE ga.id_atleta = a.id_atleta 
+                    AND g.activo = 1
+                )
+                ORDER BY a.apellidos, a.nombres ASC";
+        
+        $stmt = $conex->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return [];
     }
+}
 
-   public function listarAtletasPorGrupo(int $id_grupo): array {
+ public function listarAtletasPorGrupo(int $id_grupo): array {
     $conex = $this->pdo;
     try {
         $sql = "SELECT 
@@ -502,12 +504,7 @@ class Grupo extends Conexion {
         
         $stmt = $conex->prepare($sql);
         $stmt->execute([':id_grupo' => $id_grupo]);
-        $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Depuración: ver qué está devolviendo
-        error_log("Atletas asignados al grupo $id_grupo: " . print_r($resultados, true));
-        
-        return $resultados;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         error_log("Error listarAtletasPorGrupo: " . $e->getMessage());
         return [];

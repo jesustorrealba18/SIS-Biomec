@@ -8,11 +8,12 @@ const btnAsignar = document.getElementById('btnAsignar');
 const API_URL = 'index.php?p=grupo';
 
 async function peticionAjax(accion, datos = null) {
+    const url = `${API_URL}&accion=${accion}`;
     const opciones = { method: datos ? 'POST' : 'GET' };
     if (datos) opciones.body = datos;
 
     try {
-        const respuesta = await fetch(`${API_URL}&accion=${accion}`, opciones);
+        const respuesta = await fetch(url, opciones);
         if (!respuesta.ok) throw new Error('Error de comunicación con el servidor');
         return await respuesta.json();
     } catch (error) {
@@ -93,7 +94,7 @@ class ValidadorTiempoReal {
                     valido = false;
                 }
             } else if (tipo === 'checkbox') {
-                // Manejo especial para checkboxes
+            
             } else {
                 if (!valor || valor.trim() === '') {
                     this.errores[nombre].push(regla.mensajes.requerido);
@@ -451,10 +452,6 @@ function actualizarContadorAtletas() {
 }
 
 async function cargarAtletasAsignados(idGrupo) {
-    console.log("=== CARGANDO ATLETAS ASIGNADOS ===");
-    console.log("ID Grupo recibido:", idGrupo);
-    console.log("Tipo de dato:", typeof idGrupo);
-  
     const container = document.getElementById('atletas-asignados');
     container.innerHTML = '<div class="text-center py-4 text-gray-400"><i class="fas fa-spinner fa-spin"></i> Cargando atletas asignados...</div>';
 
