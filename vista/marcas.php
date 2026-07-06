@@ -147,6 +147,13 @@ table.dataTable.dtr-inline.collapsed > tbody > tr.parent > th.dtr-control:before
 </head>
 <body class="overflow-x-hidden">
 
+<?php
+// Recargar permisos del usuario actual en cada acceso
+if (isset($_SESSION['id'])) {
+    \GrupoProyecto\SisBiomec\seguridad\Autorizacion::cargarPermisos($_SESSION['id']);
+}
+?>
+
     <div class="flex h-screen overflow-hidden">
         
         <!-- Overlay para móvil cuando el menú está abierto -->
@@ -511,8 +518,14 @@ table.dataTable.dtr-inline.collapsed > tbody > tr.parent > th.dtr-control:before
     <script src="assets/js/alertas.js"></script>
      
     <script>
+      
+
         const PERMISOS_MODULO = {
+            ver: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'ver') ? 'true' : 'false'; ?>,
             registrar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'registrar') ? 'true' : 'false'; ?>,
+            editar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'editar') ? 'true' : 'false'; ?>,
+            eliminar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'eliminar') ? 'true' : 'false'; ?>,
+            restaurar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'restaurar') ? 'true' : 'false'; ?>
         };
     </script>
     <script src="assets/js/marcas.js"></script>

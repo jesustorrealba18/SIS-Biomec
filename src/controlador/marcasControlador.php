@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Actualizar registro existente
     if ($accionPost === 'actualizar') {
-        Autorizacion::exigir('marcas', 'registrar');
+        Autorizacion::exigir('marcas', 'editar');
 
         
 
@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     //Archivar (Borrado lógico con justificación)
     if ($accionPost === 'eliminar') {
-        Autorizacion::exigir('marcas', 'registrar');
+        Autorizacion::exigir('marcas', 'eliminar');
         
 
         $objMarca->setAtributos($_POST);
@@ -202,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Reactivar registro
     if ($accionPost === 'reactivar') {
-        Autorizacion::exigir('marcas', 'registrar');
+        Autorizacion::exigir('marcas', 'restaurar');
 
         $objMarca->setAtributos($_POST);
 

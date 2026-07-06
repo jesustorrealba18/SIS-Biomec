@@ -1024,6 +1024,13 @@ async function cargarTablaMarcas() {
     const estilo = document.getElementById('filtroEstilo')?.value || '';
     const piscina = document.getElementById('filtroPiscina')?.value || '';
 
+    // Permisos según estado
+const puedeEditar = PERMISOS_MODULO.editar && filtroEstado === 'Activo';
+const puedeEliminar = PERMISOS_MODULO.eliminar && filtroEstado === 'Activo';
+const puedeRestaurar = PERMISOS_MODULO.restaurar && filtroEstado === 'Inactivo';
+const puedeRegistrar = PERMISOS_MODULO.registrar; 
+// Para mostrar el botón de nuevo registro (ya existe en el header)
+
     // CAPTURAR URL PARA LA ILUMINACIÓN A PRUEBA DE BALAS
     const parametrosURL = new URLSearchParams(window.location.search);
     const idResaltar = parametrosURL.get('h');
@@ -1059,13 +1066,19 @@ let html = '';
             ? `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="¡Mejor Marca Personal!"><i class="fas fa-star mr-1"></i>PB</span>` 
             : '';
 
-        const botonAccion = (filtroEstado === 'Activo')
-            ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
-            : `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`;
-        
-        const botonEditar = (filtroEstado === 'Activo')
+        const botonAccion = (filtroEstado === 'Activo' && puedeEliminar)
+        ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
+        : (filtroEstado === 'Inactivo' && puedeRestaurar)
+        ? `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`
+        : '';
+
+        const botonEditar = (filtroEstado === 'Activo' && puedeEditar)
             ? `<button onclick="abrirModalMarca(${marca.id_marca})" class="text-amber-400 hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar Registro de Tiempo"><i class="fas fa-edit text-base"></i></button>`
             : '';
+
+        const accionesHTML = (botonEditar || botonAccion) 
+            ? `${botonEditar}${botonAccion}` 
+            : '';           
         
         const justificacionHTML = (filtroEstado === 'Inactivo' && marca.motivo_eliminacion)
             ? `<div class="text-[9px] text-red-400 mt-1 flex items-center gap-1 w-48 leading-tight">
@@ -1112,7 +1125,7 @@ let html = '';
                         <button onclick="verDetallesMarca(${marca.id_marca})" class="text-indigo-400 hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Análisis de Rendimiento">
                             <i class="fas fa-chart-line text-base"></i>
                         </button>
-                        ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar ? `${botonEditar}${botonAccion}` : ''}
+                       ${accionesHTML}
                     </div>
                 </td>
             </tr>
