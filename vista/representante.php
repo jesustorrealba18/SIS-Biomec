@@ -249,6 +249,9 @@
             <!-- Header común -->
             <?php 
                 $tituloPagina = 'Gestión de Representantes';
+                $tituloPaginaResponsive = "Representantes";
+                $iconModulo = "fas fa-user-shield";
+
                 include RAIZ . 'vista/complementos/header.php'; 
             ?>
 

@@ -14,7 +14,7 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.tailwindcss.min.css">
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.tailwindcss.min.js"></script>
+    <!-- <script src="https://cdn.datatables.net/1.13.6/js/dataTables.tailwindcss.min.js"></script> -->
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
@@ -100,6 +100,48 @@ table.dataTable tbody td {
     gap: 0.75rem;
     align-items: center;
 }
+
+/* =========================================================
+   RESTAURAR ÍCONO RESPONSIVE (el + verde nativo)
+   ========================================================= */
+
+/* El controlador de responsive */
+table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control,
+table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control {
+    position: relative;
+    cursor: pointer;
+}
+
+/* Estilo para el ícono + (cuando está colapsado) */
+table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control:before,
+table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control:before {
+    content: "+";
+    display: inline-block;
+    color: white;
+    background-color: #22c55e; /* verde */
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 3px rgba(0,0,0,0.3);
+    box-sizing: content-box;
+    text-align: center;
+    text-indent: 0 !important;
+    font-family: 'Courier New', Courier, monospace;
+    line-height: 1.4;
+    width: 1.2rem;
+    height: 1.2rem;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-right: 0.5rem;
+    transition: transform 0.15s ease;
+}
+
+/* Cuando está expandido (muestra -) */
+table.dataTable.dtr-inline.collapsed > tbody > tr.parent > td.dtr-control:before,
+table.dataTable.dtr-inline.collapsed > tbody > tr.parent > th.dtr-control:before {
+    content: "-";
+    background-color: #d33;
+    transform: rotate(0deg);
+}
         
         </style>
 </head>
@@ -129,8 +171,9 @@ table.dataTable tbody td {
         <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
             
             <?php 
-                $tituloPagina = "Módulo de Marcas Técnicas";
+                $tituloPagina = "Gestión de Marcas Técnicas";
                 $tituloPaginaResponsive = "Marcas";
+                $iconModulo = "fas fa-stopwatch";
                 include 'vista/complementos/header.php'; 
             ?>
 

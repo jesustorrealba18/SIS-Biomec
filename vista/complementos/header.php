@@ -10,7 +10,7 @@
                 <i class="fas fa-bars"></i>
             </button>
             <h1 class="text-sm sm:text-xl lg:text-2xl font-bold text-white tracking-wide flex items-center gap-1 sm:gap-2 truncate">
-                <i class="fas fa-id-card text-indigo-500 text-xs sm:text-base lg:text-xl flex-shrink-0"></i>
+                <i class="<?php echo $iconModulo ?? 'fas fa-id-card'; ?> text-indigo-500 text-xs sm:text-base lg:text-xl flex-shrink-0"></i>
                 <span class="block sm:hidden truncate max-w-[120px]"><?php echo $tituloPaginaResponsive ?? 'Sistema'; ?></span>
                 <span class="hidden sm:block truncate"><?php echo $tituloPagina ?? 'Sistema'; ?></span>
             </h1>
