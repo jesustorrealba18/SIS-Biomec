@@ -14,10 +14,10 @@ class ObservacionTecnica extends Conexion {
     private array $camposPermitidos = [
         'id_atleta', 'id_sesion', 'id_aspecto_tecnico',
         'calificacion', 'observacion_texto',
-        'id_observacion', 'accion'
+        'id_observacion', 'id_usuario', 'accion'
     ];
 
-    private function setAtributos(array $payload): void {
+    public function setAtributos(array $payload): void {
         foreach ($this->camposPermitidos as $campo) {
             if (isset($payload[$campo])) {
                 if (is_array($payload[$campo])) {
@@ -64,12 +64,14 @@ class ObservacionTecnica extends Conexion {
         return empty($this->obtenerErrores());
     }
 
-    public function registrarObservacion(array $payload): bool {
-        $this->setAtributos($payload);
+    public function getRegistrarObservacion(): bool {
         if (!$this->validarAtributosInternos(false)) {
             return false;
         }
+        return $this->registrarObservacionBD();
+    }
 
+    private function registrarObservacionBD(): bool {
         try {
             $this->pdo->beginTransaction();
 
@@ -88,29 +90,37 @@ class ObservacionTecnica extends Conexion {
                 ':id_aspecto_tecnico' => ['id_aspecto_tecnico', PDO::PARAM_INT],
                 ':calificacion'       => ['calificacion', PDO::PARAM_INT],
                 ':observacion_texto'  => ['observacion_texto', PDO::PARAM_STR],
-                ':id_usuario'         => ['id_usuario_local', PDO::PARAM_INT]
+                ':id_usuario'         => ['id_usuario', PDO::PARAM_INT]
             ];
 
-            $id_usuario = $payload['id_usuario'] ?? ($_SESSION['id'] ?? 0);
-            $this->autoBind($stmt, $mapa, $this->datos, ['id_usuario_local' => (int)$id_usuario]);
+            $this->autoBind($stmt, $mapa, $this->datos);
             $stmt->execute();
 
             $this->pdo->commit();
             return true;
         } catch (PDOException $e) {
             $this->pdo->rollBack();
-            error_log("Error en registrarObservacion: " . $e->getMessage());
+            error_log("Error en registrarObservacionBD: " . $e->getMessage());
             $this->agregarError('bd', 'Error interno al registrar la observacion.');
             return false;
         }
     }
 
-    public function actualizarObservacion(array $payload, int $id_observacion): bool {
-        $this->setAtributos($payload);
+    public function getActualizarObservacion(): bool {
+        $id = (int)($this->datos['id_observacion'] ?? 0);
+        if ($id <= 0) {
+            $this->agregarError('id_observacion', 'No se proporcionó un identificador válido para actualizar.');
+            return false;
+        }
+
         if (!$this->validarAtributosInternos(true)) {
             return false;
         }
 
+        return $this->actualizarObservacionBD($id);
+    }
+
+    private function actualizarObservacionBD(int $id_observacion): bool {
         try {
             $this->pdo->beginTransaction();
 
@@ -129,10 +139,12 @@ class ObservacionTecnica extends Conexion {
                 ':id_aspecto_tecnico' => ['id_aspecto_tecnico', PDO::PARAM_INT],
                 ':calificacion'       => ['calificacion', PDO::PARAM_INT],
                 ':observacion_texto'  => ['observacion_texto', PDO::PARAM_STR],
-                ':id_observacion'     => [$id_observacion, PDO::PARAM_INT]
+                ':id_observacion'     => ['id_observacion_local', PDO::PARAM_INT]
             ];
 
-            $this->autoBind($stmt, $mapa, $this->datos);
+            $this->autoBind($stmt, $mapa, $this->datos, [
+                'id_observacion_local' => $id_observacion
+            ]);
             $stmt->execute();
 
             if ($stmt->rowCount() === 0) {
@@ -145,25 +157,37 @@ class ObservacionTecnica extends Conexion {
             return true;
         } catch (PDOException $e) {
             $this->pdo->rollBack();
-            error_log("Error en actualizarObservacion: " . $e->getMessage());
+            error_log("Error en actualizarObservacionBD: " . $e->getMessage());
             $this->agregarError('bd', 'Error interno al actualizar la observacion.');
             return false;
         }
     }
 
     public function eliminarObservacion(int $id): bool {
+        if ($id <= 0) {
+            $this->agregarError('id_observacion', 'No se proporcionó un identificador válido para eliminar.');
+            return false;
+        }
+        return $this->eliminarObservacionBD($id);
+    }
+
+    private function eliminarObservacionBD(int $id): bool {
         try {
             $sql = "DELETE FROM observaciones_tecnicas WHERE id_observacion = :id";
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':id', $id, PDO::PARAM_INT);
             return $stmt->execute() && $stmt->rowCount() > 0;
         } catch (PDOException $e) {
-            error_log("Error en eliminarObservacion: " . $e->getMessage());
+            error_log("Error en eliminarObservacionBD: " . $e->getMessage());
             return false;
         }
     }
 
     public function listarObservaciones(int $id_atleta = 0, int $id_sesion = 0, int $id_aspecto = 0): array {
+        return $this->listarObservacionesBD($id_atleta, $id_sesion, $id_aspecto);
+    }
+
+    private function listarObservacionesBD(int $id_atleta = 0, int $id_sesion = 0, int $id_aspecto = 0): array {
         try {
             $sql = "SELECT ot.id_observacion, ot.id_atleta, ot.id_sesion, ot.id_aspecto_tecnico,
                            ot.calificacion, ot.observacion_texto, ot.fecha_registro,

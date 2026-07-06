@@ -189,7 +189,7 @@
                         <div class="space-y-2 col-span-2">
                             <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Dirección</label>
                             <input type="text" name="direccion" id="direccion" placeholder="Dirección de residencia"
-                                   data-validar="requerido|texto" data-nombre="Dirección" class="input-dark w-full p-3 rounded-xl">
+                                   data-validar="requerido|texto" data-nombre="Dirección" data-max="200" maxlength="200" class="input-dark w-full p-3 rounded-xl">
                         </div>
                         <div class="space-y-2">
                             <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Teléfono</label>
@@ -199,7 +199,7 @@
                         <div class="space-y-2">
                             <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Correo Electrónico</label>
                             <input type="email" name="correo" id="correo" placeholder="correo@ejemplo.com"
-                                   data-validar="requerido|correo" data-nombre="Correo electrónico" class="input-dark w-full p-3 rounded-xl">
+                                   data-validar="requerido|correo" data-nombre="Correo electrónico" data-max="100" maxlength="100" class="input-dark w-full p-3 rounded-xl">
                         </div>
                         <div class="space-y-2">
                             <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Fecha Registro Club</label>
@@ -242,17 +242,17 @@
                         <div class="space-y-2">
                             <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Seguro Médico</label>
                             <input type="text" name="seguro_medico" id="seguro_medico" placeholder="Nombre del seguro"
-                                   data-validar="requerido|texto" data-nombre="Seguro médico" class="input-dark w-full p-3 rounded-xl">
+                                   data-validar="requerido|texto" data-nombre="Seguro médico" data-max="100" maxlength="100" class="input-dark w-full p-3 rounded-xl">
                         </div>
                         <div class="space-y-2 col-span-2">
                             <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Alergias Conocidas</label>
                             <textarea name="alergias" id="alergias" rows="2" placeholder="Describa las alergias conocidas..."
-                                      data-validar="requerido|texto" data-nombre="Alergias" class="input-dark w-full p-3 rounded-xl resize-none"></textarea>
+                                      data-validar="requerido|texto" data-nombre="Alergias" data-max="500" maxlength="500" class="input-dark w-full p-3 rounded-xl resize-none"></textarea>
                         </div>
                         <div class="space-y-2 col-span-2">
                             <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Condiciones Médicas Preexistentes</label>
                             <textarea name="condiciones_previas" id="condiciones_previas" rows="2" placeholder="Asma, lesiones crónicas, etc..."
-                                      data-validar="requerido|texto" data-nombre="Condiciones médicas" class="input-dark w-full p-3 rounded-xl resize-none"></textarea>
+                                      data-validar="requerido|texto" data-nombre="Condiciones médicas" data-max="500" maxlength="500" class="input-dark w-full p-3 rounded-xl resize-none"></textarea>
                         </div>
                     </div>
                     <div class="mt-6 p-4 rounded-xl bg-black/20 border border-white/5">
@@ -261,7 +261,7 @@
                             <div class="space-y-2">
                                 <label class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Nombre</label>
                                 <input type="text" name="contacto_emergencia_nombre" id="contacto_emergencia_nombre" placeholder="Nombre completo"
-                                       data-validar="requerido|letras" data-nombre="Contacto emergencia" class="input-dark w-full p-3 rounded-xl">
+                                       data-validar="requerido|letras" data-nombre="Contacto emergencia" data-max="100" maxlength="100" class="input-dark w-full p-3 rounded-xl">
                             </div>
                             <div class="space-y-2">
                                 <label class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Teléfono</label>
@@ -289,12 +289,12 @@
                         <div class="space-y-2">
                             <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Número de Registro FEVEDA</label>
                             <input type="text" name="numero_feveda" id="numero_feveda" placeholder="Ej: FED-00123"
-                                   data-validar="requerido|texto" data-nombre="Número FEVEDA" class="input-dark w-full p-3 rounded-xl">
+                                   data-validar="requerido|texto" data-nombre="Número FEVEDA" data-max="50" maxlength="50" class="input-dark w-full p-3 rounded-xl">
                         </div>
                         <div class="space-y-2">
                             <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Club de Procedencia</label>
                             <input type="text" name="club_procedencia" id="club_procedencia" placeholder="Club anterior"
-                                   data-validar="requerido|texto" data-nombre="Club procedencia" class="input-dark w-full p-3 rounded-xl">
+                                   data-validar="requerido|texto" data-nombre="Club procedencia" data-max="100" maxlength="100" class="input-dark w-full p-3 rounded-xl">
                         </div>
                         <div class="space-y-2 col-span-2">
                             <label class="text-[10px] text-indigo-400 uppercase font-bold tracking-widest">Categoría Deportiva</label>

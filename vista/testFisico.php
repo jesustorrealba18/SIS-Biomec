@@ -290,27 +290,27 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Nombre *</label>
-                        <input type="text" id="tipo_nombre" name="nombre" class="w-full input-dark p-3 rounded-xl text-sm" required>
+                        <input type="text" id="tipo_nombre" name="nombre" data-validar="requerido|texto" data-nombre="Nombre" data-max="100" maxlength="100" class="w-full input-dark p-3 rounded-xl text-sm" required>
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Tipo de Medicion</label>
-                        <input type="text" id="tipo_medicion" name="tipo_medicion" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: Lactato, Distancia, Tiempo">
+                        <input type="text" id="tipo_medicion" name="tipo_medicion" data-validar="texto" data-nombre="Tipo de medicion" data-max="80" maxlength="80" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: Lactato, Distancia, Tiempo">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Unidad de Medida</label>
-                        <input type="text" id="tipo_unidad" name="unidad_medida" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: mmol/L, cm, seg">
+                        <input type="text" id="tipo_unidad" name="unidad_medida" data-validar="texto" data-nombre="Unidad de medida" data-max="30" maxlength="30" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: mmol/L, cm, seg">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Valores de Referencia</label>
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="number" step="0.01" id="tipo_ref_min" name="valor_referencia_min" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Min">
-                            <input type="number" step="0.01" id="tipo_ref_max" name="valor_referencia_max" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Max">
+                            <input type="number" step="0.01" id="tipo_ref_min" name="valor_referencia_min" data-validar="decimal" data-nombre="Referencia minima" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Min">
+                            <input type="number" step="0.01" id="tipo_ref_max" name="valor_referencia_max" data-validar="decimal" data-nombre="Referencia maxima" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Max">
                         </div>
                     </div>
                 </div>
                 <div class="mt-4">
                     <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Descripcion</label>
-                    <textarea id="tipo_descripcion" name="descripcion" rows="2" class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                    <textarea id="tipo_descripcion" name="descripcion" data-validar="texto" data-nombre="Descripcion" data-max="300" maxlength="300" rows="2" class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
                 </div>
                 <div class="mt-4 bg-black/30 p-4 rounded-2xl border border-dashed border-gray-700">
                     <div class="flex justify-between items-center mb-3">
@@ -350,31 +350,31 @@
                 <div class="grid grid-cols-1 gap-4">
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Nombre del Test *</label>
-                        <input type="text" id="pers_nombre" name="nombre" class="w-full input-dark p-3 rounded-xl text-sm" required>
+                        <input type="text" id="pers_nombre" name="nombre" data-validar="requerido|texto" data-nombre="Nombre del test" data-max="100" maxlength="100" class="w-full input-dark p-3 rounded-xl text-sm" required>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Tipo de Medicion</label>
-                            <input type="text" id="pers_tipo_medicion" name="tipo_medicion" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: Velocidad, Fuerza">
+                            <input type="text" id="pers_tipo_medicion" name="tipo_medicion" data-validar="texto" data-nombre="Tipo de medicion" data-max="80" maxlength="80" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: Velocidad, Fuerza">
                         </div>
                         <div>
                             <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Unidad de Medida</label>
-                            <input type="text" id="pers_unidad" name="unidad_medida" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: seg, cm, reps">
+                            <input type="text" id="pers_unidad" name="unidad_medida" data-validar="texto" data-nombre="Unidad de medida" data-max="30" maxlength="30" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: seg, cm, reps">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Referencia Min</label>
-                            <input type="number" step="0.01" id="pers_ref_min" name="valor_referencia_min" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Min">
+                            <input type="number" step="0.01" id="pers_ref_min" name="valor_referencia_min" data-validar="decimal" data-nombre="Referencia minima" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Min">
                         </div>
                         <div>
                             <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Referencia Max</label>
-                            <input type="number" step="0.01" id="pers_ref_max" name="valor_referencia_max" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Max">
+                            <input type="number" step="0.01" id="pers_ref_max" name="valor_referencia_max" data-validar="decimal" data-nombre="Referencia maxima" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Max">
                         </div>
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Descripcion</label>
-                        <textarea id="pers_descripcion" name="descripcion" rows="2" class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                        <textarea id="pers_descripcion" name="descripcion" data-validar="texto" data-nombre="Descripcion" data-max="300" maxlength="300" rows="2" class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
                     </div>
                 </div>
                 <div class="mt-4 bg-black/30 p-4 rounded-2xl border border-dashed border-gray-700">

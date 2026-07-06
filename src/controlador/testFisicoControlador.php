@@ -131,7 +131,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $_POST['id_usuario_toma'] = $id_usuario;
 
-        if ($objTest->registrarTest($_POST)) {
+        $objTest->setAtributos($_POST);
+
+        if ($objTest->getRegistrarTest()) {
             ob_end_clean();
             $datosGuardados = $_POST;
             unset($datosGuardados['accion']);
@@ -167,7 +169,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if ($objTest->actualizarTest($_POST, $id_registro)) {
+        $objTest->setAtributos($_POST);
+
+        if ($objTest->getActualizarTest()) {
             ob_end_clean();
             $datosNuevos = $_POST;
             unset($datosNuevos['accion'], $datosNuevos['id_registro_test']);
@@ -233,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['status' => 'success', 'message' => 'Tipo de test creado correctamente.']);
         } else {
             $errores = $objTest->obtenerErrores();
-            echo json_encode(['status' => 'error', 'message' => !empty($errores) ? reset($errores) : 'Error al crear el tipo de test.']);
+            echo json_encode(['status' => 'warning', 'errores' => $errores, 'message' => 'Hay errores en los datos.']);
         }
         exit;
     }
@@ -253,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['status' => 'success', 'message' => 'Tipo de test actualizado correctamente.']);
         } else {
             $errores = $objTest->obtenerErrores();
-            echo json_encode(['status' => 'error', 'message' => !empty($errores) ? reset($errores) : 'Error al actualizar el tipo de test.']);
+            echo json_encode(['status' => 'warning', 'errores' => $errores, 'message' => 'Hay errores en los datos.']);
         }
         exit;
     }
@@ -288,7 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['status' => 'success', 'id_test_pers' => $idPers, 'message' => 'Test personalizado creado correctamente.']);
         } else {
             $errores = $objTest->obtenerErrores();
-            echo json_encode(['status' => 'error', 'message' => !empty($errores) ? reset($errores) : 'Error al crear el test personalizado.']);
+            echo json_encode(['status' => 'warning', 'errores' => $errores, 'message' => 'Hay errores en los datos.']);
         }
         exit;
     }
@@ -326,7 +330,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['status' => 'success', 'message' => 'Test personalizado actualizado correctamente.']);
         } else {
             $errores = $objTest->obtenerErrores();
-            echo json_encode(['status' => 'error', 'message' => !empty($errores) ? reset($errores) : 'Error al actualizar el test personalizado.']);
+            echo json_encode(['status' => 'warning', 'errores' => $errores, 'message' => 'Hay errores en los datos.']);
         }
         exit;
     }

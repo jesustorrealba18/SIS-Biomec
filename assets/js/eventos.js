@@ -117,6 +117,7 @@ function filtrarTablaEventos() {
 
 function abrirModalEvento(id_evento = null) {
     formEvento.reset();
+    try { Validador.limpiarEstilos(formEvento); } catch(e) {}
     document.getElementById('id_evento').value = '';
     document.getElementById('contenedorTiemposCorte').innerHTML = '';
 
@@ -151,6 +152,7 @@ function cerrarModalEvento() {
     modalEvento.classList.add('hidden');
     modalEvento.firstElementChild.classList.add('scale-95', 'opacity-0');
     formEvento.reset();
+    try { Validador.limpiarEstilos(formEvento); } catch(e) {}
     document.getElementById('contenedorTiemposCorte').innerHTML = '';
 }
 
@@ -164,10 +166,10 @@ function agregarFilaTiempoCorte(datos = null) {
     const opcionesDist = opcionesDistancia.map(d => `<option value="${d}" ${datos && datos.distancia == d ? 'selected' : ''}>${d}m</option>`).join('');
 
     fila.innerHTML = `
-        <select name="tc_categoria[]" class="input-dark p-2 rounded-lg text-xs">${opcionesCat}</select>
-        <select name="tc_estilo[]" class="input-dark p-2 rounded-lg text-xs">${opcionesEst}</select>
-        <select name="tc_distancia[]" class="input-dark p-2 rounded-lg text-xs">${opcionesDist}</select>
-        <input type="number" step="0.01" name="tc_tiempo[]" placeholder="Segundos" value="${datos ? datos.tiempo_corte_segundos : ''}" class="input-dark p-2 rounded-lg text-xs font-mono text-center">
+        <select name="tc_categoria[]" data-validar="requerido" data-nombre="Categoria" class="input-dark p-2 rounded-lg text-xs">${opcionesCat}</select>
+        <select name="tc_estilo[]" data-validar="requerido" data-nombre="Estilo" class="input-dark p-2 rounded-lg text-xs">${opcionesEst}</select>
+        <select name="tc_distancia[]" data-validar="requerido" data-nombre="Distancia" class="input-dark p-2 rounded-lg text-xs">${opcionesDist}</select>
+        <input type="number" step="0.01" name="tc_tiempo[]" data-validar="requerido|decimal" data-nombre="Tiempo de corte" placeholder="Segundos" value="${datos ? datos.tiempo_corte_segundos : ''}" class="input-dark p-2 rounded-lg text-xs font-mono text-center">
         <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-2 transition cursor-pointer"><i class="fas fa-trash-alt"></i></button>
     `;
 
@@ -176,6 +178,12 @@ function agregarFilaTiempoCorte(datos = null) {
 
 formEvento.addEventListener('submit', async function(e) {
     e.preventDefault();
+
+    const erroresJS = Validador.validarFormulario(formEvento);
+    if (erroresJS) {
+        UI.advertencia('Datos Incompletos', erroresJS);
+        return;
+    }
 
     const id_evento = document.getElementById('id_evento').value;
     const formData = new FormData(formEvento);
@@ -283,13 +291,13 @@ function agregarFilaMeta(datos = null) {
             <input type="hidden" name="meta_id_atleta[]" value="${datos ? datos.id_atleta : ''}" class="meta-id-atleta">
             <input type="hidden" name="meta_id_meta[]" value="${datos ? datos.id_meta || '' : ''}" class="meta-id-meta">
             <div class="relative">
-                <input type="text" name="meta_atleta_nombre[]" value="${datos ? datos.nombre_atleta || '' : ''}" placeholder="Buscar atleta..." class="input-dark p-2 rounded-lg text-xs w-40 meta-nombre-atleta" autocomplete="off">
+                <input type="text" name="meta_atleta_nombre[]" data-validar="requerido" data-nombre="Atleta" value="${datos ? datos.nombre_atleta || '' : ''}" placeholder="Buscar atleta..." class="input-dark p-2 rounded-lg text-xs w-40 meta-nombre-atleta" autocomplete="off">
                 <div class="dropdown-atleta-meta absolute z-50 w-full mt-1 bg-[#111026] border border-[#252345] rounded-lg shadow-lg max-h-40 overflow-y-auto hidden"></div>
             </div>
         </td>
-        <td class="p-2"><select name="meta_estilo[]" class="input-dark p-2 rounded-lg text-xs">${opcionesEst}</select></td>
-        <td class="p-2"><select name="meta_distancia[]" class="input-dark p-2 rounded-lg text-xs">${opcionesDist}</select></td>
-        <td class="p-2"><input type="number" step="0.01" name="meta_objetivo[]" value="${datos ? datos.marca_objetivo_seg || '' : ''}" placeholder="0.00" class="input-dark p-2 rounded-lg text-xs font-mono text-center w-20"></td>
+        <td class="p-2"><select name="meta_estilo[]" data-validar="requerido" data-nombre="Estilo" class="input-dark p-2 rounded-lg text-xs">${opcionesEst}</select></td>
+        <td class="p-2"><select name="meta_distancia[]" data-validar="requerido" data-nombre="Distancia" class="input-dark p-2 rounded-lg text-xs">${opcionesDist}</select></td>
+        <td class="p-2"><input type="number" step="0.01" name="meta_objetivo[]" data-validar="requerido|decimal" data-nombre="Marca objetivo" value="${datos ? datos.marca_objetivo_seg || '' : ''}" placeholder="0.00" class="input-dark p-2 rounded-lg text-xs font-mono text-center w-20"></td>
         <td class="p-2"><span class="text-xs font-mono text-gray-400 meta-pb">${datos && datos.pb_actual_seg ? datos.pb_actual_seg : '-'}</span></td>
         <td class="p-2"><span class="text-xs font-mono meta-dif ${datos && datos.diferencia_pct !== null ? (datos.diferencia_pct <= 0 ? 'text-green-400' : 'text-red-400') : 'text-gray-500'}">${datos && datos.diferencia_pct !== null ? datos.diferencia_pct + '%' : '-'}</span></td>
         <td class="p-2"><button type="button" onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-300 transition cursor-pointer"><i class="fas fa-trash-alt"></i></button></td>
@@ -707,3 +715,4 @@ async function cargarRecursos() {
 }
 
 cargarRecursos().then(() => cargarTablaEventos());
+try { Validador.vincularTiempoReal(formEvento); } catch(e) {}

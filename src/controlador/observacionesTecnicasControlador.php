@@ -83,7 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $_POST['id_usuario'] = $id_usuario;
 
-        if ($objObs->registrarObservacion($_POST)) {
+        $objObs->setAtributos($_POST);
+
+        if ($objObs->getRegistrarObservacion()) {
             ob_end_clean();
             $datosGuardados = $_POST;
             unset($datosGuardados['accion']);
@@ -119,7 +121,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if ($objObs->actualizarObservacion($_POST, $id_observacion)) {
+        $objObs->setAtributos($_POST);
+
+        if ($objObs->getActualizarObservacion()) {
             ob_end_clean();
             $datosNuevos = $_POST;
             unset($datosNuevos['accion'], $datosNuevos['id_observacion']);

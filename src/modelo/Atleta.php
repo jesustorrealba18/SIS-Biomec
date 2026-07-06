@@ -18,6 +18,9 @@ class Atleta extends Conexion {
     public function setDatos(array $datos): self {
         $this->datos = $this->sanitizar($datos);
         $this->validar();
+        if (empty($this->datos['token_asistencia'])) {
+            $this->datos['token_asistencia'] = bin2hex(random_bytes(16));
+        }
         return $this;
     }
 
@@ -160,14 +163,10 @@ class Atleta extends Conexion {
     }
 
     public function guardar(): bool {
+        return $this->guardarAtleta();
+    }
 
-        if (empty($this->datos['token_asistencia'])) {
-        // Creamos un hash seguro usando bytes aleatorios
-        $token = bin2hex(random_bytes(16)); 
-        $this->datos['token_asistencia'] = $token;
-        }   
-
-
+    private function guardarAtleta(): bool {
         $conex = $this->pdo;
         try {
             $conex->beginTransaction();
@@ -224,12 +223,21 @@ class Atleta extends Conexion {
             if ($conex->inTransaction()) {
                 $conex->rollBack();
             }
-            error_log("Error en Atleta::guardar(): " . $e->getMessage());
+            error_log("Error en Atleta::guardarAtleta(): " . $e->getMessage());
             return false;
         }
     }
 
     public function actualizar(): bool {
+        $id = (int)$this->getCampo('id_atleta');
+        if ($id <= 0) {
+            $this->agregarError('id_atleta', 'No se proporcionó un identificador de atleta válido para actualizar.');
+            return false;
+        }
+        return $this->actualizarAtleta();
+    }
+
+    private function actualizarAtleta(): bool {
         $conex = $this->pdo;
         try {
             $conex->beginTransaction();
@@ -303,12 +311,20 @@ class Atleta extends Conexion {
             if ($conex->inTransaction()) {
                 $conex->rollBack();
             }
-            error_log("Error en Atleta::actualizar(): " . $e->getMessage());
+            error_log("Error en Atleta::actualizarAtleta(): " . $e->getMessage());
             return false;
         }
     }
 
     public function eliminar(int $id): bool {
+        if ($id <= 0) {
+            $this->agregarError('id_atleta', 'No se proporcionó un identificador válido para desactivar el atleta.');
+            return false;
+        }
+        return $this->eliminarAtleta($id);
+    }
+
+    private function eliminarAtleta(int $id): bool {
         $conex = $this->pdo;
         try {
             $sql = "UPDATE atletas SET estado = 'Inactivo' WHERE id_atleta = :id";
@@ -316,12 +332,16 @@ class Atleta extends Conexion {
             $this->vincular($stmt, ':id', $id, PDO::PARAM_INT);
             return $stmt->execute();
         } catch (PDOException $e) {
-            error_log("Error en Atleta::eliminar(): " . $e->getMessage());
+            error_log("Error en Atleta::eliminarAtleta(): " . $e->getMessage());
             return false;
         }
     }
 
     public function listar(): array {
+        return $this->listarAtleta();
+    }
+
+    private function listarAtleta(): array {
         $conex = $this->pdo;
         try {
             $sql = "SELECT a.*,
@@ -344,7 +364,7 @@ class Atleta extends Conexion {
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Error en Atleta::listar(): " . $e->getMessage());
+            error_log("Error en Atleta::listarAtleta(): " . $e->getMessage());
             return [];
         }
     }
