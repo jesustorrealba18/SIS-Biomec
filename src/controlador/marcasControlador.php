@@ -4,6 +4,7 @@ use GrupoProyecto\SisBiomec\modelo\Marca;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
 use GrupoProyecto\SisBiomec\modelo\sesiones;
 use GrupoProyecto\SisBiomec\modelo\Evento;
+use GrupoProyecto\SisBiomec\modelo\Notificacion;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 
@@ -109,8 +110,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     null, 
                     'Múltiples campos (Registro Completo)', 
                     null, 
-                    json_encode($datosFiltrados, JSON_UNESCAPED_UNICODE) 
-                );           
+                    json_encode($datosFiltrados, JSON_UNESCAPED_UNICODE));       
+                
+                Notificacion::NotificarMarcas('CREATE',  $datosFiltrados,$datosFiltrados['id_marca']);
 
             echo json_encode(['status' => 'success', 'message' => 'Marca registrada.']);
         } else {
@@ -150,6 +152,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'Ver historial previo', 
                     json_encode($datosFiltrados, JSON_UNESCAPED_UNICODE)
                 );
+
+            Notificacion::NotificarMarcas('UPDATE', $datosFiltrados, $id_marca);
+            
                 
             echo json_encode(['status' => 'success']);
         } else {
@@ -158,9 +163,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mensaje = !empty($errores) ? reset($errores) : 'Error al actualizar el registro.';
             echo json_encode(['status' => 'error', 'message' => $mensaje]);
             
-            // $errores = $objMarca->obtenerErrores();
-            // $mensaje = !empty($errores) ? reset($errores) : 'Error al actualizar la marca.';
-            // echo json_encode(['status' => 'error', 'message' => $mensaje]);
         }
         exit;
     }
@@ -176,8 +178,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $id = $objMarca->getCampo('id_marca');
             $motivo = $objMarca->getCampo('motivo_eliminacion');
+            $datosFiltrados = $objMarca->obtenerDatos();
             
             Bitacora::registrar($id_usuario, 'Marcas', 'DELETE', $id, 'estado', 'Activo', "Inactivo (Motivo: $motivo)");
+            Notificacion::NotificarMarcas('DELETE', $datosFiltrados, $id);
             
             echo json_encode(['status' => 'success']);
         } else {
@@ -204,7 +208,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($objMarca->getReactivarMarca()) {
             $id = $objMarca->getCampo('id_marca');
+            $datosFiltrados = $objMarca->obtenerDatos();
             Bitacora::registrar($id_usuario, 'Marcas', 'RESTORE', $id, 'estado', 'Inactivo', 'Activo');
+            Notificacion::NotificarMarcas('RESTORE', $datosFiltrados, $id);
             echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'No se pudo restaurar la marca.']);

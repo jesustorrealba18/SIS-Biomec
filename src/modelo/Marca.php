@@ -167,23 +167,6 @@ class Marca extends Conexion {
 
 
     /**
-     * Valida reglas que son exclusivas de Marcas
-     */
-/*     private function validarReglasDeNegocio(): bool {
-
-        // Validamos la regla XOR (O es sesión, o es evento, no ambas)
-        if (!empty($this->datos['id_sesion'] ?? null) && !empty($this->datos['id_evento'] ?? null)) {
-             $this->agregarError('Sesion/Evento', 'Una marca deportiva no puede registrarse simultáneamente en un entrenamiento y en una competencia.');
-            return false;
-        }
-
-        // Aquí puedes agregar más if() con reglas personalizadas en el futuro...
-
-        return empty($this->obtenerErrores());
-    } */
-
-
-    /**
      * Valida reglas que son exclusivas de Marcas e Integridad Logística
      */
     private function validarReglasDeNegocio(): bool {
@@ -258,47 +241,6 @@ class Marca extends Conexion {
             }
         }
 
-       /*  // Regla 2: Integridad Logística (Validar Asistencia Real a la Sesión)
-        if (!empty($id_sesion) && !empty($id_atleta)) {
-           // $sqlAsistencia = "SELECT estado FROM asistencia WHERE id_sesion = :sesion AND id_atleta = :atleta";
-           $sqlAsistencia = "SELECT a.estado, s.fecha FROM asistencia a LEFT join sesiones s on a.id_sesion=s.id_sesion WHERE a.id_sesion = :sesion AND a.id_atleta = :atleta;";
-            $stmtA = $this->pdo->prepare($sqlAsistencia);
-
-             $mapaAsis = [
-                ':sesion' => ['id_sesion', PDO::PARAM_INT],
-                ':atleta'    => ['id_atleta', PDO::PARAM_INT]
-            ];
-
-            $this->autoBind($stmtA, $mapaAsis, $this->datos); 
-            
-            $stmtA->execute(); 
-            
-
-            $estado_asistencia = $stmtA->fetchColumn();
-
-            if (!$estado_asistencia || $estado_asistencia !== 'Presente') {
-                // Si el profesor inyectó un ID por consola, el sistema lo atrapa aquí
-                $this->agregarError('integridad_asistencia', 'Fraude Logístico: El atleta seleccionado no figura como "Presente" en la lista de asistencia de esta sesión.');
-            }
-        }
-
-        // Regla 3: Integridad Logística (Validar Inscripción al Evento)
-        // NOTA: Aquí asumo que tienes una tabla llamada 'inscripciones_evento'. Adapta el nombre.
-        if (!empty($id_evento) && !empty($id_atleta)) {
-           // $sqlEvento = "SELECT COUNT(*) FROM evento_inscripcion WHERE id_evento = :evento AND id_atleta = :atleta";
-            $sqlEvento = "SELECT COUNT(*), e.fecha_inicio, e.fecha_fin FROM evento_inscripcion ei LEFT JOIN eventos e on ei.id_evento=e.id_evento WHERE ei.id_evento = :evento AND ei.id_atleta = :atleta;";
-
-            
-            $stmtE = $this->pdo->prepare($sqlEvento);
-            $stmtE->bindValue(':evento', (int)$this->datos['id_evento'], PDO::PARAM_INT);
-            $stmtE->bindValue(':atleta', (int)$this->datos['id_atleta'], PDO::PARAM_INT);
-            $stmtE->execute();
-
-            if ($stmtE->fetchColumn() == 0) {
-                $this->agregarError('integridad_evento', 'Fraude Logístico: El atleta seleccionado no se encuentra formalmente inscrito en este evento.');
-            }
-        } */
-
         return empty($this->obtenerErrores());
     }
 
@@ -357,6 +299,8 @@ class Marca extends Conexion {
             return false;
         }
 
+        $infoMarca = $this->obtenerInfoBasicaMarca($id);
+        $this->datos['id_atleta'] = $infoMarca['id_atleta'] ?? null;
 
         return $this->eliminarMarca();
    }
@@ -367,6 +311,10 @@ class Marca extends Conexion {
             $this->agregarError('id_marca', 'No se proporcionó un identificador válido para archivar el registro.');
             return false;
         }
+
+        $infoMarca = $this->obtenerInfoBasicaMarca($id);
+        $this->datos['id_atleta'] = $infoMarca['id_atleta'] ?? null;
+
         return $this->reactivarMarca();
    }
 
@@ -433,7 +381,7 @@ class Marca extends Conexion {
             
             $stmt->execute(); 
             $id_marca_insertada = $this->pdo->lastInsertId();
-
+            $this->datos['id_marca'] = $id_marca_insertada; // Guardamos el ID generado para notificaciones y splits
            // -------------------------------------------------------------
             // C) CÁLCULO SWOLF
             // -------------------------------------------------------------
@@ -490,7 +438,7 @@ class Marca extends Conexion {
             // -------------------------------------------------------------
             // DEEP LINKING Y NOTIFICACIONES
             // -------------------------------------------------------------
-            try {
+/*             try {
                 $deepLink = "?p=marcas&h=" . $id_marca_insertada;
                 $mensaje = "Se ha registrado un tiempo de {$tiempo_final}s en {$this->datos['distancia_m']}m {$this->datos['estilo']}.";
 
@@ -506,7 +454,7 @@ class Marca extends Conexion {
             } catch (\Throwable $th) {
                 // Si falla la notificación, no deshacemos la marca, solo registramos el error silencioso
                 error_log("Aviso: La marca se guardó, pero falló la notificación. " . $th->getMessage());
-            }
+            } */
 
 
             return true;
@@ -642,6 +590,7 @@ class Marca extends Conexion {
             }
 
             $this->pdo->commit();
+
             return true;
 
         } catch (PDOException $e) {
@@ -669,10 +618,11 @@ class Marca extends Conexion {
             
             $stmt->bindValue(':id', (int)$this->datos['id_marca'], PDO::PARAM_INT);
             $stmt->bindValue(':motivo', trim($this->datos['motivo_eliminacion']), PDO::PARAM_STR);
-            
-            
-            return $stmt->execute();
-            
+           
+
+
+            return  $stmt->execute();
+                       
         } catch (PDOException $e) {
              if ($e->getCode() == 23000) {
                 $this->agregarError('integridad', 'Los datos vinculados (Atleta, Sesión o Evento) fueron alterados y no existen en el sistema.');
@@ -693,9 +643,9 @@ class Marca extends Conexion {
             $stmt = $this->pdo->prepare($sql);
             
             $stmt->bindValue(':id', (int)$this->datos['id_marca'], PDO::PARAM_INT);
+            $stmt->execute();
            
-            
-            return $stmt->execute();
+            return true;
             
         } catch (PDOException $e) {
 
@@ -842,6 +792,25 @@ class Marca extends Conexion {
         } catch (PDOException $e) {
             error_log("Error en extractor de detalles: " . $e->getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Recupera los datos básicos de una marca para orquestar notificaciones y bitácora
+     */
+    public function obtenerInfoBasicaMarca(int $id_marca): array {
+        try {
+            $sql = "SELECT id_atleta, distancia_m, estilo, tiempo_final_seg 
+                    FROM marcas 
+                    WHERE id_marca = :id";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':id', $id_marca, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
+        } catch (\PDOException $e) {
+            error_log("Error al recuperar info básica de la marca: " . $e->getMessage());
+            return [];
         }
     }
 }

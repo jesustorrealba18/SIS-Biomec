@@ -163,106 +163,7 @@ class Notificacion extends Conexion {
             error_log("Error Routing Notificacion: " . $e->getMessage());
         }
     }
-/*     public static function notificarAtletaYRepresentante(int $id_atleta, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo'): void {
-        try {
-            // Para BUSCAR a los usuarios, necesitamos conectarnos temporalmente a sis_natacion
-            // Instanciamos la conexión normal de negocio
-            $dbNegocio = new Conexion('sis_natacion'); 
 
-            // A) Buscar el id_usuario del Atleta
-            $sqlAtleta = "SELECT id_usuario FROM atletas WHERE id_atleta = :id_atleta AND id_usuario IS NOT NULL";
-            $stmtA = $dbNegocio->pdo->prepare($sqlAtleta);
-            $stmtA->execute([':id_atleta' => $id_atleta]);
-            $userAtleta = $stmtA->fetch(PDO::FETCH_ASSOC);
-
-            if ($userAtleta) {
-                // Escribimos en sis_seguridad
-                self::enviar($userAtleta['id_usuario'], $titulo, $mensaje, $icono, $color);
-            }
-
-            // B) Buscar los id_usuario de los Representantes vinculados
-            $sqlRep = "SELECT r.id_usuario 
-                       FROM representantes r 
-                       INNER JOIN atleta_representante ar ON r.id_representante = ar.id_representante 
-                       WHERE ar.id_atleta = :id_atleta AND r.id_usuario IS NOT NULL";
-            $stmtR = $dbNegocio->pdo->prepare($sqlRep);
-            $stmtR->execute([':id_atleta' => $id_atleta]);
-            $representantes = $stmtR->fetchAll(PDO::FETCH_ASSOC);
-
-            // Enviamos copia a cada representante
-            foreach ($representantes as $rep) {
-                self::enviar($rep['id_usuario'], $titulo, $mensaje, $icono, $color);
-            }
-
-        } catch (PDOException $e) {
-            error_log("Error Routing Notificacion: " . $e->getMessage());
-        }
-    } */
-
-    /**
-     * Marca una notificación como leída asegurando que pertenezca al usuario
-     */
-   /*  public static function marcarComoLeida(int $id_notificacion, int $id_usuario): bool {
-
-
-        try {
-            $instancia = new self();
-            $sql = "UPDATE notificaciones SET leida = 1 
-                    WHERE id_notificacion = :id_notificacion AND id_usuario = :id_usuario";
-            
-            $stmt = $instancia->pdo->prepare($sql);
-            return $stmt->execute([
-                ':id_notificacion' => $id_notificacion,
-                ':id_usuario' => $id_usuario
-            ]);
-        } catch (\Throwable $e) { // <-- CAMBIO CLAVE: Atrapa cualquier error fatal
-            error_log("Error al marcar leída: " . $e->getMessage());
-            return false;
-        }
-    } */
-
-    /**
-     * Marca una notificación como leída con VALIDACIÓN ESTRICTA de seguridad.
-     */
-   /*  public static function marcarComoLeida(int $id_notificacion, int $id_usuario): bool {
-        // 1. Validación de cordura básica
-        if ($id_notificacion <= 0 || $id_usuario <= 0) return false;
-
-        try {
-            $instancia = new self();
-            
-            // 2. VALIDACIÓN DE EXISTENCIA Y PROPIEDAD (Evita Hackeo de IDs)
-            $sqlCheck = "SELECT leida FROM notificaciones WHERE id_notificacion = :id_notificacion AND id_usuario = :id_usuario";
-            $stmtCheck = $instancia->pdo->prepare($sqlCheck);
-            $stmtCheck->execute([
-                ':id_notificacion' => $id_notificacion, 
-                ':id_usuario' => $id_usuario
-            ]);
-            
-            $notificacion = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
-
-            // Si devuelve false, significa que el ID no existe o no le pertenece a este usuario
-            if (!$notificacion) {
-                // Registramos el intento de vulneración en los logs del servidor
-                error_log("ALERTA SEGURIDAD: El usuario ID {$id_usuario} intentó manipular la notificación ID {$id_notificacion} (Inexistente o ajena).");
-                return false;
-            }
-
-            // Si ya estaba leída (por un clic anterior), simplemente devolvemos true para no desgastar la BD
-            if ($notificacion['leida'] == 1) {
-                return true;
-            }
-
-            // 3. Ejecución segura (Solo llega aquí si existe, es de él, y no estaba leída)
-            $sql = "UPDATE notificaciones SET leida = 1 WHERE id_notificacion = :id_notificacion";
-            $stmt = $instancia->pdo->prepare($sql);
-            return $stmt->execute([':id_notificacion' => $id_notificacion]);
-
-        } catch (\Throwable $e) {
-            error_log("Error crítico en marcarLeida: " . $e->getMessage());
-            return false;
-        }
-    } */
 
     /**
      * Obtiene la lista de notificaciones de un usuario
@@ -300,6 +201,62 @@ class Notificacion extends Conexion {
             return (int) $stmt->fetchColumn();
         } catch (PDOException $e) {
             return 0;
+        }
+    }
+
+    /**
+     * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE MARCAS
+     * Centraliza textos, colores, iconos y el bloque try-catch (Cumple SRP y DRY)
+     */
+    public static function NotificarMarcas(string $accion, array $data, int $id_marca): void {
+        try {
+            $deepLink = "?p=marcas&h=" . $id_marca;
+            $distancia = $data['distancia_m'] ?? '';
+            $estilo = $data['estilo'] ?? '';
+            $tiempo = $data['tiempo_final_seg'] ?? '';
+
+            // Evaluamos la acción para construir dinámicamente la notificación
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "¡Nueva Marca Registrada!";
+                    $mensaje = "Se ha registrado un tiempo de {$tiempo}s en {$distancia}m {$estilo}.";
+                    $icono = "fa-stopwatch";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "¡Marca Actualizada!";
+                    $mensaje = "El entrenador ha actualizado los datos de tu marca en {$distancia}m {$estilo}.";
+                    $icono = "fa-edit";
+                    $color = "amber";
+                    break;
+
+                case 'DELETE':
+                    $titulo = "Marca Desactivada";
+                    $mensaje = "Se ha retirado o deshabilitado un registro de marca técnica del sistema.";
+                    $icono = "fa-trash-alt";
+                    $color = "red";
+                   // $deepLink = "?p=marcas"; // Las marcas inactivas no se iluminan, va al listado limpio 
+                    $deepLink = "?p=marcas&estado=Inactivo&h=" . $id_marca;
+                    break;
+
+                case 'RESTORE':
+                    $titulo = "Marca Restaurada";
+                    $mensaje = "Se ha restaurado y reactivado una marca previamente deshabilitada en el historial.";
+                    $icono = "fa-history";
+                    $color = "indigo";
+                    break;
+
+                default:
+                    return; // Acción no soportada, salimos pacíficamente
+            }
+
+            // Invocamos al enrutador que ya programamos con la lógica de la edad
+            self::notificarAtletaYRepresentante((int)$data['id_atleta'], $titulo, $mensaje, $icono, $color, $deepLink);
+
+        } catch (\Throwable $th) {
+            // El try-catch vive AQUÍ. Si falla el envío, no rompe el flujo del negocio
+            error_log("Aviso Crítico en Notificaciones: Falló despacho de marcas [{$accion}]: " . $th->getMessage());
         }
     }
 
