@@ -17,7 +17,7 @@ class TestFisico extends Conexion {
         'valores', 'id_registro_test', 'accion'
     ];
 
-    private function setAtributos(array $payload): void {
+    public function setAtributos(array $payload): void {
         foreach ($this->camposPermitidos as $campo) {
             if (isset($payload[$campo])) {
                 if (is_array($payload[$campo])) {
@@ -56,9 +56,7 @@ class TestFisico extends Conexion {
         return empty($this->obtenerErrores());
     }
 
-    public function registrarTest(array $payload): bool {
-        $this->setAtributos($payload);
-
+    public function getRegistrarTest(): bool {
         $tipoTest = (int)($this->datos['id_tipo_test'] ?? 0);
         $testPers = (int)($this->datos['id_test_pers'] ?? 0);
 
@@ -77,6 +75,10 @@ class TestFisico extends Conexion {
             return false;
         }
 
+        return $this->registrarTestBD($tipoTest, $testPers);
+    }
+
+    private function registrarTestBD(int $tipoTest, int $testPers): bool {
         try {
             $this->pdo->beginTransaction();
 
@@ -94,21 +96,21 @@ class TestFisico extends Conexion {
                 ':id_tipo_test'    => ['id_tipo_test', PDO::PARAM_INT],
                 ':id_test_pers'    => ['id_test_pers', PDO::PARAM_INT],
                 ':fecha'           => ['fecha', PDO::PARAM_STR],
-                ':id_usuario_toma'  => ['id_usuario_toma_local', PDO::PARAM_INT],
+                ':id_usuario_toma'  => ['id_usuario_toma', PDO::PARAM_INT],
                 ':observaciones'   => ['observaciones', PDO::PARAM_STR],
                 ':estado'          => ['estado', PDO::PARAM_STR]
             ];
 
-            $idUsuario = $payload['id_usuario_toma'] ?? ($_SESSION['id'] ?? 0);
             $estadoDefault = !empty($this->datos['estado']) ? $this->datos['estado'] : 'Completo';
 
             $this->autoBind($stmt, $mapa, $this->datos, [
-                'id_usuario_toma_local' => (int)$idUsuario,
                 'estado' => $estadoDefault
             ]);
             $stmt->execute();
 
             $idRegistro = $this->pdo->lastInsertId();
+
+            $valores = $this->datos['valores'] ?? [];
 
             $sqlValor = "INSERT INTO valores_test (id_registro_test, id_variable, valor, unidad_medida)
                          VALUES (:id_registro, :id_variable, :valor, :unidad)";
@@ -131,19 +133,27 @@ class TestFisico extends Conexion {
             return true;
         } catch (PDOException $e) {
             $this->pdo->rollBack();
-            error_log("Error en registrarTest: " . $e->getMessage());
+            error_log("Error en registrarTestBD: " . $e->getMessage());
             $this->agregarError('bd', 'Error interno al registrar el test.');
             return false;
         }
     }
 
-    public function actualizarTest(array $payload, int $id_registro): bool {
-        $this->setAtributos($payload);
+    public function getActualizarTest(): bool {
+        $id = (int)($this->datos['id_registro_test'] ?? 0);
+        if ($id <= 0) {
+            $this->agregarError('id_registro_test', 'No se proporcionó un identificador de registro válido para actualizar.');
+            return false;
+        }
 
         if (!$this->validarAtributosInternos(true)) {
             return false;
         }
 
+        return $this->actualizarTestBD($id);
+    }
+
+    private function actualizarTestBD(int $id_registro): bool {
         try {
             $this->pdo->beginTransaction();
 
@@ -164,10 +174,12 @@ class TestFisico extends Conexion {
                 ':fecha'          => ['fecha', PDO::PARAM_STR],
                 ':observaciones'  => ['observaciones', PDO::PARAM_STR],
                 ':estado'         => ['estado', PDO::PARAM_STR],
-                ':id_registro'    => [$id_registro, PDO::PARAM_INT]
+                ':id_registro'    => ['id_registro_local', PDO::PARAM_INT]
             ];
 
-            $this->autoBind($stmt, $mapa, $this->datos);
+            $this->autoBind($stmt, $mapa, $this->datos, [
+                'id_registro_local' => $id_registro
+            ]);
             $stmt->execute();
 
             if ($stmt->rowCount() === 0) {
@@ -206,13 +218,21 @@ class TestFisico extends Conexion {
             return true;
         } catch (PDOException $e) {
             $this->pdo->rollBack();
-            error_log("Error en actualizarTest: " . $e->getMessage());
+            error_log("Error en actualizarTestBD: " . $e->getMessage());
             $this->agregarError('bd', 'Error interno al actualizar el test.');
             return false;
         }
     }
 
     public function eliminarTest(int $id): bool {
+        if ($id <= 0) {
+            $this->agregarError('id_registro_test', 'No se proporcionó un identificador válido para eliminar el test.');
+            return false;
+        }
+        return $this->eliminarTestBD($id);
+    }
+
+    private function eliminarTestBD(int $id): bool {
         try {
             $this->pdo->beginTransaction();
             $stmtDel = $this->pdo->prepare("DELETE FROM valores_test WHERE id_registro_test = :id");
@@ -231,12 +251,16 @@ class TestFisico extends Conexion {
             return true;
         } catch (PDOException $e) {
             $this->pdo->rollBack();
-            error_log("Error en eliminarTest: " . $e->getMessage());
+            error_log("Error en eliminarTestBD: " . $e->getMessage());
             return false;
         }
     }
 
     public function listarTests(int $id_atleta = 0, int $id_tipo_test = 0, string $estado = ''): array {
+        return $this->listarTestsBD($id_atleta, $id_tipo_test, $estado);
+    }
+
+    private function listarTestsBD(int $id_atleta = 0, int $id_tipo_test = 0, string $estado = ''): array {
         try {
             $sql = "SELECT rt.id_registro_test, rt.id_atleta, rt.id_tipo_test, rt.id_test_pers,
                            rt.fecha, rt.observaciones, rt.estado, rt.fecha_creacion,
@@ -411,6 +435,60 @@ class TestFisico extends Conexion {
     }
 
     public function crearTipoPredefinido(array $datos, array $variables): bool {
+        $this->resetearErrores();
+
+        $nombre = trim($datos['nombre'] ?? '');
+        if ($nombre === '') {
+            $this->agregarError('nombre', 'El nombre del tipo de test es obligatorio.');
+        } else {
+            $this->longitud($nombre, 'nombre', 2, 100);
+        }
+
+        $descripcion = trim($datos['descripcion'] ?? '');
+        if ($descripcion !== '') {
+            $this->longitud($descripcion, 'descripcion', 0, 300);
+        }
+
+        $tipoMedicion = trim($datos['tipo_medicion'] ?? '');
+        if ($tipoMedicion !== '') {
+            $this->longitud($tipoMedicion, 'tipo_medicion', 2, 80);
+        }
+
+        $unidadMedida = trim($datos['unidad_medida'] ?? '');
+        if ($unidadMedida !== '') {
+            $this->longitud($unidadMedida, 'unidad_medida', 1, 30);
+        }
+
+        if (!empty($datos['valor_referencia_min'])) {
+            if (!$this->decimalValido((string)$datos['valor_referencia_min'], 'valor_referencia_min')) {
+                return false;
+            }
+        }
+        if (!empty($datos['valor_referencia_max'])) {
+            if (!$this->decimalValido((string)$datos['valor_referencia_max'], 'valor_referencia_max')) {
+                return false;
+            }
+        }
+
+        if (empty($variables)) {
+            $this->agregarError('variables', 'Debe agregar al menos una variable.');
+        } else {
+            foreach ($variables as $i => $v) {
+                $nomVar = trim($v['nombre_variable'] ?? '');
+                if ($nomVar === '') {
+                    $this->agregarError("variable_{$i}", "El nombre de la variable #" . ($i + 1) . " es obligatorio.");
+                } else {
+                    $this->longitud($nomVar, "variable_{$i}", 2, 80);
+                }
+                $uniVar = trim($v['unidad'] ?? '');
+                if ($uniVar !== '') {
+                    $this->longitud($uniVar, "unidad_{$i}", 1, 20);
+                }
+            }
+        }
+
+        if (!empty($this->obtenerErrores())) return false;
+
         try {
             $this->pdo->beginTransaction();
 
@@ -450,6 +528,56 @@ class TestFisico extends Conexion {
     }
 
     public function editarTipoPredefinido(int $id, array $datos, array $variables): bool {
+        $this->resetearErrores();
+
+        $nombre = trim($datos['nombre'] ?? '');
+        if ($nombre === '') {
+            $this->agregarError('nombre', 'El nombre del tipo de test es obligatorio.');
+        } else {
+            $this->longitud($nombre, 'nombre', 2, 100);
+        }
+
+        $descripcion = trim($datos['descripcion'] ?? '');
+        if ($descripcion !== '') {
+            $this->longitud($descripcion, 'descripcion', 0, 300);
+        }
+
+        $tipoMedicion = trim($datos['tipo_medicion'] ?? '');
+        if ($tipoMedicion !== '') {
+            $this->longitud($tipoMedicion, 'tipo_medicion', 2, 80);
+        }
+
+        $unidadMedida = trim($datos['unidad_medida'] ?? '');
+        if ($unidadMedida !== '') {
+            $this->longitud($unidadMedida, 'unidad_medida', 1, 30);
+        }
+
+        if (!empty($datos['valor_referencia_min'])) {
+            if (!$this->decimalValido((string)$datos['valor_referencia_min'], 'valor_referencia_min')) return false;
+        }
+        if (!empty($datos['valor_referencia_max'])) {
+            if (!$this->decimalValido((string)$datos['valor_referencia_max'], 'valor_referencia_max')) return false;
+        }
+
+        if (empty($variables)) {
+            $this->agregarError('variables', 'Debe agregar al menos una variable.');
+        } else {
+            foreach ($variables as $i => $v) {
+                $nomVar = trim($v['nombre_variable'] ?? '');
+                if ($nomVar === '') {
+                    $this->agregarError("variable_{$i}", "El nombre de la variable #" . ($i + 1) . " es obligatorio.");
+                } else {
+                    $this->longitud($nomVar, "variable_{$i}", 2, 80);
+                }
+                $uniVar = trim($v['unidad'] ?? '');
+                if ($uniVar !== '') {
+                    $this->longitud($uniVar, "unidad_{$i}", 1, 20);
+                }
+            }
+        }
+
+        if (!empty($this->obtenerErrores())) return false;
+
         try {
             $this->pdo->beginTransaction();
 
@@ -530,6 +658,56 @@ class TestFisico extends Conexion {
     }
 
     public function crearTestPersonalizado(array $datos, array $variables): int {
+        $this->resetearErrores();
+
+        $nombre = trim($datos['nombre'] ?? '');
+        if ($nombre === '') {
+            $this->agregarError('nombre', 'El nombre del test es obligatorio.');
+        } else {
+            $this->longitud($nombre, 'nombre', 2, 100);
+        }
+
+        $descripcion = trim($datos['descripcion'] ?? '');
+        if ($descripcion !== '') {
+            $this->longitud($descripcion, 'descripcion', 0, 300);
+        }
+
+        $tipoMedicion = trim($datos['tipo_medicion'] ?? '');
+        if ($tipoMedicion !== '') {
+            $this->longitud($tipoMedicion, 'tipo_medicion', 2, 80);
+        }
+
+        $unidadMedida = trim($datos['unidad_medida'] ?? '');
+        if ($unidadMedida !== '') {
+            $this->longitud($unidadMedida, 'unidad_medida', 1, 30);
+        }
+
+        if (!empty($datos['valor_referencia_min'])) {
+            if (!$this->decimalValido((string)$datos['valor_referencia_min'], 'valor_referencia_min')) return 0;
+        }
+        if (!empty($datos['valor_referencia_max'])) {
+            if (!$this->decimalValido((string)$datos['valor_referencia_max'], 'valor_referencia_max')) return 0;
+        }
+
+        if (empty($variables)) {
+            $this->agregarError('variables', 'Debe agregar al menos una variable.');
+        } else {
+            foreach ($variables as $i => $v) {
+                $nomVar = trim($v['nombre_variable'] ?? '');
+                if ($nomVar === '') {
+                    $this->agregarError("variable_{$i}", "El nombre de la variable #" . ($i + 1) . " es obligatorio.");
+                } else {
+                    $this->longitud($nomVar, "variable_{$i}", 2, 80);
+                }
+                $uniVar = trim($v['unidad'] ?? '');
+                if ($uniVar !== '') {
+                    $this->longitud($uniVar, "unidad_{$i}", 1, 20);
+                }
+            }
+        }
+
+        if (!empty($this->obtenerErrores())) return 0;
+
         try {
             $this->pdo->beginTransaction();
 
@@ -597,6 +775,56 @@ class TestFisico extends Conexion {
     }
 
     public function editarTestPersonalizado(int $id, array $datos, array $variables): bool {
+        $this->resetearErrores();
+
+        $nombre = trim($datos['nombre'] ?? '');
+        if ($nombre === '') {
+            $this->agregarError('nombre', 'El nombre del test es obligatorio.');
+        } else {
+            $this->longitud($nombre, 'nombre', 2, 100);
+        }
+
+        $descripcion = trim($datos['descripcion'] ?? '');
+        if ($descripcion !== '') {
+            $this->longitud($descripcion, 'descripcion', 0, 300);
+        }
+
+        $tipoMedicion = trim($datos['tipo_medicion'] ?? '');
+        if ($tipoMedicion !== '') {
+            $this->longitud($tipoMedicion, 'tipo_medicion', 2, 80);
+        }
+
+        $unidadMedida = trim($datos['unidad_medida'] ?? '');
+        if ($unidadMedida !== '') {
+            $this->longitud($unidadMedida, 'unidad_medida', 1, 30);
+        }
+
+        if (!empty($datos['valor_referencia_min'])) {
+            if (!$this->decimalValido((string)$datos['valor_referencia_min'], 'valor_referencia_min')) return false;
+        }
+        if (!empty($datos['valor_referencia_max'])) {
+            if (!$this->decimalValido((string)$datos['valor_referencia_max'], 'valor_referencia_max')) return false;
+        }
+
+        if (empty($variables)) {
+            $this->agregarError('variables', 'Debe agregar al menos una variable.');
+        } else {
+            foreach ($variables as $i => $v) {
+                $nomVar = trim($v['nombre_variable'] ?? '');
+                if ($nomVar === '') {
+                    $this->agregarError("variable_{$i}", "El nombre de la variable #" . ($i + 1) . " es obligatorio.");
+                } else {
+                    $this->longitud($nomVar, "variable_{$i}", 2, 80);
+                }
+                $uniVar = trim($v['unidad'] ?? '');
+                if ($uniVar !== '') {
+                    $this->longitud($uniVar, "unidad_{$i}", 1, 20);
+                }
+            }
+        }
+
+        if (!empty($this->obtenerErrores())) return false;
+
         try {
             $this->pdo->beginTransaction();
 

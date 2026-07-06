@@ -8,8 +8,18 @@ use PDOException;
 class entrenador extends Conexion {
     use ValidacionesTrait;
 
+    private array $datos = [];
+
     public function __construct() {
-        parent::__construct('sis_natacion'); 
+        parent::__construct('sis_natacion');
+    }
+
+    public function setDatos(array $datos): void {
+        $this->datos = $datos;
+    }
+
+    public function setIdEliminar(int $id): void {
+        $this->datos['id_entrenador'] = $id;
     }
 
     public function validarDatos(array $datos, ?string $excluirCedula = null): array {
@@ -30,6 +40,17 @@ class entrenador extends Conexion {
         
         if ($excluirCedula === null) {
             $this->unico($this->getConex1(), $cedula, 'entrenador', 'cedula');
+        } else {
+            $conex = $this->getConex1();
+            $sql = "SELECT COUNT(*) FROM entrenador WHERE cedula = :cedula AND id_entrenador != :id";
+            $stmt = $conex->prepare($sql);
+            $stmt->execute([
+                ':cedula' => $cedula,
+                ':id' => $datos['id_entrenador'] ?? 0
+            ]);
+            if ($stmt->fetchColumn() > 0) {
+                $this->errores['cedula'] = 'La cédula ya está registrada por otro entrenador.';
+            }
         }
 
         $this->requerido($nombres, 'nombres');
@@ -43,6 +64,8 @@ class entrenador extends Conexion {
         $this->requerido($fecha, 'fecha_nacimiento');
         $this->fechaValida($fecha, 'fecha_nacimiento');
         $this->fechaNoFutura($fecha, 'fecha_nacimiento');
+        // Validación de edad mínima 18 años
+        $this->edadMinima($fecha, 'fecha_nacimiento', 18);
 
         $this->requerido($genero, 'genero');
         $this->enEnum($genero, 'genero', ['M', 'F']);
@@ -61,6 +84,18 @@ class entrenador extends Conexion {
     }
 
     public function registrarEntrenador(array $datos): bool {
+        return $this->registrarEntrenadorP($datos);
+    }
+
+    public function editarEntrenador(array $datos): bool {
+        return $this->editarEntrenadorP($datos);
+    }
+
+    public function eliminarEntrenador(int $id): bool {
+        return $this->eliminarEntrenadorP($id);
+    }
+
+    private function registrarEntrenadorP(array $datos): bool {
         $conex = $this->getConex1();
         try {
             $conex->beginTransaction();
@@ -122,7 +157,7 @@ class entrenador extends Conexion {
         }
     }
     
-    public function actualizarEntrenador(array $datos): bool {
+    private function editarEntrenadorP(array $datos): bool {
         $conex = $this->getConex1();
         try {
             $conex->beginTransaction();
@@ -162,7 +197,7 @@ class entrenador extends Conexion {
         }
     }
 
-    public function eliminarEntrenador($id): bool {
+    private function eliminarEntrenadorP(int $id): bool {
         $conex = $this->getConex1();
         try {
             $sql = "DELETE FROM entrenador WHERE id_entrenador = :id";
@@ -170,7 +205,7 @@ class entrenador extends Conexion {
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) { 
             error_log("Error al eliminar entrenador: " . $e->getMessage());
-            return false; 
+            return false;
         }
     }
 }

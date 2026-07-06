@@ -116,29 +116,29 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Nombre del Evento *</label>
-                        <input type="text" id="nombre" name="nombre" required class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: Gala Regional Miranda 2026">
+                        <input type="text" id="nombre" name="nombre" data-validar="requerido|texto" data-nombre="Nombre del evento" data-min="2" data-max="200" maxlength="200" required class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: Gala Regional Miranda 2026">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Fecha de Inicio *</label>
-                        <input type="date" id="fecha_inicio" name="fecha_inicio" required class="w-full input-dark p-3 rounded-xl text-sm font-mono">
+                        <input type="date" id="fecha_inicio" name="fecha_inicio" data-validar="requerido" data-nombre="Fecha de inicio" required class="w-full input-dark p-3 rounded-xl text-sm font-mono">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Fecha de Fin</label>
-                        <input type="date" id="fecha_fin" name="fecha_fin" class="w-full input-dark p-3 rounded-xl text-sm font-mono">
+                        <input type="date" id="fecha_fin" name="fecha_fin" data-validar="fecha_logica" data-nombre="Fecha de fin" class="w-full input-dark p-3 rounded-xl text-sm font-mono">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Sede</label>
-                        <input type="text" id="sede" name="sede" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: Complejo Acuatico de Barinas">
+                        <input type="text" id="sede" name="sede" data-validar="texto" data-nombre="Sede" data-max="200" maxlength="200" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: Complejo Acuatico de Barinas">
                     </div>
 
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Organizador</label>
-                        <input type="text" id="organizador" name="organizador" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: FEVEDA">
+                        <input type="text" id="organizador" name="organizador" data-validar="texto" data-nombre="Organizador" data-max="200" maxlength="200" class="w-full input-dark p-3 rounded-xl text-sm" placeholder="Ej: FEVEDA">
                     </div>
 
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Tipo *</label>
-                        <select id="tipo" name="tipo" required class="w-full input-dark p-3 rounded-xl text-sm">
+                        <select id="tipo" name="tipo" data-validar="requerido" data-nombre="Tipo" required class="w-full input-dark p-3 rounded-xl text-sm">
                             <option value="Control">Control Tecnico</option>
                             <option value="Regional">Regional</option>
                             <option value="Nacional">Nacional</option>
@@ -159,7 +159,7 @@
 
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Estado *</label>
-                        <select id="estado" name="estado" required class="w-full input-dark p-3 rounded-xl text-sm">
+                        <select id="estado" name="estado" data-validar="requerido" data-nombre="Estado" required class="w-full input-dark p-3 rounded-xl text-sm">
                             <option value="Planificado">Planificado</option>
                             <option value="Inscrito">Inscrito</option>
                             <option value="En Progreso">En Progreso</option>
@@ -176,7 +176,7 @@
 
                 <div class="mt-4">
                     <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Observaciones</label>
-                    <textarea id="observaciones" name="observaciones" rows="2" placeholder="Detalles adicionales del evento..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                    <textarea id="observaciones" name="observaciones" data-validar="texto" data-nombre="Observaciones" data-max="500" maxlength="500" rows="2" placeholder="Detalles adicionales del evento..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
                 </div>
 
                 <div class="mt-6 bg-black/20 p-4 rounded-xl border border-dashed border-amber-500/30">

@@ -1,14 +1,168 @@
 const modalEntrenador = document.getElementById('modalEntrenador');
-const modalVer = document.getElementById('modalVerEntrenador'); 
+const modalVer = document.getElementById('modalVerEntrenador');
 const formEntrenador = document.getElementById('formEntrenador');
 const btnGuardar = document.getElementById('btnGuardar');
 const detalleContenido = document.getElementById('detalleContenido');
 const inputFoto = document.getElementById('foto');
-const fotoPreview = document.getElementById('previsualizarFoto'); //
+const fotoPreview = document.getElementById('previsualizarFoto');
 const iconoFotoDefecto = document.getElementById('iconoFotoPorDefecto'); 
 const totalEntrenador = document.getElementById('totalEntrenador');
 
 const API_URL = 'index.php?p=entrenador'; 
+
+function setupValidacionTiempoReal() {
+    const campos = [
+        { id: 'cedula', reglas: 'requerido|numeros', nombre: 'Cédula', min: 8, max: 8 },
+        { id: 'nombres', reglas: 'requerido|letras', nombre: 'Nombres', min: 2, max: 50 },
+        { id: 'apellidos', reglas: 'requerido|letras', nombre: 'Apellidos', min: 2, max: 50 },
+        { id: 'fecha_nacimiento', reglas: 'requerido|mayor18', nombre: 'Fecha de Nacimiento' },
+        { id: 'telefono', reglas: 'requerido|numeros', nombre: 'Teléfono', min: 11, max: 11 },
+        { id: 'correo', regras: 'requerido|email', nombre: 'Correo Electrónico' },
+        { id: 'direccion', reglas: 'requerido', nombre: 'Dirección', min: 5, max: 50 },
+        { id: 'genero', reglas: 'requerido', nombre: 'Género' }
+    ];
+
+    campos.forEach(({ id, reglas, nombre, min, max }) => {
+        const input = document.getElementById(id);
+        if (!input) {
+            console.warn(`Campo no encontrado: ${id}`);
+            return;
+        }
+
+        let errorContainer = input.parentElement.querySelector('.error-msg');
+        if (!errorContainer) {
+            errorContainer = document.createElement('span');
+            errorContainer.className = 'error-msg text-red-400 text-[10px] mt-1 block';
+            errorContainer.style.display = 'none';
+            input.parentElement.appendChild(errorContainer);
+        }
+
+        input.addEventListener('input', function() {
+            validarCampo(this, reglas, nombre, min, max);
+        });
+
+        input.addEventListener('blur', function() {
+            validarCampo(this, reglas, nombre, min, max);
+        });
+
+        if (input.tagName === 'SELECT') {
+            input.addEventListener('change', function() {
+                validarCampo(this, reglas, nombre, min, max);
+            });
+        }
+    });
+}
+
+function validarCampo(input, reglas, nombre, min, max) {
+    const valor = input.value.trim();
+    let error = '';
+
+    if (!reglas.includes('requerido') && valor === '') {
+        input.classList.remove('border-red-500', 'border-2', 'border-green-500', 'border');
+        const errorContainer = input.parentElement.querySelector('.error-msg');
+        if (errorContainer) {
+            errorContainer.textContent = '';
+            errorContainer.style.display = 'none';
+        }
+        return true;
+    }
+
+    if (reglas.includes('requerido') && !valor) {
+        error = `${nombre} es requerido`;
+    } else if (valor) {
+        if (reglas.includes('numeros') && !/^\d+$/.test(valor)) {
+            error = `${nombre} solo debe contener números`;
+        }
+        if (reglas.includes('letras') && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) {
+            error = `${nombre} solo debe contener letras`;
+        }
+        if (reglas.includes('email') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)) {
+            error = `Ingrese un correo electrónico válido`;
+        }
+        if (reglas.includes('mayor18')) {
+            if (!valor) {
+                error = `La fecha de nacimiento es requerida`;
+            } else {
+                const fecha = new Date(valor);
+                const hoy = new Date();
+                let edad = hoy.getFullYear() - fecha.getFullYear();
+                const mes = hoy.getMonth() - fecha.getMonth();
+                if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) {
+                    edad--;
+                }
+                if (edad < 18) {
+                    error = `Debe ser mayor de 18 años`;
+                }
+            }
+        }
+  
+        if (min && valor.length < min) {
+            error = `${nombre} debe tener al menos ${min} caracteres`;
+        }
+        if (max && valor.length > max) {
+            error = `${nombre} no debe exceder ${max} caracteres`;
+        }
+    }
+
+    const errorContainer = input.parentElement.querySelector('.error-msg');
+    if (!errorContainer) {
+        const newContainer = document.createElement('span');
+        newContainer.className = 'error-msg text-red-400 text-[10px] mt-1 block';
+        newContainer.style.display = 'none';
+        input.parentElement.appendChild(newContainer);
+    }
+
+    const finalErrorContainer = input.parentElement.querySelector('.error-msg');
+
+    if (error) {
+        input.classList.remove('border-green-500', 'border');
+        input.classList.add('border-red-500', 'border-2');
+        if (finalErrorContainer) {
+            finalErrorContainer.textContent = error;
+            finalErrorContainer.style.display = 'block';
+        }
+        return false;
+    } else if (valor) {
+        input.classList.remove('border-red-500', 'border-2');
+        input.classList.add('border-green-500', 'border');
+        if (finalErrorContainer) {
+            finalErrorContainer.textContent = '';
+            finalErrorContainer.style.display = 'none';
+        }
+        return true;
+    } else {
+        input.classList.remove('border-red-500', 'border-green-500', 'border-2', 'border');
+        if (finalErrorContainer) {
+            finalErrorContainer.textContent = '';
+            finalErrorContainer.style.display = 'none';
+        }
+        return true;
+    }
+}
+
+function validarFormularioCompleto(form) {
+    const inputs = form.querySelectorAll('input[data-validar], select[data-validar], textarea[data-validar]');
+    let hasError = false;
+    let primerosErrores = [];
+
+    inputs.forEach(input => {
+        const reglas = input.dataset.validar || '';
+        const nombre = input.dataset.nombre || input.name || 'Campo';
+        const min = parseInt(input.dataset.min) || 0;
+        const max = parseInt(input.dataset.max) || 9999;
+        
+        const isValid = validarCampo(input, reglas, nombre, min, max);
+        if (!isValid) {
+            hasError = true;
+            const errorMsg = input.parentElement.querySelector('.error-msg');
+            if (errorMsg && errorMsg.textContent) {
+                primerosErrores.push(errorMsg.textContent);
+            }
+        }
+    });
+
+    return { hasError, errores: primerosErrores };
+}
 
 async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
@@ -20,7 +174,11 @@ async function peticionAjax(accion, datos = null) {
         return await respuesta.json();
     } catch (error) {
         console.error("Error Fetch:", error);
-        UI.error('Error del Servidor', 'No se pudo procesar la solicitud.');
+        if (typeof UI !== 'undefined') {
+            UI.error('Error del Servidor', 'No se pudo procesar la solicitud.');
+        } else {
+            alert('Error del Servidor: No se pudo procesar la solicitud.');
+        }
         return null;
     }
 }
@@ -29,6 +187,16 @@ function cerrarModalEntrenador() {
     modalEntrenador.firstElementChild.classList.add('scale-95', 'opacity-0');
     setTimeout(() => {
         modalEntrenador.classList.add('hidden');
+        // Limpiar estilos de validación al cerrar
+        const inputs = formEntrenador.querySelectorAll('input:not([type="hidden"]), select, textarea');
+        inputs.forEach(input => {
+            input.classList.remove('border-red-500', 'border-green-500', 'border-2', 'border');
+            const errorContainer = input.parentElement.querySelector('.error-msg');
+            if (errorContainer) {
+                errorContainer.textContent = '';
+                errorContainer.style.display = 'none';
+            }
+        });
     }, 200);
 }
 
@@ -65,7 +233,16 @@ if (inputFoto) {
 
 async function abrirModalEntrenador(id_entrenador = null) {
     formEntrenador.reset(); 
-    try { Validador.limpiarEstilos(formEntrenador); } catch(e) {}
+    
+    const inputs = formEntrenador.querySelectorAll('input:not([type="hidden"]), select, textarea');
+    inputs.forEach(input => {
+        input.classList.remove('border-red-500', 'border-green-500', 'border-2', 'border');
+        const errorContainer = input.parentElement.querySelector('.error-msg');
+        if (errorContainer) {
+            errorContainer.textContent = '';
+            errorContainer.style.display = 'none';
+        }
+    });
     
     const inputAction = document.getElementById('action_type');
     const inputIdHidden = document.getElementById('id_entrenador');
@@ -78,23 +255,37 @@ async function abrirModalEntrenador(id_entrenador = null) {
     if (iconoFotoDefecto) iconoFotoDefecto.classList.remove('hidden');
 
     if (id_entrenador) {
-        if (inputAction) inputAction.value = 'actualizar';
+        if (inputAction) inputAction.value = 'editar';
         if (inputIdHidden) inputIdHidden.value = id_entrenador;
-        if (modalTitulo) modalTitulo.textContent = 'Actualizar Datos del Entrenador';
+        if (modalTitulo) modalTitulo.textContent = 'Editar Datos del Entrenador';
         
-        btnGuardar.innerHTML = 'Actualizar los datos <i class="fas fa-sync-alt ml-2"></i>';
+        btnGuardar.innerHTML = 'EDITAR ENTRENADOR <i class="fas fa-sync-alt ml-2"></i>';
         
         const entrenador = await peticionAjax(`obtenerEntrenador&id=${id_entrenador}`);
         
         if (entrenador) {
-            document.getElementById('cedula').value = entrenador.cedula;
-            document.getElementById('nombres').value = entrenador.nombres;
-            document.getElementById('apellidos').value = entrenador.apellidos;
-            document.getElementById('fecha_nacimiento').value = entrenador.fecha_nacimiento;
-            document.getElementById('genero').value = entrenador.genero;
-            document.getElementById('correo').value = entrenador.correo;
-            document.getElementById('telefono').value = entrenador.telefono;
-            document.getElementById('direccion').value = entrenador.direccion;
+            document.getElementById('cedula').value = entrenador.cedula || '';
+            document.getElementById('nombres').value = entrenador.nombres || '';
+            document.getElementById('apellidos').value = entrenador.apellidos || '';
+            document.getElementById('fecha_nacimiento').value = entrenador.fecha_nacimiento || '';
+            document.getElementById('genero').value = entrenador.genero || '';
+            document.getElementById('correo').value = entrenador.correo || '';
+            document.getElementById('telefono').value = entrenador.telefono || '';
+            document.getElementById('direccion').value = entrenador.direccion || '';
+          
+            setTimeout(() => {
+                const camposConDatos = ['cedula', 'nombres', 'apellidos', 'fecha_nacimiento', 'telefono', 'correo', 'direccion', 'genero'];
+                camposConDatos.forEach(id => {
+                    const campo = document.getElementById(id);
+                    if (campo && campo.value) {
+                        const reglas = campo.dataset.validar || '';
+                        const nombre = campo.dataset.nombre || id;
+                        const min = parseInt(campo.dataset.min) || 0;
+                        const max = parseInt(campo.dataset.max) || 9999;
+                        validarCampo(campo, reglas, nombre, min, max);
+                    }
+                });
+            }, 100);
             
             if (entrenador.foto && fotoPreview) {
                 fotoPreview.src = entrenador.foto;
@@ -219,16 +410,37 @@ if (inputBusqueda) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    try { Validador.vincularTiempoReal(formEntrenador); } catch(e){}
     cargarTablaEntrenador();
+
+    try { 
+        setupValidacionTiempoReal();
+        console.log('Validaciones en tiempo real inicializadas correctamente');
+    } catch(e){ 
+        console.warn('Error en validaciones:', e); 
+    }
 
     formEntrenador.addEventListener('submit', async function (e) {
         e.preventDefault(); 
 
-        const erroresJS = Validador.validarFormulario(formEntrenador);
-        if (erroresJS) {
-            UI.advertencia('Datos Incompletos o Inválidos', erroresJS);
-            return; 
+        const { hasError, errores } = validarFormularioCompleto(this);
+        
+        if (hasError) {
+            const mensaje = errores.length > 0 
+                ? errores.join('<br>') 
+                : 'Por favor corrige los campos marcados en rojo.';
+            
+            if (typeof UI !== 'undefined') {
+                UI.advertencia('Datos Incompletos o Inválidos', mensaje);
+            } else {
+                alert('Por favor corrige los campos marcados en rojo:\n' + errores.join('\n'));
+            }
+          
+            const primerError = this.querySelector('.border-red-500');
+            if (primerError) {
+                primerError.focus();
+                primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
         }
 
         const textoOriginal = btnGuardar.innerHTML;
@@ -240,16 +452,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (resultado) {
             if (resultado.status === 'success') {
-                UI.exito('Transacción Exitosa', resultado.message);
+                if (typeof UI !== 'undefined') {
+                    UI.exito('Transacción Exitosa', resultado.message);
+                } else {
+                    alert('Éxito: ' + resultado.message);
+                }
                 cerrarModalEntrenador();
                 cargarTablaEntrenador();
             } 
             else if (resultado.status === 'warning') {
                 let msjErrores = Object.values(resultado.errores).join("<br>");
-                UI.advertencia('Validación del Servidor', msjErrores);
+                if (typeof UI !== 'undefined') {
+                    UI.advertencia('Validación del Servidor', msjErrores);
+                } else {
+                    alert('Errores: ' + msjErrores);
+                }
             } 
             else {
-                UI.error('Error de Sistema', resultado.message);
+                if (typeof UI !== 'undefined') {
+                    UI.error('Error de Sistema', resultado.message);
+                } else {
+                    alert('Error: ' + resultado.message);
+                }
             }
         }
 
@@ -268,10 +492,14 @@ async function eliminarEntrenador(id_entrenador) {
         const resultado = await peticionAjax('eliminar', datosDelete);
         
         if (resultado && resultado.status === 'success') {
-            UI.exito('Eliminado', 'El registro ha sido removido exitosamente.');
+            if (typeof UI !== 'undefined') {
+                UI.exito('Eliminado', 'El registro ha sido removido exitosamente.');
+            }
             cargarTablaEntrenador();
         } else {
-            UI.error('Error', resultado?.message || 'No se pudo eliminar el registro.');
+            if (typeof UI !== 'undefined') {
+                UI.error('Error', resultado?.message || 'No se pudo eliminar el registro.');
+            }
         }
     }
 }

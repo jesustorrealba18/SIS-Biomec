@@ -6,6 +6,132 @@ const totalAsignaciones = document.getElementById('totalAsignaciones');
 
 const API_URL = 'index.php?p=asignacion'; 
 
+function validarCampoAsignacion(input) {
+    const valor = input.value.trim();
+    const nombre = input.dataset.nombre || input.name || 'Campo';
+    const reglas = input.dataset.validar || '';
+    let error = '';
+    
+    input.classList.remove('border-red-500', 'border-2', 'border-green-500', 'border');
+    
+    let errorContainer = input.parentElement.querySelector('.error-msg');
+    if (!errorContainer) {
+        errorContainer = document.createElement('span');
+        errorContainer.className = 'error-msg text-red-400 text-[10px] mt-1 block';
+        input.parentElement.appendChild(errorContainer);
+    }
+    
+    if (reglas.includes('requerido') && !valor) {
+        error = `${nombre} es requerido`;
+    }
+    
+    if (input.type === 'date' && valor) {
+        const fecha = new Date(valor);
+        if (isNaN(fecha.getTime())) {
+            error = `${nombre} debe ser una fecha válida`;
+        }
+    }
+    
+    if (input.id === 'fecha_vigente_inicio' || input.id === 'fecha_vigente_fin') {
+        const fechaInicio = document.getElementById('fecha_vigente_inicio');
+        const fechaFin = document.getElementById('fecha_vigente_fin');
+        
+        if (fechaInicio && fechaFin && fechaInicio.value && fechaFin.value) {
+            const inicio = new Date(fechaInicio.value);
+            const fin = new Date(fechaFin.value);
+            
+            if (inicio > fin) {
+                if (input.id === 'fecha_vigente_fin') {
+                    error = 'La fecha de fin debe ser mayor o igual a la fecha de inicio';
+                }
+            }
+        }
+    }
+    
+    if (error) {
+        input.classList.add('border-red-500', 'border-2');
+        errorContainer.textContent = error;
+        errorContainer.style.display = 'block';
+        return false;
+    } else if (valor) {
+        input.classList.add('border-green-500', 'border');
+        errorContainer.textContent = '';
+        errorContainer.style.display = 'none';
+        return true;
+    } else {
+        errorContainer.textContent = '';
+        errorContainer.style.display = 'none';
+        return true;
+    }
+}
+
+function setupValidacionTiempoRealAsignacion() {
+    const campos = [
+        { id: 'id_carril', reglas: 'requerido', nombre: 'Carril' },
+        { id: 'id_bloque_horario', reglas: 'requerido', nombre: 'Bloque horario' },
+        { id: 'id_grupo', reglas: 'requerido', nombre: 'Grupo' },
+        { id: 'fecha_vigente_inicio', reglas: 'requerido', nombre: 'Fecha inicio' },
+        { id: 'fecha_vigente_fin', reglas: 'requerido', nombre: 'Fecha fin' }
+    ];
+
+    campos.forEach(({ id, reglas, nombre }) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        
+        input.dataset.validar = reglas;
+        input.dataset.nombre = nombre;
+
+        let errorContainer = input.parentElement.querySelector('.error-msg');
+        if (!errorContainer) {
+            errorContainer = document.createElement('span');
+            errorContainer.className = 'error-msg text-red-400 text-[10px] mt-1 block';
+            input.parentElement.appendChild(errorContainer);
+        }
+
+        input.addEventListener('blur', function() {
+            validarCampoAsignacion(this);
+        });
+
+        input.addEventListener('change', function() {
+            if (this.dataset.touched === 'true') {
+                validarCampoAsignacion(this);
+                if (this.id === 'fecha_vigente_inicio' || this.id === 'fecha_vigente_fin') {
+                    const otro = document.getElementById(
+                        this.id === 'fecha_vigente_inicio' ? 'fecha_vigente_fin' : 'fecha_vigente_inicio'
+                    );
+                    if (otro && otro.value) {
+                        validarCampoAsignacion(otro);
+                    }
+                }
+            }
+        });
+
+        input.addEventListener('focus', function() {
+            this.dataset.touched = 'true';
+        });
+    });
+}
+
+function validarFormularioCompletoAsignacion(form) {
+    const inputs = form.querySelectorAll('input[data-validar], select[data-validar]');
+    let hasError = false;
+    let primerosErrores = [];
+
+    inputs.forEach(input => {
+        input.dataset.touched = 'true';
+        const isValid = validarCampoAsignacion(input);
+        if (!isValid) {
+            hasError = true;
+            const errorMsg = input.parentElement.querySelector('.error-msg');
+            if (errorMsg && errorMsg.textContent) {
+                primerosErrores.push(errorMsg.textContent);
+            }
+        }
+    });
+
+    return { hasError, errores: primerosErrores };
+}
+
 async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
     if (datos) opciones.body = datos; 
@@ -176,45 +302,70 @@ async function verDetalleGrupo(id) {
     }
 }
 
-
 async function cargarSelects() {
     try {
+        console.log("Cargando carriles...");
         const carriles = await peticionAjax('listarCarriles');
         const selectCarril = document.getElementById('id_carril');
-        if (selectCarril && carriles) {
+        if (selectCarril && carriles && Array.isArray(carriles)) {
             selectCarril.innerHTML = '<option value="">Seleccione un carril</option>';
             carriles.forEach(carril => {
                 selectCarril.innerHTML += `<option value="${carril.id_carril}">Carril ${carril.numero} (Cap: ${carril.capacidad_maxima})</option>`;
             });
+            console.log(` ${carriles.length} carriles cargados`);
         }
 
+        console.log("Cargando horarios...");
         const bloques = await peticionAjax('listarHorarios');
         const selectBloque = document.getElementById('id_bloque_horario');
-        if (selectBloque && bloques) {
+        if (selectBloque && bloques && Array.isArray(bloques)) {
             selectBloque.innerHTML = '<option value="">Seleccione un horario</option>';
-            bloques.forEach(bloque => {
-                selectBloque.innerHTML += `<option value="${bloque.id_bloque}">${bloque.dia_semana} - ${bloque.hora_inicio} a ${bloque.hora_fin}</option>`;
-            });
+            if (bloques.length > 0) {
+                bloques.forEach(bloque => {
+                    selectBloque.innerHTML += `<option value="${bloque.id_bloque}">${bloque.dia_semana} - ${bloque.hora_inicio} a ${bloque.hora_fin}</option>`;
+                });
+                console.log(`${bloques.length} horarios cargados`);
+            } else {
+                selectBloque.innerHTML += `<option value="" disabled>No hay horarios disponibles</option>`;
+            }
         }
 
+        console.log("Cargando grupos...");
         const grupos = await peticionAjax('listarGruposParaSelect');
         const selectGrupo = document.getElementById('id_grupo');
-        if (selectGrupo && grupos) {
+        if (selectGrupo && grupos && Array.isArray(grupos)) {
             selectGrupo.innerHTML = '<option value="">Seleccione un grupo</option>';
-            grupos.forEach(grupo => {
-                selectGrupo.innerHTML += `<option value="${grupo.id_grupo}">${grupo.nombre}</option>`;
-            });
+            if (grupos.length > 0) {
+                grupos.forEach(grupo => {
+                    selectGrupo.innerHTML += `<option value="${grupo.id_grupo}">${grupo.nombre}</option>`;
+                });
+                console.log(`${grupos.length} grupos cargados`);
+            } else {
+                selectGrupo.innerHTML += `<option value="" disabled>No hay grupos disponibles</option>`;
+            }
         }
     } catch (error) {
         console.error("Error cargando selects:", error);
+        if (typeof UI !== 'undefined') {
+            UI.error('Error', 'No se pudieron cargar los datos del formulario');
+        }
     }
 }
 
 async function abrirModalAsignacion(id_asignacion = null) {
     if (formAsignacion) formAsignacion.reset(); 
+    
     try { 
         if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formAsignacion); 
     } catch(e) {}
+    
+    document.querySelectorAll('#formAsignacion .error-msg').forEach(el => {
+        el.textContent = '';
+        el.style.display = 'none';
+    });
+    document.querySelectorAll('#formAsignacion input, #formAsignacion select').forEach(el => {
+        el.classList.remove('border-red-500', 'border-green-500', 'border-2', 'border');
+    });
     
     const inputIdHidden = document.getElementById('id_asignacion');
     const modalTitulo = document.getElementById('modalTitulo');
@@ -223,9 +374,8 @@ async function abrirModalAsignacion(id_asignacion = null) {
 
     if (id_asignacion) {
         if (inputIdHidden) inputIdHidden.value = id_asignacion;
-        if (modalTitulo) modalTitulo.textContent = 'Actualizar Asignación de Carril';
-        
-        if (btnGuardar) btnGuardar.innerHTML = 'ACTUALIZAR ASIGNACIÓN <i class="fas fa-sync-alt ml-2"></i>';
+        if (modalTitulo) modalTitulo.textContent = 'Editar Asignación de Carril';
+        if (btnGuardar) btnGuardar.innerHTML = 'EDITAR ASIGNACIÓN <i class="fas fa-sync-alt ml-2"></i>';
         
         const asignacion = await peticionAjax(`obtenerAsignacion&id=${id_asignacion}`);
         
@@ -242,8 +392,8 @@ async function abrirModalAsignacion(id_asignacion = null) {
             if (idBloque) idBloque.value = asignacion.id_bloque_horario;
             if (idGrupo) idGrupo.value = asignacion.id_grupo;
             if (diaEspecifico) diaEspecifico.value = asignacion.dia_especifico;
-            if (fechaInicio) fechaInicio.value = asignacion.fecha_vigente_inicio;
-            if (fechaFin) fechaFin.value = asignacion.fecha_vigente_fin;
+            if (fechaInicio) fechaInicio.value = asignacion.fecha_vigencia_inicio;
+            if (fechaFin) fechaFin.value = asignacion.fecha_vigencia_fin;
             if (activa) activa.checked = asignacion.activa == 1;
         }
     } else {
@@ -253,6 +403,17 @@ async function abrirModalAsignacion(id_asignacion = null) {
         
         const activaCheck = document.getElementById('activa');
         if (activaCheck) activaCheck.checked = true;
+        
+        const hoy = new Date().toISOString().split('T')[0];
+        const fechaInicio = document.getElementById('fecha_vigente_inicio');
+        if (fechaInicio) fechaInicio.value = hoy;
+        
+        const fechaFin = document.getElementById('fecha_vigente_fin');
+        if (fechaFin) {
+            const fecha = new Date();
+            fecha.setMonth(fecha.getMonth() + 1);
+            fechaFin.value = fecha.toISOString().split('T')[0];
+        }
     }
 
     if (modalAsignacion) {
@@ -266,9 +427,19 @@ async function abrirModalAsignacion(id_asignacion = null) {
 }
 
 async function verDetalle(id) {
+    console.log("=== verDetalle() INICIO ===");
+    console.log("ID recibido:", id);
+    
     const asignacion = await peticionAjax(`obtenerAsignacion&id=${id}`);
+    
+    console.log("Datos recibidos del servidor:", asignacion);
+    
     if (!asignacion) {
-        if (typeof UI !== 'undefined') UI.error('Error', 'No se pudo cargar el detalle de la asignación');
+        if (typeof UI !== 'undefined') {
+            UI.error('Error', 'No se pudo cargar el detalle de la asignación');
+        } else {
+            alert('Error: No se pudo cargar el detalle de la asignación.');
+        }
         return;
     }
 
@@ -280,12 +451,50 @@ async function verDetalle(id) {
     const verFechaFin = document.getElementById('verFechaFin');
     const verEstado = document.getElementById('verEstado');
     
-    if (verCarril) verCarril.innerText = asignacion.carril_numero || asignacion.id_carril;
-    if (verBloque) verBloque.innerHTML = `${asignacion.dia_semana || ''} ${asignacion.hora_inicio || ''} - ${asignacion.hora_fin || ''}`;
-    if (verGrupo) verGrupo.innerText = asignacion.grupo_nombre || asignacion.id_grupo;
-    if (verDia) verDia.innerText = asignacion.dia_especifico || '—';
-    if (verFechaInicio) verFechaInicio.innerText = asignacion.fecha_vigente_inicio;
-    if (verFechaFin) verFechaFin.innerText = asignacion.fecha_vigente_fin;
+    console.log("=== ELEMENTOS DEL DOM ===");
+    console.log("verCarril:", verCarril);
+    console.log("verBloque:", verBloque);
+    console.log("verGrupo:", verGrupo);
+    console.log("verDia:", verDia);
+    console.log("verFechaInicio:", verFechaInicio);
+    console.log("verFechaFin:", verFechaFin);
+    console.log("verEstado:", verEstado);
+
+    if (verCarril) {
+        verCarril.innerText = asignacion.carril_numero || asignacion.id_carril || '—';
+    }
+    
+    if (verBloque) {
+        const dia = asignacion.dia_semana || '';
+        const inicio = asignacion.hora_inicio || '';
+        const fin = asignacion.hora_fin || '';
+        verBloque.innerHTML = `${dia} ${inicio} - ${fin}`.trim() || '—';
+    }
+    
+    if (verGrupo) {
+        verGrupo.innerText = asignacion.grupo_nombre || asignacion.id_grupo || '—';
+    }
+    
+    if (verDia) {
+        verDia.innerText = asignacion.dia_especifico || '—';
+    }
+    
+    if (verFechaInicio) {
+        const fecha = asignacion.fecha_vigencia_inicio;
+        verFechaInicio.innerText = fecha || 'No definida';
+        console.log("verFechaInicio.innerText asignado:", verFechaInicio.innerText);
+    } else {
+        console.error("Elemento verFechaInicio NO ENCONTRADO en el DOM");
+    }
+    
+    if (verFechaFin) {
+        const fecha = asignacion.fecha_vigencia_fin;
+        verFechaFin.innerText = fecha || 'No definida';
+        console.log("verFechaFin.innerText asignado:", verFechaFin.innerText);
+    } else {
+        console.error("Elemento verFechaFin NO ENCONTRADO en el DOM");
+    }
+    
     if (verEstado) {
         verEstado.innerHTML = asignacion.activa == 1 
             ? '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs">Activa</span>' 
@@ -300,6 +509,8 @@ async function verDetalle(id) {
             }
         }, 10);
     }
+    
+    console.log("=== verDetalle() FIN ===");
 }
 
 async function cargarTablaAsignaciones() {
@@ -366,7 +577,7 @@ async function cargarTablaAsignaciones() {
                     </div>
                  </td>
                 <td class="p-4 text-gray-300">${a.dia_especifico || '—'}</td>
-                <td class="p-4 text-gray-300">${a.fecha_vigente_inicio || '—'}</td>
+                <td class="p-4 text-gray-300">${a.fecha_vigencia_inicio || '—'}</td>
                 <td class="p-4">
                     <span class="px-2.5 py-1 text-[11px] font-bold rounded-full ${a.activa == 1 ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'} uppercase tracking-wide">
                         ${a.activa == 1 ? 'Activa' : 'Inactiva'}
@@ -408,6 +619,13 @@ if (inputBusqueda) {
 
 document.addEventListener('DOMContentLoaded', () => {
     cargarTablaAsignaciones();
+    
+    try {
+        setupValidacionTiempoRealAsignacion();
+    } catch (e) {
+        console.warn('Error configurando validaciones:', e);
+    }
+    
     try { 
         if (typeof Validador !== 'undefined' && formAsignacion) {
             Validador.vincularTiempoReal(formAsignacion); 
@@ -417,6 +635,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formAsignacion) {
         formAsignacion.addEventListener('submit', async function (e) {
             e.preventDefault(); 
+            
+            const { hasError, errores } = validarFormularioCompletoAsignacion(this);
+            
+            if (hasError) {
+                const mensaje = errores.length > 0 
+                    ? errores.join('<br>') 
+                    : 'Por favor corrige los campos marcados en rojo.';
+                
+                if (typeof UI !== 'undefined') {
+                    UI.advertencia('Datos Incompletos o Inválidos', mensaje);
+                } else {
+                    alert('Por favor corrige los campos marcados en rojo:\n' + errores.join('\n'));
+                }
+                
+                const primerError = this.querySelector('.border-red-500');
+                if (primerError) {
+                    primerError.focus();
+                    primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
             
             let erroresJS = false;
             try {

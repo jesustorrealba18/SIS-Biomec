@@ -25,6 +25,21 @@
         main::-webkit-scrollbar-track { background: #0f0d23; }
         main::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
         main::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+
+        .error-msg {
+            color: #f87171;
+            font-size: 10px;
+            margin-top: 4px;
+            display: none;
+        }
+        input.border-red-500, select.border-red-500 {
+            border-color: #ef4444 !important;
+            border-width: 2px !important;
+        }
+        input.border-green-500, select.border-green-500 {
+            border-color: #22c55e !important;
+            border-width: 1px !important;
+        }
     </style>
 </head>
 <body class="flex min-h-screen">
@@ -63,7 +78,7 @@
                 <div class="flex items-center gap-2">
                     <label for="filtroEstado" class="text-xs text-gray-400 uppercase font-bold tracking-wider">Ver:</label>
                     <select id="filtroEstado" onchange="cargarTablaAsignaciones()" class="input-dark p-2 rounded-xl text-xs bg-[#161430] border border-gray-700 text-white">
-                        <option value="Activo" selected>✅ Asignaciones Activas</option>
+                        <option value="Activo" selected>Asignaciones Activas</option>
                         <option value="Inactivo">Asignaciones Inactivas</option>
                     </select>
                 </div>                
@@ -117,41 +132,46 @@
 
                 <div class="space-y-4">
                     <div class="space-y-1">
-                        <label class="text-[11px] text-gray-500 font-bold ml-1">Carril</label>
+                        <label class="text-[11px] text-gray-500 font-bold ml-1">Carril <span class="text-red-400">*</span></label>
                         <select id="id_carril" name="id_carril" data-validar="requerido" data-nombre="Carril" class="input-dark w-full p-3 rounded-xl">
                             <option value="">Seleccione un carril</option>
                         </select>
+                        <span class="error-msg"></span>
                     </div>
 
                     <div class="space-y-1">
-                        <label class="text-[11px] text-gray-500 font-bold ml-1">Horario</label>
+                        <label class="text-[11px] text-gray-500 font-bold ml-1">Horario <span class="text-red-400">*</span></label>
                         <select id="id_bloque_horario" name="id_bloque_horario" data-validar="requerido" data-nombre="Bloque horario" class="input-dark w-full p-3 rounded-xl">
                             <option value="">Seleccione un horario</option>
                         </select>
+                        <span class="error-msg"></span>
                     </div>
 
                     <div class="space-y-1">
-                        <label class="text-[11px] text-gray-500 font-bold ml-1">Grupo</label>
+                        <label class="text-[11px] text-gray-500 font-bold ml-1">Grupo <span class="text-red-400">*</span></label>
                         <select id="id_grupo" name="id_grupo" data-validar="requerido" data-nombre="Grupo" class="input-dark w-full p-3 rounded-xl">
                             <option value="">Seleccione un grupo</option>
                         </select>
+                        <span class="error-msg"></span>
                     </div>
 
                     <div class="space-y-1">
-                        <label class="text-[11px] text-gray-500 font-bold ml-1">Dia Especifico</label>
+                        <label class="text-[11px] text-gray-500 font-bold ml-1">Día Específico</label>
                         <input type="date" id="dia_especifico" name="dia_especifico" class="input-dark w-full p-3 rounded-xl">
                         <p class="text-[10px] text-gray-500 mt-1">Si es una asignación recurrente, dejar vacío</p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-1">
-                            <label class="text-[11px] text-gray-500 font-bold ml-1">Fecha Inicio</label>
-                            <input type="date" id="fecha_vigente_inicio" name="fecha_vigente_inicio" data-validar="requerido" data-nombre="Fecha inicio" class="input-dark w-full p-3 rounded-xl">
+                            <label class="text-[11px] text-gray-500 font-bold ml-1">Fecha Inicio <span class="text-red-400">*</span></label>
+                            <input type="date" id="fecha_vigente_inicio" name="fecha_vigencia_inicio" data-validar="requerido" data-nombre="Fecha inicio" class="input-dark w-full p-3 rounded-xl">
+                            <span class="error-msg"></span>
                         </div>
 
                         <div class="space-y-1">
-                            <label class="text-[11px] text-gray-500 font-bold ml-1">Fecha Fin</label>
-                            <input type="date" id="fecha_vigente_fin" name="fecha_vigente_fin" data-validar="requerido" data-nombre="Fecha fin" class="input-dark w-full p-3 rounded-xl">
+                            <label class="text-[11px] text-gray-500 font-bold ml-1">Fecha Fin <span class="text-red-400">*</span></label>
+                            <input type="date" id="fecha_vigente_fin" name="fecha_vigencia_fin" data-validar="requerido" data-nombre="Fecha fin" class="input-dark w-full p-3 rounded-xl">
+                            <span class="error-msg"></span>
                         </div>
                     </div>
 
@@ -209,11 +229,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="bg-[#0f0d23] p-4 rounded-xl border border-[#252345]">
                         <p class="text-xs text-gray-500 uppercase">Vigencia Inicio</p>
-                        <p id="verFechaInicio" class="text-white mt-1">-</p>
+                        <p id="verFechaInicio" class="text-white mt-1 font-bold text-indigo-400">-</p>
                     </div>
                     <div class="bg-[#0f0d23] p-4 rounded-xl border border-[#252345]">
                         <p class="text-xs text-gray-500 uppercase">Vigencia Fin</p>
-                        <p id="verFechaFin" class="text-white mt-1">-</p>
+                        <p id="verFechaFin" class="text-white mt-1 font-bold text-indigo-400">-</p>
                     </div>
                 </div>
             </div>
