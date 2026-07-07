@@ -73,13 +73,6 @@ class Marca extends Conexion {
 
 
         
-        /* $this->requerido((string)($this->datos['id_atleta'] ?? ''), 'id_atleta');
-        $this->requerido((string)($this->datos['estilo'] ?? ''), 'estilo');
-        $this->requerido((string)($this->datos['distancia_m'] ?? ''), 'distancia_m');
-        $this->requerido((string)($this->datos['tipo_piscina'] ?? ''), 'tipo_piscina');
-        $this->requerido((string)($this->datos['tiempo_final_seg'] ?? ''), 'tiempo_final_seg');
-        $this->requerido((string)($this->datos['fecha'] ?? ''), 'fecha'); */
-        
         // 1. Validaciones Obligatorias Básicas
         if ($this->requerido($id_atleta, 'Atleta Seleccionado')) {
             $this->soloNumeros($id_atleta, 'Atleta Seleccionado');
@@ -156,11 +149,6 @@ class Marca extends Conexion {
         }
 
 
-        // if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {
-        //     $this->agregarError('fecha', 'La fecha del registro no puede ser futura.');
-        // }
-
-  
 
         return empty($this->obtenerErrores());
     }
@@ -318,7 +306,285 @@ class Marca extends Conexion {
         return $this->reactivarMarca();
    }
 
-    private function registrarMarca(): bool {
+
+/**
+ * Calcula y guarda el SWOLF para una marca
+ */
+/* private function guardarSwolf(int $idMarca, array $datos): void
+{
+    if (empty($datos['brazadas_por_largo'])) {
+        return; // No hay datos para SWOLF
+    }
+
+    $brazadas = (int)$datos['brazadas_por_largo'];
+    $longitudPiscina = ($datos['tipo_piscina'] === '25m') ? 25 : 50;
+    $cantidadLargos = (int)$datos['distancia_m'] / $longitudPiscina;
+    $tiempoFinal = (float)$datos['tiempo_final_seg'];
+    $tiempoPorLargo = $tiempoFinal / $cantidadLargos;
+    $swolfCalculado = (int)round($tiempoPorLargo + $brazadas);
+
+    $sql = "INSERT INTO marcas_swolf (id_marca, num_brazadas, swolf) 
+            VALUES (:id_marca, :brazadas, :swolf)";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':id_marca', $idMarca, PDO::PARAM_INT);
+    $stmt->bindValue(':brazadas', $brazadas, PDO::PARAM_INT);
+    $stmt->bindValue(':swolf', $swolfCalculado, PDO::PARAM_INT);
+    $stmt->execute();
+} */
+
+private function guardarSwolf(
+    int $idMarca,
+    int $brazadasPorLargo,
+    string $tipoPiscina,
+    int $distanciaMetros,
+    float $tiempoFinalSeg
+): void {
+    if ($brazadasPorLargo <= 0) {
+        return;
+    }
+
+    $longitudPiscina = ($tipoPiscina === '25m') ? 25 : 50;
+    $cantidadLargos = $distanciaMetros / $longitudPiscina;
+    $tiempoPorLargo = $tiempoFinalSeg / $cantidadLargos;
+    $swolfCalculado = (int)round($tiempoPorLargo + $brazadasPorLargo);
+
+    $sql = "INSERT INTO marcas_swolf (id_marca, num_brazadas, swolf) 
+            VALUES (:id_marca, :brazadas, :swolf)";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':id_marca', $idMarca, PDO::PARAM_INT);
+    $stmt->bindValue(':brazadas', $brazadasPorLargo, PDO::PARAM_INT);
+    $stmt->bindValue(':swolf', $swolfCalculado, PDO::PARAM_INT);
+    $stmt->execute();
+}
+
+/**
+ * Guarda los splits (tramos) de una marca
+ */
+private function guardarSplits(int $idMarca, array $splits): void
+{
+    if (empty($splits) || !is_array($splits)) {
+        return;
+    }
+
+    $sql = "INSERT INTO marcas_splits (id_marca, parcial_numero, distancia_parcial_m, tiempo_parcial_seg) 
+            VALUES (:id_marca, :numero, :distancia_parcial, :tiempo_parcial)";
+    $stmt = $this->pdo->prepare($sql);
+
+    $numeroSplit = 1;
+    foreach ($splits as $distanciaParcial => $tiempoSeg) {
+        $tiempoParcial = (float)$tiempoSeg;
+        if ($tiempoParcial > 0) {
+            $stmt->bindValue(':id_marca', $idMarca, PDO::PARAM_INT);
+            $stmt->bindValue(':numero', $numeroSplit, PDO::PARAM_INT);
+            $stmt->bindValue(':distancia_parcial', (int)$distanciaParcial, PDO::PARAM_INT);
+            $stmt->bindValue(':tiempo_parcial', $tiempoParcial, PDO::PARAM_STR);
+            $stmt->execute();
+            $numeroSplit++;
+        }
+    }
+}
+
+/**
+ * Determina si una marca es Personal Best (PB)
+ */
+private function calcularPB(int $idAtleta, string $estilo, int $distancia, string $tipoPiscina, float $tiempoFinal, ?int $idMarcaExcluir = null): int
+{
+    $sql = "SELECT MIN(tiempo_final_seg) as mejor_tiempo 
+            FROM marcas 
+            WHERE id_atleta = :id_atleta 
+              AND estilo = :estilo 
+              AND distancia_m = :distancia 
+              AND tipo_piscina = :tipo_piscina 
+              AND estado = 'Activo'";
+    
+    $params = [
+        ':id_atleta' => $idAtleta,
+        ':estilo' => $estilo,
+        ':distancia' => $distancia,
+        ':tipo_piscina' => $tipoPiscina
+    ];
+
+    if ($idMarcaExcluir !== null) {
+        $sql .= " AND id_marca != :id_marca_actual";
+        $params[':id_marca_actual'] = $idMarcaExcluir;
+    }
+
+    $stmt = $this->pdo->prepare($sql);
+    foreach ($params as $clave => $valor) {
+        $stmt->bindValue($clave, $valor, is_int($valor) ? PDO::PARAM_INT : PDO::PARAM_STR);
+    }
+    $stmt->execute();
+    $historial = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return (empty($historial['mejor_tiempo']) || $tiempoFinal < (float)$historial['mejor_tiempo']) ? 1 : 0;
+}
+
+private function registrarMarca(): bool
+{
+    try {
+        $this->pdo->beginTransaction();
+
+        $tiempoFinal = (float)$this->datos['tiempo_final_seg'];
+        $es_pb = $this->calcularPB(
+            (int)$this->datos['id_atleta'],
+            $this->datos['estilo'],
+            (int)$this->datos['distancia_m'],
+            $this->datos['tipo_piscina'],
+            $tiempoFinal
+        );
+
+            // -------------------------------------------------------------
+            // INSERTAR EN TABLA PRINCIPAL: `marcas`
+            // -------------------------------------------------------------
+            $sqlInsert = "INSERT INTO marcas (id_atleta, id_sesion, id_evento, estilo, distancia_m, tipo_piscina, tiempo_final_seg, tiempo_reaccion_seg, tiempo_viraje_seg, es_pb, fecha, observaciones) 
+                          VALUES (:id_atleta, :id_sesion, :id_evento, :estilo, :distancia, :piscina, :tiempo, :reaccion, :viraje, :es_pb, :fecha, :obs)";
+            
+            $stmt = $this->pdo->prepare($sqlInsert);
+            
+            
+            $mapaPrincipal = [
+                ':id_atleta' => ['id_atleta', PDO::PARAM_INT],
+                ':id_sesion' => ['id_sesion', PDO::PARAM_INT],
+                ':id_evento' => ['id_evento', PDO::PARAM_INT],
+                ':estilo'    => ['estilo', PDO::PARAM_STR],
+                ':distancia' => ['distancia_m', PDO::PARAM_INT],
+                ':piscina'   => ['tipo_piscina', PDO::PARAM_STR],
+                ':tiempo'    => ['tiempo_final_seg', PDO::PARAM_STR],
+                ':reaccion'  => ['tiempo_reaccion_seg', PDO::PARAM_STR],
+                ':viraje'    => ['tiempo_viraje_seg', PDO::PARAM_STR],
+                ':es_pb'     => ['es_pb_local', PDO::PARAM_INT], 
+                ':fecha'     => ['fecha', PDO::PARAM_STR],
+                ':obs'       => ['observaciones', PDO::PARAM_STR]
+            ];
+
+           
+            $this->autoBind($stmt, $mapaPrincipal, $this->datos, ['es_pb_local' => $es_pb]);
+            
+            $stmt->execute(); 
+           /*  $id_marca_insertada = $this->pdo->lastInsertId();
+            $this->datos['id_marca'] = $id_marca_insertada; // Guardamos el ID generado para notificaciones y splits
+           */
+
+        $idMarca = $this->pdo->lastInsertId();
+        $this->datos['id_marca'] = $idMarca;
+
+        // Guardar SWOLF y Splits
+        $this->guardarSwolf(
+            $idMarca,
+            (int)($this->datos['brazadas_por_largo'] ?? 0),
+            $this->datos['tipo_piscina'],
+            (int)$this->datos['distancia_m'],
+            (float)$this->datos['tiempo_final_seg']
+        );
+        $this->guardarSplits($idMarca, $this->datos['splits'] ?? []);
+
+        $this->pdo->commit();
+        return true;
+
+    } catch (PDOException $e) {
+          $this->pdo->rollBack();
+
+            if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta, Sesión o Evento) fueron alterados y no existen en el sistema.');
+                return false;
+            }
+           error_log("ERROR REAL DE SQL: " . $e->getMessage()); 
+            error_log("TRACE: " . $e->getTraceAsString());
+            return false;
+    }
+}
+
+private function actualizarMarca(): bool
+{
+    try {
+        $this->pdo->beginTransaction();
+
+        $idMarca = (int)$this->datos['id_marca'];
+        $tiempoFinal = (float)$this->datos['tiempo_final_seg'];
+
+        $es_pb = $this->calcularPB(
+            (int)$this->datos['id_atleta'],
+            $this->datos['estilo'],
+            (int)$this->datos['distancia_m'],
+            $this->datos['tipo_piscina'],
+            $tiempoFinal,
+            $idMarca // Excluir la marca actual
+        );
+
+          // -------------------------------------------------------------
+            // ACTUALIZACIÓN DE LA TABLA PRINCIPAL
+            // -------------------------------------------------------------
+            $sqlUpdate = "UPDATE marcas SET 
+                           estilo = :estilo, 
+                            distancia_m = :distancia, tipo_piscina = :piscina, tiempo_final_seg = :tiempo, 
+                            tiempo_reaccion_seg = :reaccion, tiempo_viraje_seg = :viraje, 
+                            es_pb = :es_pb, fecha = :fecha, observaciones = :obs
+                          WHERE id_marca = :id_marca_condicion";
+            
+            $stmt = $this->pdo->prepare($sqlUpdate);
+            
+            $mapaPrincipal = [
+              
+                ':estilo'    => ['estilo', PDO::PARAM_STR],
+                ':distancia' => ['distancia_m', PDO::PARAM_INT],
+                ':piscina'   => ['tipo_piscina', PDO::PARAM_STR],
+                ':tiempo'    => ['tiempo_final_seg', PDO::PARAM_STR],
+                ':reaccion'  => ['tiempo_reaccion_seg', PDO::PARAM_STR],
+                ':viraje'    => ['tiempo_viraje_seg', PDO::PARAM_STR],     
+                ':es_pb'     => ['es_pb_local', PDO::PARAM_INT], 
+                ':fecha'     => ['fecha', PDO::PARAM_STR],
+                ':obs'       => ['observaciones', PDO::PARAM_STR],
+                ':id_marca_condicion' => ['id_marca_condicion', PDO::PARAM_INT]
+            ];
+
+            $this->autoBind($stmt, $mapaPrincipal, $this->datos, [
+                'es_pb_local' => $es_pb, 
+                'id_marca_condicion' => $idMarca
+            ]);
+            
+            $stmt->execute();
+
+            // -------------------------------------------------------------
+            // LIMPIEZA DE TABLAS SECUNDARIAS (Delete & Re-insert Pattern)
+            // -------------------------------------------------------------
+            
+            $stmtDelSwolf = $this->pdo->prepare("DELETE FROM marcas_swolf WHERE id_marca = :id");
+            $stmtDelSwolf->bindValue(':id', $idMarca, PDO::PARAM_INT);
+            $stmtDelSwolf->execute();
+
+            $stmtDelSplits = $this->pdo->prepare("DELETE FROM marcas_splits WHERE id_marca = :id");
+            $stmtDelSplits->bindValue(':id', $idMarca, PDO::PARAM_INT);
+            $stmtDelSplits->execute();
+
+            // -------------------------------------------------------------
+            // RE-INSERCIÓN DE MÉTRICAS (SWOLF Y SPLITS)
+            // -------------------------------------------------------------
+
+        $this->guardarSwolf(
+            $idMarca,
+            (int)($this->datos['brazadas_por_largo'] ?? 0),
+            $this->datos['tipo_piscina'],
+            (int)$this->datos['distancia_m'],
+            (float)$this->datos['tiempo_final_seg']
+        );
+        $this->guardarSplits($idMarca, $this->datos['splits'] ?? []);
+
+        $this->pdo->commit();
+        return true;
+
+    } catch (PDOException $e) {
+         $this->pdo->rollBack();
+             if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta, Sesión o Evento) fueron alterados y no existen en el sistema.');
+                return false;
+            }
+            error_log("Error en actualizacion de marca: " . $e->getMessage());
+            return false;
+    }
+}
+
+
+  /*   private function registrarMarca(): bool {
       
         
        try {
@@ -435,26 +701,6 @@ class Marca extends Conexion {
 
             $this->pdo->commit();
 
-            // -------------------------------------------------------------
-            // DEEP LINKING Y NOTIFICACIONES
-            // -------------------------------------------------------------
-/*             try {
-                $deepLink = "?p=marcas&h=" . $id_marca_insertada;
-                $mensaje = "Se ha registrado un tiempo de {$tiempo_final}s en {$this->datos['distancia_m']}m {$this->datos['estilo']}.";
-
-                // Llamamos a tu orquestador limpio
-                \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarAtletaYRepresentante(
-                    (int)$this->datos['id_atleta'],
-                    "¡Nueva Marca Registrada!",
-                    $mensaje,
-                    "fa-stopwatch",
-                    "emerald",
-                    $deepLink
-                );
-            } catch (\Throwable $th) {
-                // Si falla la notificación, no deshacemos la marca, solo registramos el error silencioso
-                error_log("Aviso: La marca se guardó, pero falló la notificación. " . $th->getMessage());
-            } */
 
 
             return true;
@@ -512,7 +758,7 @@ class Marca extends Conexion {
             // ACTUALIZACIÓN DE LA TABLA PRINCIPAL
             // -------------------------------------------------------------
             $sqlUpdate = "UPDATE marcas SET 
-                            /* id_sesion = :id_sesion, id_evento = :id_evento, */ estilo = :estilo, 
+                           estilo = :estilo, 
                             distancia_m = :distancia, tipo_piscina = :piscina, tiempo_final_seg = :tiempo, 
                             tiempo_reaccion_seg = :reaccion, tiempo_viraje_seg = :viraje, 
                             es_pb = :es_pb, fecha = :fecha, observaciones = :obs
@@ -521,15 +767,14 @@ class Marca extends Conexion {
             $stmt = $this->pdo->prepare($sqlUpdate);
             
             $mapaPrincipal = [
-                // ':id_sesion' => ['id_sesion', PDO::PARAM_INT],
-                // ':id_evento' => ['id_evento', PDO::PARAM_INT],
+              
                 ':estilo'    => ['estilo', PDO::PARAM_STR],
                 ':distancia' => ['distancia_m', PDO::PARAM_INT],
                 ':piscina'   => ['tipo_piscina', PDO::PARAM_STR],
                 ':tiempo'    => ['tiempo_final_seg', PDO::PARAM_STR],
                 ':reaccion'  => ['tiempo_reaccion_seg', PDO::PARAM_STR],
                 ':viraje'    => ['tiempo_viraje_seg', PDO::PARAM_STR],
-                //':nivel'     => ['nivel_evento', PDO::PARAM_STR],
+               
                 ':es_pb'     => ['es_pb_local', PDO::PARAM_INT], 
                 ':fecha'     => ['fecha', PDO::PARAM_STR],
                 ':obs'       => ['observaciones', PDO::PARAM_STR],
@@ -602,7 +847,7 @@ class Marca extends Conexion {
             error_log("Error en actualizacion de marca: " . $e->getMessage());
             return false;
         }
-    }
+    } */
 
   // =====================================================================
     // MÉTODOS DE CONSULTA Y ESTADO (Listados y Soft Delete)
@@ -676,13 +921,7 @@ class Marca extends Conexion {
                     INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
                     WHERE m.estado = :estado";
 
-            /*  $sql = "SELECT m.id_marca, m.estilo, m.distancia_m, m.tipo_piscina, 
-                        m.tiempo_final_seg, m.nivel_evento, m.fecha, m.es_pb, 
-                        CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta, a.cedula 
-                    FROM marcas m 
-                    INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
-                    WHERE m.estado = :estado";        
-             */
+        
            
             if ($id_atleta > 0) {
                 $sql .= " AND m.id_atleta = :id_atleta";

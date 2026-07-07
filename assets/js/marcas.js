@@ -75,116 +75,8 @@ document.addEventListener('keydown', (e) => {
 });
 
 
+
 // =====================================================================
-// ABRIR MODAL (INTELIGENTE: ORQUESTA EL CREATE Y EL UPDATE)
-// =====================================================================
-/* async function abrirModalMarca(id_marca = null) {
-    formMarca.reset(); 
-    try { Validador.limpiarEstilos(formMarca); } catch(e) {}
-    
-    document.getElementById('id_marca').value = '';
-    document.getElementById('accion_form').value = 'registrar';
-    
-    const btnGuardar = document.getElementById('btnGuardar');
-    btnGuardar.innerHTML = 'GUARDAR REGISTRO <i class="fas fa-save ml-2"></i>';
-    btnGuardar.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
-    btnGuardar.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
-    
-    const rejillaSplits = document.getElementById('rejillaSplits');
-    if(rejillaSplits) rejillaSplits.innerHTML = '';
-
-    const inputAtleta = document.getElementById('inputBuscarAtleta');
-    inputAtleta.readOnly = false; 
-    inputAtleta.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-800'); 
-    document.getElementById('btnLimpiarAtleta').classList.add('hidden'); 
-    modalMarca.classList.remove('hidden');
-    setTimeout(() => {
-        modalMarca.firstElementChild.classList.remove('scale-95', 'opacity-0');
-    }, 10);
-
-    // cargarAtletasBuscador();
-
-    // =====================================================================
-    // MODO EDICIÓN: Si recibimos un ID, la función "Muta" el formulario
-    // =====================================================================
-    if (id_marca) {
-        const data = await peticionAjax(`obtenerDetalleMarca&id=${id_marca}`);
-        
-        if (!data) {
-            UI.error('Error', 'No se pudieron cargar los datos para edición.');
-            cerrarModalMarca();
-            return;
-        }
-
-        document.getElementById('id_marca').value = data.id_marca;
-
-        if (data.id_sesion) {
-            document.getElementById('id_sesion').value = data.id_sesion;
-            document.getElementById('id_evento').disabled = true;
-            // Cargamos los atletas de esa sesión, pasando el id del atleta a seleccionar
-            await cargarAtletasPorContexto('sesion', data.id_sesion, data.id_atleta);
-        } else if (data.id_evento) {
-            document.getElementById('id_evento').value = data.id_evento;
-            document.getElementById('id_sesion').disabled = true;
-            await cargarAtletasPorContexto('evento', data.id_evento, data.id_atleta);
-        }
-
-
-        
-        document.querySelector('[name="fecha"]').value = data.fecha;
-        document.querySelector('[name="estilo"]').value = data.estilo;
-        document.querySelector('[name="tiempo_final_seg"]').value = data.tiempo_final_seg;
-        
-        if (typeof formatearTiempoDesdeSegundos === 'function') {
-            document.getElementById('tiempo_final_humano').value = formatearTiempoDesdeSegundos(data.tiempo_final_seg);
-        } else {
-            document.getElementById('tiempo_final_humano').value = data.tiempo_final_seg;
-        }
-
-        document.querySelector('[name="tiempo_reaccion_seg"]').value = data.tiempo_reaccion_seg || '';
-        document.querySelector('[name="tiempo_viraje_seg"]').value = data.tiempo_viraje_seg || '';
-        //document.querySelector('[name="nivel_evento"]').value = data.nivel_evento;
-        document.querySelector('[name="observaciones"]').value = data.observaciones || '';
-
-       
-        //document.getElementById('id_atleta').value = data.id_atleta;
-        //inputAtleta.value = `${data.nombre_atleta} (CI: ${data.cedula})`;
-        
-        //inputAtleta.readOnly = true; 
-        //inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-800'); 
-        document.getElementById('btnLimpiarAtleta').classList.add('hidden'); 
-
-
-        // Llenamos el SWOLF
-        const inputBrazadas = document.querySelector('[name="brazadas_por_largo"]');
-        if (inputBrazadas) {
-            inputBrazadas.value = data.swolf_data ? data.swolf_data.num_brazadas : '';
-        }
-
-        const selectDistancia = document.querySelector('[name="distancia_m"]');
-        const selectPiscina = document.querySelector('[name="tipo_piscina"]');
-        
-        selectDistancia.value = data.distancia_m;
-        selectPiscina.value = data.tipo_piscina;
-
-        selectDistancia.dispatchEvent(new Event('change'));
-
-        if (data.splits && data.splits.length > 0) {
-            data.splits.forEach(split => {
-                const inputSplit = document.querySelector(`[name="splits[${split.distancia_parcial_m}]"]`);
-                if (inputSplit) inputSplit.value = split.tiempo_parcial_seg;
-            });
-        }
-
-        document.getElementById('accion_form').value = 'actualizar';
-        
-        btnGuardar.innerHTML = 'ACTUALIZAR REGISTRO <i class="fas fa-sync-alt ml-2"></i>';
-        btnGuardar.classList.replace('bg-indigo-600', 'bg-emerald-600');
-        btnGuardar.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-500');
-    }
-} */
-
-    // =====================================================================
 // ABRIR MODAL (INTELIGENTE: ORQUESTA EL CREATE Y EL UPDATE)
 // =====================================================================
 async function abrirModalMarca(id_marca = null) {
@@ -273,49 +165,6 @@ async function abrirModalMarca(id_marca = null) {
 
         // --- FIN DE MODO INMUTABLE ---
 
-/*         // --- INICIO DE RECREACIÓN DE CONTEXTO (CASCADA Y FECHAS) ---
-        const selectSesion = document.getElementById('id_sesion');
-        const selectEvento = document.getElementById('id_evento');
-        const inputFecha = document.getElementById('fecha');
-
-        // Armamos el objeto del atleta para el buscador predictivo
-        // Nota: Asegúrate de que tu PHP devuelva estos campos en obtenerDetalleMarca
-        const atletaPreseleccionado = {
-            id_atleta: data.id_atleta,
-            nombres: data.atleta_nombres || data.nombres, 
-            apellidos: data.atleta_apellidos || data.apellidos,
-            cedula: data.atleta_cedula || data.cedula
-        };
-
-        if (data.id_sesion) {
-            // Recrear estado de Sesión
-            selectSesion.value = data.id_sesion;
-            selectEvento.disabled = true;
-            selectEvento.classList.add('opacity-30', 'cursor-not-allowed');
-
-            inputFecha.value = data.fecha;
-            inputFecha.readOnly = true;
-            inputFecha.classList.add('opacity-70', 'pointer-events-none');
-
-            await cargarAtletasPorContexto('sesion', data.id_sesion, atletaPreseleccionado);
-
-        } else if (data.id_evento) {
-            // Recrear estado de Evento
-            selectEvento.value = data.id_evento;
-            selectSesion.disabled = true;
-            selectSesion.classList.add('opacity-30', 'cursor-not-allowed');
-
-            // Extraer min y max del option de este evento para blindar el input fecha
-            const optionEvento = selectEvento.options[selectEvento.selectedIndex];
-            inputFecha.value = data.fecha;
-            inputFecha.min = optionEvento.getAttribute('data-inicio');
-            inputFecha.max = optionEvento.getAttribute('data-fin');
-            inputFecha.readOnly = false;
-            inputFecha.classList.remove('opacity-70', 'pointer-events-none');
-
-            await cargarAtletasPorContexto('evento', data.id_evento, atletaPreseleccionado);
-        }
-        // --- FIN DE RECREACIÓN DE CONTEXTO --- */
 
         // Llenar datos básicos
         document.querySelector('[name="estilo"]').value = data.estilo;
@@ -376,13 +225,6 @@ const ulAtletas = document.getElementById('ulAtletas');
 const inputIdOculto = document.getElementById('id_atleta');
 const btnLimpiar = document.getElementById('btnLimpiarAtleta');
 
-/* async function cargarAtletasBuscador() {
-    const respuesta = await peticionAjax('listarAtletasSelect');
-    if (respuesta) {
-        atletasGlobal = respuesta;
-        
-    }
-} */
 
 // Función para dibujar los cuadritos de los atletas en la lista
 function renderizarDropdown(lista) {
@@ -453,18 +295,6 @@ inputBuscar.addEventListener('input', (e) => {
     renderizarDropdown(filtrados);
 });
 
-/* inputBuscar.addEventListener('input', (e) => {
-    const texto = e.target.value.toLowerCase();
-    
-    const filtrados = atletasGlobal.filter(a => 
-        a.nombres.toLowerCase().includes(texto) || 
-        a.apellidos.toLowerCase().includes(texto) ||
-        a.cedula.includes(texto)
-    );
-    
-    dropdown.classList.remove('hidden');
-    renderizarDropdown(filtrados);
-}); */
 
 inputBuscar.addEventListener('focus', () => {
     if (!inputIdOculto.value) { 
@@ -531,7 +361,6 @@ function configurarExclusividadSelects() {
         }
     });
 
-// Usamos 'blur' (pérdida de foco) en lugar de 'change' para no interrumpir al usuario mientras teclea
     inputFecha.addEventListener('blur', function() {
         const value = this.value;
         if (!value) return; 
@@ -585,41 +414,7 @@ function resetearContexto() {
     resetearBuscadorAtleta();
 }
 
-/* function configurarExclusividadSelects() {
-    selectSesion.addEventListener('change', function() {
-        if (this.value !== "") {
-            // Bloqueamos evento
-            selectEvento.value = "";
-            selectEvento.disabled = true;
-            selectEvento.classList.add('opacity-30', 'cursor-not-allowed');
-            
-            // Cargar atletas de esta sesión
-            cargarAtletasPorContexto('sesion', this.value);
-        } else {
-            // Liberamos evento
-            selectEvento.disabled = false;
-            selectEvento.classList.remove('opacity-30', 'cursor-not-allowed');
-            resetearBuscadorAtleta();
-        }
-    });
 
-    selectEvento.addEventListener('change', function() {
-        if (this.value !== "") {
-            // Bloqueamos sesión
-            selectSesion.value = "";
-            selectSesion.disabled = true;
-            selectSesion.classList.add('opacity-30', 'cursor-not-allowed');
-            
-            // Cargar atletas de este evento
-            cargarAtletasPorContexto('evento', this.value);
-        } else {
-            // Liberamos sesión
-            selectSesion.disabled = false;
-            selectSesion.classList.remove('opacity-30', 'cursor-not-allowed');
-            resetearBuscadorAtleta();
-        }
-    });
-} */
 
 // =====================================================================
 // NUEVAS FUNCIONES PARA EL BUSCADOR PREDICTIVO EN CASCADA
@@ -663,67 +458,6 @@ function resetearBuscadorAtleta() {
     inputBuscar.disabled = true;
     inputBuscar.placeholder = "Seleccione sesión o evento primero...";
 }
-
-// IMPORTANTE: Ya NO llames a cargarAtletasBuscador() en tu DOMContentLoaded. 
-// Bórrala, porque ahora se cargan dinámicamente con cargarAtletasPorContexto().
-
-
-// =====================================================================
-// LÓGICA DE EXCLUSIVIDAD: SESIÓN VS EVENTO
-// =====================================================================
-/* const selectSesion = document.getElementById('id_sesion');
-const selectEvento = document.getElementById('id_evento');
-
-function configurarExclusividadSelects() {
-    selectSesion.addEventListener('change', function() {
-        if (this.value !== "") {
-            // Si elige sesión, bloqueamos evento
-            selectEvento.value = "";
-            selectEvento.disabled = true;
-            selectEvento.classList.add('opacity-30', 'cursor-not-allowed');
-        } else {
-            // Si vuelve a "Ninguna", liberamos evento
-            selectEvento.disabled = false;
-            selectEvento.classList.remove('opacity-30', 'cursor-not-allowed');
-        }
-    });
-
-    selectEvento.addEventListener('change', function() {
-        if (this.value !== "") {
-            // Si elige evento, bloqueamos sesión
-            selectSesion.value = "";
-            selectSesion.disabled = true;
-            selectSesion.classList.add('opacity-30', 'cursor-not-allowed');
-        } else {
-            // Si vuelve a "Ninguno", liberamos sesión
-            selectSesion.disabled = false;
-            selectSesion.classList.remove('opacity-30', 'cursor-not-allowed');
-        }
-    });
-} */
-
-// =====================================================================
-// CARGA DINÁMICA DE LOS SELECTS Eventos y Sesiones
-// =====================================================================
-/* async function cargarSelectsContexto() {
-    // 1. Cargar Sesiones (Solo mostramos las completadas o relevantes para toma de marcas)
-    const resSesiones = await peticionAjax('listarSesionesSelect');
-    if (resSesiones && resSesiones.length > 0) {
-        selectSesion.innerHTML = '<option value="">Ninguna - No aplica</option>';
-        resSesiones.forEach(s => {
-            selectSesion.innerHTML += `<option value="${s.id_sesion}">${formatearFecha(s.fecha)} | ${s.grupo_nombre} (${s.tipo_sesion})</option>`;
-        });
-    }
-
-    // 2. Cargar Eventos
-    const resEventos = await peticionAjax('listarEventosSelect');
-    if (resEventos && resEventos.length > 0) {
-        selectEvento.innerHTML = '<option value="">Ninguno - No aplica</option>';
-        resEventos.forEach(e => {
-            selectEvento.innerHTML += `<option value="${e.id_evento}">${e.nombre}| ${e.tipo} (${e.nivel})| ${formatearFecha(e.fecha_inicio)} - ${formatearFecha(e.fecha_fin)} </option>`;
-        });
-    }
-} */
 
 
 // =====================================================================
@@ -1014,8 +748,9 @@ formMarca.addEventListener('submit', async (e) => {
 // =====================================================================
 // RENDERIZADO DE LA TABLA PRINCIPAL (READ)
 // =====================================================================
-
 let dataTableMarcasInstance = null;
+let deepLinkPendiente = null; // Guardamos el ID a resaltar
+let deepLinkProcesado = false; // Bandera para evitar bucles
 
 async function cargarTablaMarcas() {
     const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
@@ -1024,24 +759,25 @@ async function cargarTablaMarcas() {
     const estilo = document.getElementById('filtroEstilo')?.value || '';
     const piscina = document.getElementById('filtroPiscina')?.value || '';
 
-    // Permisos según estado
-const puedeEditar = PERMISOS_MODULO.editar && filtroEstado === 'Activo';
-const puedeEliminar = PERMISOS_MODULO.eliminar && filtroEstado === 'Activo';
-const puedeRestaurar = PERMISOS_MODULO.restaurar && filtroEstado === 'Inactivo';
-const puedeRegistrar = PERMISOS_MODULO.registrar; 
-// Para mostrar el botón de nuevo registro (ya existe en el header)
+    // Permisos...
+    const puedeEditar = PERMISOS_MODULO.editar && filtroEstado === 'Activo';
+    const puedeEliminar = PERMISOS_MODULO.eliminar && filtroEstado === 'Activo';
+    const puedeRestaurar = PERMISOS_MODULO.restaurar && filtroEstado === 'Inactivo';
 
-    // CAPTURAR URL PARA LA ILUMINACIÓN A PRUEBA DE BALAS
+    // Capturar deep link desde URL
     const parametrosURL = new URLSearchParams(window.location.search);
     const idResaltar = parametrosURL.get('h');
+    if (idResaltar) {
+        deepLinkPendiente = idResaltar;
+    }
 
     let params = new URLSearchParams({ estado: filtroEstado });
-    
     if (id_atleta) params.append('id_atleta', id_atleta);
     if (estilo) params.append('estilo', estilo);
     if (distancia) params.append('distancia', distancia);
     if (piscina) params.append('piscina', piscina);
     
+    // Destruir DataTable si existe
     if ($.fn.DataTable.isDataTable('#tablaMarcas')) {
         $('#tablaMarcas').DataTable().destroy();
     }
@@ -1056,30 +792,26 @@ const puedeRegistrar = PERMISOS_MODULO.registrar;
         return;
     }
 
-let html = '';
+    let html = '';
     marcas.forEach(marca => {
         const tiempoReloj = formatearTiempoDesdeSegundos(marca.tiempo_final_seg);
-        const fechaLatina = formatearFecha(marca.fecha); 
+        const fechaLatina = formatearFecha(marca.fecha);
 
-        // CORRECCIÓN 1: Le quitamos el 'ml-2' rígido y dejamos que el flex 'gap-2' haga el trabajo
         const badgePB = (marca.es_pb == 1) 
             ? `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="¡Mejor Marca Personal!"><i class="fas fa-star mr-1"></i>PB</span>` 
             : '';
 
         const botonAccion = (filtroEstado === 'Activo' && puedeEliminar)
-        ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
-        : (filtroEstado === 'Inactivo' && puedeRestaurar)
-        ? `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`
-        : '';
+            ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
+            : (filtroEstado === 'Inactivo' && puedeRestaurar)
+            ? `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`
+            : '';
 
         const botonEditar = (filtroEstado === 'Activo' && puedeEditar)
             ? `<button onclick="abrirModalMarca(${marca.id_marca})" class="text-amber-400 hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar Registro de Tiempo"><i class="fas fa-edit text-base"></i></button>`
             : '';
 
-        const accionesHTML = (botonEditar || botonAccion) 
-            ? `${botonEditar}${botonAccion}` 
-            : '';           
-        
+        const accionesHTML = (botonEditar || botonAccion) ? `${botonEditar}${botonAccion}` : '';
         const justificacionHTML = (filtroEstado === 'Inactivo' && marca.motivo_eliminacion)
             ? `<div class="text-[9px] text-red-400 mt-1 flex items-center gap-1 w-48 leading-tight">
                 <i class="fas fa-exclamation-circle"></i> Anulado: ${marca.motivo_eliminacion}
@@ -1087,12 +819,8 @@ let html = '';
             : '';
 
         let clasesFila = "hover:bg-white/5 transition-colors duration-200 border-b border-[#252345]";
-        if (idResaltar && parseInt(idResaltar) === parseInt(marca.id_marca)) {
-            clasesFila += " bg-indigo-500/20 border-l-4 border-l-indigo-500"; 
-        }
-
         html += `
-            <tr id="fila-marca-${marca.id_marca}" class="${clasesFila}">
+            <tr id="fila-marca-${marca.id_marca}" data-id-marca="${marca.id_marca}" class="${clasesFila}">
                 <td class="py-4 pr-4 align-middle">
                     <div class="font-bold text-white text-sm">${marca.nombre_atleta}</div>
                     <div class="text-[10px] text-gray-500 font-mono mt-0.5">C.I: ${marca.cedula}</div>
@@ -1103,14 +831,12 @@ let html = '';
                 <td class="p-4 text-xs text-gray-400 align-middle">
                     <i class="fas fa-swimming-pool mr-1 text-gray-600"></i> ${marca.tipo_piscina}
                 </td>
-                
                 <td class="p-4 align-middle">
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="font-mono text-emerald-400 font-bold text-lg">${tiempoReloj}</span>
                         ${badgePB}
                     </div>
                 </td>
-                
                 <td class="p-4 align-middle">
                     <span class="bg-gray-800 text-gray-300 text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
                         ${marca.nivel_evento}
@@ -1125,7 +851,7 @@ let html = '';
                         <button onclick="verDetallesMarca(${marca.id_marca})" class="text-indigo-400 hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Análisis de Rendimiento">
                             <i class="fas fa-chart-line text-base"></i>
                         </button>
-                       ${accionesHTML}
+                        ${accionesHTML}
                     </div>
                 </td>
             </tr>
@@ -1134,241 +860,105 @@ let html = '';
 
     tbody.innerHTML = html;
 
-    // INICIALIZAR DATATABLES NATIVO
+    // INICIALIZAR DATATABLES
     dataTableMarcasInstance = $('#tablaMarcas').DataTable({
         responsive: true,
         language: {
             url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
         },
-        // CORRECCIÓN 4: Sistema de prioridades escalonado
         columnDefs: [
-         { responsivePriority: 1, targets: 0 }, // Atleta (siempre visible)
-    { responsivePriority: 2, targets: 3 }, // Tiempo Oficial
-    { responsivePriority: 3, targets: 6, orderable: false }, // Acciones
-    { responsivePriority: 4, targets: [1, 2, 4, 5] } // Resto
+            { responsivePriority: 1, targets: 0 },
+            { responsivePriority: 2, targets: 3 },
+            { responsivePriority: 3, targets: 6, orderable: false },
+            { responsivePriority: 4, targets: [1, 2, 4, 5] }
         ],
-        order: [[5, 'desc']], 
+        order: [[5, 'desc']],
         pageLength: 10,
         lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todas"]],
-       dom: '<"flex flex-col sm:flex-row justify-between items-center gap-4 mb-2"lf>rt<"flex flex-col sm:flex-row justify-between items-center mt-6 gap-4"ip>'
+        dom: '<"flex flex-col sm:flex-row justify-between items-center gap-4 mb-2"lf>rt<"flex flex-col sm:flex-row justify-between items-center mt-6 gap-4"ip>'
     });
+
+  // Capturar deep link desde URL
+
+if (idResaltar) {
+    deepLinkPendiente = idResaltar;
+    // Esperar a que la tabla termine de dibujarse
+    setTimeout(() => {
+        procesarDeepLink();
+    }, 300);
+}
+ 
 }
 
-// Variable global para almacenar la instancia de DataTables
-/* let dataTableMarcasInstance = null;
+function procesarDeepLink() {
+    const idMarca = deepLinkPendiente;
+    if (!idMarca || !dataTableMarcasInstance) return;
 
-async function cargarTablaMarcas() {
-    const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
-    const id_atleta = document.getElementById('filtroAtleta')?.value || '';
-    const distancia = document.getElementById('filtroDistancia')?.value || '';
-    const estilo = document.getElementById('filtroEstilo')?.value || '';
-    const piscina = document.getElementById('filtroPiscina')?.value || '';
+    const dt = dataTableMarcasInstance;
+    const rowId = 'fila-marca-' + idMarca;
 
-    let params = new URLSearchParams({ estado: filtroEstado });
-    
-    if (id_atleta) params.append('id_atleta', id_atleta);
-    if (estilo) params.append('estilo', estilo);
-    if (distancia) params.append('distancia', distancia);
-    if (piscina) params.append('piscina', piscina);
-    
-    // 1. DESTRUIR DATATABLE SI EXISTE (Para evitar conflictos al re-renderizar)
-    if ($.fn.DataTable.isDataTable('#tablaMarcas')) {
-        $('#tablaMarcas').DataTable().destroy();
-    }
+    // Buscar el índice de la fila por su ID
+    let indexBuscado = -1;
+    dt.rows().every(function(rowIdx) {
+        const nodoTR = this.node();
+        if (nodoTR && nodoTR.id === rowId) {
+            indexBuscado = rowIdx;
+        }
+    });
 
-    const tbody = document.getElementById('tbodyMarcas');
-    tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando marcas...</td></tr>';
-
-    const marcas = await peticionAjax(`listarMarcas&${params.toString()}`);
-
-    if (!marcas || marcas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500 font-mono text-xs">No hay marcas registradas en esta vista.</td></tr>';
+    if (indexBuscado === -1) {
+        console.warn('DeepLink: No se encontró la fila con ID', rowId);
+        deepLinkPendiente = null;
         return;
     }
 
-   let html = '';
-    marcas.forEach(marca => {
-        const tiempoReloj = formatearTiempoDesdeSegundos(marca.tiempo_final_seg);
-        const fechaLatina = formatearFecha(marca.fecha); 
+    // Obtener índices de visualización (aplicando filtros y orden)
+    const displayIndexes = dt.rows({ order: 'applied', search: 'applied' }).indexes();
+    const posicionVisual = displayIndexes.indexOf(indexBuscado);
 
-        const badgePB = (marca.es_pb == 1) 
-            ? `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold ml-2 uppercase shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="¡Mejor Marca Personal!"><i class="fas fa-star mr-1"></i>PB</span>` 
-            : '';
-
-        const botonAccion = (filtroEstado === 'Activo')
-            ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
-            : `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`;
-        
-        const botonEditar = (filtroEstado === 'Activo')
-            ? `<button onclick="abrirModalMarca(${marca.id_marca})" class="text-amber-400 hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar Registro de Tiempo"><i class="fas fa-edit text-base"></i></button>`
-            : '';
-        
-        const justificacionHTML = (filtroEstado === 'Inactivo' && marca.motivo_eliminacion)
-            ? `<div class="text-[9px] text-red-400 mt-1 flex items-center gap-1 w-48 leading-tight">
-                <i class="fas fa-exclamation-circle"></i> Anulado: ${marca.motivo_eliminacion}
-               </div>`
-            : '';
-
-        html += `
-            <tr id="fila-marca-${marca.id_marca}" class="hover:bg-white/5 transition-colors duration-200">
-                <td class="p-4 align-middle">
-                    <div class="font-bold text-white text-sm">${marca.nombre_atleta}</div>
-                    <div class="text-[10px] text-gray-500 font-mono mt-0.5">C.I: ${marca.cedula}</div>
-                </td>
-                <td class="p-4 align-middle">
-                    <div class="font-bold text-indigo-300 text-sm">${marca.distancia_m}m ${marca.estilo}</div>
-                </td>
-                <td class="p-4 text-xs text-gray-400 align-middle">
-                    <i class="fas fa-swimming-pool mr-1 text-gray-600"></i> ${marca.tipo_piscina}
-                </td>
-                
-                <td class="p-4 align-middle">
-                    <div class="flex items-center">
-                        <span class="font-mono text-emerald-400 font-bold text-lg">${tiempoReloj}</span>
-                        ${badgePB}
-                    </div>
-                </td>
-                
-                <td class="p-4 align-middle">
-                    <span class="bg-gray-800 text-gray-300 text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
-                        ${marca.nivel_evento}
-                    </span>
-                    ${justificacionHTML}
-                </td>
-                <td class="p-4 text-xs font-mono text-gray-400 align-middle" data-sort="${marca.fecha}">
-                    ${fechaLatina}
-                </td>
-                <td class="p-4 text-right space-x-1 align-middle">
-                    <button onclick="verDetallesMarca(${marca.id_marca})" class="text-indigo-400 hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Análisis de Rendimiento (SWOLF y Splits)">
-                        <i class="fas fa-chart-line text-base"></i>
-                    </button>
-                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar ? `${botonEditar}${botonAccion}` : ''}
-                </td>
-            </tr>
-        `;
-    });
-
-    tbody.innerHTML = html;
-
-    // 2. INICIALIZAR DATATABLES (Utilizando el estándar de Asistencia)
-    dataTableMarcasInstance = $('#tablaMarcas').DataTable({
-        responsive: true,
-        language: {
-            url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
-        },
-        // Aquí le decimos a DataTables qué esconder primero (número más alto = se esconde primero)
-        columnDefs: [
-            { responsivePriority: 1, targets: 0 }, // Atleta (Siempre visible)
-            { responsivePriority: 3, targets: 1 }, // Prueba 
-            { responsivePriority: 4, targets: 2 }, // Piscina (Se oculta rápido)
-            { responsivePriority: 1, targets: 3 }, // Tiempo Oficial (Siempre visible)
-            { responsivePriority: 5, targets: 4 }, // Nivel / Contexto (Se oculta rápido)
-            { responsivePriority: 2, targets: 5 }, // Fecha
-            { responsivePriority: 1, targets: 6, orderable: false } // Acciones (Siempre visible, no se ordena)
-        ],
-        order: [[5, 'desc']], // Ordenar por defecto por Fecha (Columna 5) descendente
-        pageLength: 10,
-        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todas"]],
-        dom: '<"flex flex-col md:flex-row justify-between items-center mb-4 gap-4"lf>rt<"flex flex-col md:flex-row justify-between items-center mt-6 gap-4"ip>'
-    });
-} */
-
-
-/* async function cargarTablaMarcas() {
-    const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
-    const id_atleta = document.getElementById('filtroAtleta')?.value || '';
-    const distancia = document.getElementById('filtroDistancia')?.value || '';
-    const estilo = document.getElementById('filtroEstilo')?.value || '';
-    const piscina = document.getElementById('filtroPiscina')?.value || '';
-
-    let params = new URLSearchParams({ estado: filtroEstado });
-    
-    if (id_atleta) params.append('id_atleta', id_atleta);
-    if (estilo) params.append('estilo', estilo);
-    if (distancia) params.append('distancia', distancia);
-    if (piscina) params.append('piscina', piscina);
-    
-    const tbody = document.getElementById('tbodyMarcas');
-    tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando marcas...</td></tr>';
-
-    const marcas = await peticionAjax(`listarMarcas&${params.toString()}`);
-
-    if (!marcas || marcas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500 font-mono text-xs">No hay marcas registradas en esta vista.</td></tr>';
+    if (posicionVisual === -1) {
+        console.warn('DeepLink: La fila está oculta por el filtro actual.');
+        deepLinkPendiente = null;
         return;
     }
 
-    let html = '';
-    marcas.forEach(marca => {
-        
-        const tiempoReloj = formatearTiempoDesdeSegundos(marca.tiempo_final_seg);
-        const fechaLatina = formatearFecha(marca.fecha); 
+    const tamanioPagina = dt.page.len();
+    const paginaActual = dt.page();
+    const paginaDestino = tamanioPagina > 0 ? Math.floor(posicionVisual / tamanioPagina) : 0;
 
-        const badgePB = (marca.es_pb == 1) 
-            ? `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold ml-2 uppercase shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="¡Mejor Marca Personal!"><i class="fas fa-star mr-1"></i>PB</span>` 
-            : '';
+    // Función para hacer scroll y resaltar
+    function resaltarFila() {
+        const trNode = document.getElementById(rowId);
+        if (!trNode) return;
 
-        const botonAccion = (filtroEstado === 'Activo')
-            ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
-            : `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`;
-        
-       
-        const botonEditar = (filtroEstado === 'Activo')
-            ? `<button onclick="abrirModalMarca(${marca.id_marca})" class="text-amber-400 hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar Registro de Tiempo"><i class="fas fa-edit text-base"></i></button>`
-            : '';
+        trNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        trNode.classList.add('border-l-4', 'border-emerald-500');
+        const tds = trNode.querySelectorAll('td');
+        tds.forEach(td => td.classList.add('!bg-emerald-500/20', 'transition-all', 'duration-1000'));
 
-        
-        const justificacionHTML = (filtroEstado === 'Inactivo' && marca.motivo_eliminacion)
-            ? `<div class="text-[9px] text-red-400 mt-1 flex items-center gap-1 w-48 leading-tight">
-                <i class="fas fa-exclamation-circle"></i> Anulado: ${marca.motivo_eliminacion}
-               </div>`
-            : '';
+        setTimeout(() => {
+            trNode.classList.remove('border-l-4', 'border-emerald-500');
+            tds.forEach(td => td.classList.remove('!bg-emerald-500/20'));
+            // Limpiar URL
+            const urlLimpia = window.location.pathname + '?p=marcas';
+            window.history.replaceState(null, null, urlLimpia);
+        }, 4000);
+    }
 
-        html += `
-            <tr class="hover:bg-white/5 transition-colors duration-200 border-b border-[#252345]">
-                
-                <td class="p-4">
-                    <div class="font-bold text-white text-sm">${marca.nombre_atleta}</div>
-                    <div class="text-[10px] text-gray-500 font-mono mt-0.5">C.I: ${marca.cedula}</div>
-                </td>
-                
-                <td class="p-4">
-                    <div class="font-bold text-indigo-300 text-sm">${marca.distancia_m}m ${marca.estilo}</div>
-                </td>
-                
-                <td class="p-4 text-xs text-gray-400">
-                    <i class="fas fa-swimming-pool mr-1 text-gray-600"></i> ${marca.tipo_piscina}
-                </td>
-                
-                <td class="p-4 flex items-center">
-                    <span class="font-mono text-emerald-400 font-bold text-lg">${tiempoReloj}</span>
-                    ${badgePB}
-                </td>
-                
-                <td class="p-4">
-                    <span class="bg-gray-800 text-gray-300 text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
-                        ${marca.nivel_evento}
-                    </span>
-                    ${justificacionHTML}
-                </td>
-                
-                <td class="p-4 text-xs font-mono text-gray-400">
-                    ${fechaLatina}
-                </td>
-                
-                <td class="p-4 text-right space-x-1">
-                    <button onclick="verDetallesMarca(${marca.id_marca})" class="text-indigo-400 hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Análisis de Rendimiento (SWOLF y Splits)">
-                        <i class="fas fa-chart-line text-base"></i>
-                    </button>
-                    
-                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar ? `${botonEditar}${botonAccion}` : ''}
-                </td>
-            </tr>
-        `;
-    });
+    if (paginaActual !== paginaDestino) {
+        // Cambiar de página y luego resaltar
+        dt.page(paginaDestino).draw(false);
+        // Esperar a que el draw termine
+        setTimeout(resaltarFila, 400);
+    } else {
+        // Ya estamos en la página correcta
+        resaltarFila();
+    }
 
-    tbody.innerHTML = html;
-} */
+    deepLinkPendiente = null;
+}
+
+
 
 async function cargarFiltroAtletas() {
     const atletas = await peticionAjax('listarAtletasSelect');
@@ -1639,60 +1229,17 @@ async function reactivarMarca(id_marca) {
     }
 }
 
-// =====================================================================
-// DEEP LINKING: Resaltar fila al venir de una notificación
-// =====================================================================
-function procesarDeepLink() {
-    const params = new URLSearchParams(window.location.search);
-    const idMarcaHighlight = params.get('h');
-    
-    if (!idMarcaHighlight) return;
-
-    // Como la tabla se llena por AJAX (fetch), debemos esperar a que los datos existan.
-    // Usamos un pequeño "Polling" que busca la fila hasta que aparezca.
-    let intentos = 0;
-    const buscarFila = setInterval(() => {
-        // Buscamos cualquier botón que tenga en su onclick el ID de la marca
-        // Ejemplo: onclick="editarMarca(15)" o onclick="eliminarMarca(15)"
-        const botonObjetivo = document.querySelector(`button[onclick*="(${idMarcaHighlight})"]`);
-        
-        if (botonObjetivo) {
-            clearInterval(buscarFila); // ¡Lo encontramos! Detenemos la búsqueda
-            
-            // Subimos hasta encontrar la etiqueta <tr> (la fila de la tabla)
-            const fila = botonObjetivo.closest('tr');
-            
-            // 1. Hacemos scroll suave para que la fila quede en el centro de la pantalla
-            fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            // 2. Le inyectamos el color iluminado de Tailwind y le damos transición
-            fila.classList.add('bg-emerald-500/20', 'transition-all', 'duration-1000');
-            
-            // 3. Después de 4 segundos, apagamos la luz para que vuelva a la normalidad
-            setTimeout(() => {
-                fila.classList.remove('bg-emerald-500/20');
-                
-                // Opcional: Limpiar la URL para que no vuelva a alumbrar si el usuario recarga F5
-                window.history.replaceState(null, null, window.location.pathname + '?p=marcas');
-            }, 4000);
-            
-        } else if (intentos > 10) {
-            clearInterval(buscarFila); // Rendirnos después de 5 segundos si no cargó
-        }
-        intentos++;
-    }, 500); // Buscar cada medio segundo
-}
 
 // =====================================================================
 // INICIALIZADOR
 // =====================================================================
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. LEER LA URL (Buscamos si venimos de una notificación)
-    const parametrosURL = new URLSearchParams(window.location.search);
-    const estadoDesdeUrl = parametrosURL.get('estado');
+   // 1. LEER LA URL AL ENTRAR A LA PÁGINA
+    const urlParamsInicio = new URLSearchParams(window.location.search);
+    const estadoDesdeUrl = urlParamsInicio.get('estado');
 
-    // 2. Si la URL dice estado=Inactivo, cambiamos el <select> en el HTML
+    // 2. Si la URL exige 'Inactivo', forzamos el DOM antes de cargar nada
     if (estadoDesdeUrl) {
         const selectEstado = document.getElementById('filtroEstado');
         if (selectEstado) {
@@ -1705,16 +1252,6 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarExclusividadSelects();
     cargarSelectsContexto();
     cargarTablaMarcas();
-    procesarDeepLink();
-
- // BONUS: Si quieres iluminar la fila (el &h= ID de la URL)
-    const idResaltar = parametrosURL.get('h');
-    if (idResaltar) {
-        // Le damos un pequeño retraso para asegurar que la tabla ya se pintó
-        setTimeout(() => {
-            // Asumiendo que pudieras agregarle un id="fila-MARCAID" al <tr> en el html dinámico
-            console.log("Aquí podrías iluminar la fila ID:", idResaltar);
-        }, 500);
-    }
+   
 
 });
