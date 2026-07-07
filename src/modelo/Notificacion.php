@@ -208,6 +208,46 @@ class Notificacion extends Conexion {
      * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE MARCAS
      * Centraliza textos, colores, iconos y el bloque try-catch (Cumple SRP y DRY)
      */
+    public static function NotificarAtletas(string $accion, array $data, int $id_atleta): void {
+        try {
+            $deepLink = "?p=atleta";
+            $nombres = trim(($data['nombres'] ?? '') . ' ' . ($data['apellidos'] ?? ''));
+            $cedula = $data['cedula'] ?? '';
+
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "Atleta Registrado";
+                    $mensaje = "Se ha registrado un nuevo atleta: {$nombres} (C.I: {$cedula}).";
+                    $icono = "fa-user-plus";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "Datos de Atleta Actualizados";
+                    $mensaje = "Se actualizaron los datos del atleta {$nombres}.";
+                    $icono = "fa-user-edit";
+                    $color = "amber";
+                    $deepLink = "?p=atleta";
+                    break;
+
+                case 'DELETE':
+                    $titulo = "Atleta Desactivado";
+                    $mensaje = "El atleta {$nombres} ha sido marcado como inactivo en el sistema.";
+                    $icono = "fa-user-slash";
+                    $color = "red";
+                    break;
+
+                default:
+                    return;
+            }
+
+            self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
+
+        } catch (\Throwable $th) {
+            error_log("Aviso Crítico en Notificaciones: Falló despacho de atletas [{$accion}]: " . $th->getMessage());
+        }
+    }
+
     public static function NotificarMarcas(string $accion, array $data, int $id_marca): void {
         try {
             $deepLink = "?p=marcas&h=" . $id_marca;
@@ -257,6 +297,150 @@ class Notificacion extends Conexion {
         } catch (\Throwable $th) {
             // El try-catch vive AQUÍ. Si falla el envío, no rompe el flujo del negocio
             error_log("Aviso Crítico en Notificaciones: Falló despacho de marcas [{$accion}]: " . $th->getMessage());
+        }
+    }
+
+    public static function NotificarEventos(string $accion, array $data, ?int $id_evento = null, ?int $id_atleta = null): void {
+        try {
+            $deepLink = "?p=eventos";
+            if ($id_evento) {
+                $deepLink = "?p=eventos&accion=obtenerDetalle&id=" . $id_evento;
+            }
+
+            $nombreEvento = $data['nombre'] ?? 'Evento';
+            $tipo = $data['tipo'] ?? '';
+            $sede = $data['sede'] ?? '';
+            $nuevoEstado = $data['nuevo_estado'] ?? '';
+            $estilo = $data['estilo'] ?? '';
+            $distancia = $data['distancia'] ?? '';
+
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "Nuevo Evento Registrado";
+                    $mensaje = "Se ha creado el evento \"{$nombreEvento}\" ({$tipo})." . ($sede ? " Sede: {$sede}." : '');
+                    $icono = "fa-calendar-plus";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "Evento Actualizado";
+                    $mensaje = "Se han actualizado los datos del evento \"{$nombreEvento}\".";
+                    $icono = "fa-edit";
+                    $color = "amber";
+                    break;
+
+                case 'ESTADO':
+                    $titulo = "Estado de Evento Cambiado";
+                    $mensaje = "El evento \"{$nombreEvento}\" cambio a estado: {$nuevoEstado}.";
+                    $icono = "fa-exchange-alt";
+                    $color = "indigo";
+                    break;
+
+                case 'INSCRIPCION':
+                    $titulo = "Inscrito en Competencia";
+                    $mensaje = "Has sido inscrito en el evento \"{$nombreEvento}\".";
+                    $icono = "fa-user-check";
+                    $color = "cyan";
+                    break;
+
+                case 'METAS':
+                    $titulo = "Meta Competitiva Asignada";
+                    $mensaje = "Se te asigno una meta en {$distancia}m {$estilo} para el evento \"{$nombreEvento}\".";
+                    $icono = "fa-bullseye";
+                    $color = "amber";
+                    break;
+
+                case 'QUITAR_INSCRIPCION':
+                    $titulo = "Inscripcion Removida";
+                    $mensaje = "Tu inscripcion al evento \"{$nombreEvento}\" ha sido eliminada.";
+                    $icono = "fa-user-minus";
+                    $color = "red";
+                    break;
+
+                case 'DELETE_META':
+                    $titulo = "Meta Competitiva Eliminada";
+                    $mensaje = "Se ha eliminado una meta competitiva del sistema.";
+                    $icono = "fa-trash-alt";
+                    $color = "red";
+                    $deepLink = "?p=eventos";
+                    break;
+
+                default:
+                    return;
+            }
+
+            if ($id_atleta && $id_atleta > 0) {
+                self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
+            } else {
+                $id_usuario = $_SESSION['id'] ?? 0;
+                if ($id_usuario > 0) {
+                    self::enviar($id_usuario, $titulo, $mensaje, $icono, $color, $deepLink);
+                }
+            }
+
+        } catch (\Throwable $th) {
+            error_log("Aviso Critico en Notificaciones: Fallo despacho de eventos [{$accion}]: " . $th->getMessage());
+        }
+    }
+
+    public static function NotificarPeriodizacion(string $accion, array $data, ?int $id_usuario_destino = null, ?int $id_macrociclo = null): void {
+        try {
+            $deepLink = "?p=periodizacion";
+            if ($id_macrociclo) {
+                $deepLink = "?p=periodizacion&h=" . $id_macrociclo;
+            }
+
+            $nombreMacro = $data['nombre'] ?? 'Macrociclo';
+            $grupo = $data['grupo_nombre'] ?? '';
+            $totalSemanas = $data['total_semanas'] ?? '';
+            $nuevoEstado = $data['nuevo_estado'] ?? '';
+
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "Nuevo Macrociclo Creado";
+                    $mensaje = "Se ha creado el macrociclo \"{$nombreMacro}\" para {$grupo}.";
+                    $icono = "fa-project-diagram";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "Macrociclo Actualizado";
+                    $mensaje = "Se han actualizado los datos del macrociclo \"{$nombreMacro}\".";
+                    $icono = "fa-edit";
+                    $color = "amber";
+                    break;
+
+                case 'GENERAR':
+                    $titulo = "Plan ATR Generado";
+                    $mensaje = "Se generó el plan de periodización para \"{$nombreMacro}\" ({$totalSemanas} semanas).";
+                    $icono = "fa-magic";
+                    $color = "cyan";
+                    break;
+
+                case 'ESTADO':
+                    $titulo = "Estado de Macrociclo Cambiado";
+                    $mensaje = "El macrociclo \"{$nombreMacro}\" cambió a estado: {$nuevoEstado}.";
+                    $icono = "fa-exchange-alt";
+                    $color = "indigo";
+                    break;
+
+                case 'DELETE_MESO':
+                    $titulo = "Mesociclo Eliminado";
+                    $mensaje = "Se ha eliminado un mesociclo del macrociclo \"{$nombreMacro}\".";
+                    $icono = "fa-trash-alt";
+                    $color = "red";
+                    break;
+
+                default:
+                    return;
+            }
+
+            if ($id_usuario_destino && $id_usuario_destino > 0) {
+                self::enviar($id_usuario_destino, $titulo, $mensaje, $icono, $color, $deepLink);
+            }
+
+        } catch (\Throwable $th) {
+            error_log("Aviso Crítico en Notificaciones: Falló despacho de periodizacion [{$accion}]: " . $th->getMessage());
         }
     }
 
