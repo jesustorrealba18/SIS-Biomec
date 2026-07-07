@@ -11,6 +11,7 @@ if (empty($_SESSION['id'])) {
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\Periodizacion;
 use GrupoProyecto\SisBiomec\modelo\Evento;
+use GrupoProyecto\SisBiomec\modelo\Notificacion;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 $objPeriodizacion = new Periodizacion();
@@ -113,6 +114,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Periodizacion', 'CREATE', null,
                 'macrociclo', null, $_POST['nombre'] ?? 'Nuevo macrociclo'
             );
+
+            $datosNotif = [
+                'nombre' => $_POST['nombre'] ?? '',
+                'grupo_nombre' => ''
+            ];
+            Notificacion::NotificarPeriodizacion('CREATE', $datosNotif, (int)$_SESSION['id']);
+
             ob_end_clean();
             echo json_encode(['status' => 'success', 'message' => 'Macrociclo registrado exitosamente.']);
         } else {
@@ -139,6 +147,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Periodizacion', 'UPDATE',
                 $idMacrociclo, 'macrociclo', null, $_POST['nombre'] ?? ''
             );
+
+            $datosNotif = [
+                'nombre' => $_POST['nombre'] ?? '',
+                'grupo_nombre' => ''
+            ];
+            Notificacion::NotificarPeriodizacion('UPDATE', $datosNotif, (int)$_SESSION['id'], $idMacrociclo);
+
             ob_end_clean();
             echo json_encode(['status' => 'success', 'message' => 'Macrociclo actualizado exitosamente.']);
         } else {
@@ -173,6 +188,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Periodizacion', 'UPDATE',
                 $id_macrociclo, 'plan_atr', null, "Generado: {$resultado['total_semanas']} semanas"
             );
+
+            $datosNotif = [
+                'nombre' => 'Plan ATR',
+                'total_semanas' => $resultado['total_semanas'] ?? ''
+            ];
+            Notificacion::NotificarPeriodizacion('GENERAR', $datosNotif, (int)$_SESSION['id'], $id_macrociclo);
+
             ob_end_clean();
             echo json_encode(['status' => 'success', 'message' => $resultado['mensaje'], 'data' => $resultado]);
         } else {
@@ -192,6 +214,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Periodizacion', 'UPDATE',
                 $id, 'estado', null, $nuevoEstado
             );
+
+            Notificacion::NotificarPeriodizacion('ESTADO', ['nombre' => '', 'nuevo_estado' => $nuevoEstado], (int)$_SESSION['id'], $id);
+
             ob_end_clean();
             echo json_encode(['status' => 'success', 'message' => 'Estado actualizado a ' . $nuevoEstado . '.']);
         } else {
@@ -250,6 +275,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Periodizacion', 'DELETE',
                 $id_meso, 'mesociclo', null, 'Eliminado'
             );
+
+            Notificacion::NotificarPeriodizacion('DELETE_MESO', ['nombre' => 'Mesociclo'], (int)$_SESSION['id']);
+
             ob_end_clean();
             echo json_encode(['status' => 'success']);
         } else {
