@@ -383,6 +383,54 @@ class Notificacion extends Conexion {
         }
     }
 
+    public static function NotificarObservaciones(string $accion, array $data, ?int $id_atleta = null): void {
+        try {
+            $deepLink = "?p=observacionesTecnicas";
+            $calificacion = $data['calificacion'] ?? '';
+
+            $labels = [1 => 'Necesita trabajo', 2 => 'Regular', 3 => 'Bueno', 4 => 'Muy bueno', 5 => 'Excelente'];
+            $textoCalif = $labels[(int)$calificacion] ?? '';
+
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "Nueva Observacion Tecnica";
+                    $mensaje = "Se ha registrado una observacion tecnica sobre tu rendimiento." . ($textoCalif ? " Calificacion: {$textoCalif} ({$calificacion}/5)." : '');
+                    $icono = "fa-clipboard-check";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "Observacion Tecnica Actualizada";
+                    $mensaje = "Se ha actualizado una observacion tecnica sobre tu rendimiento." . ($textoCalif ? " Calificacion: {$textoCalif} ({$calificacion}/5)." : '');
+                    $icono = "fa-edit";
+                    $color = "amber";
+                    break;
+
+                case 'DELETE':
+                    $titulo = "Observacion Tecnica Eliminada";
+                    $mensaje = "Se ha eliminado una observacion tecnica del sistema.";
+                    $icono = "fa-trash-alt";
+                    $color = "red";
+                    break;
+
+                default:
+                    return;
+            }
+
+            if ($id_atleta && $id_atleta > 0) {
+                self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
+            } else {
+                $id_usuario = $_SESSION['id'] ?? 0;
+                if ($id_usuario > 0) {
+                    self::enviar($id_usuario, $titulo, $mensaje, $icono, $color, $deepLink);
+                }
+            }
+
+        } catch (\Throwable $th) {
+            error_log("Aviso Critico en Notificaciones: Fallo despacho de observaciones [{$accion}]: " . $th->getMessage());
+        }
+    }
+
     public static function NotificarPeriodizacion(string $accion, array $data, ?int $id_usuario_destino = null, ?int $id_macrociclo = null): void {
         try {
             $deepLink = "?p=periodizacion";
