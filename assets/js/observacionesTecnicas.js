@@ -132,7 +132,7 @@ async function abrirModalObservacion(id_observacion = null) {
         document.getElementById('id_sesion').value = data.id_sesion || '';
         document.getElementById('observacion_texto').value = data.observacion_texto || '';
 
-        seleccionarCalificacion((int)data.calificacion);
+        seleccionarCalificacion(parseInt(data.calificacion));
 
         document.getElementById('accion_form').value = 'actualizar';
         btnGuardar.innerHTML = 'ACTUALIZAR OBSERVACION <i class="fas fa-sync-alt ml-2"></i>';

@@ -14,7 +14,7 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.tailwindcss.min.css">
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <!-- <script src="https://cdn.datatables.net/1.13.6/js/dataTables.tailwindcss.min.js"></script> -->
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.tailwindcss.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
@@ -29,260 +29,194 @@
         ::-webkit-scrollbar-thumb { background: #252345; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
         .input-dark::-webkit-calendar-picker-indicator {filter: invert(1);  /* convierte el icono negro en blanco */ }
-        .menu-transition {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
 
           /* ---------------------------------------------------
            AJUSTES DATATABLES DARK THEME (Tailwind override)
            --------------------------------------------------- */
- /* =========================================================
-   DATATABLES DARK THEME & RESPONSIVE NATIVO
-   ========================================================= */
-table.dataTable {
-    border-collapse: collapse !important;
-    width: 100% !important;
-    margin: 1rem 0 !important;
-}
-
-/* Cabeceras y controles - Matando el fondo gris */
-table.dataTable thead th,
-table.dataTable.no-footer {
-    border-bottom: 1px solid #252345 !important;
-}
-table.dataTable thead th {
-    background-color: #0f0d23 !important;
-    background-image: none !important;
-    color: #94a3b8 !important;
-    padding: 12px 16px !important;
-}
-table.dataTable tbody tr {
-    background-color: transparent !important;
-}
-table.dataTable tbody td {
-    border-bottom: 1px solid #252345 !important;
-}
-
-/* Botones de Paginación (igual que en Representantes) */
-.dataTables_wrapper .dataTables_paginate .paginate_button {
-    background: #161430 !important;
-    border: 1px solid #252345 !important;
-    border-radius: 0.5rem !important;
-    color: #a0a0c0 !important;
-    padding: 0.4rem 0.8rem !important;
-    margin: 0 0.2rem !important;
-}
-.dataTables_wrapper .dataTables_paginate .paginate_button.current {
-    background: #4f46e5 !important;
-    color: white !important;
-    border-color: #4f46e5 !important;
-}
-.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-    background: #252345 !important;
-    color: white !important;
-}
-
-/* Buscador y Selector de registros */
-.dataTables_wrapper .dataTables_length select,
-.dataTables_wrapper .dataTables_filter input {
-    background: #0f0d23 !important;
-    border: 1px solid #252345 !important;
-    color: white !important;
-    border-radius: 0.75rem !important;
-    padding: 0.6rem 1rem !important;
-    outline: none !important;
-}
-.dataTables_wrapper .dataTables_filter input {
-    padding-left: 2.5rem !important; /* espacio para el ícono */
-}
-.dataTables_wrapper .dataTables_length label,
-.dataTables_wrapper .dataTables_filter label {
-    gap: 0.75rem;
-    align-items: center;
-}
-
-/* =========================================================
-   RESTAURAR ÍCONO RESPONSIVE (el + verde nativo)
-   ========================================================= */
-
-/* El controlador de responsive */
-table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control,
-table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control {
-    position: relative;
-    cursor: pointer;
-}
-
-/* Estilo para el ícono + (cuando está colapsado) */
-table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control:before,
-table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control:before {
-    content: "+";
-    display: inline-block;
-    color: white;
-    background-color: #22c55e; /* verde */
-    border: 2px solid white;
-    border-radius: 50%;
-    box-shadow: 0 0 3px rgba(0,0,0,0.3);
-    box-sizing: content-box;
-    text-align: center;
-    text-indent: 0 !important;
-    font-family: 'Courier New', Courier, monospace;
-    line-height: 1.4;
-    width: 1.2rem;
-    height: 1.2rem;
-    font-size: 1rem;
-    font-weight: bold;
-    margin-right: 0.5rem;
-    transition: transform 0.15s ease;
-}
-
-/* Cuando está expandido (muestra -) */
-table.dataTable.dtr-inline.collapsed > tbody > tr.parent > td.dtr-control:before,
-table.dataTable.dtr-inline.collapsed > tbody > tr.parent > th.dtr-control:before {
-    content: "-";
-    background-color: #d33;
-    transform: rotate(0deg);
-}
-        
-        </style>
+        /* Bordes y controles */
+        /* Ajustes Estéticos para DataTables en Modo Oscuro */
+        .dataTables_wrapper .dataTables_length, 
+        .dataTables_wrapper .dataTables_filter, 
+        .dataTables_wrapper .dataTables_info, 
+        .dataTables_wrapper .dataTables_paginate {
+            color: #a0a0c0 !important;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            background-color: #0f0d23;
+            border: 1px solid #252345;
+            color: white;
+            border-radius: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            outline: none;
+            margin-left: 0.5rem;
+        }
+        .dataTables_wrapper .dataTables_length select {
+            background-color: #0f0d23;
+            border: 1px solid #252345;
+            color: white;
+            border-radius: 0.25rem;
+            padding: 0.1rem 0.5rem;
+        }
+        /* Remover bordes y fondos blancos nativos de DataTables */
+        table.dataTable tbody tr { background-color: transparent !important; }
+        table.dataTable.no-footer { border-bottom: 1px solid #252345 !important; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button { color: #a0a0c0 !important; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #4f46e5 !important; color: white !important; border: none; border-radius: 0.5rem; }
+    </style>
 </head>
-<body class="overflow-x-hidden">
+<body class="flex min-h-screen bg-[#0f0d23]">
 
-<?php
-// Recargar permisos del usuario actual en cada acceso
-if (isset($_SESSION['id'])) {
-    \GrupoProyecto\SisBiomec\seguridad\Autorizacion::cargarPermisos($_SESSION['id']);
-}
-?>
+    <?php include RAIZ . 'vista/complementos/menu.php'; ?>
 
-    <div class="flex h-screen overflow-hidden">
-        
-        <!-- Overlay para móvil cuando el menú está abierto -->
-<div id="menuOverlay" class="fixed inset-0 bg-black/70 z-30 opacity-0 pointer-events-none transition-opacity lg:hidden"></div>
+   <main class="flex-1 p-8 overflow-y-auto">
 
-<!-- Sidebar - responsive -->
-<aside id="sidebarMenu" class="fixed top-0 left-0 h-full w-72 bg-[#0f0d23] border-r border-[#252345] z-40 transform -translate-x-full menu-transition lg:relative lg:translate-x-0 lg:flex-shrink-0 overflow-y-auto">
-    <div class="p-4 flex justify-between items-center border-b border-[#252345] lg:hidden">
-        <div class="flex items-center gap-2">
-            <div class="bg-indigo-600 p-1.5 rounded-lg text-white shadow-lg shadow-indigo-500/20">
-                <i class="fas fa-swimmer text-sm"></i>
-            </div>
-            <span class="text-lg font-black text-white italic tracking-tighter">SGRD</span>
-        </div>
-        <button id="closeMenuBtn" class="text-gray-400 hover:text-white text-xl">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    <?php include 'vista/complementos/menu_responsive.php'; ?>
-</aside>
-
-        <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-            
+  <!-- Header común -->
             <?php 
-                $tituloPagina = "Gestión de Marcas Técnicas";
-                $tituloPaginaResponsive = "Marcas";
-                $iconModulo = "fas fa-stopwatch";
-                include 'vista/complementos/header.php'; 
+                $tituloPagina = 'Gestión de Marcas y Tiempos';
+                include RAIZ . 'vista/complementos/header.php'; 
             ?>
 
-            <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
-                
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#161430] p-6 rounded-2xl border border-[#252345]">
-                    <div>
-                        <h2 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
-                            <i class="fas fa-stopwatch text-indigo-500"></i> Repositorio de Marcas Analíticas
-                        </h2>
-                        <p class="text-xs text-gray-400 mt-1">Gestión avanzada de tiempos de carrera, ritmos de caída y progresión biométrica.</p>
-                    </div>
-                    <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'registrar')): ?>
-                    <button onclick="abrirModalMarca()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
-                        <i class="fas fa-plus-circle text-sm"></i> Registrar Nueva Marca
-                    </button>
-                    <?php endif; ?>
-                </div>
 
-                <div class="tarjeta p-5">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[10px] uppercase tracking-wider text-gray-400 font-bold flex items-center gap-1">
-                                <i class="fas fa-toggle-on text-indigo-400"></i> Estado del Registro
-                            </label>
-                            <select id="filtroEstado" onchange="cargarTablaMarcas()" class="w-full input-dark rounded-xl p-3 text-sm cursor-pointer">
-                                <option value="Activo">Registros Activos</option>
-                                <option value="Inactivo">Registros Archivados</option>
-                            </select>
-                        </div>
+         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4 mt-6">
+             <div>
+                <p class="text-sm text-gray-400 mt-1">Historial de tiempos competitivos, controles técnicos y desgloses de parciales (Splits).</p>
+            </div>
+             <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'registrar')): ?>
+             <button onclick="abrirModalMarca()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl transition duration-200 flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer">
+                 <i class="fas fa-plus"></i> REGISTRAR TIEMPO
+             </button>
+             <?php endif; ?>
+         </div>
+        
 
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[10px] uppercase tracking-wider text-gray-400 font-bold flex items-center gap-1">
-                                <i class="fas fa-user text-indigo-400"></i> Filtrar Nadador
-                            </label>
-                            <select id="filtroAtleta" onchange="cargarTablaMarcas()" class="w-full input-dark rounded-xl p-3 text-sm cursor-pointer">
-                                <option value="">Todos los Atletas</option>
-                            </select>
-                        </div>
 
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[10px] uppercase tracking-wider text-gray-400 font-bold flex items-center gap-1">
-                                <i class="fas fa-water text-indigo-400"></i> Estilo Técnico
-                            </label>
-                            <select id="filtroEstilo" onchange="cargarTablaMarcas()" class="w-full input-dark rounded-xl p-3 text-sm cursor-pointer">
-                                <option value="">Todos los Estilos</option>
-                                <option value="Libre">Libre (Crawl)</option>
-                                <option value="Espalda">Espalda</option>
-                                <option value="Pecho">Pecho (Braza)</option>
-                                <option value="Mariposa">Mariposa</option>
-                                <option value="Combinado">Combinado (Medley)</option>
-                            </select>
-                        </div>
+<div class="tarjeta p-5 flex flex-col gap-4 border border-white/5 shadow-lg shadow-black/20">
+    
+    <div class="flex items-center gap-2 border-b border-[#252345] pb-2">
+        <i class="fas fa-filter text-indigo-400 text-sm"></i>
+        <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Filtros de Búsqueda</h3>
+    </div>
 
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[10px] uppercase tracking-wider text-gray-400 font-bold flex items-center gap-1">
-                                <i class="fas fa-ruler-horizontal text-indigo-400"></i> Distancia (Metros)
-                            </label>
-                            <select id="filtroDistancia" onchange="cargarTablaMarcas()" class="w-full input-dark rounded-xl p-3 text-sm cursor-pointer">
-                                <option value="">Todas las Distancias</option>
-                                <option value="50">50 metros</option>
-                                <option value="100">100 metros</option>
-                                <option value="200">200 metros</option>
-                                <option value="400">400 metros</option>
-                                <option value="800">800 metros</option>
-                                <option value="1500">1500 metros</option>
-                            </select>
-                        </div>
-
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-[10px] uppercase tracking-wider text-gray-400 font-bold flex items-center gap-1">
-                                <i class="fas fa-swimming-pool text-indigo-400"></i> Tipo de Alberca
-                            </label>
-                            <select id="filtroPiscina" onchange="cargarTablaMarcas()" class="w-full input-dark rounded-xl p-3 text-sm cursor-pointer">
-                                <option value="">Cualquier Longitud</option>
-                                <option value="25m">Piscina Corta (25m)</option>
-                                <option value="50m">Piscina Olímpica (50m)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tarjeta p-4 sm:p-6 overflow-hidden">
-                    <table id="tablaMarcas" class=" display" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th >Atleta / Cédula</th>
-                                <th >Prueba Especialidad</th>
-                                <th >Dimensión Piscina</th>
-                                <th >Tiempo Oficial</th>
-                                <th >Origen / Nivel</th>
-                                <th >Fecha</th>
-                                <th class="text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbodyMarcas">
-                            </tbody>
-                    </table>
-                </div>
-            </main>
+    <div class="relative w-full">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <i class="fas fa-user-circle text-gray-400 text-lg"></i>
+        </div>
+        
+        <select id="filtroAtleta" onchange="cargarTablaMarcas()" class="w-full input-dark pl-12 pr-10 py-3 rounded-xl text-sm bg-[#0f0d23] border border-[#252345] hover:border-indigo-500/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all cursor-pointer appearance-none shadow-inner">
+            <option value="">👤 Todos los Atletas (Búsqueda General)</option>
+        </select>
+        
+        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+            <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
         </div>
     </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
+        
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-ruler-horizontal text-emerald-400/70 group-hover:text-emerald-400 transition-colors text-xs"></i>
+            </div>
+            <select id="filtroDistancia" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-emerald-500/50 focus:border-emerald-500 transition-all cursor-pointer appearance-none">
+                <option value="">📏 Todas las Distancias</option>
+                <option value="25">25m</option>
+                <option value="50">50m</option>
+                <option value="100">100m</option>
+                <option value="200">200m</option>
+                <option value="400">400m</option>
+                <option value="800">800m</option>
+                <option value="1500">1500m</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+            </div>
+        </div>
+
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-swimmer text-cyan-400/70 group-hover:text-cyan-400 transition-colors text-xs"></i>
+            </div>
+            <select id="filtroEstilo" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-cyan-500/50 focus:border-cyan-500 transition-all cursor-pointer appearance-none">
+                <option value="">🏊 Todos los Estilos</option>
+                <option value="Libre">Libre</option>
+                <option value="Espalda">Espalda</option>
+                <option value="Pecho">Pecho</option>
+                <option value="Mariposa">Mariposa</option>
+                <option value="Combinado">Combinado</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+            </div>
+        </div>
+
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-water text-blue-400/70 group-hover:text-blue-400 transition-colors text-xs"></i>
+            </div>
+            <select id="filtroPiscina" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-blue-500/50 focus:border-blue-500 transition-all cursor-pointer appearance-none">
+                <option value="">🏢 Todas las Piscinas</option>
+                <option value="25m">Piscina Corta (25m)</option>
+                <option value="50m">Piscina Olímpica (50m)</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+            </div>
+        </div>
+
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-history text-amber-400/70 group-hover:text-amber-400 transition-colors text-xs"></i>
+            </div>
+            <select id="filtroEstado" onchange="cargarTablaMarcas()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs bg-[#0f0d23] border border-[#252345] hover:border-amber-500/50 focus:border-amber-500 transition-all cursor-pointer appearance-none">
+                <option value="Activo" selected>⏱️ Marcas Vigentes</option>
+                <option value="Inactivo">🗑️ Marcas Archivadas</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+            </div>
+        </div>
+
+    </div>
+</div>        
+<!--         <div class="tarjeta overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#0f0d23] text-gray-400 uppercase text-[11px] font-bold tracking-wider border-b border-[#252345]">
+                            <th class="p-4">Atleta</th>
+                            <th class="p-4">Prueba / Estilo</th>
+                            <th class="p-4">Piscina</th>
+                            <th class="p-4">Tiempo Final</th>
+                            <th class="p-4">Origen / Nivel</th>
+                            <th class="p-4">Fecha</th>
+                            <th class="p-4 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyMarcas" class="divide-y divide-[#252345] text-sm text-gray-300">
+                        </tbody>
+                </table>
+            </div>
+        </div> -->
+
+        <div class="overflow-x-hidden">
+    <table id="tablaMarcas" class="w-full text-left border-collapse nowrap display" style="width:100%">
+        <thead>
+            <tr class="bg-[#0f0d23] text-gray-400 text-[10px] uppercase tracking-widest">
+                <th class="p-4 font-semibold rounded-tl-xl all">Atleta</th>
+                <th class="p-4 font-semibold min-tablet">Prueba</th>
+                <th class="p-4 font-semibold desktop">Piscina</th>
+                <th class="p-4 font-semibold all">Tiempo Final</th>
+                <th class="p-4 font-semibold desktop">Origen / Nivel</th>
+                <th class="p-4 font-semibold min-tablet">Fecha</th>
+                <th class="p-4 font-semibold text-right rounded-tr-xl all">Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="tbodyMarcas" class="text-sm">
+        </tbody>
+    </table>
+</div>
 
 
 </main>
@@ -400,7 +334,7 @@ if (isset($_SESSION['id'])) {
                                maxlength="5"
                                id="tiempo_reaccion_seg" 
                                name="tiempo_reaccion_seg" 
-                               placeholder="00.00" 
+                               placeholder="0.00" 
                                class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
                     </div>
                     
@@ -412,7 +346,7 @@ if (isset($_SESSION['id'])) {
                                maxlength="5"
                                id="tiempo_viraje_seg" 
                                name="tiempo_viraje_seg" 
-                               placeholder="00.00" 
+                               placeholder="0.00" 
                                class="w-full input-dark p-2 rounded-lg text-sm text-center font-mono">
                     </div>
                     <div>
@@ -465,67 +399,13 @@ if (isset($_SESSION['id'])) {
         </div>
     </div>
 
-     <script>
-        (function() {
-            const sidebar = document.getElementById('sidebarMenu');
-            const overlay = document.getElementById('menuOverlay');
-            const openBtn = document.getElementById('openMenuBtn');
-            const closeBtn = document.getElementById('closeMenuBtn');
-
-            function openMenu() {
-                if (!sidebar) return;
-                sidebar.classList.remove('-translate-x-full');
-                sidebar.classList.add('translate-x-0');
-                if (overlay) {
-                    overlay.classList.remove('opacity-0', 'pointer-events-none');
-                    overlay.classList.add('opacity-100', 'pointer-events-auto');
-                }
-                document.body.style.overflow = 'hidden';
-            }
-
-            function closeMenu() {
-                if (!sidebar) return;
-                sidebar.classList.remove('translate-x-0');
-                sidebar.classList.add('-translate-x-full');
-                if (overlay) {
-                    overlay.classList.remove('opacity-100', 'pointer-events-auto');
-                    overlay.classList.add('opacity-0', 'pointer-events-none');
-                }
-                document.body.style.overflow = '';
-            }
-
-            if (openBtn) openBtn.addEventListener('click', openMenu);
-            if (closeBtn) closeBtn.addEventListener('click', closeMenu);
-            if (overlay) overlay.addEventListener('click', closeMenu);
-
-            window.addEventListener('resize', function() {
-                if (window.innerWidth >= 1024) {
-                    if (sidebar && sidebar.classList.contains('translate-x-0')) {
-                        sidebar.classList.remove('translate-x-0');
-                        sidebar.classList.add('-translate-x-full');
-                    }
-                    if (overlay) {
-                        overlay.classList.remove('opacity-100', 'pointer-events-auto');
-                        overlay.classList.add('opacity-0', 'pointer-events-none');
-                    }
-                    document.body.style.overflow = '';
-                }
-            });
-        })();
-    </script>
+    
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
-     
     <script>
-      
-
         const PERMISOS_MODULO = {
-            ver: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'ver') ? 'true' : 'false'; ?>,
             registrar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'registrar') ? 'true' : 'false'; ?>,
-            editar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'editar') ? 'true' : 'false'; ?>,
-            eliminar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'eliminar') ? 'true' : 'false'; ?>,
-            restaurar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'restaurar') ? 'true' : 'false'; ?>
         };
     </script>
     <script src="assets/js/marcas.js"></script>

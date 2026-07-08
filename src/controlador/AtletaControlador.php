@@ -8,6 +8,7 @@ if (empty($_SESSION['id'])) {
 }
 
 use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\modelo\Notificacion;
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
@@ -44,6 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($resultado) {
                 Bitacora::registrar($_SESSION['id'], 'Atleta', 'INSERT', null);
+
+                $datosFiltrados = $_POST;
+                unset($datosFiltrados['accion']);
+                $datosFiltrados['nombres'] = $datosFiltrados['nombres'] ?? '';
+                $datosFiltrados['apellidos'] = $datosFiltrados['apellidos'] ?? '';
+                $datosFiltrados['cedula'] = $datosFiltrados['cedula'] ?? '';
+
+                Notificacion::NotificarAtletas('CREATE', $datosFiltrados, (int)$objAtleta->getCampo('id_atleta'));
+
                 jsonSalida(['status' => 'success', 'message' => 'Atleta registrado correctamente.']);
             } else {
                 jsonSalida(['status' => 'error', 'message' => 'Error al registrar el atleta en la base de datos.']);
@@ -78,6 +88,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($resultado) {
                 Bitacora::registrar($_SESSION['id'], 'Atleta', 'UPDATE', $idAtleta);
+
+                $datosFiltrados = $_POST;
+                unset($datosFiltrados['accion']);
+                $datosFiltrados['nombres'] = $datosFiltrados['nombres'] ?? '';
+                $datosFiltrados['apellidos'] = $datosFiltrados['apellidos'] ?? '';
+                $datosFiltrados['cedula'] = $datosFiltrados['cedula'] ?? '';
+
+                Notificacion::NotificarAtletas('UPDATE', $datosFiltrados, $idAtleta);
+
                 jsonSalida(['status' => 'success', 'message' => 'Atleta actualizado correctamente.']);
             } else {
                 jsonSalida(['status' => 'error', 'message' => 'Error al actualizar el atleta en la base de datos.']);
@@ -98,6 +117,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($resultado) {
                     Bitacora::registrar($_SESSION['id'], 'Atleta', 'DELETE', $id);
+
+                    $datosNotif = [
+                        'nombres' => '',
+                        'apellidos' => '',
+                        'cedula' => ''
+                    ];
+                    $detalle = $objAtleta->obtenerDetallePorId($id);
+                    if ($detalle) {
+                        $datosNotif['nombres'] = $detalle['nombres'] ?? '';
+                        $datosNotif['apellidos'] = $detalle['apellidos'] ?? '';
+                        $datosNotif['cedula'] = $detalle['cedula'] ?? '';
+                    }
+
+                    Notificacion::NotificarAtletas('DELETE', $datosNotif, $id);
+
                     jsonSalida(['status' => 'success', 'message' => 'Atleta desactivado correctamente.']);
                 } else {
                     jsonSalida(['status' => 'error', 'message' => 'No se pudo desactivar el atleta.']);

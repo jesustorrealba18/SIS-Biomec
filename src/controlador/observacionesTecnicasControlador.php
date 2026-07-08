@@ -9,6 +9,7 @@ use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 use GrupoProyecto\SisBiomec\modelo\ObservacionTecnica;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\modelo\Notificacion;
 
 $objObs = new ObservacionTecnica();
 $id_usuario = $_SESSION['id'];
@@ -83,7 +84,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $_POST['id_usuario'] = $id_usuario;
 
-        if ($objObs->registrarObservacion($_POST)) {
+        $objObs->setAtributos($_POST);
+
+        if ($objObs->getRegistrarObservacion()) {
             ob_end_clean();
             $datosGuardados = $_POST;
             unset($datosGuardados['accion']);
@@ -96,6 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 null,
                 json_encode($datosGuardados, JSON_UNESCAPED_UNICODE)
             );
+            Notificacion::NotificarObservaciones('CREATE', [
+                'calificacion' => $_POST['calificacion'] ?? ''
+            ], (int)($_POST['id_atleta'] ?? 0));
             echo json_encode(['status' => 'success', 'message' => 'Observacion registrada correctamente.']);
         } else {
             ob_end_clean();
@@ -119,7 +125,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if ($objObs->actualizarObservacion($_POST, $id_observacion)) {
+        $objObs->setAtributos($_POST);
+
+        if ($objObs->getActualizarObservacion()) {
             ob_end_clean();
             $datosNuevos = $_POST;
             unset($datosNuevos['accion'], $datosNuevos['id_observacion']);
@@ -132,6 +140,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'Ver historial previo',
                 json_encode($datosNuevos, JSON_UNESCAPED_UNICODE)
             );
+            Notificacion::NotificarObservaciones('UPDATE', [
+                'calificacion' => $_POST['calificacion'] ?? ''
+            ], (int)($_POST['id_atleta'] ?? 0));
             echo json_encode(['status' => 'success', 'message' => 'Observacion actualizada correctamente.']);
         } else {
             ob_end_clean();
@@ -163,6 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 null,
                 'Eliminado'
             );
+            Notificacion::NotificarObservaciones('DELETE', []);
             echo json_encode(['status' => 'success']);
         } else {
             ob_end_clean();

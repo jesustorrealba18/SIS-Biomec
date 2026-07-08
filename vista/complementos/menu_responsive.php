@@ -128,7 +128,7 @@
 
          <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('asistencia', 'ver')): ?>
         <a href="?p=asistencia" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'asistencia') ? 'bg-white/10 text-white' : ''; ?>">
-            <i class="fas fa-calendar-week w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'asistencia') ? 'text-white' : ''; ?>"></i> 
+            <i class="fas fa-clipboard-check w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'asistencia') ? 'text-white' : ''; ?>"></i> 
             <span class="font-medium">Asistencia</span>
         </a>
         <?php endif; ?>

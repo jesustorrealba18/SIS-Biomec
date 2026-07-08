@@ -8,6 +8,7 @@ if (empty($_SESSION['id'])) {
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\Evento;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\modelo\Notificacion;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 $objEvento = new Evento();
@@ -90,6 +91,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Eventos', 'INSERT', null,
                 'evento', null, $_POST['nombre']
             );
+            Notificacion::NotificarEventos('CREATE', [
+                'nombre' => $_POST['nombre'],
+                'tipo' => $_POST['tipo'] ?? '',
+                'sede' => $_POST['sede'] ?? ''
+            ]);
             echo json_encode(['status' => 'success', 'message' => 'Evento registrado exitosamente.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Ocurrio un error al guardar el evento.']);
@@ -111,6 +117,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Eventos', 'UPDATE',
                 (int)$_POST['id_evento'], 'datos evento', null, $_POST['nombre']
             );
+            Notificacion::NotificarEventos('UPDATE', [
+                'nombre' => $_POST['nombre']
+            ], (int)$_POST['id_evento']);
             echo json_encode(['status' => 'success', 'message' => 'Evento actualizado exitosamente.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Ocurrio un error al actualizar el evento.']);
@@ -128,6 +137,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Eventos', 'UPDATE',
                 $id, 'estado', null, $nuevoEstado
             );
+            $detalleEvento = $objEvento->obtenerDetallePorId($id);
+            Notificacion::NotificarEventos('ESTADO', [
+                'nombre' => $detalleEvento['nombre'] ?? 'Evento',
+                'nuevo_estado' => $nuevoEstado
+            ], $id);
             echo json_encode(['status' => 'success', 'message' => 'Estado actualizado a ' . $nuevoEstado . '.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Transicion de estado no permitida.']);
@@ -160,6 +174,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Metas', 'INSERT',
                 $id_evento, 'metas_competitivas', null, count($metas) . ' metas'
             );
+            $detalleEvento = $objEvento->obtenerDetallePorId($id_evento);
+            $nombreEvento = $detalleEvento['nombre'] ?? 'Evento';
+            foreach ($metas as $meta) {
+                Notificacion::NotificarEventos('METAS', [
+                    'nombre' => $nombreEvento,
+                    'estilo' => $meta['estilo'] ?? '',
+                    'distancia' => ($meta['distancia'] ?? '') . 'm'
+                ], $id_evento, (int)($meta['id_atleta'] ?? 0));
+            }
             echo json_encode(['status' => 'success', 'message' => 'Metas guardadas exitosamente.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Error al guardar las metas.']);
@@ -183,6 +206,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Eventos', 'INSERT',
                 $id_evento, 'evento_inscripcion', null, count($atletas_ids) . ' atletas'
             );
+            $detalleEvento = $objEvento->obtenerDetallePorId($id_evento);
+            $nombreEvento = $detalleEvento['nombre'] ?? 'Evento';
+            foreach ($atletas_ids as $id_atleta) {
+                Notificacion::NotificarEventos('INSCRIPCION', [
+                    'nombre' => $nombreEvento
+                ], $id_evento, (int)$id_atleta);
+            }
             echo json_encode(['status' => 'success', 'message' => 'Atletas inscritos exitosamente.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Error al inscribir atletas.']);
@@ -199,6 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Metas', 'DELETE',
                 $id_meta, 'meta_competitiva', null, 'Eliminada'
             );
+            Notificacion::NotificarEventos('DELETE_META', []);
             echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'No se pudo eliminar la meta.']);
@@ -216,6 +247,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['id'], 'Modulo Eventos', 'DELETE',
                 $id_evento, 'evento_inscripcion', (string)$id_atleta, null
             );
+            $detalleEvento = $objEvento->obtenerDetallePorId($id_evento);
+            Notificacion::NotificarEventos('QUITAR_INSCRIPCION', [
+                'nombre' => $detalleEvento['nombre'] ?? 'Evento'
+            ], $id_evento, $id_atleta);
             echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'No se pudo eliminar la inscripcion.']);

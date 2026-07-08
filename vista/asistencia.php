@@ -80,6 +80,7 @@
         <?php 
         $tituloPagina = 'Control de Asistencia';
         $tituloPaginaResponsive = 'Asistencia';
+        $iconModulo = 'fas fa-clipboard-check';
         include RAIZ . 'vista/complementos/header.php'; 
         ?>
 

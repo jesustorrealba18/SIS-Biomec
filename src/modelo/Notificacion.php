@@ -163,106 +163,7 @@ class Notificacion extends Conexion {
             error_log("Error Routing Notificacion: " . $e->getMessage());
         }
     }
-/*     public static function notificarAtletaYRepresentante(int $id_atleta, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo'): void {
-        try {
-            // Para BUSCAR a los usuarios, necesitamos conectarnos temporalmente a sis_natacion
-            // Instanciamos la conexión normal de negocio
-            $dbNegocio = new Conexion('sis_natacion'); 
 
-            // A) Buscar el id_usuario del Atleta
-            $sqlAtleta = "SELECT id_usuario FROM atletas WHERE id_atleta = :id_atleta AND id_usuario IS NOT NULL";
-            $stmtA = $dbNegocio->pdo->prepare($sqlAtleta);
-            $stmtA->execute([':id_atleta' => $id_atleta]);
-            $userAtleta = $stmtA->fetch(PDO::FETCH_ASSOC);
-
-            if ($userAtleta) {
-                // Escribimos en sis_seguridad
-                self::enviar($userAtleta['id_usuario'], $titulo, $mensaje, $icono, $color);
-            }
-
-            // B) Buscar los id_usuario de los Representantes vinculados
-            $sqlRep = "SELECT r.id_usuario 
-                       FROM representantes r 
-                       INNER JOIN atleta_representante ar ON r.id_representante = ar.id_representante 
-                       WHERE ar.id_atleta = :id_atleta AND r.id_usuario IS NOT NULL";
-            $stmtR = $dbNegocio->pdo->prepare($sqlRep);
-            $stmtR->execute([':id_atleta' => $id_atleta]);
-            $representantes = $stmtR->fetchAll(PDO::FETCH_ASSOC);
-
-            // Enviamos copia a cada representante
-            foreach ($representantes as $rep) {
-                self::enviar($rep['id_usuario'], $titulo, $mensaje, $icono, $color);
-            }
-
-        } catch (PDOException $e) {
-            error_log("Error Routing Notificacion: " . $e->getMessage());
-        }
-    } */
-
-    /**
-     * Marca una notificación como leída asegurando que pertenezca al usuario
-     */
-   /*  public static function marcarComoLeida(int $id_notificacion, int $id_usuario): bool {
-
-
-        try {
-            $instancia = new self();
-            $sql = "UPDATE notificaciones SET leida = 1 
-                    WHERE id_notificacion = :id_notificacion AND id_usuario = :id_usuario";
-            
-            $stmt = $instancia->pdo->prepare($sql);
-            return $stmt->execute([
-                ':id_notificacion' => $id_notificacion,
-                ':id_usuario' => $id_usuario
-            ]);
-        } catch (\Throwable $e) { // <-- CAMBIO CLAVE: Atrapa cualquier error fatal
-            error_log("Error al marcar leída: " . $e->getMessage());
-            return false;
-        }
-    } */
-
-    /**
-     * Marca una notificación como leída con VALIDACIÓN ESTRICTA de seguridad.
-     */
-   /*  public static function marcarComoLeida(int $id_notificacion, int $id_usuario): bool {
-        // 1. Validación de cordura básica
-        if ($id_notificacion <= 0 || $id_usuario <= 0) return false;
-
-        try {
-            $instancia = new self();
-            
-            // 2. VALIDACIÓN DE EXISTENCIA Y PROPIEDAD (Evita Hackeo de IDs)
-            $sqlCheck = "SELECT leida FROM notificaciones WHERE id_notificacion = :id_notificacion AND id_usuario = :id_usuario";
-            $stmtCheck = $instancia->pdo->prepare($sqlCheck);
-            $stmtCheck->execute([
-                ':id_notificacion' => $id_notificacion, 
-                ':id_usuario' => $id_usuario
-            ]);
-            
-            $notificacion = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
-
-            // Si devuelve false, significa que el ID no existe o no le pertenece a este usuario
-            if (!$notificacion) {
-                // Registramos el intento de vulneración en los logs del servidor
-                error_log("ALERTA SEGURIDAD: El usuario ID {$id_usuario} intentó manipular la notificación ID {$id_notificacion} (Inexistente o ajena).");
-                return false;
-            }
-
-            // Si ya estaba leída (por un clic anterior), simplemente devolvemos true para no desgastar la BD
-            if ($notificacion['leida'] == 1) {
-                return true;
-            }
-
-            // 3. Ejecución segura (Solo llega aquí si existe, es de él, y no estaba leída)
-            $sql = "UPDATE notificaciones SET leida = 1 WHERE id_notificacion = :id_notificacion";
-            $stmt = $instancia->pdo->prepare($sql);
-            return $stmt->execute([':id_notificacion' => $id_notificacion]);
-
-        } catch (\Throwable $e) {
-            error_log("Error crítico en marcarLeida: " . $e->getMessage());
-            return false;
-        }
-    } */
 
     /**
      * Obtiene la lista de notificaciones de un usuario
@@ -300,6 +201,294 @@ class Notificacion extends Conexion {
             return (int) $stmt->fetchColumn();
         } catch (PDOException $e) {
             return 0;
+        }
+    }
+
+    /**
+     * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE MARCAS
+     * Centraliza textos, colores, iconos y el bloque try-catch (Cumple SRP y DRY)
+     */
+    public static function NotificarAtletas(string $accion, array $data, int $id_atleta): void {
+        try {
+            $deepLink = "?p=atleta";
+            $nombres = trim(($data['nombres'] ?? '') . ' ' . ($data['apellidos'] ?? ''));
+            $cedula = $data['cedula'] ?? '';
+
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "Atleta Registrado";
+                    $mensaje = "Se ha registrado un nuevo atleta: {$nombres} (C.I: {$cedula}).";
+                    $icono = "fa-user-plus";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "Datos de Atleta Actualizados";
+                    $mensaje = "Se actualizaron los datos del atleta {$nombres}.";
+                    $icono = "fa-user-edit";
+                    $color = "amber";
+                    $deepLink = "?p=atleta";
+                    break;
+
+                case 'DELETE':
+                    $titulo = "Atleta Desactivado";
+                    $mensaje = "El atleta {$nombres} ha sido marcado como inactivo en el sistema.";
+                    $icono = "fa-user-slash";
+                    $color = "red";
+                    break;
+
+                default:
+                    return;
+            }
+
+            self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
+
+        } catch (\Throwable $th) {
+            error_log("Aviso Crítico en Notificaciones: Falló despacho de atletas [{$accion}]: " . $th->getMessage());
+        }
+    }
+
+    public static function NotificarMarcas(string $accion, array $data, int $id_marca): void {
+        try {
+            $deepLink = "?p=marcas&h=" . $id_marca;
+            $distancia = $data['distancia_m'] ?? '';
+            $estilo = $data['estilo'] ?? '';
+            $tiempo = $data['tiempo_final_seg'] ?? '';
+
+            // Evaluamos la acción para construir dinámicamente la notificación
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "¡Nueva Marca Registrada!";
+                    $mensaje = "Se ha registrado un tiempo de {$tiempo}s en {$distancia}m {$estilo}.";
+                    $icono = "fa-stopwatch";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "¡Marca Actualizada!";
+                    $mensaje = "El entrenador ha actualizado los datos de tu marca en {$distancia}m {$estilo}.";
+                    $icono = "fa-edit";
+                    $color = "amber";
+                    break;
+
+                case 'DELETE':
+                    $titulo = "Marca Desactivada";
+                    $mensaje = "Se ha retirado o deshabilitado un registro de marca técnica del sistema.";
+                    $icono = "fa-trash-alt";
+                    $color = "red";
+                   // $deepLink = "?p=marcas"; // Las marcas inactivas no se iluminan, va al listado limpio 
+                    $deepLink = "?p=marcas&estado=Inactivo&h=" . $id_marca;
+                    break;
+
+                case 'RESTORE':
+                    $titulo = "Marca Restaurada";
+                    $mensaje = "Se ha restaurado y reactivado una marca previamente deshabilitada en el historial.";
+                    $icono = "fa-history";
+                    $color = "indigo";
+                    break;
+
+                default:
+                    return; // Acción no soportada, salimos pacíficamente
+            }
+
+            // Invocamos al enrutador que ya programamos con la lógica de la edad
+            self::notificarAtletaYRepresentante((int)$data['id_atleta'], $titulo, $mensaje, $icono, $color, $deepLink);
+
+        } catch (\Throwable $th) {
+            // El try-catch vive AQUÍ. Si falla el envío, no rompe el flujo del negocio
+            error_log("Aviso Crítico en Notificaciones: Falló despacho de marcas [{$accion}]: " . $th->getMessage());
+        }
+    }
+
+    public static function NotificarEventos(string $accion, array $data, ?int $id_evento = null, ?int $id_atleta = null): void {
+        try {
+            $deepLink = "?p=eventos";
+            if ($id_evento) {
+                $deepLink = "?p=eventos&accion=obtenerDetalle&id=" . $id_evento;
+            }
+
+            $nombreEvento = $data['nombre'] ?? 'Evento';
+            $tipo = $data['tipo'] ?? '';
+            $sede = $data['sede'] ?? '';
+            $nuevoEstado = $data['nuevo_estado'] ?? '';
+            $estilo = $data['estilo'] ?? '';
+            $distancia = $data['distancia'] ?? '';
+
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "Nuevo Evento Registrado";
+                    $mensaje = "Se ha creado el evento \"{$nombreEvento}\" ({$tipo})." . ($sede ? " Sede: {$sede}." : '');
+                    $icono = "fa-calendar-plus";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "Evento Actualizado";
+                    $mensaje = "Se han actualizado los datos del evento \"{$nombreEvento}\".";
+                    $icono = "fa-edit";
+                    $color = "amber";
+                    break;
+
+                case 'ESTADO':
+                    $titulo = "Estado de Evento Cambiado";
+                    $mensaje = "El evento \"{$nombreEvento}\" cambio a estado: {$nuevoEstado}.";
+                    $icono = "fa-exchange-alt";
+                    $color = "indigo";
+                    break;
+
+                case 'INSCRIPCION':
+                    $titulo = "Inscrito en Competencia";
+                    $mensaje = "Has sido inscrito en el evento \"{$nombreEvento}\".";
+                    $icono = "fa-user-check";
+                    $color = "cyan";
+                    break;
+
+                case 'METAS':
+                    $titulo = "Meta Competitiva Asignada";
+                    $mensaje = "Se te asigno una meta en {$distancia}m {$estilo} para el evento \"{$nombreEvento}\".";
+                    $icono = "fa-bullseye";
+                    $color = "amber";
+                    break;
+
+                case 'QUITAR_INSCRIPCION':
+                    $titulo = "Inscripcion Removida";
+                    $mensaje = "Tu inscripcion al evento \"{$nombreEvento}\" ha sido eliminada.";
+                    $icono = "fa-user-minus";
+                    $color = "red";
+                    break;
+
+                case 'DELETE_META':
+                    $titulo = "Meta Competitiva Eliminada";
+                    $mensaje = "Se ha eliminado una meta competitiva del sistema.";
+                    $icono = "fa-trash-alt";
+                    $color = "red";
+                    $deepLink = "?p=eventos";
+                    break;
+
+                default:
+                    return;
+            }
+
+            if ($id_atleta && $id_atleta > 0) {
+                self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
+            } else {
+                $id_usuario = $_SESSION['id'] ?? 0;
+                if ($id_usuario > 0) {
+                    self::enviar($id_usuario, $titulo, $mensaje, $icono, $color, $deepLink);
+                }
+            }
+
+        } catch (\Throwable $th) {
+            error_log("Aviso Critico en Notificaciones: Fallo despacho de eventos [{$accion}]: " . $th->getMessage());
+        }
+    }
+
+    public static function NotificarObservaciones(string $accion, array $data, ?int $id_atleta = null): void {
+        try {
+            $deepLink = "?p=observacionesTecnicas";
+            $calificacion = $data['calificacion'] ?? '';
+
+            $labels = [1 => 'Necesita trabajo', 2 => 'Regular', 3 => 'Bueno', 4 => 'Muy bueno', 5 => 'Excelente'];
+            $textoCalif = $labels[(int)$calificacion] ?? '';
+
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "Nueva Observacion Tecnica";
+                    $mensaje = "Se ha registrado una observacion tecnica sobre tu rendimiento." . ($textoCalif ? " Calificacion: {$textoCalif} ({$calificacion}/5)." : '');
+                    $icono = "fa-clipboard-check";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "Observacion Tecnica Actualizada";
+                    $mensaje = "Se ha actualizado una observacion tecnica sobre tu rendimiento." . ($textoCalif ? " Calificacion: {$textoCalif} ({$calificacion}/5)." : '');
+                    $icono = "fa-edit";
+                    $color = "amber";
+                    break;
+
+                case 'DELETE':
+                    $titulo = "Observacion Tecnica Eliminada";
+                    $mensaje = "Se ha eliminado una observacion tecnica del sistema.";
+                    $icono = "fa-trash-alt";
+                    $color = "red";
+                    break;
+
+                default:
+                    return;
+            }
+
+            if ($id_atleta && $id_atleta > 0) {
+                self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
+            } else {
+                $id_usuario = $_SESSION['id'] ?? 0;
+                if ($id_usuario > 0) {
+                    self::enviar($id_usuario, $titulo, $mensaje, $icono, $color, $deepLink);
+                }
+            }
+
+        } catch (\Throwable $th) {
+            error_log("Aviso Critico en Notificaciones: Fallo despacho de observaciones [{$accion}]: " . $th->getMessage());
+        }
+    }
+
+    public static function NotificarPeriodizacion(string $accion, array $data, ?int $id_usuario_destino = null, ?int $id_macrociclo = null): void {
+        try {
+            $deepLink = "?p=periodizacion";
+            if ($id_macrociclo) {
+                $deepLink = "?p=periodizacion&h=" . $id_macrociclo;
+            }
+
+            $nombreMacro = $data['nombre'] ?? 'Macrociclo';
+            $grupo = $data['grupo_nombre'] ?? '';
+            $totalSemanas = $data['total_semanas'] ?? '';
+            $nuevoEstado = $data['nuevo_estado'] ?? '';
+
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "Nuevo Macrociclo Creado";
+                    $mensaje = "Se ha creado el macrociclo \"{$nombreMacro}\" para {$grupo}.";
+                    $icono = "fa-project-diagram";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "Macrociclo Actualizado";
+                    $mensaje = "Se han actualizado los datos del macrociclo \"{$nombreMacro}\".";
+                    $icono = "fa-edit";
+                    $color = "amber";
+                    break;
+
+                case 'GENERAR':
+                    $titulo = "Plan ATR Generado";
+                    $mensaje = "Se generó el plan de periodización para \"{$nombreMacro}\" ({$totalSemanas} semanas).";
+                    $icono = "fa-magic";
+                    $color = "cyan";
+                    break;
+
+                case 'ESTADO':
+                    $titulo = "Estado de Macrociclo Cambiado";
+                    $mensaje = "El macrociclo \"{$nombreMacro}\" cambió a estado: {$nuevoEstado}.";
+                    $icono = "fa-exchange-alt";
+                    $color = "indigo";
+                    break;
+
+                case 'DELETE_MESO':
+                    $titulo = "Mesociclo Eliminado";
+                    $mensaje = "Se ha eliminado un mesociclo del macrociclo \"{$nombreMacro}\".";
+                    $icono = "fa-trash-alt";
+                    $color = "red";
+                    break;
+
+                default:
+                    return;
+            }
+
+            if ($id_usuario_destino && $id_usuario_destino > 0) {
+                self::enviar($id_usuario_destino, $titulo, $mensaje, $icono, $color, $deepLink);
+            }
+
+        } catch (\Throwable $th) {
+            error_log("Aviso Crítico en Notificaciones: Falló despacho de periodizacion [{$accion}]: " . $th->getMessage());
         }
     }
 

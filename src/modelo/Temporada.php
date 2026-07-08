@@ -36,16 +36,29 @@ class Temporada extends Conexion {
 
     public function registrarTemporada(array $datos): bool {
         $conex = $this->pdo;
+        $activa = !empty($datos['activa']) ? 1 : 0;
         try {
+            $conex->beginTransaction();
+
+            if ($activa) {
+                $sqlDesactivar = "UPDATE temporadas SET activa = 0 WHERE activa = 1";
+                $stmtDes = $conex->prepare($sqlDesactivar);
+                $stmtDes->execute();
+            }
+
             $sql = "INSERT INTO temporadas (nombre, fecha_inicio, fecha_fin, activa)
                     VALUES (:nombre, :fecha_inicio, :fecha_fin, :activa)";
             $stmt = $conex->prepare($sql);
             $stmt->bindValue(':nombre', trim($datos['nombre']), PDO::PARAM_STR);
             $stmt->bindValue(':fecha_inicio', $datos['fecha_inicio'], PDO::PARAM_STR);
             $stmt->bindValue(':fecha_fin', $datos['fecha_fin'], PDO::PARAM_STR);
-            $stmt->bindValue(':activa', !empty($datos['activa']) ? 1 : 0, PDO::PARAM_INT);
-            return $stmt->execute();
+            $stmt->bindValue(':activa', $activa, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $conex->commit();
+            return true;
         } catch (PDOException $e) {
+            $conex->rollBack();
             error_log("Error en registro de temporada: " . $e->getMessage());
             return false;
         }

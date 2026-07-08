@@ -14,9 +14,13 @@
         .tarjeta { background-color: #161430; border: 1px solid #252345; border-radius: 15px; }
         .input-dark { background: #0f0d23; border: 1px solid #252345; color: white; transition: all 0.3s ease; }
         .input-dark:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); outline: none; }
+        .input-dark::-webkit-calendar-picker-indicator { filter: invert(1); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f0d23; }
         ::-webkit-scrollbar-thumb { background: #252345; border-radius: 10px; }
+        .menu-transition {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
         .estrella { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
         .estrella:hover { transform: scale(1.15); }
         .estrella.seleccionada { transform: scale(1.1); }
@@ -28,126 +32,128 @@
         .c1.seleccionada, .c2.seleccionada, .c3.seleccionada, .c4.seleccionada, .c5.seleccionada { box-shadow: 0 0 12px currentColor; }
     </style>
 </head>
-<body class="flex min-h-screen">
+<body class="overflow-x-hidden">
 
-    <?php include RAIZ . 'vista/complementos/menu.php'; ?>
+<?php
+if (isset($_SESSION['id'])) {
+    \GrupoProyecto\SisBiomec\seguridad\Autorizacion::cargarPermisos($_SESSION['id']);
+}
+?>
 
-    <main class="flex-1 p-8 overflow-y-auto">
+    <div class="flex h-screen overflow-hidden">
 
-        <header class="flex justify-between items-center mb-12">
-            <h1 class="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
-                <i class="fas fa-clipboard-check text-indigo-500"></i> Observaciones Tecnicas
-            </h1>
-            <div class="flex items-center gap-6">
-                <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
-                    <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
-                        <i class="fas fa-bell text-xl"></i>
-                        <span class="absolute top-2 right-12 bg-red-500 w-2 h-2 rounded-full border border-[#0f0d23]"></span>
+        <div id="menuOverlay" class="fixed inset-0 bg-black/70 z-30 opacity-0 pointer-events-none transition-opacity lg:hidden"></div>
+
+        <aside id="sidebarMenu" class="fixed top-0 left-0 h-full w-72 bg-[#0f0d23] border-r border-[#252345] z-40 transform -translate-x-full menu-transition lg:relative lg:translate-x-0 lg:flex-shrink-0 overflow-y-auto">
+            <div class="p-4 flex justify-between items-center border-b border-[#252345] lg:hidden">
+                <div class="flex items-center gap-2">
+                    <div class="bg-indigo-600 p-1.5 rounded-lg text-white shadow-lg shadow-indigo-500/20">
+                        <i class="fas fa-swimmer text-sm"></i>
                     </div>
-                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-                        Notificaciones
-                    </div>
+                    <span class="text-lg font-black text-white italic tracking-tighter">SGRD</span>
                 </div>
-                <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
-                    <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
-                        <i class="fas fa-question-circle text-xl"></i>
-                    </div>
-                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-                        Guia de ayuda
-                    </div>
-                </div>
-                <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
-                    <div class="text-right mr-2">
-                        <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre'] ?? 'Usuario'; ?></p>
-                        <a href="?p=salir" class="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-widest transition">
-                            Cerrar Sesion <i class="fas fa-sign-out-alt ml-1"></i>
-                        </a>
-                    </div>
-                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($_SESSION['nombre'] ?? 'U'); ?>&background=4f46e5&color=fff" 
-                         class="w-10 h-10 rounded-full border-2 border-indigo-500 shadow-lg shadow-indigo-500/20">
-                </div>
+                <button id="closeMenuBtn" class="text-gray-400 hover:text-white text-xl">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-        </header>
+            <?php include 'vista/complementos/menu_responsive.php'; ?>
+        </aside>
 
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <p class="text-sm text-gray-400">Evaluaciones cualitativas de la tecnica del nadador por sesion.</p>
-            <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('observacionesTecnicas', 'registrar')): ?>
-            <button onclick="abrirModalObservacion()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 cursor-pointer">
-                <i class="fas fa-plus"></i> REGISTRAR OBSERVACION
-            </button>
-            <?php endif; ?>
+        <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+            
+            <?php 
+                $tituloPagina = "Observaciones Tecnicas";
+                $tituloPaginaResponsive = "Obs. Tecnicas";
+                $iconModulo = "fas fa-clipboard-check";
+                include 'vista/complementos/header.php'; 
+            ?>
+
+            <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#161430] p-6 rounded-2xl border border-[#252345]">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                            <i class="fas fa-clipboard-check text-indigo-500"></i> Evaluaciones Tecnicas
+                        </h2>
+                        <p class="text-xs text-gray-400 mt-1">Evaluaciones cualitativas de la tecnica del nadador por sesion.</p>
+                    </div>
+                    <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('observacionesTecnicas', 'registrar')): ?>
+                    <button onclick="abrirModalObservacion()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fas fa-plus text-sm"></i> Registrar Observacion
+                    </button>
+                    <?php endif; ?>
+                </div>
+
+                <div class="tarjeta p-5 border border-white/5 shadow-lg shadow-black/20">
+                    <div class="flex items-center gap-2 border-b border-[#252345] pb-3 mb-4">
+                        <i class="fas fa-filter text-indigo-400 text-sm"></i>
+                        <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Filtros de Busqueda</h3>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-user-circle text-gray-400 text-xs"></i>
+                            </div>
+                            <select id="filtroAtleta" onchange="cargarTabla()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs appearance-none cursor-pointer">
+                                <option value="">Todos los Atletas</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-crosshairs text-cyan-400/70 text-xs"></i>
+                            </div>
+                            <select id="filtroAspecto" onchange="cargarTabla()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs appearance-none cursor-pointer">
+                                <option value="">Todos los Aspectos</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400 text-xs"></i>
+                            </div>
+                            <input type="text" id="busquedaGeneral" placeholder="Buscar en observaciones..." class="w-full input-dark pl-9 pr-4 py-2.5 rounded-xl text-xs" oninput="filtrarTabla()">
+                        </div>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-chart-bar text-emerald-400/70 text-xs"></i>
+                            </div>
+                            <select id="filtroAtletaResumen" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs appearance-none cursor-pointer">
+                                <option value="">Resumen por Atleta</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tarjeta overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-[#0f0d23] text-gray-400 uppercase text-[11px] font-bold tracking-wider border-b border-[#252345]">
+                                    <th class="p-4">Fecha</th>
+                                    <th class="p-4">Atleta</th>
+                                    <th class="p-4">Aspecto</th>
+                                    <th class="p-4 text-center">Calificacion</th>
+                                    <th class="p-4">Observacion</th>
+                                    <th class="p-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyObservaciones" class="divide-y divide-[#252345] text-sm text-gray-300">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
         </div>
+    </div>
 
-        <div class="tarjeta p-5 flex flex-col gap-4 border border-white/5 shadow-lg shadow-black/20 mb-6">
-            <div class="flex items-center gap-2 border-b border-[#252345] pb-2">
-                <i class="fas fa-filter text-indigo-400 text-sm"></i>
-                <h3 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Filtros de Busqueda</h3>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-user-circle text-gray-400 text-xs"></i>
-                    </div>
-                    <select id="filtroAtleta" onchange="cargarTabla()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs appearance-none cursor-pointer">
-                        <option value="">Todos los Atletas</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
-                    </div>
-                </div>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-crosshairs text-cyan-400/70 text-xs"></i>
-                    </div>
-                    <select id="filtroAspecto" onchange="cargarTabla()" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs appearance-none cursor-pointer">
-                        <option value="">Todos los Aspectos</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
-                    </div>
-                </div>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-search text-gray-400 text-xs"></i>
-                    </div>
-                    <input type="text" id="busquedaGeneral" placeholder="Buscar en observaciones..." class="w-full input-dark pl-9 pr-4 py-2.5 rounded-xl text-xs" oninput="filtrarTabla()">
-                </div>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-chart-bar text-emerald-400/70 text-xs"></i>
-                    </div>
-                    <select id="filtroAtletaResumen" class="w-full input-dark pl-9 pr-8 py-2.5 rounded-xl text-xs appearance-none cursor-pointer">
-                        <option value="">Resumen por Atleta</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <i class="fas fa-chevron-down text-gray-600 text-[10px]"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="tarjeta overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-[#0f0d23] text-gray-400 uppercase text-[11px] font-bold tracking-wider border-b border-[#252345]">
-                            <th class="p-4">Fecha</th>
-                            <th class="p-4">Atleta</th>
-                            <th class="p-4">Aspecto</th>
-                            <th class="p-4 text-center">Calificacion</th>
-                            <th class="p-4">Observacion</th>
-                            <th class="p-4 text-right">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbodyObservaciones" class="divide-y divide-[#252345] text-sm text-gray-300">
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Modal Crear/Editar -->
     <div id="modalObservacion" class="fixed inset-0 z-50 hidden bg-black/20 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="relative bg-[#161430] border border-white/5 w-full max-w-2xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8">
 
@@ -223,7 +229,6 @@
         </div>
     </div>
 
-    <!-- Modal Ver Detalle -->
     <div id="modalVer" class="fixed inset-0 bg-[#060512]/90 backdrop-blur-xl hidden flex items-center justify-center p-4 z-50">
         <div class="relative bg-[#111026] border border-white/10 w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] max-h-[92vh] overflow-y-auto">
             <button type="button" onclick="cerrarModalVer()" class="absolute top-6 right-6 text-gray-400 hover:text-white hover:rotate-90 transition-all duration-300 z-[100] cursor-pointer p-2">
@@ -234,7 +239,6 @@
         </div>
     </div>
 
-    <!-- Modal Resumen por Atleta -->
     <div id="modalResumen" class="fixed inset-0 bg-[#060512]/90 backdrop-blur-xl hidden flex items-center justify-center p-4 z-50">
         <div class="relative bg-[#111026] border border-white/10 w-full max-w-3xl rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] max-h-[92vh] overflow-y-auto">
             <button type="button" onclick="cerrarModalResumen()" class="absolute top-6 right-6 text-gray-400 hover:text-white hover:rotate-90 transition-all duration-300 z-[100] cursor-pointer p-2">
@@ -245,6 +249,54 @@
         </div>
     </div>
 
+    <script>
+        (function() {
+            const sidebar = document.getElementById('sidebarMenu');
+            const overlay = document.getElementById('menuOverlay');
+            const openBtn = document.getElementById('openMenuBtn');
+            const closeBtn = document.getElementById('closeMenuBtn');
+
+            function openMenu() {
+                if (!sidebar) return;
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+                if (overlay) {
+                    overlay.classList.remove('opacity-0', 'pointer-events-none');
+                    overlay.classList.add('opacity-100', 'pointer-events-auto');
+                }
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeMenu() {
+                if (!sidebar) return;
+                sidebar.classList.remove('translate-x-0');
+                sidebar.classList.add('-translate-x-full');
+                if (overlay) {
+                    overlay.classList.remove('opacity-100', 'pointer-events-auto');
+                    overlay.classList.add('opacity-0', 'pointer-events-none');
+                }
+                document.body.style.overflow = '';
+            }
+
+            if (openBtn) openBtn.addEventListener('click', openMenu);
+            if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+            if (overlay) overlay.addEventListener('click', closeMenu);
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 1024) {
+                    if (sidebar && sidebar.classList.contains('translate-x-0')) {
+                        sidebar.classList.remove('translate-x-0');
+                        sidebar.classList.add('-translate-x-full');
+                    }
+                    if (overlay) {
+                        overlay.classList.remove('opacity-100', 'pointer-events-auto');
+                        overlay.classList.add('opacity-0', 'pointer-events-none');
+                    }
+                    document.body.style.overflow = '';
+                }
+            });
+        })();
+    </script>
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>

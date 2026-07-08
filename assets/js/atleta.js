@@ -74,7 +74,7 @@ async function cargarTabla() {
             <td class="p-4">
                 <span class="estado-badge estado-${a.estado}">${a.estado}</span>
             </td>
-            ${typeof PERMISOS_ATLETA !== 'undefined' && PERMISOS_ATLETA.crear ? `
+            ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.editar ? `
             <td class="p-4 text-right">
                 <div class="flex justify-end gap-2">
                     <button onclick='verDetalle(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all" title="Ver Perfil">

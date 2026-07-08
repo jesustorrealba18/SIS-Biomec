@@ -656,6 +656,7 @@ function abrirModalTipo(id = null) {
 function cerrarModalTipo() {
     const modal = document.getElementById('modalTipo');
     modal.querySelector('.relative').classList.add('scale-95', 'opacity-0');
+    try { Validador.limpiarEstilos(document.getElementById('formTipo')); } catch(e) {}
     setTimeout(() => modal.classList.add('hidden'), 300);
 }
 
@@ -665,8 +666,8 @@ function agregarVariableTipo() {
     const row = document.createElement('div');
     row.className = 'flex items-center gap-2';
     row.innerHTML = `
-        <input type="text" placeholder="Nombre variable" class="flex-1 input-dark p-2.5 rounded-lg text-xs nombre_var" required>
-        <input type="text" placeholder="Unidad" class="w-24 input-dark p-2.5 rounded-lg text-xs unidad_var">
+        <input type="text" placeholder="Nombre variable" class="flex-1 input-dark p-2.5 rounded-lg text-xs nombre_var" data-validar="requerido|texto" data-nombre="Nombre variable" data-max="80" maxlength="80" required>
+        <input type="text" placeholder="Unidad" class="w-24 input-dark p-2.5 rounded-lg text-xs unidad_var" data-validar="texto" data-nombre="Unidad" data-max="20" maxlength="20">
         <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-2 cursor-pointer"><i class="fas fa-trash text-xs"></i></button>
     `;
     cont.appendChild(row);
@@ -733,6 +734,9 @@ async function guardarTipo(e) {
         cerrarModalTipo();
         cargarTiposPredefinidos();
         cargarTiposSelect();
+    } else if (resultado && resultado.status === 'warning') {
+        let msjErrores = Object.values(resultado.errores).join('<br>');
+        UI.advertencia('Datos Invalidos', msjErrores);
     } else {
         UI.error('Error', resultado?.message || 'No se pudo guardar el tipo.');
     }
@@ -888,6 +892,7 @@ function abrirModalPersonalizado() {
 function cerrarModalPersonalizado() {
     const modal = document.getElementById('modalPersonalizado');
     modal.querySelector('.relative').classList.add('scale-95', 'opacity-0');
+    try { Validador.limpiarEstilos(document.getElementById('formPersonalizado')); } catch(e) {}
     setTimeout(() => modal.classList.add('hidden'), 300);
 }
 
@@ -896,8 +901,8 @@ function agregarVariablePers(nombre = '', unidad = '') {
     const row = document.createElement('div');
     row.className = 'flex items-center gap-2';
     row.innerHTML = `
-        <input type="text" placeholder="Nombre variable" class="flex-1 input-dark p-2.5 rounded-lg text-xs nombre_var" required>
-        <input type="text" placeholder="Unidad" class="w-24 input-dark p-2.5 rounded-lg text-xs unidad_var">
+        <input type="text" placeholder="Nombre variable" class="flex-1 input-dark p-2.5 rounded-lg text-xs nombre_var" data-validar="requerido|texto" data-nombre="Nombre variable" data-max="80" maxlength="80" required>
+        <input type="text" placeholder="Unidad" class="w-24 input-dark p-2.5 rounded-lg text-xs unidad_var" data-validar="texto" data-nombre="Unidad" data-max="20" maxlength="20">
         <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-2 cursor-pointer"><i class="fas fa-trash text-xs"></i></button>
     `;
     if (nombre) row.querySelector('.nombre_var').value = nombre;
@@ -948,6 +953,9 @@ async function guardarPersonalizado(e) {
         cerrarModalPersonalizado();
         cargarTestsPersonalizados();
         cargarTestsPersonalizadosDropdown();
+    } else if (resultado && resultado.status === 'warning') {
+        let msjErrores = Object.values(resultado.errores).join('<br>');
+        UI.advertencia('Datos Invalidos', msjErrores);
     } else {
         UI.error('Error', resultado?.message || 'No se pudo guardar el test personalizado.');
     }
@@ -968,3 +976,5 @@ document.getElementById('formPersonalizado').addEventListener('submit', guardarP
 
 cargarRecursos().then(() => cargarTabla());
 Validador.vincularTiempoReal(formTest);
+Validador.vincularTiempoReal(document.getElementById('formTipo'));
+Validador.vincularTiempoReal(document.getElementById('formPersonalizado'));

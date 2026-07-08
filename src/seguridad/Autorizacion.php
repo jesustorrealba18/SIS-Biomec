@@ -36,6 +36,7 @@ class Autorizacion {
         'observacionesTecnicas' => ['observacionesTecnicas', 'ver'],
         'testFisico'             => ['testFisico', 'ver'],
         'normalizacion'          => ['normalizacion', 'ver'],
+        'temporadas'             => ['temporadas', 'ver'],
     ];
 
     public static function cargarPermisos(int $idUsuario): bool {
