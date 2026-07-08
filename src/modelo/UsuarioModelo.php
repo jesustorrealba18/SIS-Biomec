@@ -29,7 +29,9 @@ class UsuarioModelo extends Conexion {
         $this->longitud($apellidos, 'apellidos', 2, 100);
 
         if (!empty($cedula)) {
+            $this->cedula($cedula, 'cedula');
             $this->longitud($cedula, 'cedula', 5, 20);
+            $this->unico($this->getConex1(), $cedula, 'usuarios', 'cedula', null, 'id_usuario');
         }
 
         $this->requerido($correo, 'correo');
@@ -41,6 +43,17 @@ class UsuarioModelo extends Conexion {
             $this->unico($this->getConex1(), $correo, 'usuarios', 'correo', (int)$excluirCorreo, 'id_usuario');
         }
 
+        return $this->obtenerErrores();
+    }
+
+    public function validarContrasena(string $contrasena): array {
+        $this->resetearErrores();
+        if (strlen(trim($contrasena)) < 6) {
+            $this->agregarError('contrasena', 'La contrasena debe tener al menos 6 caracteres.');
+        }
+        if (strlen(trim($contrasena)) > 128) {
+            $this->agregarError('contrasena', 'La contrasena no puede superar 128 caracteres.');
+        }
         return $this->obtenerErrores();
     }
 
@@ -164,6 +177,20 @@ class UsuarioModelo extends Conexion {
 
     public function eliminarUsuario(int $id): bool {
         $conex = $this->getConex1();
+        $this->resetearErrores();
+
+        if ($id <= 0) {
+            $this->agregarError('id_usuario', 'ID de usuario no valido.');
+            return false;
+        }
+
+        $stmt = $conex->prepare("SELECT COUNT(*) FROM metas_competitivas WHERE id_usuario_creador = :id");
+        $stmt->execute([':id' => $id]);
+        if ($stmt->fetchColumn() > 0) {
+            $this->agregarError('id_usuario', 'No se puede eliminar un usuario que ha creado registros de metas competitivas.');
+            return false;
+        }
+
         try {
             $conex->beginTransaction();
             $conex->prepare("DELETE FROM usuario_roles WHERE id_usuario = :id")->execute([':id' => $id]);

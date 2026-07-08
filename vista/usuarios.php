@@ -65,24 +65,24 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-xs font-bold text-gray-400 uppercase">Nombres</label>
-                        <input type="text" name="nombres" id="nombres" required class="input-dark w-full rounded-xl px-4 py-3 mt-2">
+                        <input type="text" name="nombres" id="nombres" data-validar="requerido|letras" data-nombre="Nombres" data-min="2" data-max="100" maxlength="100" required class="input-dark w-full rounded-xl px-4 py-3 mt-2">
                     </div>
                     <div>
                         <label class="text-xs font-bold text-gray-400 uppercase">Apellidos</label>
-                        <input type="text" name="apellidos" id="apellidos" required class="input-dark w-full rounded-xl px-4 py-3 mt-2">
+                        <input type="text" name="apellidos" id="apellidos" data-validar="requerido|letras" data-nombre="Apellidos" data-min="2" data-max="100" maxlength="100" required class="input-dark w-full rounded-xl px-4 py-3 mt-2">
                     </div>
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-400 uppercase">Cedula</label>
-                    <input type="text" name="cedula" id="cedula" class="input-dark w-full rounded-xl px-4 py-3 mt-2">
+                    <input type="text" name="cedula" id="cedula" data-validar="cedula" data-nombre="Cedula" maxlength="20" class="input-dark w-full rounded-xl px-4 py-3 mt-2">
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-400 uppercase">Correo</label>
-                    <input type="email" name="correo" id="correo" required class="input-dark w-full rounded-xl px-4 py-3 mt-2">
+                    <input type="email" name="correo" id="correo" data-validar="requerido|correo" data-nombre="Correo" data-max="100" maxlength="100" required class="input-dark w-full rounded-xl px-4 py-3 mt-2">
                 </div>
                 <div id="campoContrasena">
                     <label class="text-xs font-bold text-gray-400 uppercase">Contrasena</label>
-                    <input type="password" name="contrasena" id="contrasena" class="input-dark w-full rounded-xl px-4 py-3 mt-2">
+                    <input type="password" name="contrasena" id="contrasena" data-validar="requerido" data-nombre="Contrasena" data-min="6" data-max="128" maxlength="128" class="input-dark w-full rounded-xl px-4 py-3 mt-2">
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-400 uppercase">Roles</label>
@@ -96,6 +96,7 @@
     </div>
 
     <script src="assets/js/alertas.js"></script>
+    <script src="assets/js/validador.js"></script>
     <script>
         const tabla = document.getElementById('tablaUsuarios');
         const rolesCache = [];
@@ -149,6 +150,7 @@
             document.getElementById('id_usuario').value = '';
             document.getElementById('campoContrasena').classList.remove('hidden');
             document.getElementById('contrasena').required = true;
+            try { Validador.limpiarEstilos(document.getElementById('formUsuario')); } catch(e) {}
             await cargarRoles();
             renderRolesCheckboxes();
             document.getElementById('modalUsuario').classList.remove('hidden');
@@ -175,13 +177,22 @@
         }
 
         function cerrarModal() {
+            try { Validador.limpiarEstilos(document.getElementById('formUsuario')); } catch(e) {}
             document.getElementById('modalUsuario').classList.add('hidden');
         }
 
         document.getElementById('formUsuario').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const fd = new FormData(e.target);
-            const id = fd.get('id_usuario');
+
+            const form = e.target;
+            const id = new FormData(form).get('id_usuario');
+            const erroresJS = Validador.validarFormulario(form);
+            if (erroresJS) {
+                Swal.fire({ ...UI.config, icon: 'warning', title: 'Datos Incompletos', html: erroresJS });
+                return;
+            }
+
+            const fd = new FormData(form);
             fd.append('accion', id ? 'editar' : 'guardar');
 
             const res = await fetch('?p=usuarios', { method: 'POST', body: fd });
@@ -265,6 +276,7 @@
             }
         }
 
+        try { Validador.vincularTiempoReal(document.getElementById('formUsuario')); } catch(e) {}
         cargarUsuarios();
     </script>
 </body>
