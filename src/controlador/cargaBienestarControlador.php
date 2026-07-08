@@ -71,12 +71,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     // Listar inconsistencias biológicas (RPE=1 y récord personal)
-    if ($accion === 'listarInconsistencias') {
-        header('Content-Type: application/json');
-        $inconsistencias = $objCarga->listarInconsistencias();
-        echo json_encode($inconsistencias);
+    if ($accion === 'anularPorInconsistencia') {
+    Autorizacion::exigir('rpe', 'eliminar');
+    $id_rpe = (int)($_POST['id_rpe'] ?? 0);
+    $motivo = "Inconsistencia biológica detectada: RPE (Reposo) incongruente con marcas de rendimiento (Récord) registradas este día.";
+    if ($id_rpe <= 0) {
+        ob_end_clean();
+        echo json_encode(['status' => 'error', 'message' => 'ID inválido']);
         exit;
     }
+    $res = $objCarga->anularRPE($id_rpe, $motivo);
+    ob_end_clean();
+    if ($res) {
+        Bitacora::registrar($id_usuario, 'RegistroRPE', 'SOFT_DELETE', $id_rpe, 'Anulado por inconsistencia biológica', null, $motivo);
+        echo json_encode(['status' => 'success', 'message' => 'Registro anulado automáticamente.']);
+    } else {
+        $err = $objCarga->obtenerErrores();
+        echo json_encode(['status' => 'error', 'message' => reset($err) ?: 'Error al anular.']);
+    }
+    exit;
+}
 
     // Cargar la vista HTML por defecto
     require_once 'vista/cargaBienestar.php';

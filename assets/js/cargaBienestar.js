@@ -377,11 +377,13 @@ function cerrarModalVerRPE() {
 async function cargarTablaInconsistenciasRPE() {
     const tbody = document.getElementById('listaInconsistenciasRPE');
     tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl"></i><br>Cargando alertas...</td></tr>`;
+
     const inconsistencias = await peticionAjaxRPE('listarInconsistencias');
     if (!inconsistencias || inconsistencias.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-check-circle text-green-500 mr-2"></i> No se detectaron inconsistencias biológicas.</td></tr>`;
         return;
     }
+
     let html = '';
     inconsistencias.forEach(inc => {
         html += `<tr class="hover:bg-white/5 transition-colors">
@@ -390,8 +392,8 @@ async function cargarTablaInconsistenciasRPE() {
             <td class="px-6 py-4"><span class="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-bold">RPE = 1</span></td>
             <td class="px-6 py-4 text-emerald-400">🏆 ${inc.estilo} ${inc.distancia_m}m - ${inc.marca_segundos}s</td>
             <td class="px-6 py-4">
-                <button onclick="softDeleteRPE(${inc.id_rpe})" class="btn-blink bg-red-500/20 border border-red-500 text-red-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition">
-                    <i class="fas fa-exclamation-triangle"></i> Marcar como inválido
+                <button onclick="anularPorInconsistencia(${inc.id_rpe})" class="btn-blink bg-red-500/20 border border-red-500 text-red-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition">
+                    <i class="fas fa-exclamation-triangle"></i> Anular y Auditar
                 </button>
             </td>
         </tr>`;

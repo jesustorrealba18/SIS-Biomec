@@ -203,39 +203,7 @@ class Lesion extends Conexion {
         }
     }
 
-    /**
-     * Obtiene el detalle completo de una lesión (incluye datos del atleta y RPE simulado)
-     */
-
-    /*
-    public function obtenerDetallePorId(int $id_lesion): ?array {
-        try {
-            $sql = "SELECT l.*, a.nombres, a.apellidos, a.cedula
-                    FROM lesiones l
-                    INNER JOIN atletas a ON l.id_atleta = a.id_atleta
-                    WHERE l.id_lesion = :id";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':id', $id_lesion, PDO::PARAM_INT);
-            $stmt->execute();
-            $detalle = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$detalle) return null;
-
-            // RPE simulado (puedes reemplazar con consulta real)
-            $detalle['rpe_historico'] = [];
-            $detalle['rpe_fechas'] = [];
-            for ($i = 6; $i >= 0; $i--) {
-                $fecha = date('Y-m-d', strtotime("-$i days"));
-                $detalle['rpe_fechas'][] = $fecha;
-                $detalle['rpe_historico'][] = rand(1, 9);
-            }
-
-            return $detalle;
-        } catch (PDOException $e) {
-            error_log("Error en obtenerDetallePorId: " . $e->getMessage());
-            return null;
-        }
-    }
-*/
+ 
 
 public function obtenerDetallePorId(int $id_lesion): ?array {
     try {
@@ -253,7 +221,7 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
         // CONSULTA REAL DE RPE DESDE LA TABLA registro_rpe
         // =========================================================
         $fechaInicio = $detalle['fecha_inicio'];
-        // Definir rango: 15 días antes y 15 días después (puedes ajustar)
+        // Rango de 15 días antes y 15 días después (para la gráfica)
         $fechaInicioRango = date('Y-m-d', strtotime($fechaInicio . ' -15 days'));
         $fechaFinRango   = date('Y-m-d', strtotime($fechaInicio . ' +15 days'));
 
@@ -261,6 +229,7 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
                    FROM registro_rpe 
                    WHERE id_atleta = :id_atleta 
                      AND fecha BETWEEN :fecha_inicio AND :fecha_fin
+                     AND deleted_at IS NULL   -- solo registros activos (no anulados)
                    ORDER BY fecha ASC";
         $stmtRPE = $this->pdo->prepare($sqlRPE);
         $stmtRPE->bindValue(':id_atleta', $detalle['id_atleta'], PDO::PARAM_INT);
@@ -272,7 +241,26 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
         $detalle['rpe_fechas'] = array_column($rpeData, 'fecha');
         $detalle['rpe_historico'] = array_column($rpeData, 'rpe');
 
-        // Si no hay datos, devolvemos arrays vacíos (la gráfica no se dibujará)
+        // =========================================================
+        // CÁLCULO DEL PROMEDIO RPE ÚLTIMOS 3 DÍAS (para la alerta)
+        // =========================================================
+        $promedio = $this->obtenerPromedioRPEPrevio($detalle['id_atleta'], $detalle['fecha_inicio']);
+        $detalle['rpe_promedio_3_dias'] = round($promedio, 1);
+
+        // =========================================================
+        // REGLA DE NEGOCIO: ALERTA DE RIESGO
+        // =========================================================
+        $alerta = false;
+        // Solo si la lesión está activa (no anulada) y el promedio supera 8.5
+        if ($detalle['activo'] == 1 && $promedio > 8.5) {
+            $diagnostico = strtolower($detalle['diagnostico'] ?? '');
+            // Buscamos "molestia leve" en el diagnóstico (puedes ajustar la palabra clave)
+            if (strpos($diagnostico, 'molestia leve') !== false) {
+                $alerta = true;
+            }
+        }
+        $detalle['alerta_riesgo'] = $alerta;
+
         return $detalle;
     } catch (PDOException $e) {
         error_log("Error en obtenerDetallePorId: " . $e->getMessage());
