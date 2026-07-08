@@ -100,10 +100,10 @@ class Notificacion extends Conexion {
      */
     public static function enviar(int $id_usuario, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): bool {
         try {
-            $instancia = new self(); // Se conecta a sis_seguridad
+            $instNoti = new self(); // Se conecta a sis_seguridad
             $sql = "INSERT INTO notificaciones (id_usuario, titulo, mensaje, icono, color, enlace_url) 
                     VALUES (:id_usuario, :titulo, :mensaje, :icono, :color, :enlace_url)";
-            $stmt = $instancia->pdo->prepare($sql);
+            $stmt = $instNoti->pdo->prepare($sql);
             return $stmt->execute([
                 ':id_usuario' => $id_usuario,
                 ':titulo' => $titulo,
@@ -170,13 +170,13 @@ class Notificacion extends Conexion {
      */
     public static function listarPorUsuario(int $id_usuario, int $limite = 10): array {
         try {
-            $instancia = new self(); // Se conecta a sis_seguridad automáticamente
+            $instNoti = new self(); // Se conecta a sis_seguridad automáticamente
             $sql = "SELECT id_notificacion, titulo, mensaje, icono, color, leida, fecha, enlace_url 
                     FROM notificaciones 
                     WHERE id_usuario = :id_usuario 
                     ORDER BY fecha DESC LIMIT :limite";
             
-            $stmt = $instancia->pdo->prepare($sql);
+            $stmt = $instNoti->pdo->prepare($sql);
             $stmt->bindValue(':id_usuario', $id_usuario, PDO::PARAM_INT);
             $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
             $stmt->execute();
@@ -193,9 +193,9 @@ class Notificacion extends Conexion {
      */
     public static function contarNoLeidas(int $id_usuario): int {
         try {
-            $instancia = new self();
+            $instNoti = new self();
             $sql = "SELECT COUNT(*) FROM notificaciones WHERE id_usuario = :id_usuario AND leida = 0";
-            $stmt = $instancia->pdo->prepare($sql);
+            $stmt = $instNoti->pdo->prepare($sql);
             $stmt->execute([':id_usuario' => $id_usuario]);
             
             return (int) $stmt->fetchColumn();

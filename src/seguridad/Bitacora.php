@@ -21,8 +21,8 @@ class Bitacora extends Conexion {
     public static function registrar($id_usuario, $modulo, $operacion, $id_afectado = null, $campo = null, $val_ant = null, $val_nue = null) {
         try {
             // Usamos un patrón Factory interno para cumplir la regla de herencia
-            $instancia = new self(); 
-            $conex = $instancia->getConex1();
+            $instBita = new self(); 
+            $conex = $instBita->getConex1();
             
             // Atrapamos la IP real desde donde hicieron el movimiento
             $ip = $_SERVER['REMOTE_ADDR'] ?? 'IP_Desconocida';
@@ -55,8 +55,8 @@ class Bitacora extends Conexion {
      */
     public static function listar($limite = 500) {
         try {
-            $instancia = new self();
-            $conex = $instancia->getConex1(); // La conexión se queda aquí, en el Modelo
+            $instBita = new self();
+            $conex = $instBita->getConex1(); // La conexión se queda aquí, en el Modelo
 
             $sql = "SELECT b.*, u.nombres, u.apellidos, r.nombre AS rol_nombre 
                     FROM bitacora b 
