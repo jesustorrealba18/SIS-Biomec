@@ -15,7 +15,7 @@ use GrupoProyecto\SisBiomec\modelo\Drills;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 
 $objSesiones = new Sesiones();
-$id_entrenador = (int)$_SESSION['id']; 
+$id_entrenador_sesion = (int)$_SESSION['id']; 
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $accion = $_GET['accion'] ?? '';
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $id_grupo = !empty($_GET['id_grupo']) ? (int)$_GET['id_grupo'] : null;
         $estado = !empty($_GET['estado']) ? $_GET['estado'] : null;
         
-        echo json_encode($objSesiones->listarSesionesPorEntrenador($id_entrenador, $id_grupo, $estado));
+        echo json_encode($objSesiones->listarSesiones($id_grupo, $estado));
         exit;
     }
 
@@ -36,10 +36,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    if ($accion === 'listarGruposEntrenador') {
+    if ($accion === 'listarGrupos') {
         header('Content-Type: application/json');
-        $objGrupo = new Grupo();
-        echo json_encode($objGrupo->listarGruposPorEntrenador($id_entrenador));
+        try {
+            $objGrupo = new Grupo();
+            $grupos = $objGrupo->listarGrupos(1);
+            
+            if (!$grupos) {
+                $grupos = [];
+            }
+            
+            echo json_encode($grupos);
+        } catch (Exception $e) {
+            echo json_encode([]);
+        }
+        exit;
+    }
+
+    if ($accion === 'listarEntrenadores') {
+        header('Content-Type: application/json');
+        try {
+            $objEntrenador = new \GrupoProyecto\SisBiomec\modelo\Entrenador();
+            $entrenadores = $objEntrenador->listarEntrenador();
+            
+            echo json_encode($entrenadores ?: []);
+        } catch (Exception $e) {
+            echo json_encode([]);
+        }
         exit;
     }
 
@@ -69,6 +92,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $errores = [];
         
+        if (empty($_POST['id_entrenador'])) {
+            $errores['id_entrenador'] = 'Debe seleccionar un entrenador.';
+        }
+        
         if (empty($_POST['id_grupo'])) {
             $errores['id_grupo'] = 'No se permitirán sesiones sin grupo asignado.';
         }
@@ -93,12 +120,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $series = isset($_POST['series']) ? json_decode($_POST['series'], true) : [];
-        $_POST['id_entrenador'] = $id_entrenador;
 
         try {
             if ($objSesiones->registrarSesion($_POST, $series)) {
                 Bitacora::registrar(
-                    $id_entrenador, 'Modulo Sesiones', 'INSERT', null,
+                    $id_entrenador_sesion, 'Modulo Sesiones', 'INSERT', null,
                     'sesiones', null, 'Planificada para grupo: ' . $_POST['id_grupo']
                 );
                 echo json_encode(['status' => 'success', 'message' => 'Sesión de entrenamiento planificada exitosamente.']);
@@ -116,6 +142,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $id_sesion = (int)($_POST['id_sesion'] ?? 0);
         $errores = [];
+
+        if (empty($_POST['id_entrenador'])) {
+            $errores['id_entrenador'] = 'Debe seleccionar un entrenador.';
+        }
 
         if (empty($_POST['id_grupo'])) {
             $errores['id_grupo'] = 'No se permitirán sesiones sin grupo asignado.';
@@ -140,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($objSesiones->editarSesion($id_sesion, $_POST, $series)) {
             Bitacora::registrar(
-                $id_entrenador, 'Modulo Sesiones', 'UPDATE',
+                $id_entrenador_sesion, 'Modulo Sesiones', 'UPDATE',
                 $id_sesion, 'datos sesion', null, 'Modificación de planificación'
             );
             echo json_encode(['status' => 'success', 'message' => 'Planificación de la sesión modificada exitosamente.']);
@@ -166,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($objSesiones->completarSesion($datosCierre)) {
             Bitacora::registrar(
-                $id_entrenador, 'Modulo Sesiones', 'UPDATE',
+                $id_entrenador_sesion, 'Modulo Sesiones', 'UPDATE',
                 $id_sesion, 'estado/ejecucion', null, 'Estado cambiado a Completada. Vol: ' . $volumen_ejecutado
             );
             echo json_encode(['status' => 'success', 'message' => 'La sesión de entrenamiento ha sido cerrada y guardada con éxito.']);
@@ -183,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($objSesiones->cancelarSesion($id_sesion)) {
             Bitacora::registrar(
-                $id_entrenador, 'Modulo Sesiones', 'DELETE_LOGIC',
+                $id_entrenador_sesion, 'Modulo Sesiones', 'DELETE_LOGIC',
                 $id_sesion, 'estado', null, 'Cancelada'
             );
             echo json_encode(['status' => 'success', 'message' => 'La sesión ha sido cancelada con éxito de la planificación.']);

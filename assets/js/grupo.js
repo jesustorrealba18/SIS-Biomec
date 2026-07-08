@@ -1,5 +1,6 @@
 const modalGrupo = document.getElementById('modalGrupo');
 const modalAsignacion = document.getElementById('modalAsignacion');
+const modalVerGrupo = document.getElementById('modalVerGrupo');
 const formGrupo = document.getElementById('formGrupo');
 const formAsignacion = document.getElementById('formAsignacion');
 const btnGuardar = document.getElementById('btnGuardar');
@@ -25,17 +26,32 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
+// ============================================
+// FUNCIÓN AUXILIAR: ESCAPE HTML
+// ============================================
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// ============================================
+// VALIDADOR EN TIEMPO REAL
+// ============================================
 class ValidadorTiempoReal {
     constructor() {
         this.errores = {};
         this.reglas = {
             'nombre': {
                 requerido: true,
-                maxlength: 100,
+                minLength: 5,
+                maxlength: 50,
                 regex: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s0-9\-]+$/,
                 mensajes: {
                     requerido: 'El nombre del grupo es requerido',
-                    maxlength: 'El nombre no puede tener más de 100 caracteres',
+                    minLength: 'El nombre no puede tener menos de 5 caracteres',
+                    maxlength: 'El nombre no puede tener más de 50 caracteres',
                     regex: 'Solo se permiten letras, números, guiones y espacios'
                 }
             },
@@ -248,6 +264,9 @@ class ValidadorTiempoReal {
     }
 }
 
+// ============================================
+// FUNCIONES DE MODALES
+// ============================================
 function cerrarModalGrupo() {
     modalGrupo.classList.add('hidden');
     modalGrupo.firstElementChild.classList.add('scale-95', 'opacity-0');
@@ -258,6 +277,17 @@ function cerrarModalAsignacion() {
     modalAsignacion.firstElementChild.classList.add('scale-95', 'opacity-0');
 }
 
+function cerrarModalVerGrupo() {
+    if (!modalVerGrupo) return;
+    const child = modalVerGrupo.firstElementChild;
+    if (child) {
+        child.classList.add('scale-95', 'opacity-0');
+    }
+    setTimeout(() => {
+        modalVerGrupo.classList.add('hidden');
+    }, 200);
+}
+
 document.addEventListener('keydown', (e) => {
     if (e.key === "Escape") {
         if (!modalGrupo.classList.contains('hidden')) {
@@ -266,9 +296,15 @@ document.addEventListener('keydown', (e) => {
         if (!modalAsignacion.classList.contains('hidden')) {
             cerrarModalAsignacion();
         }
+        if (!modalVerGrupo.classList.contains('hidden')) {
+            cerrarModalVerGrupo();
+        }
     }
 });
 
+// ============================================
+// FUNCIONES DE CARGA DE DATOS
+// ============================================
 async function cargarCategorias() {
     const select = document.getElementById('filtroCategoria');
     if (!select) return;
@@ -291,6 +327,9 @@ async function cargarCategorias() {
     }
 }
 
+// ============================================
+// MODAL: GESTIÓN DE GRUPOS
+// ============================================
 async function abrirModalGrupo(idGrupo = null) {
     formGrupo.reset();
     document.querySelectorAll('.is-invalid, .is-valid').forEach(el => {
@@ -361,6 +400,9 @@ async function abrirModalGrupo(idGrupo = null) {
     }
 }
 
+// ============================================
+// MODAL: ASIGNACIÓN DE ATLETAS
+// ============================================
 async function abrirModalAsignacion(idGrupo = null) {
     if (!idGrupo) {
         if (typeof UI !== 'undefined') {
@@ -385,7 +427,6 @@ async function abrirModalAsignacion(idGrupo = null) {
 
     await cargarCategorias();
     await cargarAtletasDisponibles();
-    await cargarAtletasAsignados(idGrupo);
 }
 
 async function cargarAtletasDisponibles() {
@@ -414,11 +455,11 @@ async function cargarAtletasDisponibles() {
                     <input type="checkbox" name="atletas[]" value="${atleta.id_atleta}" 
                            class="form-checkbox h-4 w-4 text-indigo-600 bg-gray-700 border-gray-600 rounded">
                     <span class="ml-3 text-sm flex-1">
-                        <span class="font-medium">${atleta.nombres} ${atleta.apellidos}</span>
+                        <span class="font-medium">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
                         <span class="text-gray-400 text-xs ml-2">${edad} años</span>
-                        <span class="text-emerald-400 text-xs ml-2">${categoria}</span>
+                        <span class="text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
                     </span>
-                    <span class="text-gray-500 text-xs">${atleta.cedula || 'Sin cédula'}</span>
+                    <span class="text-gray-500 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
                 </label>
             `;
         });
@@ -451,80 +492,9 @@ function actualizarContadorAtletas() {
     }
 }
 
-async function cargarAtletasAsignados(idGrupo) {
-    const container = document.getElementById('atletas-asignados');
-    container.innerHTML = '<div class="text-center py-4 text-gray-400"><i class="fas fa-spinner fa-spin"></i> Cargando atletas asignados...</div>';
-
-    try {
-        const atletas = await peticionAjax(`listarAtletasPorGrupo&id_grupo=${idGrupo}`);
-
-        if (!atletas || atletas.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
-                    <i class="fas fa-user-plus text-4xl mb-3 block opacity-30"></i>
-                    <span class="text-sm">No hay atletas asignados a este grupo</span>
-                </div>
-            `;
-            return;
-        }
-
-        let html = `<div class="space-y-2 max-h-60 overflow-y-auto">`;
-        atletas.forEach(atleta => {
-            const edad = atleta.edad || 'N/A';
-            const categoria = atleta.categoria_nombre || 'Sin categoría';
-            html += `
-                <div class="flex items-center justify-between p-2 bg-white/5 rounded-lg">
-                    <div class="flex items-center">
-                        <i class="fas fa-user-circle text-indigo-400 text-lg mr-3"></i>
-                        <div>
-                            <span class="font-medium text-sm">${atleta.nombres} ${atleta.apellidos}</span>
-                            <span class="text-gray-400 text-xs ml-2">${edad} años</span>
-                            <span class="text-emerald-400 text-xs ml-2">${categoria}</span>
-                            <div class="text-gray-500 text-[10px]">${atleta.cedula || 'Sin cédula'}</div>
-                        </div>
-                    </div>
-                    <button onclick="desasignarAtleta(${atleta.id_atleta})" 
-                            class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/10 transition text-sm"
-                            title="Desasignar atleta">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `;
-        });
-        html += `</div>`;
-
-        container.innerHTML = html;
-
-    } catch (error) {
-        console.error('Error cargando atletas asignados:', error);
-        container.innerHTML = '<div class="text-center py-4 text-red-400">Error al cargar atletas asignados</div>';
-    }
-}
-
-async function desasignarAtleta(id_atleta) {
-    if (!confirm('¿Está seguro de desasignar este atleta del grupo?')) return;
-
-    const formData = new FormData();
-    formData.append('accion', 'desasignarAtleta');
-    formData.append('id_atleta', id_atleta);
-
-    const resultado = await peticionAjax('desasignarAtleta', formData);
-
-    if (resultado && resultado.status === 'success') {
-        if (typeof UI !== 'undefined') {
-            UI.exito('Desasignado', 'El atleta ha sido desasignado del grupo.');
-        }
-        const idGrupo = document.getElementById('id_grupo_asignacion').value;
-        await cargarAtletasAsignados(idGrupo);
-        await cargarAtletasDisponibles();
-        cargarTablaGrupos();
-    } else {
-        if (typeof UI !== 'undefined') {
-            UI.error('Error', resultado?.message || 'No se pudo desasignar el atleta.');
-        }
-    }
-}
-
+// ============================================
+// FILTROS DE ATLETAS
+// ============================================
 async function filtrarAtletasPorCategoria() {
     const idCategoria = document.getElementById('filtroCategoria')?.value;
     
@@ -558,11 +528,11 @@ async function filtrarAtletasPorCategoria() {
                     <input type="checkbox" name="atletas[]" value="${atleta.id_atleta}" 
                            class="form-checkbox h-4 w-4 text-indigo-600 bg-gray-700 border-gray-600 rounded">
                     <span class="ml-3 text-sm flex-1">
-                        <span class="font-medium">${atleta.nombres} ${atleta.apellidos}</span>
+                        <span class="font-medium">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
                         <span class="text-gray-400 text-xs ml-2">${edad} años</span>
-                        <span class="text-emerald-400 text-xs ml-2">${categoria}</span>
+                        <span class="text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
                     </span>
-                    <span class="text-gray-500 text-xs">${atleta.cedula || 'Sin cédula'}</span>
+                    <span class="text-gray-500 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
                 </label>
             `;
         });
@@ -628,11 +598,11 @@ async function filtrarAtletasPorEdad() {
                     <input type="checkbox" name="atletas[]" value="${atleta.id_atleta}" 
                            class="form-checkbox h-4 w-4 text-indigo-600 bg-gray-700 border-gray-600 rounded">
                     <span class="ml-3 text-sm flex-1">
-                        <span class="font-medium">${atleta.nombres} ${atleta.apellidos}</span>
+                        <span class="font-medium">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
                         <span class="text-gray-400 text-xs ml-2">${edad} años</span>
-                        <span class="text-emerald-400 text-xs ml-2">${categoria}</span>
+                        <span class="text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
                     </span>
-                    <span class="text-gray-500 text-xs">${atleta.cedula || 'Sin cédula'}</span>
+                    <span class="text-gray-500 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
                 </label>
             `;
         });
@@ -664,6 +634,169 @@ function limpiarFiltros() {
     cargarAtletasDisponibles();
 }
 
+// ============================================
+// MODAL: VER GRUPO (DETALLES COMPLETOS)
+// ============================================
+let grupoActualVer = null;
+
+async function abrirModalVerGrupo(idGrupo) {
+    if (!idGrupo) {
+        if (typeof UI !== 'undefined') {
+            UI.advertencia('Selección requerida', 'Primero selecciona un grupo para ver sus detalles.');
+        }
+        return;
+    }
+
+    const contenido = document.getElementById('detalleGrupoContenido');
+    
+    contenido.innerHTML = `
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-3xl text-indigo-500"></i>
+            <p class="text-gray-400 mt-3 text-sm">Cargando detalles del grupo...</p>
+        </div>
+    `;
+
+    modalVerGrupo.classList.remove('hidden');
+    setTimeout(() => {
+        modalVerGrupo.firstElementChild.classList.remove('scale-95', 'opacity-0');
+    }, 10);
+
+    try {
+        const grupo = await peticionAjax(`obtenerGrupo&id=${idGrupo}`);
+        
+        if (!grupo) {
+            contenido.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-400 mb-4"></i>
+                    <p class="text-gray-400">No se pudo cargar la información del grupo</p>
+                </div>
+            `;
+            return;
+        }
+
+        const atletas = await peticionAjax(`listarAtletasPorGrupo&id_grupo=${idGrupo}`);
+        const atletasArray = Array.isArray(atletas) ? atletas : [];
+        
+        grupoActualVer = grupo;
+        renderizarDetalleGrupo(grupo, atletasArray);
+
+    } catch (error) {
+        console.error('Error cargando detalles del grupo:', error);
+        contenido.innerHTML = `
+            <div class="text-center py-12">
+                <i class="fas fa-exclamation-circle text-4xl text-red-400 mb-4"></i>
+                <p class="text-gray-400">Error al cargar los detalles del grupo</p>
+            </div>
+        `;
+    }
+}
+
+function renderizarDetalleGrupo(grupo, atletas) {
+    const contenido = document.getElementById('detalleGrupoContenido');
+
+    const badgeEstado = grupo.activo == 1 
+        ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">ACTIVO</span>`
+        : `<span class="px-3 py-1 rounded-full text-xs font-bold bg-gray-500/10 text-gray-400 border border-gray-500/20">ARCHIVADO</span>`;
+
+    const tieneAtletas = atletas && Array.isArray(atletas) && atletas.length > 0;
+
+    let atletasHtml = '';
+    if (tieneAtletas) {
+        atletasHtml = `
+            <div class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                ${atletas.map(atleta => `
+                    <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <p class="text-white font-medium text-sm">${escapeHtml(atleta.nombres || '')} ${escapeHtml(atleta.apellidos || '')}</p>
+                                <div class="flex gap-3 text-xs text-gray-400">
+                                    <span>${atleta.edad || 'N/A'} años</span>
+                                    <span class="text-emerald-400">${escapeHtml(atleta.categoria_nombre || 'Sin categoría')}</span>
+                                    <span class="text-gray-500">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } else {
+        atletasHtml = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-users text-4xl mb-3 block opacity-30"></i>
+                <p class="text-sm">No hay atletas asignados a este grupo</p>
+            </div>
+        `;
+    }
+
+    contenido.innerHTML = `
+        <div class="text-center mb-8">
+            <div class="w-28 h-28 rounded-full mx-auto mb-4 bg-indigo-500/20 flex items-center justify-center text-4xl text-indigo-400 border-4 border-indigo-500/20">
+                <i class="fas fa-users"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white">${escapeHtml(grupo.nombre)}</h2>
+            <div class="flex justify-center gap-2 mt-3 flex-wrap">
+                ${badgeEstado}
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    ${tieneAtletas ? atletas.length : 0} atletas
+                </span>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <p class="text-[10px] uppercase text-indigo-400 font-bold tracking-widest mb-3">
+                <i class="fas fa-info-circle mr-2"></i>INFORMACIÓN DEL GRUPO
+            </p>
+            <div class="grid grid-cols-2 gap-3 text-left bg-black/20 p-4 rounded-2xl border border-white/5">
+                <div>
+                    <p class="text-[10px] uppercase text-gray-500">Entrenador</p>
+                    <p class="text-white font-medium">${escapeHtml(grupo.entrenador_nombre || 'Sin asignar')}</p>
+                    ${grupo.entrenador_cedula ? `<p class="text-gray-500 text-xs">${escapeHtml(grupo.entrenador_cedula)}</p>` : ''}
+                </div>
+                <div>
+                    <p class="text-[10px] uppercase text-gray-500">Estado</p>
+                    <p class="${grupo.activo == 1 ? 'text-emerald-400' : 'text-gray-400'}">${grupo.activo == 1 ? 'Activo' : 'Archivado'}</p>
+                </div>
+                <div class="col-span-2">
+                    <p class="text-[10px] uppercase text-gray-500">Descripción</p>
+                    <p class="text-gray-300 text-sm">${escapeHtml(grupo.descripcion) || 'Sin descripción registrada'}</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <p class="text-[10px] uppercase text-emerald-400 font-bold tracking-widest mb-3">
+                <i class="fas fa-user-check mr-2"></i>ATLETAS ASIGNADOS (${tieneAtletas ? atletas.length : 0})
+            </p>
+            <div class="bg-black/20 p-4 rounded-2xl border border-white/5">
+                ${atletasHtml}
+            </div>
+        </div>
+
+        <div class="mt-6 flex gap-3 pt-4 border-t border-white/5">
+            <button onclick="cerrarModalVerGrupo()" class="w-full bg-gray-800 text-gray-400 py-3 rounded-xl font-bold hover:bg-gray-700 transition">
+                <i class="fas fa-times mr-2"></i> CERRAR
+            </button>
+        </div>
+    `;
+}
+
+function abrirModalVerGrupoDesdeAsignacion() {
+    const idGrupo = document.getElementById('id_grupo_asignacion').value;
+    if (idGrupo) {
+        cerrarModalAsignacion();
+        setTimeout(() => {
+            abrirModalVerGrupo(idGrupo);
+        }, 300);
+    }
+}
+
+// ============================================
+// TABLA DE GRUPOS
+// ============================================
 async function cargarTablaGrupos() {
     const tbody = document.getElementById('listaGrupos');
     tbody.innerHTML = `<tr><td colspan="6" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando grupos...</span></td></tr>`;
@@ -705,8 +838,8 @@ async function cargarTablaGrupos() {
 
         html += `
             <tr class="grupo-row hover:bg-white/5 transition-colors duration-200" data-busqueda="${busqueda}">
-                <td class="p-4 font-medium text-white">${g.nombre}</td>
-                <td class="p-4 text-gray-300 text-xs max-w-xs truncate">${g.descripcion || '—'}</td>
+                <td class="p-4 font-medium text-white">${escapeHtml(g.nombre)}</td>
+                <td class="p-4 text-gray-300 text-xs max-w-xs truncate">${escapeHtml(g.descripcion) || '—'}</td>
                 <td class="p-4 text-gray-300">${entrenadorText}</td>
                 <td class="p-4 text-center">
                     <span class="px-2.5 py-1 text-xs font-bold rounded-full ${g.total_atletas > 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'}">
@@ -720,11 +853,14 @@ async function cargarTablaGrupos() {
                 </td>
                 <td class="p-4 text-right space-x-1">
                     ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
+                    <button onclick="abrirModalVerGrupo(${g.id_grupo})" class="text-cyan-400 hover:text-cyan-300 p-2 rounded-lg hover:bg-cyan-500/10 transition duration-200" title="Ver Detalles">
+                        <i class="fas fa-eye text-base"></i>
+                    </button>
                     <button onclick="abrirModalGrupo(${g.id_grupo})" class="text-indigo-400 hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-500/10 transition duration-200" title="Editar Grupo">
                         <i class="fas fa-edit text-base"></i>
                     </button>
                     <button onclick="abrirModalAsignacion(${g.id_grupo})" class="text-emerald-400 hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-500/10 transition duration-200" title="Asignar Atletas">
-                        <i class="fas fa-users text-base"></i>
+                        <i class="fas fa-user-plus text-base"></i>
                     </button>
                     ${botonAccion}
                     ` : '<span class="text-gray-600 text-xs">Solo lectura</span>'}
@@ -741,6 +877,9 @@ async function cargarTablaGrupos() {
     }
 }
 
+// ============================================
+// BÚSQUEDA EN TABLA
+// ============================================
 const inputBusqueda = document.getElementById('busquedaNombre');
 if (inputBusqueda) {
     inputBusqueda.addEventListener('input', function(e) {
@@ -753,6 +892,52 @@ if (inputBusqueda) {
     });
 }
 
+// ============================================
+// ELIMINAR / REACTIVAR GRUPO
+// ============================================
+async function eliminarGrupo(id_grupo) {
+    if (!confirm("¿Está seguro de archivar este grupo de entrenamiento?")) return;
+
+    let datosDelete = new FormData();
+    datosDelete.append('accion', 'eliminar');
+    datosDelete.append('id_grupo', id_grupo);
+
+    const resultado = await peticionAjax('eliminar', datosDelete);
+    if (resultado && resultado.status === 'success') {
+        if (typeof UI !== 'undefined') {
+            UI.exito('Archivado', 'El grupo ha sido desactivado.');
+        }
+        cargarTablaGrupos();
+    } else {
+        if (typeof UI !== 'undefined') {
+            UI.error('Error', 'No se pudo desactivar el registro.');
+        }
+    }
+}
+
+async function reactivarGrupo(id_grupo) {
+    if (!confirm("¿Desea reactivar este grupo de entrenamiento?")) return;
+
+    let datosReactivar = new FormData();
+    datosReactivar.append('accion', 'reactivar');
+    datosReactivar.append('id_grupo', id_grupo);
+
+    const resultado = await peticionAjax('reactivar', datosReactivar);
+    if (resultado && resultado.status === 'success') {
+        if (typeof UI !== 'undefined') {
+            UI.exito('Reactivado', 'El grupo vuelve a estar activo.');
+        }
+        cargarTablaGrupos();
+    } else {
+        if (typeof UI !== 'undefined') {
+            UI.error('Error', 'No se pudo reactivar el grupo.');
+        }
+    }
+}
+
+// ============================================
+// EVENTOS DEL DOM
+// ============================================
 document.addEventListener('DOMContentLoaded', () => {
     window.validadorTiempoReal = new ValidadorTiempoReal();
 
@@ -866,43 +1051,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
-async function eliminarGrupo(id_grupo) {
-    if (!confirm("¿Está seguro de archivar este grupo de entrenamiento?")) return;
-
-    let datosDelete = new FormData();
-    datosDelete.append('accion', 'eliminar');
-    datosDelete.append('id_grupo', id_grupo);
-
-    const resultado = await peticionAjax('eliminar', datosDelete);
-    if (resultado && resultado.status === 'success') {
-        if (typeof UI !== 'undefined') {
-            UI.exito('Archivado', 'El grupo ha sido desactivado.');
-        }
-        cargarTablaGrupos();
-    } else {
-        if (typeof UI !== 'undefined') {
-            UI.error('Error', 'No se pudo desactivar el registro.');
-        }
-    }
-}
-
-async function reactivarGrupo(id_grupo) {
-    if (!confirm("¿Desea reactivar este grupo de entrenamiento?")) return;
-
-    let datosReactivar = new FormData();
-    datosReactivar.append('accion', 'reactivar');
-    datosReactivar.append('id_grupo', id_grupo);
-
-    const resultado = await peticionAjax('reactivar', datosReactivar);
-    if (resultado && resultado.status === 'success') {
-        if (typeof UI !== 'undefined') {
-            UI.exito('Reactivado', 'El grupo vuelve a estar activo.');
-        }
-        cargarTablaGrupos();
-    } else {
-        if (typeof UI !== 'undefined') {
-            UI.error('Error', 'No se pudo reactivar el grupo.');
-        }
-    }
-}

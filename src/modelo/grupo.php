@@ -37,8 +37,8 @@ class Grupo extends Conexion {
         $nombre = $datos['nombre'] ?? '';
         $this->requerido($nombre, 'nombre');
         
-        if (!empty($nombre) && strlen($nombre) > 100) {
-            $this->agregarError('nombre', 'El nombre no puede tener más de 100 caracteres.');
+        if (!empty($nombre) && strlen($nombre) > 50) {
+            $this->agregarError('nombre', 'El nombre no puede tener más de 50 caracteres.');
         }
 
         if (!empty($nombre) && !preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s0-9\-]+$/', $nombre)) {
@@ -133,7 +133,7 @@ class Grupo extends Conexion {
     private function editarGrupoP(array $datos): bool {
         $conex = $this->pdo;
         try {
-            $id_grupo = (int)($datos['id_grupo_original'] ?? 0);
+            $id_grupo = isset($datos['id_grupo_original']) ? (int)$datos['id_grupo_original'] : 0;
             
             if ($this->verificarNombreExistente($datos['nombre'] ?? '', $id_grupo)) {
                 $this->setUltimoError('El nombre del grupo ya existe.');
@@ -176,7 +176,8 @@ class Grupo extends Conexion {
         try {
             $sql = "SELECT 
                         g.*,
-                        CONCAT(e.nombres, ' ', e.apellidos) as entrenador_nombre
+                        CONCAT(e.nombres, ' ', e.apellidos) as entrenador_nombre,
+                        e.cedula as entrenador_cedula
                     FROM grupos_entrenamiento g
                     LEFT JOIN entrenador e ON g.id_entrenador = e.id_entrenador
                     WHERE g.id_grupo = :id";
@@ -369,33 +370,39 @@ class Grupo extends Conexion {
 
             $id_grupo = (int)$datos['id_grupo'];
             $atletas = $datos['atletas'];
-            $fecha_asignacion = date('Y-m-d');
+            $fecha_asignacion = date('Y-m-d H:i:s');
 
-            if (count($atletas) > 0) {
-                // Eliminar asignaciones existentes
-                $sqlEliminar = "DELETE FROM grupo_atleta 
-                                WHERE id_atleta IN (" . implode(',', array_fill(0, count($atletas), '?')) . ")";
-                
-                $stmtEliminar = $conex->prepare($sqlEliminar);
-                $stmtEliminar->execute($atletas);
+            if (!is_array($atletas) || count($atletas) === 0) {
+                $this->setUltimoError('No se seleccionaron atletas para asignar.');
+                return false;
+            }
 
-                // Insertar nuevas asignaciones
-                $sqlInsert = "INSERT INTO grupo_atleta (id_grupo, id_atleta, fecha_asignacion) 
-                              VALUES (?, ?, ?)";
-                
-                $stmtInsert = $conex->prepare($sqlInsert);
-                
-                foreach ($atletas as $id_atleta) {
+            // Eliminar TODOS los atletas actuales del grupo
+            $sqlEliminar = "DELETE FROM grupo_atleta WHERE id_grupo = ?";
+            $stmtEliminar = $conex->prepare($sqlEliminar);
+            $stmtEliminar->execute([$id_grupo]);
+
+            // Insertar los nuevos atletas
+            $sqlInsert = "INSERT INTO grupo_atleta (id_grupo, id_atleta, fecha_asignacion) 
+                          VALUES (?, ?, ?)";
+            
+            $stmtInsert = $conex->prepare($sqlInsert);
+            
+            $insertados = 0;
+            foreach ($atletas as $id_atleta) {
+                $id_atleta = (int)$id_atleta;
+                if ($id_atleta > 0) {
                     $stmtInsert->execute([
                         $id_grupo,
-                        (int)$id_atleta,
+                        $id_atleta,
                         $fecha_asignacion
                     ]);
+                    $insertados++;
                 }
             }
 
             $conex->commit();
-            return true;
+            return $insertados > 0;
 
         } catch (PDOException $e) {
             if ($conex->inTransaction()) {
@@ -433,7 +440,7 @@ class Grupo extends Conexion {
             $stmtEliminar = $conex->prepare($sqlEliminar);
             $stmtEliminar->execute([$id_atleta]);
 
-            $sqlInsert = "INSERT INTO grupo_atleta (id_grupo, id_atleta, fecha_assignacion) 
+            $sqlInsert = "INSERT INTO grupo_atleta (id_grupo, id_atleta, fecha_asignacion) 
                           VALUES (?, ?, CURDATE())";
             $stmtInsert = $conex->prepare($sqlInsert);
             $stmtInsert->execute([$id_nuevo_grupo, $id_atleta]);
@@ -451,65 +458,63 @@ class Grupo extends Conexion {
     }
 
     public function listarAtletasDisponibles(): array {
-    $conex = $this->pdo;
-    try {
-        $sql = "SELECT 
-                    a.id_atleta,
-                    a.nombres,
-                    a.apellidos,
-                    a.cedula,
-                    a.fecha_nacimiento,
-                    a.id_categoria,
-                    c.nombre as categoria_nombre,
-                    TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad
-                FROM atletas a
-                LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
-                WHERE a.estado = 1
-                AND NOT EXISTS (
-                    SELECT 1 
-                    FROM grupo_atleta ga 
-                    INNER JOIN grupos_entrenamiento g ON ga.id_grupo = g.id_grupo
-                    WHERE ga.id_atleta = a.id_atleta 
-                    AND g.activo = 1
-                )
-                ORDER BY a.apellidos, a.nombres ASC";
-        
-        $stmt = $conex->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        return [];
+        $conex = $this->pdo;
+        try {
+            $sql = "SELECT 
+                        a.id_atleta,
+                        a.nombres,
+                        a.apellidos,
+                        a.cedula,
+                        a.fecha_nacimiento,
+                        a.id_categoria,
+                        c.nombre as categoria_nombre,
+                        TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad
+                    FROM atletas a
+                    LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
+                    WHERE a.estado = 1
+                    AND NOT EXISTS (
+                        SELECT 1 
+                        FROM grupo_atleta ga 
+                        INNER JOIN grupos_entrenamiento g ON ga.id_grupo = g.id_grupo
+                        WHERE ga.id_atleta = a.id_atleta 
+                        AND g.activo = 1
+                    )
+                    ORDER BY a.apellidos, a.nombres ASC";
+            
+            $stmt = $conex->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
     }
-}
 
- public function listarAtletasPorGrupo(int $id_grupo): array {
-    $conex = $this->pdo;
-    try {
-        $sql = "SELECT 
-                    a.id_atleta,
-                    a.nombres,
-                    a.apellidos,
-                    a.cedula,
-                    a.fecha_nacimiento,
-                    a.id_categoria,
-                    c.nombre as categoria_nombre,
-                    TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
-                    ga.fecha_assignacion
-                FROM grupo_atleta ga
-                INNER JOIN atletas a ON ga.id_atleta = a.id_atleta
-                LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
-                WHERE ga.id_grupo = :id_grupo 
-                AND a.estado = 1
-                ORDER BY a.apellidos, a.nombres ASC";
-        
-        $stmt = $conex->prepare($sql);
-        $stmt->execute([':id_grupo' => $id_grupo]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("Error listarAtletasPorGrupo: " . $e->getMessage());
-        return [];
+    public function listarAtletasPorGrupo(int $id_grupo): array {
+        $conex = $this->pdo;
+        try {
+            $sql = "SELECT 
+                        a.id_atleta,
+                        a.nombres,
+                        a.apellidos,
+                        a.cedula,
+                        a.fecha_nacimiento,
+                        a.id_categoria,
+                        c.nombre as categoria_nombre,
+                        TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad
+                    FROM grupo_atleta ga
+                    INNER JOIN atletas a ON ga.id_atleta = a.id_atleta
+                    LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
+                    WHERE ga.id_grupo = :id_grupo 
+                    AND a.estado = 1
+                    ORDER BY a.apellidos, a.nombres ASC";
+            
+            $stmt = $conex->prepare($sql);
+            $stmt->execute([':id_grupo' => $id_grupo]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
     }
-}
 
     public function listarTodosAtletas(): array {
         $conex = $this->pdo;
@@ -589,7 +594,7 @@ class Grupo extends Conexion {
                         g.id_grupo,
                         g.nombre,
                         g.descripcion,
-                        ga.fecha_assignacion
+                        ga.fecha_asignacion
                     FROM grupo_atleta ga
                     INNER JOIN grupos_entrenamiento g ON ga.id_grupo = g.id_grupo
                     WHERE ga.id_atleta = ?";
