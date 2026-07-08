@@ -124,9 +124,6 @@
         </div>
     </main>
 
-    <!-- ============================================ -->
-    <!-- MODAL: GESTIÓN DE GRUPOS (CREAR/EDITAR) -->
-    <!-- ============================================ -->
     <div id="modalGrupo" class="fixed inset-0 bg-[#0f0d23]/95 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="tarjeta w-full max-w-2xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
@@ -177,9 +174,6 @@
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- MODAL: ASIGNACIÓN DE ATLETAS (SOLO DISPONIBLES) -->
-    <!-- ============================================ -->
     <div id="modalAsignacion" class="fixed inset-0 bg-[#0f0d23]/95 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="tarjeta w-full max-w-4xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
@@ -232,7 +226,6 @@
                     </button>
                 </div>
 
-                <!-- ATLETAS DISPONIBLES (SOLO ESTOS) -->
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <label class="text-[11px] text-gray-500 font-bold ml-1 uppercase tracking-wider">
@@ -250,7 +243,6 @@
                     <div class="invalid-feedback" id="atletas-error"></div>
                 </div>
 
-                <!-- BOTÓN PARA VER ATLETAS ASIGNADOS -->
                 <div>
                     <button type="button" onclick="abrirModalVerGrupoDesdeAsignacion()" 
                             class="w-full bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 py-3 rounded-xl font-bold transition border border-indigo-500/20">
@@ -268,9 +260,6 @@
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- MODAL: VER GRUPO (DETALLES COMPLETOS) -->
-    <!-- ============================================ -->
     <div id="modalVerGrupo" class="fixed inset-0 bg-[#060512]/90 backdrop-blur-xl hidden flex items-center justify-center p-4 z-50">
         <div class="relative bg-[#111026] border border-white/10 w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] max-h-[90vh] overflow-y-auto scale-95 opacity-0 transition-all duration-200">
             <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl"></div>

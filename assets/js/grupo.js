@@ -36,9 +36,6 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-// ============================================
-// VALIDADOR EN TIEMPO REAL
-// ============================================
 class ValidadorTiempoReal {
     constructor() {
         this.errores = {};
@@ -264,9 +261,6 @@ class ValidadorTiempoReal {
     }
 }
 
-// ============================================
-// FUNCIONES DE MODALES
-// ============================================
 function cerrarModalGrupo() {
     modalGrupo.classList.add('hidden');
     modalGrupo.firstElementChild.classList.add('scale-95', 'opacity-0');
@@ -302,9 +296,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// ============================================
-// FUNCIONES DE CARGA DE DATOS
-// ============================================
 async function cargarCategorias() {
     const select = document.getElementById('filtroCategoria');
     if (!select) return;
@@ -327,9 +318,6 @@ async function cargarCategorias() {
     }
 }
 
-// ============================================
-// MODAL: GESTIÓN DE GRUPOS
-// ============================================
 async function abrirModalGrupo(idGrupo = null) {
     formGrupo.reset();
     document.querySelectorAll('.is-invalid, .is-valid').forEach(el => {
@@ -400,9 +388,6 @@ async function abrirModalGrupo(idGrupo = null) {
     }
 }
 
-// ============================================
-// MODAL: ASIGNACIÓN DE ATLETAS
-// ============================================
 async function abrirModalAsignacion(idGrupo = null) {
     if (!idGrupo) {
         if (typeof UI !== 'undefined') {
@@ -492,9 +477,6 @@ function actualizarContadorAtletas() {
     }
 }
 
-// ============================================
-// FILTROS DE ATLETAS
-// ============================================
 async function filtrarAtletasPorCategoria() {
     const idCategoria = document.getElementById('filtroCategoria')?.value;
     
@@ -634,9 +616,6 @@ function limpiarFiltros() {
     cargarAtletasDisponibles();
 }
 
-// ============================================
-// MODAL: VER GRUPO (DETALLES COMPLETOS)
-// ============================================
 let grupoActualVer = null;
 
 async function abrirModalVerGrupo(idGrupo) {
@@ -794,9 +773,6 @@ function abrirModalVerGrupoDesdeAsignacion() {
     }
 }
 
-// ============================================
-// TABLA DE GRUPOS
-// ============================================
 async function cargarTablaGrupos() {
     const tbody = document.getElementById('listaGrupos');
     tbody.innerHTML = `<tr><td colspan="6" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando grupos...</span></td></tr>`;
@@ -877,9 +853,6 @@ async function cargarTablaGrupos() {
     }
 }
 
-// ============================================
-// BÚSQUEDA EN TABLA
-// ============================================
 const inputBusqueda = document.getElementById('busquedaNombre');
 if (inputBusqueda) {
     inputBusqueda.addEventListener('input', function(e) {
@@ -892,9 +865,6 @@ if (inputBusqueda) {
     });
 }
 
-// ============================================
-// ELIMINAR / REACTIVAR GRUPO
-// ============================================
 async function eliminarGrupo(id_grupo) {
     if (!confirm("¿Está seguro de archivar este grupo de entrenamiento?")) return;
 
@@ -935,9 +905,6 @@ async function reactivarGrupo(id_grupo) {
     }
 }
 
-// ============================================
-// EVENTOS DEL DOM
-// ============================================
 document.addEventListener('DOMContentLoaded', () => {
     window.validadorTiempoReal = new ValidadorTiempoReal();
 
