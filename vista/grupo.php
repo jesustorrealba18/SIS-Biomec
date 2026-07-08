@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<link rel="icon" type="image/png" href="assets/img/logo_nadador.png">
+    <link rel="icon" type="image/png" href="assets/img/logo_nadador.png">
     <title>Grupos de Entrenamiento | SisBiomec</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -124,9 +124,6 @@
         </div>
     </main>
 
-    <!-- ============================================ -->
-    <!-- MODAL: GESTIÓN DE GRUPOS (CREAR/EDITAR) -->
-    <!-- ============================================ -->
     <div id="modalGrupo" class="fixed inset-0 bg-[#0f0d23]/95 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="tarjeta w-full max-w-2xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
@@ -177,15 +174,12 @@
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- MODAL: ASIGNACIÓN DE ATLETAS -->
-    <!-- ============================================ -->
     <div id="modalAsignacion" class="fixed inset-0 bg-[#0f0d23]/95 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="tarjeta w-full max-w-4xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
                 <div>
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                        <i class="fas fa-users text-emerald-500"></i> Asignar Atletas al Grupo
+                        <i class="fas fa-user-plus text-emerald-500"></i> Asignar Atletas al Grupo
                     </h2>
                     <p class="text-sm text-gray-400 mt-1">
                         <span id="grupo_nombre" class="text-indigo-400 font-semibold">Cargando...</span>
@@ -232,11 +226,10 @@
                     </button>
                 </div>
 
-                <!-- ATLETAS DISPONIBLES -->
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <label class="text-[11px] text-gray-500 font-bold ml-1 uppercase tracking-wider">
-                            <i class="fas fa-user-plus mr-2"></i> Atletas Disponibles
+                            <i class="fas fa-user-plus mr-2"></i> Atletas Disponibles para Asignar
                         </label>
                         <span class="text-xs text-gray-400" id="contador-atletas">0 seleccionados</span>
                     </div>
@@ -250,18 +243,11 @@
                     <div class="invalid-feedback" id="atletas-error"></div>
                 </div>
 
-                <!-- ATLETAS ASIGNADOS -->
                 <div>
-                    <label class="text-[11px] text-gray-500 font-bold ml-1 uppercase tracking-wider">
-                        <i class="fas fa-user-check mr-2"></i> Atletas Asignados Actualmente
-                    </label>
-                    <div id="atletas-asignados-container" class="border border-gray-700 rounded-xl p-3 bg-[#0f0d23] mt-2">
-                        <div id="atletas-asignados" class="scroll-atletas max-h-48 overflow-y-auto">
-                            <div class="text-center py-4 text-gray-400 text-sm">
-                                <i class="fas fa-spinner fa-spin"></i> Cargando...
-                            </div>
-                        </div>
-                    </div>
+                    <button type="button" onclick="abrirModalVerGrupoDesdeAsignacion()" 
+                            class="w-full bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 py-3 rounded-xl font-bold transition border border-indigo-500/20">
+                        <i class="fas fa-eye mr-2"></i> Ver todos los atletas asignados actualmente
+                    </button>
                 </div>
 
                 <div class="flex gap-4 pt-4 border-t border-gray-800">
@@ -271,6 +257,23 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="modalVerGrupo" class="fixed inset-0 bg-[#060512]/90 backdrop-blur-xl hidden flex items-center justify-center p-4 z-50">
+        <div class="relative bg-[#111026] border border-white/10 w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(79,70,229,0.15)] max-h-[90vh] overflow-y-auto scale-95 opacity-0 transition-all duration-200">
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-600/10 rounded-full blur-3xl"></div>
+            <button onclick="cerrarModalVerGrupo()" class="absolute top-6 right-6 text-gray-500 hover:text-white hover:rotate-90 transition-all duration-300 z-10">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <div id="detalleGrupoContenido" class="relative p-8">
+                <!-- Contenido dinámico cargado por JavaScript -->
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-3xl text-indigo-500"></i>
+                    <p class="text-gray-400 mt-3 text-sm">Cargando detalles del grupo...</p>
+                </div>
+            </div>
         </div>
     </div>
 

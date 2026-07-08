@@ -457,21 +457,30 @@ class CargaBienestar extends Conexion {
         return $this->actualizarRPE($datos, $id);
     }
 
-    /**
-     * Obtiene atletas activos para combo.
-     */
-    public function listarAtletasActivos(): array {
-        try {
-            $sql = "SELECT id_atleta, nombres, apellidos, cedula 
-                    FROM atletas 
-                    WHERE estado = 'Activo'
-                    ORDER BY apellidos, nombres";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error listarAtletasActivos: " . $e->getMessage());
-            return [];
-        }
+public function listarInconsistencias(): array {
+    try {
+        $sql = "SELECT 
+                    r.id_rpe,
+                    r.fecha,
+                    r.rpe,
+                    CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta,
+                    m.estilo,
+                    m.distancia_m,
+                    m.tiempo_final_seg AS marca_segundos
+                FROM registro_rpe r
+                INNER JOIN atletas a ON r.id_atleta = a.id_atleta
+                INNER JOIN marcas m ON m.id_atleta = r.id_atleta AND DATE(m.fecha) = r.fecha
+                WHERE r.rpe = 1 
+                  AND m.es_pb = 1
+                  AND r.deleted_at IS NULL
+                ORDER BY r.fecha DESC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en listarInconsistencias: " . $e->getMessage());
+        return [];
     }
+}
+
 }

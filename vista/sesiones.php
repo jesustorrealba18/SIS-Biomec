@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<link rel="icon" type="image/png" href="assets/img/logo_nadador.png">
+    <link rel="icon" type="image/png" href="assets/img/logo_nadador.png">
     <title>Sesiones de Entrenamiento | SGRD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -106,17 +106,30 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <div>
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Entrenador *</label>
+                        <select id="id_entrenador" name="id_entrenador" required class="w-full input-dark p-3 rounded-xl text-sm bg-[#0f0d23]">
+                            <option value="">Seleccione un Entrenador</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Grupo de Entrenamiento *</label>
-                        <select id="id_grupo" name="id_grupo" required class="w-full input-dark p-3 rounded-xl text-sm bg-[#0f0d23]"></select>
+                        <select id="id_grupo" name="id_grupo" required class="w-full input-dark p-3 rounded-xl text-sm bg-[#0f0d23]">
+                            <option value="">Seleccione un Grupo</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Microciclo Vinculado</label>
-                        <select id="id_microciclo" name="id_microciclo" class="w-full input-dark p-3 rounded-xl text-sm bg-[#0f0d23]"></select>
+                        <select id="id_microciclo" name="id_microciclo" class="w-full input-dark p-3 rounded-xl text-sm bg-[#0f0d23]">
+                            <option value="">Microciclo (Ninguno)</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Fecha Planificada *</label>
                         <input type="date" id="fecha" name="fecha" required class="w-full input-dark p-3 rounded-xl text-sm font-mono">
                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Tipo de Sesión *</label>
                         <select id="tipo_sesion" name="tipo_sesion" required class="w-full input-dark p-3 rounded-xl text-sm bg-[#0f0d23]">
@@ -129,24 +142,34 @@
                             <option value="Competencia">Competencia</option>
                         </select>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="md:col-span-1">
+                    <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Duración (Minutos)</label>
                         <input type="number" id="duracion_minutos" name="duracion_minutos" min="1" placeholder="Ej: 90" class="w-full input-dark p-3 rounded-xl text-sm font-mono">
                     </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Observaciones Generales de Planificación</label>
+                        <textarea id="observaciones" name="observaciones" rows="2" placeholder="Indicaciones logísticas o notas para el grupo..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Indicación de Calentamiento General</label>
                         <textarea id="calentamiento" name="calentamiento" rows="2" placeholder="Ej: 200m Libre..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Indicación de Vuelta a la Calma General</label>
-                        <textarea id="vuelta_calma" name="vuelta_calma" rows="2" placeholder="Ej: 100m Afloje..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                        <textarea id="vuelta_calma" name="vuelta_calma" rows="2" placeholder="Ej: 100m" class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
+                    </div>
+                    <div class="bg-indigo-600/10 p-3 rounded-xl border border-indigo-500/30 flex items-center justify-center">
+                        <div class="text-center">
+                            <p class="text-[10px] text-indigo-400 uppercase font-bold">Volumen Total</p>
+                            <p id="lblVolTotalPlanificado" class="text-2xl font-bold text-white font-mono">0m</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-center">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 text-center">
                     <div class="bg-black/20 p-2 rounded-xl border border-[#252345]">
                         <p class="text-[10px] text-gray-500 uppercase font-bold">Calentamiento</p>
                         <p id="lblVolCalentamiento" class="text-sm font-bold text-gray-300 font-mono">0m</p>
@@ -158,10 +181,6 @@
                     <div class="bg-black/20 p-2 rounded-xl border border-[#252345]">
                         <p class="text-[10px] text-gray-500 uppercase font-bold">Vuelta a la Calma</p>
                         <p id="lblVolVueltaCalma" class="text-sm font-bold text-emerald-400 font-mono">0m</p>
-                    </div>
-                    <div class="bg-indigo-600/10 p-2 rounded-xl border border-indigo-500/30">
-                        <p class="text-[10px] text-indigo-400 uppercase font-bold">Volumen Total</p>
-                        <p id="lblVolTotalPlanificado" class="text-base font-bold text-white font-mono">0m</p>
                     </div>
                 </div>
 
@@ -189,11 +208,7 @@
                     <table class="w-full"><tbody id="tbodySeries" class="space-y-2"></tbody></table>
                 </div>
 
-                <div class="mt-4">
-                    <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Observaciones Generales de Planificación</label>
-                    <textarea id="observaciones" name="observaciones" rows="2" placeholder="Indicaciones logísticas o notas para el grupo..." class="w-full input-dark p-3 rounded-xl text-sm"></textarea>
-                </div>
-
+                <!-- BOTONES -->
                 <div class="flex gap-3 mt-6">
                     <button type="button" onclick="cerrarModalSesion()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-3.5 rounded-xl font-bold transition cursor-pointer uppercase text-xs tracking-wider">CANCELAR</button>
                     <button type="submit" class="flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 cursor-pointer uppercase text-xs tracking-wider">
@@ -265,9 +280,9 @@
             gestionar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sesiones', 'ver') ? 'true' : 'false'; ?>,
         };
     </script>
-  <script>
-    const API_URL = '?p=sesiones';
-</script>
-<script src="assets/js/sesion.js"></script>
+    <script>
+        const API_URL = '?p=sesiones';
+    </script>
+    <script src="assets/js/sesion.js"></script>
 </body>
 </html>

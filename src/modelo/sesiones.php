@@ -19,7 +19,196 @@ class Sesiones extends Conexion {
         $this->datos = $datos;
     }
 
+    public function validarDatos(array $datos, $excluirId = null): array {
+        $this->resetearErrores();
+
+        $id_entrenador = $datos['id_entrenador'] ?? '';
+        $this->requerido($id_entrenador, 'id_entrenador');
+        if (!empty($id_entrenador)) {
+            $this->soloNumeros($id_entrenador, 'id_entrenador');
+        }
+
+        $id_grupo = $datos['id_grupo'] ?? '';
+        $this->requerido($id_grupo, 'id_grupo');
+        if (!empty($id_grupo)) {
+            $this->soloNumeros($id_grupo, 'id_grupo');
+            if ((int)$id_grupo <= 0) {
+                $this->agregarError('id_grupo', 'El ID del grupo debe ser un número válido mayor a 0.');
+            }
+        }
+
+        if (!empty($datos['id_microciclo'])) {
+            $this->soloNumeros($datos['id_microciclo'], 'id_microciclo');
+            if ((int)$datos['id_microciclo'] <= 0) {
+                $this->agregarError('id_microciclo', 'El ID del microciclo debe ser un número válido mayor a 0.');
+            }
+        }
+
+        $fecha = $datos['fecha'] ?? '';
+        $this->requerido($fecha, 'fecha');
+        if (!empty($fecha)) {
+            $this->fechaValida($fecha, 'fecha');
     
+            if ($excluirId === null && $fecha < date('Y-m-d')) {
+                $this->agregarError('fecha', 'No se permite planificar sesiones para fechas pasadas.');
+            }
+        }
+
+        $tipo_sesion = $datos['tipo_sesion'] ?? '';
+        $this->requerido($tipo_sesion, 'tipo_sesion');
+        if (!empty($tipo_sesion)) {
+            $this->enEnum($tipo_sesion, 'tipo_sesion', [
+                'Tecnica', 'Resistencia', 'Velocidad', 'Recuperacion', 
+                'Fuerza', 'Flexibilidad', 'Competencia'
+            ]);
+        }
+
+        $duracion = $datos['duracion_minutos'] ?? '';
+        $this->requerido($duracion, 'duracion_minutos');
+        if (!empty($duracion)) {
+            $this->soloNumeros($duracion, 'duracion_minutos');
+            if ((int)$duracion < 15) {
+                $this->agregarError('duracion_minutos', 'La duración mínima de la sesión debe ser de 15 minutos.');
+            }
+            if ((int)$duracion > 480) {
+                $this->agregarError('duracion_minutos', 'La duración máxima de la sesión es de 480 minutos (8 horas).');
+            }
+        }
+
+        $calentamiento = $datos['calentamiento'] ?? '';
+        $this->longitud($calentamiento, 'calentamiento', 0, 100);
+        if (!empty($calentamiento) && !preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s.,;:()\-_\n]+$/', $calentamiento)) {
+            $this->agregarError('calentamiento', 'El calentamiento contiene caracteres no permitidos.');
+        }
+
+        $vuelta_calma = $datos['vuelta_calma'] ?? '';
+        $this->longitud($vuelta_calma, 'vuelta_calma', 0, 100);
+        if (!empty($vuelta_calma) && !preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s.,;:()\-_\n]+$/', $vuelta_calma)) {
+            $this->agregarError('vuelta_calma', 'La vuelta a la calma contiene caracteres no permitidos.');
+        }
+
+        $observaciones = $datos['observaciones'] ?? '';
+        $this->longitud($observaciones, 'observaciones', 0, 500);
+        if (!empty($observaciones) && !preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s.,;:()\-_\n]+$/', $observaciones)) {
+            $this->agregarError('observaciones', 'Las observaciones contienen caracteres no permitidos.');
+        }
+
+        if (!empty($datos['id_fase_actual'])) {
+            $this->soloNumeros($datos['id_fase_actual'], 'id_fase_actual');
+        }
+
+        return $this->obtenerErrores();
+    }
+
+    public function validarDatosSerie(array $datos): array {
+        $this->resetearErrores();
+
+        $bloque = $datos['bloque'] ?? '';
+        $this->requerido($bloque, 'bloque');
+        if (!empty($bloque)) {
+            $this->enEnum($bloque, 'bloque', ['Calentamiento', 'Principal', 'VuletaCalma']);
+        }
+
+        $id_drill = $datos['id_drill'] ?? '';
+        $ejercicio_descripcion = $datos['ejercicio_descripcion'] ?? '';
+        
+        if (empty($id_drill) && empty($ejercicio_descripcion)) {
+            $this->agregarError('ejercicio_descripcion', 'Debe seleccionar un drill o describir el ejercicio.');
+        }
+        
+        if (!empty($id_drill)) {
+            $this->soloNumeros($id_drill, 'id_drill');
+        }
+        
+        if (!empty($ejercicio_descripcion)) {
+            $this->longitud($ejercicio_descripcion, 'ejercicio_descripcion', 3, 500);
+            if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s.,;:()\-_\n]+$/', $ejercicio_descripcion)) {
+                $this->agregarError('ejercicio_descripcion', 'La descripción contiene caracteres no permitidos.');
+            }
+        }
+
+        $repeticiones = $datos['repeticiones'] ?? '';
+        $this->requerido($repeticiones, 'repeticiones');
+        if (!empty($repeticiones)) {
+            $this->soloNumeros($repeticiones, 'repeticiones');
+            if ((int)$repeticiones < 1) {
+                $this->agregarError('repeticiones', 'Las repeticiones mínimas deben ser 1.');
+            }
+            if ((int)$repeticiones > 100) {
+                $this->agregarError('repeticiones', 'Las repeticiones máximas son 100.');
+            }
+        }
+
+        $distancia = $datos['distancia_m'] ?? '';
+        $this->requerido($distancia, 'distancia_m');
+        if (!empty($distancia)) {
+            $this->soloNumeros($distancia, 'distancia_m');
+            if ((int)$distancia < 25) {
+                $this->agregarError('distancia_m', 'La distancia mínima por repetición es de 25 metros.');
+            }
+            if ((int)$distancia > 10000) {
+                $this->agregarError('distancia_m', 'La distancia máxima por repetición es de 10000 metros.');
+            }
+        }
+
+        $descanso = $datos['descanso_seg'] ?? '';
+        $this->requerido($descanso, 'descanso_seg');
+        if (!empty($descanso)) {
+            $this->soloNumeros($descanso, 'descanso_seg');
+            if ((int)$descanso < 0) {
+                $this->agregarError('descanso_seg', 'El descanso no puede ser menor a 0 segundos.');
+            }
+            if ((int)$descanso > 600) {
+                $this->agregarError('descanso_seg', 'El descanso máximo es de 600 segundos (10 minutos).');
+            }
+        }
+
+        $zona = $datos['zona_intensidad'] ?? '';
+        $this->requerido($zona, 'zona_intensidad');
+        if (!empty($zona)) {
+            $this->enEnum($zona, 'zona_intensidad', ['Z1', 'Z2', 'Z3', 'Z4', 'Z5']);
+        }
+
+        if (!empty($datos['ritmo_objetivo'])) {
+            $ritmo = $datos['ritmo_objetivo'];
+            if (strlen($ritmo) > 20) {
+                $this->agregarError('ritmo_objetivo', 'El ritmo objetivo no puede exceder los 20 caracteres.');
+            }
+        }
+
+        if (!empty($datos['orden_ejecucion'])) {
+            $this->soloNumeros($datos['orden_ejecucion'], 'orden_ejecucion');
+        }
+
+        return $this->obtenerErrores();
+    }
+
+    public function validarCierreSesion(array $datos, int $volumenPlanificado): array {
+        $this->resetearErrores();
+
+        $volumen_ejecutado = $datos['volumen_ejecutado'] ?? '';
+        $this->requerido($volumen_ejecutado, 'volumen_ejecutado');
+        if (!empty($volumen_ejecutado)) {
+            $this->soloNumeros($volumen_ejecutado, 'volumen_ejecutado');
+            if ((int)$volumen_ejecutado < 0) {
+                $this->agregarError('volumen_ejecutado', 'El volumen ejecutado no puede ser negativo.');
+            }
+            if ((int)$volumen_ejecutado > $volumenPlanificado) {
+                $this->agregarError('volumen_ejecutado', 'El volumen ejecutado no puede superar al volumen planificado (' . $volumenPlanificado . 'm).');
+            }
+        }
+
+        if (!empty($datos['observaciones'])) {
+            $observaciones = $datos['observaciones'];
+            $this->longitud($observaciones, 'observaciones', 0, 5000);
+            if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s.,;:()\-_\n]+$/', $observaciones)) {
+                $this->agregarError('observaciones', 'Las observaciones contienen caracteres no permitidos.');
+            }
+        }
+
+        return $this->obtenerErrores();
+    }
+
     public function registrarSesion(array $datosSesion, array $series): bool {
         return $this->registrarSesionP($datosSesion, $series);
     }
@@ -46,7 +235,6 @@ class Sesiones extends Conexion {
                 ':id_sesion'        => (int)$datosCierre['id_sesion']
             ]);
         } catch (PDOException $e) {
-            error_log("Error al completar sesión: " . $e->getMessage());
             return false;
         }
     }
@@ -58,7 +246,6 @@ class Sesiones extends Conexion {
             $stmt = $conex->prepare($sql);
             return $stmt->execute([':id_sesion' => $id_sesion]);
         } catch (PDOException $e) {
-            error_log("Error al cancelar sesión: " . $e->getMessage());
             return false;
         }
     }
@@ -87,20 +274,19 @@ class Sesiones extends Conexion {
 
             return $sesion;
         } catch (PDOException $e) {
-            error_log("Error al recuperar detalle: " . $e->getMessage());
             return null;
         }
     }
 
-    public function listarSesionesPorEntrenador(int $id_entrenador, ?int $id_grupo = null, ?string $estado = null): array {
+    public function listarSesiones(?int $id_grupo = null, ?string $estado = null): array {
         $conex = $this->pdo;
         try {
             $sql = "SELECT s.*, g.nombre as grupo_nombre
                     FROM sesiones s
                     INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
-                    WHERE s.id_entrenador = :id_entrenador";
+                    WHERE 1=1";
             
-            $params = [':id_entrenador' => $id_entrenador];
+            $params = [];
             
             if ($id_grupo) {
                 $sql .= " AND s.id_grupo = :id_grupo";
@@ -118,7 +304,6 @@ class Sesiones extends Conexion {
             $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Error listando sesiones: " . $e->getMessage());
             return [];
         }
     }
@@ -135,7 +320,6 @@ class Sesiones extends Conexion {
             $stmt->execute([':id_sesion' => $id_sesion]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Error obteniendo series: " . $e->getMessage());
             return [];
         }
     }
@@ -147,12 +331,11 @@ class Sesiones extends Conexion {
             $stmt = $conex->query($sql);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Error listando microciclos: " . $e->getMessage());
             return [];
         }
     }
 
-    //Listar sesiones para el módulo de Marcas (NO MODIFICAR)
+     //Listar sesiones para el módulo de Marcas (NO MODIFICAR)
     
     public function listarSesionesSelectMarca(): array {
         try {
@@ -167,82 +350,15 @@ class Sesiones extends Conexion {
             return [];
         }
     }
-    
+
     public function validarDatosSesion(array $datos): array {
-        $this->resetearErrores();
-
-        $this->requerido($datos['id_grupo'] ?? '', 'id_grupo');
-        $this->soloNumeros($datos['id_grupo'] ?? '', 'id_grupo');
-
-        if (!empty($datos['id_microciclo'])) {
-            $this->soloNumeros($datos['id_microciclo'], 'id_microciclo');
-        }
-
-        $this->requerido($datos['fecha'] ?? '', 'fecha');
-        $this->fechaValida($datos['fecha'] ?? '', 'fecha');
-        if (!empty($datos['fecha']) && $datos['fecha'] < date('Y-m-d')) {
-            $this->agregarError('fecha', 'No se permite planificar sesiones para fechas pasadas.');
-        }
-
-        $this->requerido($datos['tipo_sesion'] ?? '', 'tipo_sesion');
-        $this->enEnum($datos['tipo_sesion'] ?? '', 'tipo_sesion', [
-            'Tecnica', 'Resistencia', 'Velocidad', 'Recuperacion', 'Fuerza', 'Flexibilidad', 'Competencia'
-        ]);
-        
-        if (!empty($datos['id_fase_actual'])) {
-            $this->soloNumeros($datos['id_fase_actual'], 'id_fase_actual');
-        }
-        
-        $this->longitud($datos['calentamiento'] ?? '', 'calentamiento', 0, 5);
-        $this->longitud($datos['vuelta_calma'] ?? '', 'vuelta_calma', 0, 5);
-        $this->longitud($datos['observaciones'] ?? '', 'observaciones', 0, 5000);
-
-        return $this->obtenerErrores();
-    }
-
-    public function validarDatosSerie(array $datos): array {
-        $this->resetearErrores();
-
-        $this->requerido($datos['bloque'] ?? '', 'bloque');
-        $this->enEnum($datos['bloque'] ?? '', 'bloque', ['Calentamiento', 'Principal', 'VuletaCalma']);
-
-        if (empty($datos['id_drill'])) {
-            $this->requerido($datos['ejercicio_descripcion'] ?? '', 'ejercicio_descripcion');
-        }
-
-        $this->requerido($datos['repeticiones'] ?? '', 'repeticiones');
-        $this->soloNumeros($datos['repeticiones'] ?? '', 'repeticiones');
-        if (isset($datos['repeticiones']) && (int)$datos['repeticiones'] < 1) {
-            $this->agregarError('repeticiones', 'Las repeticiones mínimas deben ser 1.');
-        }
-
-        $this->requerido($datos['distancia_m'] ?? '', 'distancia_m');
-        $this->soloNumeros($datos['distancia_m'] ?? '', 'distancia_m');
-        if (isset($datos['distancia_m']) && (int)$datos['distancia_m'] < 25) {
-            $this->agregarError('distancia_m', 'La distancia mínima por repetición es de 25 metros.');
-        }
-
-        $this->requerido($datos['descanso_seg'] ?? '', 'descanso_seg');
-        $this->soloNumeros($datos['descanso_seg'] ?? '', 'descanso_seg');
-        if (isset($datos['descanso_seg']) && (int)$datos['descanso_seg'] < 0) {
-            $this->agregarError('descanso_seg', 'El descanso no puede ser menor a 0 segundos.');
-        }
-
-        $this->requerido($datos['zona_intensidad'] ?? '', 'zona_intensidad');
-        $this->enEnum($datos['zona_intensidad'] ?? '', 'zona_intensidad', ['Z1', 'Z2', 'Z3', 'Z4', 'Z5']);
-
-        return $this->obtenerErrores();
+        return $this->validarDatos($datos);
     }
 
     private function registrarSesionP(array $datosSesion, array $series): bool {
-        error_log("=== INICIO registrarSesion EN MODELO ===");
-        error_log("datosSesion: " . print_r($datosSesion, true));
-        error_log("series: " . print_r($series, true));
-        
         $conex = $this->pdo;
         try {
             $conex->beginTransaction();
-            error_log("Transacción iniciada");
 
             $volumen_calentamiento = 0;
             $volumen_principal = 0;
@@ -251,7 +367,6 @@ class Sesiones extends Conexion {
             foreach ($series as &$serie) {
                 $volumen_serie = (int)$serie['repeticiones'] * (int)$serie['distancia_m'];
                 $serie['volumen_calculado'] = $volumen_serie;
-                error_log("Serie: bloque={$serie['bloque']}, rep={$serie['repeticiones']}, dist={$serie['distancia_m']}, vol={$volumen_serie}");
 
                 if ($serie['bloque'] === 'Calentamiento') {
                     $volumen_calentamiento += $volumen_serie;
@@ -263,8 +378,6 @@ class Sesiones extends Conexion {
             }
 
             $volumen_planificado = $volumen_calentamiento + $volumen_principal + $volumen_vuelta_calma;
-            error_log("Volumenes: Cal=$volumen_calentamiento, Prin=$volumen_principal, Vuelta=$volumen_vuelta_calma, Total=$volumen_planificado");
-
             $id_fase_actual = $datosSesion['id_fase_actual'] ?? null;
 
             $sql = "INSERT INTO sesiones (
@@ -277,8 +390,6 @@ class Sesiones extends Conexion {
                         :volumen_planificado, :observaciones, 'Planificada', :id_entrenador, :duracion_minutos
                     )";
 
-            error_log("SQL: " . $sql);
-            
             $stmt = $conex->prepare($sql);
             
             $params = [
@@ -295,16 +406,11 @@ class Sesiones extends Conexion {
                 ':duracion_minutos'   => $datosSesion['duracion_minutos'] ?? null
             ];
             
-            error_log("Parámetros: " . print_r($params, true));
-            
             if (!$stmt->execute($params)) {
-                $errorInfo = $stmt->errorInfo();
-                error_log("ERROR SQL INSERT: " . print_r($errorInfo, true));
-                throw new PDOException("Error en INSERT: " . $errorInfo[2]);
+                throw new PDOException("Error en INSERT");
             }
 
             $id_sesion = (int)$conex->lastInsertId();
-            error_log("ID SESION INSERTADA: " . $id_sesion);
 
             $sqlSerie = "INSERT INTO series_sesion (
                             id_sesion, orden_ejecucion, bloque, id_drill, 
@@ -332,21 +438,14 @@ class Sesiones extends Conexion {
                     ':zona'         => $s['zona_intensidad'],
                     ':ritmo'        => $s['ritmo_objetivo'] ?? null
                 ];
-                error_log("Insertando serie: " . print_r($paramsSerie, true));
                 $stmtSerie->execute($paramsSerie);
             }
 
             $conex->commit();
-            error_log("=== TRANSACCIÓN EXITOSA ===");
             return true;
             
         } catch (PDOException $e) {
             $conex->rollBack();
-            error_log("=== EXCEPCION PDO EN MODELO ===");
-            error_log("Mensaje: " . $e->getMessage());
-            error_log("Código: " . $e->getCode());
-            error_log("Archivo: " . $e->getFile());
-            error_log("Línea: " . $e->getLine());
             return false;
         }
     }
@@ -386,6 +485,7 @@ class Sesiones extends Conexion {
                         vuelta_calma = :vuelta_calma, 
                         volumen_planificado = :volumen_planificado, 
                         observaciones = :observaciones,
+                        id_entrenador = :id_entrenador,
                         duracion_minutos = :duracion_minutos,
                         fecha_modificacion = NOW()
                     WHERE id_sesion = :id_sesion";
@@ -401,6 +501,7 @@ class Sesiones extends Conexion {
                 ':vuelta_calma'       => $datosSesion['vuelta_calma'] ?? null,
                 ':volumen_planificado'=> $volumen_planificado,
                 ':observaciones'      => $datosSesion['observaciones'] ?? null,
+                ':id_entrenador'      => (int)$datosSesion['id_entrenador'],
                 ':duracion_minutos'   => $datosSesion['duracion_minutos'] ?? null,
                 ':id_sesion'          => $id_sesion
             ]);
@@ -440,7 +541,6 @@ class Sesiones extends Conexion {
             return true;
         } catch (PDOException $e) {
             $conex->rollBack();
-            error_log("Error al editar sesión: " . $e->getMessage());
             return false;
         }
     }

@@ -7,6 +7,7 @@ const formCompletarSesion = document.getElementById('formCompletar');
 let gruposCache = [];       
 let microciclosCache = [];   
 let drillsCache = [];        
+let entrenadoresCache = [];  
 let sesionEditando = false;
 
 const coloresEstado = {
@@ -18,6 +19,7 @@ const coloresEstado = {
 
 function setupValidacionTiempoRealSesion() {
     const campos = [
+        { id: 'id_entrenador', reglas: 'requerido', nombre: 'Entrenador' },
         { id: 'fecha', reglas: 'requerido|fecha', nombre: 'Fecha' },
         { id: 'id_grupo', reglas: 'requerido', nombre: 'Grupo' },
         { id: 'tipo_sesion', reglas: 'requerido', nombre: 'Tipo de sesión' },
@@ -150,6 +152,7 @@ function activarValidacionesEnModal() {
 
 function validarFormularioSesionCompleto(form) {
     const camposRequeridos = [
+        { id: 'id_entrenador', reglas: 'requerido', nombre: 'Entrenador' },
         { id: 'id_grupo', reglas: 'requerido', nombre: 'Grupo' },
         { id: 'fecha', reglas: 'requerido', nombre: 'Fecha' },
         { id: 'tipo_sesion', reglas: 'requerido', nombre: 'Tipo de sesión' },
@@ -204,7 +207,6 @@ async function peticionAjax(accion, datos = null) {
         
         return await respuesta.json();
     } catch (error) {
-        console.error("Error:", error);
         Swal.fire('Error', 'Error de comunicación con el servidor', 'error');
         return null;
     }
@@ -301,6 +303,7 @@ function abrirModalSesion(id_sesion = null) {
             }
             
             document.getElementById('id_sesion').value = det.id_sesion;
+            document.getElementById('id_entrenador').value = det.id_entrenador || '';
             document.getElementById('id_grupo').value = det.id_grupo || '';
             document.getElementById('id_microciclo').value = det.id_microciclo || '';
             document.getElementById('fecha').value = det.fecha || '';
@@ -421,7 +424,6 @@ async function verDetalleSesion(id_sesion) {
         }
 
     } catch (error) {
-        console.error('Error:', error);
         Swal.fire('Error', 'Error al cargar los detalles', 'error');
     }
 }
@@ -796,10 +798,11 @@ async function cancelarSesion(id_sesion) {
 
 async function cargarRecursosIniciales() {
     try {
-        const [grupos, microciclos, drills] = await Promise.all([
-            peticionAjax('listarGruposEntrenador'),
+        const [grupos, microciclos, drills, entrenadores] = await Promise.all([
+            peticionAjax('listarGrupos'),
             peticionAjax('listarMicrociclos'),
-            peticionAjax('listarDrillsActivos')
+            peticionAjax('listarDrillsActivos'),
+            peticionAjax('listarEntrenadores')
         ]);
 
         if (grupos) {
@@ -826,8 +829,31 @@ async function cargarRecursosIniciales() {
         if (drills) {
             drillsCache = drills;
         }
+        if (entrenadores && entrenadores.length > 0) {
+            entrenadoresCache = entrenadores;
+            const selectEntrenador = document.getElementById('id_entrenador');
+            if (selectEntrenador) {
+                let opciones = '<option value="">Seleccione un Entrenador</option>';
+                
+                entrenadores.forEach(e => {
+                    let nombreCompleto = '';
+                    if (e.nombres && e.apellidos) {
+                        nombreCompleto = e.nombres + ' ' + e.apellidos;
+                    } else if (e.nombres) {
+                        nombreCompleto = e.nombres;
+                    } else if (e.nombre_completo) {
+                        nombreCompleto = e.nombre_completo;
+                    } else {
+                        nombreCompleto = 'Entrenador ID: ' + e.id_entrenador;
+                    }
+                    
+                    opciones += `<option value="${e.id_entrenador}">${nombreCompleto}</option>`;
+                });
+                
+                selectEntrenador.innerHTML = opciones;
+            }
+        }
     } catch (error) {
-        console.error('Error cargando recursos:', error);
     }
 }
 
