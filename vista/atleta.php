@@ -132,19 +132,30 @@ if (isset($_SESSION['id'])) {
                     </div>
                 </div>
 
-                <div class="tarjeta overflow-hidden shadow-2xl">
-                    <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-white/5">
+                <div class="tarjeta overflow-hidden shadow-2xl" id="contenedorTabla">
+                    <div class="p-6 border-b border-gray-800 flex flex-wrap justify-between items-center gap-4 bg-white/5">
                         <h3 class="text-white font-semibold">Listado General</h3>
+                        <span id="infoTabla" class="text-xs text-gray-500"></span>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left tabla-responsive">
                             <thead class="bg-[#1c1a3a] text-gray-400 text-xs uppercase tracking-widest">
                                 <tr>
-                                    <th class="p-4">Atleta</th>
-                                    <th class="p-4">Cédula</th>
-                                    <th class="p-4">Categoría</th>
-                                    <th class="p-4">FEVEDA</th>
-                                    <th class="p-4">Estado</th>
+                                    <th class="p-4 cursor-pointer select-none hover:text-indigo-300 transition-colors" data-sort="nombre">
+                                        Atleta <i class="fas fa-sort ml-1 text-gray-600 text-[10px]"></i>
+                                    </th>
+                                    <th class="p-4 cursor-pointer select-none hover:text-indigo-300 transition-colors" data-sort="cedula">
+                                        Cédula <i class="fas fa-sort ml-1 text-gray-600 text-[10px]"></i>
+                                    </th>
+                                    <th class="p-4 cursor-pointer select-none hover:text-indigo-300 transition-colors" data-sort="categoria">
+                                        Categoría <i class="fas fa-sort ml-1 text-gray-600 text-[10px]"></i>
+                                    </th>
+                                    <th class="p-4 cursor-pointer select-none hover:text-indigo-300 transition-colors" data-sort="feveda">
+                                        FEVEDA <i class="fas fa-sort ml-1 text-gray-600 text-[10px]"></i>
+                                    </th>
+                                    <th class="p-4 cursor-pointer select-none hover:text-indigo-300 transition-colors" data-sort="estado">
+                                        Estado <i class="fas fa-sort ml-1 text-gray-600 text-[10px]"></i>
+                                    </th>
                                     <th class="p-4 text-right">Acciones</th>
                                 </tr>
                             </thead>
@@ -158,6 +169,7 @@ if (isset($_SESSION['id'])) {
                             </tbody>
                         </table>
                     </div>
+                    <div id="pieTabla" class="p-4 border-t border-gray-800 flex flex-wrap justify-between items-center gap-4 bg-white/5"></div>
                 </div>
             </main>
         </div>

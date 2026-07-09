@@ -10,8 +10,16 @@ const detalleContenido = document.getElementById('detalleContenido');
 const inputFoto = document.getElementById('foto');
 const fotoPreview = document.getElementById('fotoPreview');
 const totalAtletas = document.getElementById('totalAtletas');
+const infoTabla = document.getElementById('infoTabla');
+const pieTabla = document.getElementById('pieTabla');
 
 let categoriasCache = [];
+let atletasData = [];
+let tablaFiltro = '';
+let tablaSortCol = '';
+let tablaSortDir = '';
+let tablaPagina = 1;
+const tablaPorPagina = 10;
 
 async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
@@ -38,7 +46,10 @@ async function cargarTabla() {
     const atletas = await peticionAjax('listar');
 
     if (!atletas || atletas.length === 0) {
+        atletasData = [];
         totalAtletas.textContent = '0 Registrados';
+        if (infoTabla) infoTabla.textContent = '';
+        if (pieTabla) pieTabla.innerHTML = '';
         tbodyLista.innerHTML = `
             <tr>
                 <td colspan="6" class="text-center p-12 text-gray-500">
@@ -49,64 +60,177 @@ async function cargarTabla() {
         return;
     }
 
-    totalAtletas.textContent = `${atletas.length} Registrados`;
+    atletasData = atletas;
+    tablaFiltro = '';
+    tablaSortCol = '';
+    tablaSortDir = '';
+    tablaPagina = 1;
+    renderTabla();
+}
 
-    tbodyLista.innerHTML = atletas.map(a => `
-        <tr class="atleta-row hover:bg-white/5 transition-colors group" data-busqueda="${a.nombres} ${a.apellidos} ${a.cedula}">
-            <td class="p-4 flex items-center gap-3">
-                ${a.foto
-                    ? `<img src="${a.foto}" class="w-10 h-10 rounded-full object-cover border-2 border-indigo-500/30">`
-                    : `<div class="bg-indigo-500/10 p-2.5 rounded-full text-indigo-400"><i class="fas fa-user"></i></div>`
-                }
-                <div>
-                    <p class="text-white font-medium">${a.nombres} ${a.apellidos}</p>
-                    <p class="text-xs text-gray-500">${a.edad} años · ${a.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
-                </div>
-            </td>
-            <td class="p-4 font-mono text-gray-300">${a.cedula}</td>
-            <td class="p-4">
-                ${a.categoria_nombre
-                    ? `<span class="text-xs bg-indigo-500/10 text-indigo-300 px-2 py-1 rounded-lg">${a.categoria_nombre}</span>`
-                    : `<span class="text-gray-600">S/C</span>`
-                }
-            </td>
-            <td class="p-4 font-mono text-indigo-300">${a.numero_feveda ? a.numero_feveda : '—'}</td>
-            <td class="p-4">
-                <span class="estado-badge estado-${a.estado}">${a.estado}</span>
-            </td>
-            ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.editar ? `
-            <td class="p-4 text-right">
-                <div class="flex justify-end gap-2">
+function renderTabla() {
+    if (!tbodyLista) return;
+
+    let datos = atletasData.slice();
+
+    if (tablaFiltro) {
+        const q = tablaFiltro;
+        datos = datos.filter(a =>
+            (a.nombres + ' ' + a.apellidos + ' ' + a.cedula).toLowerCase().includes(q)
+        );
+    }
+
+    if (tablaSortCol) {
+        const col = tablaSortCol;
+        const dir = tablaSortDir === 'asc' ? 1 : -1;
+        datos.sort((a, b) => {
+            let va = '', vb = '';
+            if (col === 'nombre') { va = (a.nombres || '') + ' ' + (a.apellidos || ''); vb = (b.nombres || '') + ' ' + (b.apellidos || ''); }
+            else if (col === 'cedula') { va = a.cedula || ''; vb = b.cedula || ''; }
+            else if (col === 'categoria') { va = a.categoria_nombre || ''; vb = b.categoria_nombre || ''; }
+            else if (col === 'feveda') { va = a.numero_feveda || ''; vb = b.numero_feveda || ''; }
+            else if (col === 'estado') { va = a.estado || ''; vb = b.estado || ''; }
+            return va.localeCompare(vb, 'es') * dir;
+        });
+    }
+
+    const total = datos.length;
+    totalAtletas.textContent = `${atletasData.length} Registrados`;
+    if (infoTabla) infoTabla.textContent = `Mostrando ${total === 0 ? 0 : (tablaPagina - 1) * tablaPorPagina + 1}–${Math.min(tablaPagina * tablaPorPagina, total)} de ${total}`;
+
+    const totalPaginas = Math.max(1, Math.ceil(total / tablaPorPagina));
+    if (tablaPagina > totalPaginas) tablaPagina = totalPaginas;
+    const inicio = (tablaPagina - 1) * tablaPorPagina;
+    const pagina = datos.slice(inicio, inicio + tablaPorPagina);
+
+    actualizarSortIcons();
+
+    if (pagina.length === 0 && total > 0) {
+        tbodyLista.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500"><span class="text-xs uppercase tracking-wider">Sin resultados para la búsqueda</span></td></tr>`;
+    } else if (pagina.length === 0) {
+        tbodyLista.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center p-12 text-gray-500">
+                    <i class="fas fa-swimmer text-4xl mb-3 block text-gray-600 animate-pulse"></i>
+                    <span class="text-xs uppercase tracking-wider block">No hay atletas registrados en el sistema</span>
+                </td>
+            </tr>`;
+    } else {
+        tbodyLista.innerHTML = pagina.map(a => `
+            <tr class="atleta-row hover:bg-white/5 transition-colors group" data-busqueda="${a.nombres} ${a.apellidos} ${a.cedula}">
+                <td class="p-4 flex items-center gap-3">
+                    ${a.foto
+                        ? `<img src="${a.foto}" class="w-10 h-10 rounded-full object-cover border-2 border-indigo-500/30">`
+                        : `<div class="bg-indigo-500/10 p-2.5 rounded-full text-indigo-400"><i class="fas fa-user"></i></div>`
+                    }
+                    <div>
+                        <p class="text-white font-medium">${a.nombres} ${a.apellidos}</p>
+                        <p class="text-xs text-gray-500">${a.edad} años · ${a.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
+                    </div>
+                </td>
+                <td class="p-4 font-mono text-gray-300">${a.cedula}</td>
+                <td class="p-4">
+                    ${a.categoria_nombre
+                        ? `<span class="text-xs bg-indigo-500/10 text-indigo-300 px-2 py-1 rounded-lg">${a.categoria_nombre}</span>`
+                        : `<span class="text-gray-600">S/C</span>`
+                    }
+                </td>
+                <td class="p-4 font-mono text-indigo-300">${a.numero_feveda ? a.numero_feveda : '—'}</td>
+                <td class="p-4">
+                    <span class="estado-badge estado-${a.estado}">${a.estado}</span>
+                </td>
+                ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.editar ? `
+                <td class="p-4 text-right">
+                    <div class="flex justify-end gap-2">
+                        <button onclick='verDetalle(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all" title="Ver Perfil">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick='abrirModal(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="confirmarEliminar(${a.id_atleta})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all" title="Desactivar">
+                            <i class="fas fa-user-slash"></i>
+                        </button>
+                    </div>
+                </td>
+                ` : `
+                <td class="p-4 text-right">
                     <button onclick='verDetalle(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all" title="Ver Perfil">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button onclick='abrirModal(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button onclick="confirmarEliminar(${a.id_atleta})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all" title="Desactivar">
-                        <i class="fas fa-user-slash"></i>
-                    </button>
-                </div>
-            </td>
-            ` : `
-            <td class="p-4 text-right">
-                <button onclick='verDetalle(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all" title="Ver Perfil">
-                    <i class="fas fa-eye"></i>
-                </button>
-            </td>
-            `}
-        </tr>
-    `).join('');
+                </td>
+                `}
+            </tr>
+        `).join('');
+    }
+
+    renderPaginacion(totalPaginas);
 }
+
+function renderPaginacion(totalPaginas) {
+    if (!pieTabla || totalPaginas <= 1) { if (pieTabla) pieTabla.innerHTML = ''; return; }
+
+    let html = `<span class="text-xs text-gray-500">Página ${tablaPagina} de ${totalPaginas}</span><div class="flex gap-1">`;
+
+    const btnClass = 'px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition';
+    const btnActivo = 'bg-indigo-600 text-white';
+    const btnInactivo = 'bg-gray-800 text-gray-400 hover:bg-gray-700';
+
+    if (tablaPagina > 1) {
+        html += `<button onclick="tablaPagina--; renderTabla()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-left"></i></button>`;
+    }
+
+    const maxVisible = 5;
+    let start = Math.max(1, tablaPagina - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPaginas, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+    for (let i = start; i <= end; i++) {
+        if (i === tablaPagina) {
+            html += `<button class="${btnClass} ${btnActivo}">${i}</button>`;
+        } else {
+            html += `<button onclick="tablaPagina=${i}; renderTabla()" class="${btnClass} ${btnInactivo}">${i}</button>`;
+        }
+    }
+
+    if (tablaPagina < totalPaginas) {
+        html += `<button onclick="tablaPagina++; renderTabla()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-right"></i></button>`;
+    }
+
+    html += '</div>';
+    pieTabla.innerHTML = html;
+}
+
+function actualizarSortIcons() {
+    document.querySelectorAll('[data-sort]').forEach(th => {
+        const icon = th.querySelector('i');
+        if (!icon) return;
+        icon.className = 'fas fa-sort ml-1 text-gray-600 text-[10px]';
+        if (th.getAttribute('data-sort') === tablaSortCol) {
+            icon.className = `fas fa-sort-${tablaSortDir === 'asc' ? 'up' : 'down'} ml-1 text-indigo-400 text-[10px]`;
+        }
+    });
+}
+
+document.querySelectorAll('[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+        const col = th.getAttribute('data-sort');
+        if (tablaSortCol === col) {
+            tablaSortDir = tablaSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            tablaSortCol = col;
+            tablaSortDir = 'asc';
+        }
+        tablaPagina = 1;
+        renderTabla();
+    });
+});
 
 if (inputBusqueda) {
     inputBusqueda.addEventListener('input', function (e) {
-        const valor = e.target.value.toLowerCase().trim();
-        const filas = document.querySelectorAll('.atleta-row');
-        filas.forEach(fila => {
-            const textoFila = (fila.getAttribute('data-busqueda') || '').toLowerCase();
-            fila.style.display = textoFila.includes(valor) ? '' : 'none';
-        });
+        tablaFiltro = e.target.value.toLowerCase().trim();
+        tablaPagina = 1;
+        renderTabla();
     });
 }
 

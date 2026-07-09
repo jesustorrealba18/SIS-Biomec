@@ -71,6 +71,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     // Listar inconsistencias biológicas (RPE=1 y récord personal)
+    if ($accion === 'listarInconsistencias') {
+        header('Content-Type: application/json');
+        echo json_encode($objCarga->listarInconsistencias());
+        exit;
+    }
+
     if ($accion === 'anularPorInconsistencia') {
     Autorizacion::exigir('rpe', 'eliminar');
     $id_rpe = (int)($_POST['id_rpe'] ?? 0);
