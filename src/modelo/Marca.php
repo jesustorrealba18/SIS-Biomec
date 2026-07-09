@@ -970,7 +970,93 @@ private function actualizarMarca(): bool
      * Extrae el desglose científico de una marca y la cronología evolutiva del atleta.
      * Genera un payload anidado ideal para renderizado de Dashboards y Gráficas.
      */
-    public function obtenerDetallePorId(int $id_marca): ?array {
+
+public function obtenerDetallePorId(int $id_marca): ?array {
+        try {
+            // 1. Obtener datos base (Si no existe, cortamos la ejecución temprano)
+            $marca = $this->obtenerMarcaBase($id_marca);
+            if (!$marca) return null;
+
+            // 2. Orquestar el resto de las consultas usando métodos privados
+            $marca['splits']              = $this->obtenerSplits($id_marca);
+            $marca['swolf_data']          = $this->obtenerSwolf($id_marca);
+            $marca['historial_evolucion'] = $this->obtenerHistorialEvolucion(
+                (int)$marca['id_atleta'], 
+                $marca['estilo'], 
+                (int)$marca['distancia_m'], 
+                $marca['tipo_piscina']
+            );
+
+            return $marca;
+            
+        } catch (PDOException $e) {
+            error_log("Error en extractor de detalles: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    // =========================================================================
+    // MÉTODOS PRIVADOS DE EXTRACCIÓN (SRP)
+    // =========================================================================
+
+    private function obtenerMarcaBase(int $id_marca): ?array {
+        $sql = "SELECT m.*, a.nombres as atleta_nombres, a.apellidos as atleta_apellidos, a.cedula 
+                FROM marcas m 
+                INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
+                WHERE m.id_marca = :id_marca";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_marca', $id_marca, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    private function obtenerSplits(int $id_marca): array {
+        $sql = "SELECT distancia_parcial_m, tiempo_parcial_seg 
+                FROM marcas_splits 
+                WHERE id_marca = :id_marca 
+                ORDER BY parcial_numero ASC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_marca', $id_marca, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function obtenerSwolf(int $id_marca): ?array {
+        $sql = "SELECT num_brazadas, swolf FROM marcas_swolf WHERE id_marca = :id_marca";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_marca', $id_marca, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    private function obtenerHistorialEvolucion(int $idAtleta, string $estilo, int $distancia, string $piscina): array {
+        $sql = "SELECT fecha, tiempo_final_seg 
+                FROM marcas 
+                WHERE id_atleta = :id_atleta 
+                AND estilo = :estilo 
+                AND distancia_m = :distancia_m 
+                AND tipo_piscina = :tipo_piscina 
+                AND estado = 'Activo' 
+                ORDER BY fecha ASC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_atleta', $idAtleta, PDO::PARAM_INT);
+        $stmt->bindValue(':estilo', $estilo, PDO::PARAM_STR);
+        $stmt->bindValue(':distancia_m', $distancia, PDO::PARAM_INT);
+        $stmt->bindValue(':tipo_piscina', $piscina, PDO::PARAM_STR);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+
+/*     public function obtenerDetallePorId(int $id_marca): ?array {
         
         try {
             $sqlBase = "SELECT m.*, a.nombres as atleta_nombres, a.apellidos as atleta_apellidos, a.cedula 
@@ -1032,7 +1118,7 @@ private function actualizarMarca(): bool
             error_log("Error en extractor de detalles: " . $e->getMessage());
             return null;
         }
-    }
+    } */
 
     /**
      * Recupera los datos básicos de una marca para orquestar notificaciones y bitácora
