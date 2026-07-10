@@ -751,8 +751,145 @@ formMarca.addEventListener('submit', async (e) => {
 let dataTableMarcasInstance = null;
 let deepLinkPendiente = null; // Guardamos el ID a resaltar
 let deepLinkProcesado = false; // Bandera para evitar bucles
-
 async function cargarTablaMarcas() {
+    const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
+    const id_atleta = document.getElementById('filtroAtleta')?.value || '';
+    const distancia = document.getElementById('filtroDistancia')?.value || '';
+    const estilo = document.getElementById('filtroEstilo')?.value || '';
+    const piscina = document.getElementById('filtroPiscina')?.value || '';
+
+    // Permisos...
+    const puedeEditar = PERMISOS_MODULO.editar && filtroEstado === 'Activo';
+    const puedeEliminar = PERMISOS_MODULO.eliminar && filtroEstado === 'Activo';
+    const puedeRestaurar = PERMISOS_MODULO.restaurar && filtroEstado === 'Inactivo';
+
+    // Capturar deep link desde URL
+    const parametrosURL = new URLSearchParams(window.location.search);
+    const idResaltar = parametrosURL.get('h');
+    if (idResaltar) {
+        deepLinkPendiente = idResaltar;
+    }
+
+    let params = new URLSearchParams({ estado: filtroEstado });
+    if (id_atleta) params.append('id_atleta', id_atleta);
+    if (estilo) params.append('estilo', estilo);
+    if (distancia) params.append('distancia', distancia);
+    if (piscina) params.append('piscina', piscina);
+    
+    // Destruir DataTable si existe
+    if ($.fn.DataTable.isDataTable('#tablaMarcas')) {
+        $('#tablaMarcas').DataTable().destroy();
+    }
+
+    const tbody = document.getElementById('tbodyMarcas');
+    tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-gray-600 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando marcas...</td></tr>`;
+
+    const marcas = await peticionAjax(`listarMarcas&${params.toString()}`);
+
+    if (!marcas || marcas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-gray-600 dark:text-gray-400 font-mono text-xs">No hay marcas registradas en esta vista.</td></tr>`;
+        return;
+    }
+
+    let html = '';
+    marcas.forEach(marca => {
+        const tiempoReloj = formatearTiempoDesdeSegundos(marca.tiempo_final_seg);
+        const fechaLatina = formatearFecha(marca.fecha);
+
+        const badgePB = (marca.es_pb == 1) 
+            ? `<span class="bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="¡Mejor Marca Personal!"><i class="fas fa-star mr-1"></i>PB</span>` 
+            : '';
+
+        const botonAccion = (filtroEstado === 'Activo' && puedeEliminar)
+            ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
+            : (filtroEstado === 'Inactivo' && puedeRestaurar)
+            ? `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`
+            : '';
+
+        const botonEditar = (filtroEstado === 'Activo' && puedeEditar)
+            ? `<button onclick="abrirModalMarca(${marca.id_marca})" class="text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar Registro de Tiempo"><i class="fas fa-edit text-base"></i></button>`
+            : '';
+
+        const accionesHTML = (botonEditar || botonAccion) ? `${botonEditar}${botonAccion}` : '';
+        const justificacionHTML = (filtroEstado === 'Inactivo' && marca.motivo_eliminacion)
+            ? `<div class="text-[9px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1 w-48 leading-tight">
+                <i class="fas fa-exclamation-circle"></i> Anulado: ${marca.motivo_eliminacion}
+               </div>`
+            : '';
+
+        let clasesFila = "hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345]";
+        html += `
+            <tr id="fila-marca-${marca.id_marca}" data-id-marca="${marca.id_marca}" class="${clasesFila}">
+                <td class="py-4 pr-4 align-middle">
+                    <div class="font-bold text-gray-900 dark:text-white text-sm">${marca.nombre_atleta}</div>
+                    <div class="text-[10px] text-gray-600 dark:text-gray-400 font-mono mt-0.5">C.I: ${marca.cedula}</div>
+                </td>
+                <td class="p-4 align-middle">
+                    <div class="font-bold text-indigo-600 dark:text-indigo-300 text-sm">${marca.distancia_m}m ${marca.estilo}</div>
+                </td>
+                <td class="p-4 text-xs text-gray-600 dark:text-gray-400 align-middle">
+                    <i class="fas fa-swimming-pool mr-1 text-gray-400 dark:text-gray-600"></i> ${marca.tipo_piscina}
+                </td>
+                <td class="p-4 align-middle">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-mono text-emerald-600 dark:text-emerald-400 font-bold text-lg">${tiempoReloj}</span>
+                        ${badgePB}
+                    </div>
+                </td>
+                <td class="p-4 align-middle">
+                    <span class="bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
+                        ${marca.nivel_evento}
+                    </span>
+                    ${justificacionHTML}
+                </td>
+                <td class="p-4 text-xs font-mono text-gray-600 dark:text-gray-400 align-middle" data-sort="${marca.fecha}">
+                    ${fechaLatina}
+                </td>
+                <td class="p-4 align-middle">
+                    <div class="flex flex-wrap items-center gap-2 md:justify-end">
+                        <button onclick="verDetallesMarca(${marca.id_marca})" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Análisis de Rendimiento">
+                            <i class="fas fa-chart-line text-base"></i>
+                        </button>
+                        ${accionesHTML}
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+
+    // INICIALIZAR DATATABLES
+    dataTableMarcasInstance = $('#tablaMarcas').DataTable({
+        responsive: true,
+        language: {
+            url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+        },
+        columnDefs: [
+            { responsivePriority: 1, targets: 0 },
+            { responsivePriority: 2, targets: 3 },
+            { responsivePriority: 3, targets: 6, orderable: false },
+            { responsivePriority: 4, targets: [1, 2, 4, 5] }
+        ],
+        order: [[5, 'desc']],
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todas"]],
+        dom: '<"flex flex-col sm:flex-row justify-between items-center gap-4 mb-2"lf>rt<"flex flex-col sm:flex-row justify-between items-center mt-6 gap-4"ip>'
+    });
+
+      // Capturar deep link desde URL
+
+if (idResaltar) {
+    deepLinkPendiente = idResaltar;
+    // Esperar a que la tabla termine de dibujarse
+    setTimeout(() => {
+        procesarDeepLink();
+    }, 300);
+}
+
+
+}
+/* async function cargarTablaMarcas() {
     const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
     const id_atleta = document.getElementById('filtroAtleta')?.value || '';
     const distancia = document.getElementById('filtroDistancia')?.value || '';
@@ -888,7 +1025,7 @@ if (idResaltar) {
     }, 300);
 }
  
-}
+} */
 
 function procesarDeepLink() {
     const idMarca = deepLinkPendiente;

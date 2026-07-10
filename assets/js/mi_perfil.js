@@ -1,3 +1,34 @@
+// =====================================================================
+// CONTROL DE PESTAÑAS (TABS) EN MI PERFIL
+// =====================================================================
+window.cambiarPestana = function(idPestana) {
+    // 1. Ocultar todos los contenidos
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+        tab.classList.remove('block');
+    });
+    
+    // 2. Resetear el diseño de todos los botones
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'font-bold', 'shadow-md');
+        btn.classList.add('text-gray-400', 'font-medium');
+    });
+    
+    // 3. Mostrar el contenido seleccionado
+    const tabSeleccionado = document.getElementById('tab-' + idPestana);
+    if(tabSeleccionado) {
+        tabSeleccionado.classList.remove('hidden');
+        tabSeleccionado.classList.add('block');
+    }
+    
+    // 4. Resaltar el botón seleccionado
+    const btnActivo = document.getElementById('btn-tab-' + idPestana);
+    if(btnActivo) {
+        btnActivo.classList.remove('text-gray-400', 'font-medium');
+        btnActivo.classList.add('bg-indigo-600', 'text-white', 'font-bold', 'shadow-md');
+    }
+};  
+  
   document.addEventListener('DOMContentLoaded', async () => {
             // El controlador debe responder a esta acción buscando los datos del atleta en sesión
             const API_URL = 'index.php?p=mi_perfil&accion=obtener_mi_ficha';

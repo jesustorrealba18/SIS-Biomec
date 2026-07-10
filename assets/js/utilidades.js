@@ -61,3 +61,46 @@ function badgeEstado(estado) {
     const cls = colores[estado] || 'bg-gray-500/20 text-gray-400';
     return `<span class="px-2 py-1 rounded-lg text-[10px] font-bold ${cls}">${estado}</span>`;
 }
+
+
+// =====================================================================
+// PREFERENCIAS GLOBALES DEL SISTEMA (AJAX GLOBAL)
+// =====================================================================
+
+// 1. Petición AJAX reutilizable para cualquier configuración
+window.guardarPreferenciaGlobal = async function(clave, valor) {
+    try {
+        const respuesta = await fetch('index.php?p=mi_perfil&accion=guardar_preferencia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clave: clave, valor: valor })
+        });
+        
+        const resultado = await respuesta.json();
+        if(resultado.status !== 'success') {
+            console.warn('SGRD: No se pudo guardar la preferencia en BD', resultado.message);
+        }
+    } catch (error) {
+        console.error('SGRD: Error de red al guardar preferencia', error);
+    }
+};
+
+// 2. Controlador del Modo Oscuro/Claro
+window.alternarTemaGlobal = function() {
+    const html = document.documentElement;
+    const esOscuro = html.classList.contains('dark');
+    const nuevoTema = esOscuro ? 'light' : 'dark';
+    
+    // Cambio Visual Instantáneo (Tailwind)
+    if (nuevoTema === 'light') {
+        html.classList.remove('dark');
+    } else {
+        html.classList.add('dark');
+    }
+    
+    // Guardar en el navegador (Para máxima velocidad al recargar)
+    localStorage.setItem('sgrd_tema', nuevoTema);
+    
+    // Ejecutar el AJAX Global para guardarlo en la Base de Datos
+    guardarPreferenciaGlobal('tema', nuevoTema);
+};

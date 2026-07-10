@@ -8,9 +8,44 @@ use PDOException;
 class UsuarioModelo extends Conexion {
     use ValidacionesTrait;
 
+    private array $datos = [];
+
+     /**
+     * Lista blanca de campos permitidos (Protección contra Asignación Masiva)
+     */
+    private array $camposPermitidos = [
+        'id_usuario', 'clave', 'valor', 'accion'
+    ];
+
     public function __construct() {
         parent::__construct('sis_seguridad');
     }
+
+    public function setAtributos(array $payload): void {
+        foreach ($this->camposPermitidos as $campo) {
+            if (isset($payload[$campo])) {
+                if (is_array($payload[$campo])) {
+                    $this->datos[$campo] = $payload[$campo];
+                } 
+                elseif ($payload[$campo] !== '') {
+                    $this->datos[$campo] = $payload[$campo];
+                } else {
+                    $this->datos[$campo] = null;
+                }
+            } else {
+                $this->datos[$campo] = null;
+            }
+        }
+    }
+
+    public function getCampo(string $clave) {
+        return $this->datos[$clave] ?? null;
+    }
+
+    public function obtenerDatos(): array {
+        return $this->datos;
+    }
+
 
     public function validarDatos(array $datos, ?string $excluirCorreo = null): array {
         $this->resetearErrores();
@@ -203,4 +238,63 @@ class UsuarioModelo extends Conexion {
             return false;
         }
     }
+
+
+    // =====================================================================
+    // INYECCIÓN SGRD: MANEJO DE PREFERENCIAS (JSON)
+    // =====================================================================
+    
+  /**
+     * MÉTODO PÚBLICO: Orquestador sin parámetros (Lee del estado interno).
+     */
+    public function guardarPreferencia(): bool {
+        // Leemos todo del arreglo encapsulado $this->datos
+        $idUsuario = (int) $this->getCampo('id_usuario');
+        $clave = $this->getCampo('clave');
+        $valor = $this->getCampo('valor');
+
+        if ($idUsuario <= 0 || empty($clave) || empty($valor)) {
+            return false;
+        }
+        
+        return $this->actualizarJsonPreferencias();
+    }
+
+    /**
+     * MÉTODO PRIVADO: Transacción SQL limpia y blindada.
+     */
+    private function actualizarJsonPreferencias(): bool {
+        $idUsuario = (int) $this->getCampo('id_usuario');
+        $clave = $this->getCampo('clave');
+        $valor = $this->getCampo('valor');
+
+        $clavesPermitidas = ['tema', 'crono_mode'];
+        
+        if (!in_array($clave, $clavesPermitidas)) {
+            error_log("SGRD Seguridad: Intento de guardar preferencia no permitida -> " . $clave);
+            return false;
+        }
+
+        try {
+            $conex = $this->getConex1();
+            $path = '$.' . $clave;
+            
+            $sql = "UPDATE usuarios 
+                    SET preferencias = JSON_SET(COALESCE(preferencias, '{}'), :path, :valor) 
+                    WHERE id_usuario = :id_usuario";
+            
+            $stmt = $conex->prepare($sql);
+            $stmt->bindValue(':path', $path, PDO::PARAM_STR);
+            $stmt->bindValue(':valor', $valor, PDO::PARAM_STR);
+            $stmt->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+            
+            return $stmt->execute();
+            
+        } catch (PDOException $e) {
+            error_log("SGRD Error: Fallo actualizando JSON -> " . $e->getMessage());
+            return false;
+        }
+    }
+
+
 }

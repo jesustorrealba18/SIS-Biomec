@@ -13,6 +13,7 @@ if (empty($_SESSION['id'])) {
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+use GrupoProyecto\SisBiomec\modelo\UsuarioModelo;
 
 
 // =====================================================================
@@ -43,7 +44,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $accionPost = $_POST['accion'] ?? '';
 
-    $id_usuario = $_SESSION['id'] ?? 0;
-    
-    
+
+    $accion = $_GET['accion'] ?? ($_POST['accion'] ?? '');
+
+   
+  // ==========================================================
+    // INYECCIÓN SGRD: Guardar Preferencias (Modo Oscuro, Crono)
+    // ==========================================================
+    if ($accion === 'guardar_preferencia') {
+        // 1. Leer el payload JSON nativo de Fetch API
+        $jsonBody = file_get_contents('php://input');
+        $datosPayload = json_decode($jsonBody, true);
+
+        // 2. Inyectar el ID del usuario en sesión directamente al payload
+        $datosPayload['id_usuario'] = $_SESSION['id'];
+
+        // 3. Instanciar e Hidratar (Todo entra por el embudo seguro)
+        $objUsuario = new UsuarioModelo();
+        $objUsuario->setAtributos($datosPayload);
+
+        // 4. Ejecutar la acción sin pasar ni un solo parámetro extra
+        if ($objUsuario->guardarPreferencia()) {
+            echo json_encode(['status' => 'success', 'message' => 'Preferencia guardada correctamente.']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Fallo al procesar la preferencia en BD.']);
+        }
+        exit;
+    }
+
+
 }
