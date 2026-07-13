@@ -445,8 +445,8 @@ document.addEventListener('keydown', (e) => {
 async function verMiniPerfilAtleta(idAtleta) {
     Swal.fire({
         title: 'Cargando perfil...',
-        background: '#161430',
-        color: '#fff',
+        background: document.documentElement.classList.contains('dark') ? '#161430' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#fff' : '#1f2937',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading() }
     });
@@ -457,58 +457,58 @@ async function verMiniPerfilAtleta(idAtleta) {
     if (datos) {
         const fotoHtml = datos.foto
             ? `<img src="${datos.foto}" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full mx-auto mb-4 border-4 border-indigo-500/20 shadow-xl object-cover">`
-            : `<div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full mx-auto mb-4 bg-indigo-500/20 flex items-center justify-center text-3xl sm:text-4xl text-indigo-400 border-4 border-indigo-500/20"><i class="fas fa-user"></i></div>`;
+            : `<div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full mx-auto mb-4 bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-3xl sm:text-4xl text-indigo-600 dark:text-indigo-400 border-4 border-indigo-200 dark:border-indigo-500/20"><i class="fas fa-user"></i></div>`;
 
         const estadoColor = {
-            Activo: 'text-emerald-400',
-            Inactivo: 'text-red-400',
-            Retirado: 'text-amber-400',
-            Transferido: 'text-blue-400'
+            Activo: 'text-emerald-600 dark:text-emerald-400',
+            Inactivo: 'text-red-600 dark:text-red-400',
+            Retirado: 'text-amber-600 dark:text-amber-400',
+            Transferido: 'text-blue-600 dark:text-blue-400'
         };
 
         const html = `
             <div class="text-center mb-6 sm:mb-8">
                 ${fotoHtml}
-                <h2 class="text-xl sm:text-2xl font-bold text-white">${datos.nombres} ${datos.apellidos}</h2>
-                <p class="text-indigo-400 mb-2 font-mono tracking-widest text-xs sm:text-sm">${datos.cedula}</p>
-                <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase ${estadoColor[datos.estado] || 'text-gray-400'} bg-white/5">${datos.estado}</span>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">${datos.nombres} ${datos.apellidos}</h2>
+                <p class="text-indigo-600 dark:text-indigo-400 mb-2 font-mono tracking-widest text-xs sm:text-sm">${datos.cedula}</p>
+                <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase ${estadoColor[datos.estado] || 'text-gray-600 dark:text-gray-400'} bg-gray-100 dark:bg-white/5">${datos.estado}</span>
             </div>
 
             <div class="mb-5 sm:mb-6">
-                <p class="text-[10px] uppercase text-indigo-400 font-bold tracking-widest mb-2 sm:mb-3"><i class="fas fa-user mr-2"></i>Datos Personales</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 text-left bg-black/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/5">
-                    <div><p class="text-[10px] uppercase text-gray-500">Edad</p><p class="text-white text-sm sm:text-base">${datos.edad || '--'} años</p></div>
-                    <div><p class="text-[10px] uppercase text-gray-500">Sexo</p><p class="text-white text-sm sm:text-base">${datos.sexo === 'M' ? 'Masculino' : 'Femenino'}</p></div>
-                    <div><p class="text-[10px] uppercase text-gray-500">Categoría</p><p class="text-indigo-300 text-sm sm:text-base">${datos.categoria_nombre || 'S/C'}</p></div>
-                    <div><p class="text-[10px] uppercase text-gray-500">Teléfono</p><p class="text-white text-sm sm:text-base">${datos.telefono || '—'}</p></div>
-                    <div><p class="text-[10px] uppercase text-gray-500">Correo</p><p class="text-white text-xs sm:text-sm break-all">${datos.correo || '—'}</p></div>
-                    <div><p class="text-[10px] uppercase text-gray-500">Fichaje Club</p><p class="text-white text-sm sm:text-base">${datos.fecha_registro_club || '—'}</p></div>
+                <p class="text-[10px] uppercase text-indigo-600 dark:text-indigo-400 font-bold tracking-widest mb-2 sm:mb-3"><i class="fas fa-user mr-2"></i>Datos Personales</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 text-left bg-gray-100 dark:bg-black/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/5">
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Edad</p><p class="text-gray-900 dark:text-white text-sm sm:text-base">${datos.edad || '--'} años</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Sexo</p><p class="text-gray-900 dark:text-white text-sm sm:text-base">${datos.sexo === 'M' ? 'Masculino' : 'Femenino'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Categoría</p><p class="text-indigo-600 dark:text-indigo-300 text-sm sm:text-base">${datos.categoria_nombre || 'S/C'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Teléfono</p><p class="text-gray-900 dark:text-white text-sm sm:text-base">${datos.telefono || '—'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Correo</p><p class="text-gray-900 dark:text-white text-xs sm:text-sm break-all">${datos.correo || '—'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Fichaje Club</p><p class="text-gray-900 dark:text-white text-sm sm:text-base">${datos.fecha_registro_club || '—'}</p></div>
                 </div>
             </div>
 
             <div class="mb-5 sm:mb-6">
-                <p class="text-[10px] uppercase text-emerald-400 font-bold tracking-widest mb-2 sm:mb-3"><i class="fas fa-heartbeat mr-2"></i>Datos Médicos</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-left bg-black/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/5">
-                    <div><p class="text-[10px] uppercase text-gray-500">Grupo Sanguíneo</p><p class="text-white font-bold text-sm sm:text-base">${datos.grupo_sanguineo || '—'}</p></div>
-                    <div><p class="text-[10px] uppercase text-gray-500">Seguro Médico</p><p class="text-white text-sm sm:text-base">${datos.seguro_medico || '—'}</p></div>
-                    <div class="sm:col-span-2"><p class="text-[10px] uppercase text-gray-500">Alergias</p><p class="text-white text-xs sm:text-sm">${datos.alergias || 'Ninguna registrada'}</p></div>
-                    <div class="sm:col-span-2"><p class="text-[10px] uppercase text-gray-500">Condiciones Previas</p><p class="text-white text-xs sm:text-sm">${datos.condiciones_previas || 'Ninguna registrada'}</p></div>
+                <p class="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-widest mb-2 sm:mb-3"><i class="fas fa-heartbeat mr-2"></i>Datos Médicos</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-left bg-gray-100 dark:bg-black/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/5">
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Grupo Sanguíneo</p><p class="text-gray-900 dark:text-white font-bold text-sm sm:text-base">${datos.grupo_sanguineo || '—'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Seguro Médico</p><p class="text-gray-900 dark:text-white text-sm sm:text-base">${datos.seguro_medico || '—'}</p></div>
+                    <div class="sm:col-span-2"><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Alergias</p><p class="text-gray-900 dark:text-white text-xs sm:text-sm">${datos.alergias || 'Ninguna registrada'}</p></div>
+                    <div class="sm:col-span-2"><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Condiciones Previas</p><p class="text-gray-900 dark:text-white text-xs sm:text-sm">${datos.condiciones_previas || 'Ninguna registrada'}</p></div>
                 </div>
                 ${datos.contacto_emergencia_nombre ? `
-                <div class="mt-3 p-3 rounded-xl bg-black/20 border border-white/5">
-                    <p class="text-[10px] uppercase text-amber-400 font-bold mb-2"><i class="fas fa-phone-alt mr-2"></i>Contacto Emergencia</p>
+                <div class="mt-3 p-3 rounded-xl bg-gray-100 dark:bg-black/20 border border-gray-200 dark:border-white/5">
+                    <p class="text-[10px] uppercase text-amber-600 dark:text-amber-400 font-bold mb-2"><i class="fas fa-phone-alt mr-2"></i>Contacto Emergencia</p>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
-                        <div><p class="text-white text-sm">${datos.contacto_emergencia_nombre}</p><p class="text-[10px] text-gray-500">${datos.contacto_emergencia_parentesco || ''}</p></div>
-                        <div><p class="text-white text-sm">${datos.contacto_emergencia_telefono || '—'}</p></div>
+                        <div><p class="text-gray-900 dark:text-white text-sm">${datos.contacto_emergencia_nombre}</p><p class="text-[10px] text-gray-500 dark:text-gray-400">${datos.contacto_emergencia_parentesco || ''}</p></div>
+                        <div><p class="text-gray-900 dark:text-white text-sm">${datos.contacto_emergencia_telefono || '—'}</p></div>
                     </div>
                 </div>` : ''}
             </div>
 
             <div>
-                <p class="text-[10px] uppercase text-purple-400 font-bold tracking-widest mb-2 sm:mb-3"><i class="fas fa-trophy mr-2"></i>Datos Federativos</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-left bg-black/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/5">
-                    <div><p class="text-[10px] uppercase text-gray-500">FEVEDA</p><p class="text-indigo-300 font-mono text-sm sm:text-base">${datos.numero_feveda || 'S/F'}</p></div>
-                    <div><p class="text-[10px] uppercase text-gray-500">Club Procedencia</p><p class="text-white text-sm sm:text-base">${datos.club_procedencia || '—'}</p></div>
+                <p class="text-[10px] uppercase text-purple-600 dark:text-purple-400 font-bold tracking-widest mb-2 sm:mb-3"><i class="fas fa-trophy mr-2"></i>Datos Federativos</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-left bg-gray-100 dark:bg-black/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/5">
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">FEVEDA</p><p class="text-indigo-600 dark:text-indigo-300 font-mono text-sm sm:text-base">${datos.numero_feveda || 'S/F'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Club Procedencia</p><p class="text-gray-900 dark:text-white text-sm sm:text-base">${datos.club_procedencia || '—'}</p></div>
                 </div>
             </div>
         `;
