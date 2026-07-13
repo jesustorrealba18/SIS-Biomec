@@ -41,7 +41,7 @@ async function peticionAjax(accion, datos = null) {
 async function cargarTabla() {
     if (!tbodyLista) return;
 
-    tbodyLista.innerHTML = `<tr><td colspan="6" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando datos...</span></td></tr>`;
+    tbodyLista.innerHTML = `<tr><td colspan="6" class="text-center p-12 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando datos...</span></td></tr>`;
 
     const atletas = await peticionAjax('listar');
 
@@ -52,8 +52,8 @@ async function cargarTabla() {
         if (pieTabla) pieTabla.innerHTML = '';
         tbodyLista.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center p-12 text-gray-500">
-                    <i class="fas fa-swimmer text-4xl mb-3 block text-gray-600 animate-pulse"></i>
+                <td colspan="6" class="text-center p-12 text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-swimmer text-4xl mb-3 block text-gray-400 dark:text-gray-600 animate-pulse"></i>
                     <span class="text-xs uppercase tracking-wider block">No hay atletas registrados en el sistema</span>
                 </td>
             </tr>`;
@@ -106,56 +106,56 @@ function renderTabla() {
     actualizarSortIcons();
 
     if (pagina.length === 0 && total > 0) {
-        tbodyLista.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500"><span class="text-xs uppercase tracking-wider">Sin resultados para la búsqueda</span></td></tr>`;
+        tbodyLista.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500 dark:text-gray-400"><span class="text-xs uppercase tracking-wider">Sin resultados para la búsqueda</span></td></tr>`;
     } else if (pagina.length === 0) {
         tbodyLista.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center p-12 text-gray-500">
-                    <i class="fas fa-swimmer text-4xl mb-3 block text-gray-600 animate-pulse"></i>
+                <td colspan="6" class="text-center p-12 text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-swimmer text-4xl mb-3 block text-gray-400 dark:text-gray-600 animate-pulse"></i>
                     <span class="text-xs uppercase tracking-wider block">No hay atletas registrados en el sistema</span>
                 </td>
             </tr>`;
     } else {
         tbodyLista.innerHTML = pagina.map(a => `
-            <tr class="atleta-row hover:bg-white/5 transition-colors group" data-busqueda="${a.nombres} ${a.apellidos} ${a.cedula}">
+            <tr class="atleta-row hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group" data-busqueda="${a.nombres} ${a.apellidos} ${a.cedula}">
                 <td class="p-4 flex items-center gap-3">
                     ${a.foto
                         ? `<img src="${a.foto}" class="w-10 h-10 rounded-full object-cover border-2 border-indigo-500/30">`
-                        : `<div class="bg-indigo-500/10 p-2.5 rounded-full text-indigo-400"><i class="fas fa-user"></i></div>`
+                        : `<div class="bg-indigo-50 dark:bg-indigo-500/10 p-2.5 rounded-full text-indigo-600 dark:text-indigo-400"><i class="fas fa-user"></i></div>`
                     }
                     <div>
-                        <p class="text-white font-medium">${a.nombres} ${a.apellidos}</p>
-                        <p class="text-xs text-gray-500">${a.edad} años · ${a.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
+                        <p class="text-gray-900 dark:text-white font-medium">${a.nombres} ${a.apellidos}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">${a.edad} años · ${a.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
                     </div>
                 </td>
-                <td class="p-4 font-mono text-gray-300">${a.cedula}</td>
+                <td class="p-4 font-mono text-gray-700 dark:text-gray-300">${a.cedula}</td>
                 <td class="p-4">
                     ${a.categoria_nombre
-                        ? `<span class="text-xs bg-indigo-500/10 text-indigo-300 px-2 py-1 rounded-lg">${a.categoria_nombre}</span>`
-                        : `<span class="text-gray-600">S/C</span>`
+                        ? `<span class="text-xs bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 px-2 py-1 rounded-lg">${a.categoria_nombre}</span>`
+                        : `<span class="text-gray-500 dark:text-gray-500">S/C</span>`
                     }
                 </td>
-                <td class="p-4 font-mono text-indigo-300">${a.numero_feveda ? a.numero_feveda : '—'}</td>
+                <td class="p-4 font-mono text-indigo-600 dark:text-indigo-300">${a.numero_feveda ? a.numero_feveda : '—'}</td>
                 <td class="p-4">
                     <span class="estado-badge estado-${a.estado}">${a.estado}</span>
                 </td>
                 ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.editar ? `
                 <td class="p-4 text-right">
                     <div class="flex justify-end gap-2">
-                        <button onclick='verDetalle(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all" title="Ver Perfil">
+                        <button onclick='verDetalle(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all" title="Ver Perfil">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button onclick='abrirModal(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all" title="Editar">
+                        <button onclick='abrirModal(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button onclick="confirmarEliminar(${a.id_atleta})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all" title="Desactivar">
+                        <button onclick="confirmarEliminar(${a.id_atleta})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-all" title="Desactivar">
                             <i class="fas fa-user-slash"></i>
                         </button>
                     </div>
                 </td>
                 ` : `
                 <td class="p-4 text-right">
-                    <button onclick='verDetalle(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all" title="Ver Perfil">
+                    <button onclick='verDetalle(${a.id_atleta})' class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all" title="Ver Perfil">
                         <i class="fas fa-eye"></i>
                     </button>
                 </td>
@@ -170,11 +170,11 @@ function renderTabla() {
 function renderPaginacion(totalPaginas) {
     if (!pieTabla || totalPaginas <= 1) { if (pieTabla) pieTabla.innerHTML = ''; return; }
 
-    let html = `<span class="text-xs text-gray-500">Página ${tablaPagina} de ${totalPaginas}</span><div class="flex gap-1">`;
+    let html = `<span class="text-xs text-gray-500 dark:text-gray-400">Página ${tablaPagina} de ${totalPaginas}</span><div class="flex gap-1">`;
 
     const btnClass = 'px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition';
     const btnActivo = 'bg-indigo-600 text-white';
-    const btnInactivo = 'bg-gray-800 text-gray-400 hover:bg-gray-700';
+    const btnInactivo = 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700';
 
     if (tablaPagina > 1) {
         html += `<button onclick="tablaPagina--; renderTabla()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-left"></i></button>`;
@@ -346,79 +346,74 @@ async function verDetalle(id) {
 
     const fotoHtml = datos.foto
         ? `<img src="${datos.foto}" class="w-28 h-28 rounded-full mx-auto mb-4 border-4 border-indigo-500/20 shadow-xl object-cover">`
-        : `<div class="w-28 h-28 rounded-full mx-auto mb-4 bg-indigo-500/20 flex items-center justify-center text-4xl text-indigo-400 border-4 border-indigo-500/20"><i class="fas fa-user"></i></div>`;
+        : `<div class="w-28 h-28 rounded-full mx-auto mb-4 bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-4xl text-indigo-600 dark:text-indigo-400 border-4 border-indigo-200 dark:border-indigo-500/20"><i class="fas fa-user"></i></div>`;
 
     const html = `
         <div class="text-center mb-8">
             ${fotoHtml}
-            <h2 class="text-2xl font-bold text-white">${datos.nombres} ${datos.apellidos}</h2>
-            <p class="text-indigo-400 mb-2 font-mono tracking-widest text-sm">${datos.cedula}</p>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${datos.nombres} ${datos.apellidos}</h2>
+            <p class="text-indigo-600 dark:text-indigo-400 mb-2 font-mono tracking-widest text-sm">${datos.cedula}</p>
             <span class="estado-badge estado-${datos.estado}">${datos.estado}</span>
         </div>
 
         <div class="mb-6">
-            <p class="text-[10px] uppercase text-indigo-400 font-bold tracking-widest mb-3"><i class="fas fa-user mr-2"></i>Datos Personales</p>
-            <div class="grid grid-cols-3 gap-3 text-left bg-black/20 p-4 rounded-2xl border border-white/5">
-                <div><p class="text-[10px] uppercase text-gray-500">Edad</p><p class="text-white">${datos.edad} años</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Sexo</p><p class="text-white">${datos.sexo === 'M' ? 'Masculino' : 'Femenino'}</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Categoría</p><p class="text-indigo-300">${datos.categoria_nombre || 'S/C'}</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Teléfono</p><p class="text-white">${datos.telefono || '—'}</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Correo</p><p class="text-white text-xs">${datos.correo || '—'}</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Fichaje Club</p><p class="text-white">${datos.fecha_registro_club ? formatoFecha(datos.fecha_registro_club) : '—'}</p></div>
+            <p class="text-[10px] uppercase text-indigo-600 dark:text-indigo-400 font-bold tracking-widest mb-3"><i class="fas fa-user mr-2"></i>Datos Personales</p>
+            <div class="grid grid-cols-3 gap-3 text-left bg-gray-100 dark:bg-black/20 p-4 rounded-2xl border border-gray-200 dark:border-white/5">
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Edad</p><p class="text-gray-900 dark:text-white">${datos.edad} años</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Sexo</p><p class="text-gray-900 dark:text-white">${datos.sexo === 'M' ? 'Masculino' : 'Femenino'}</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Categoría</p><p class="text-indigo-600 dark:text-indigo-300">${datos.categoria_nombre || 'S/C'}</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Teléfono</p><p class="text-gray-900 dark:text-white">${datos.telefono || '—'}</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Correo</p><p class="text-gray-900 dark:text-white text-xs">${datos.correo || '—'}</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Fichaje Club</p><p class="text-gray-900 dark:text-white">${datos.fecha_registro_club ? formatoFecha(datos.fecha_registro_club) : '—'}</p></div>
             </div>
         </div>
 
         <div class="mb-6">
-            <p class="text-[10px] uppercase text-emerald-400 font-bold tracking-widest mb-3"><i class="fas fa-heartbeat mr-2"></i>Datos Médicos</p>
-            <div class="grid grid-cols-2 gap-3 text-left bg-black/20 p-4 rounded-2xl border border-white/5">
-                <div><p class="text-[10px] uppercase text-gray-500">Grupo Sanguíneo</p><p class="text-white font-bold">${datos.grupo_sanguineo || '—'}</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Seguro Médico</p><p class="text-white">${datos.seguro_medico || '—'}</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Alergias</p><p class="text-white text-xs">${datos.alergias || 'Ninguna registrada'}</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Condiciones</p><p class="text-white text-xs">${datos.condiciones_previas || 'Ninguna registrada'}</p></div>
+            <p class="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-widest mb-3"><i class="fas fa-heartbeat mr-2"></i>Datos Médicos</p>
+            <div class="grid grid-cols-2 gap-3 text-left bg-gray-100 dark:bg-black/20 p-4 rounded-2xl border border-gray-200 dark:border-white/5">
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Grupo Sanguíneo</p><p class="text-gray-900 dark:text-white font-bold">${datos.grupo_sanguineo || '—'}</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Seguro Médico</p><p class="text-gray-900 dark:text-white">${datos.seguro_medico || '—'}</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Alergias</p><p class="text-gray-900 dark:text-white text-xs">${datos.alergias || 'Ninguna registrada'}</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Condiciones</p><p class="text-gray-900 dark:text-white text-xs">${datos.condiciones_previas || 'Ninguna registrada'}</p></div>
             </div>
             ${datos.contacto_emergencia_nombre ? `
-            <div class="mt-3 p-3 rounded-xl bg-black/20 border border-white/5">
-                <p class="text-[10px] uppercase text-amber-400 font-bold mb-2"><i class="fas fa-phone-alt mr-2"></i>Contacto Emergencia</p>
+            <div class="mt-3 p-3 rounded-xl bg-gray-100 dark:bg-black/20 border border-gray-200 dark:border-white/5">
+                <p class="text-[10px] uppercase text-amber-600 dark:text-amber-400 font-bold mb-2"><i class="fas fa-phone-alt mr-2"></i>Contacto Emergencia</p>
                 <div class="grid grid-cols-3 gap-2 text-center">
-                    <div><p class="text-white text-sm">${datos.contacto_emergencia_nombre}</p><p class="text-[10px] text-gray-500">${datos.contacto_emergencia_parentesco || ''}</p></div>
-                    <div><p class="text-white text-sm">${datos.contacto_emergencia_telefono || '—'}</p></div>
+                    <div><p class="text-gray-900 dark:text-white text-sm">${datos.contacto_emergencia_nombre}</p><p class="text-[10px] text-gray-500 dark:text-gray-400">${datos.contacto_emergencia_parentesco || ''}</p></div>
+                    <div><p class="text-gray-900 dark:text-white text-sm">${datos.contacto_emergencia_telefono || '—'}</p></div>
                 </div>
             </div>` : ''}
         </div>
 
         <div>
-            <p class="text-[10px] uppercase text-purple-400 font-bold tracking-widest mb-3"><i class="fas fa-trophy mr-2"></i>Datos Federativos</p>
-            <div class="grid grid-cols-2 gap-3 text-left bg-black/20 p-4 rounded-2xl border border-white/5">
-                <div><p class="text-[10px] uppercase text-gray-500">FEVEDA</p><p class="text-indigo-300 font-mono">${datos.numero_feveda || 'S/F'}</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Club Procedencia</p><p class="text-white">${datos.club_procedencia || '—'}</p></div>
+            <p class="text-[10px] uppercase text-purple-600 dark:text-purple-400 font-bold tracking-widest mb-3"><i class="fas fa-trophy mr-2"></i>Datos Federativos</p>
+            <div class="grid grid-cols-2 gap-3 text-left bg-gray-100 dark:bg-black/20 p-4 rounded-2xl border border-gray-200 dark:border-white/5">
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">FEVEDA</p><p class="text-indigo-600 dark:text-indigo-300 font-mono">${datos.numero_feveda || 'S/F'}</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Club Procedencia</p><p class="text-gray-900 dark:text-white">${datos.club_procedencia || '—'}</p></div>
             </div>
         </div>
-        <div class="flex flex-col items-center justify-center p-4 bg-[#161430] border border-[#252345] rounded-xl mt-4">
-            <span class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">Carnet de Asistencia</span>
+        <div class="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-xl mt-4">
+            <span class="text-xs text-gray-600 dark:text-gray-400 font-bold uppercase tracking-wider mb-3">Carnet de Asistencia</span>
             
-            <div id="contenedorQR" class="bg-white p-3 rounded-lg shadow-lg">
+            <div id="contenedorQR" class="bg-white dark:bg-[#161430] p-3 rounded-lg shadow-lg border border-gray-200 dark:border-[#252345]">
                 </div>
             
-            <span id="txtTokenVisible" class="text-[10px] text-gray-500 font-mono mt-2 select-all"></span>
+            <span id="txtTokenVisible" class="text-[10px] text-gray-600 dark:text-gray-500 font-mono mt-2 select-all"></span>
         </div>        
         `;
 
-  // ==============================================================
-    // CORRECCIÓN 1: PRIMERO inyectamos el HTML para que nazcan los divs
-    // ==============================================================
-    const detalleContenido = document.getElementById('detalleContenido'); // Aseguramos atrapar tu contenedor del modal
+    // Inyectar el HTML
+    const detalleContenido = document.getElementById('detalleContenido');
     detalleContenido.innerHTML = html;
 
-    // ==============================================================
-    // CORRECCIÓN 2: LUEGO buscamos el contenedor y usamos 'datos'
-    // ==============================================================
+    // Generar QR
     const contenedorQR = document.getElementById('contenedorQR');
     const txtTokenVisible = document.getElementById('txtTokenVisible');
     
     if (contenedorQR && txtTokenVisible) {
         contenedorQR.innerHTML = ''; 
 
-        // Usamos la variable 'datos' en lugar de 'datosAtleta'
         if (datos.token_asistencia) {
             new QRCode(contenedorQR, {
                 text: datos.token_asistencia,
@@ -435,7 +430,6 @@ async function verDetalle(id) {
         }
     }
 
-    // detalleContenido.innerHTML = html;
     modalVer.classList.remove('hidden');
     setTimeout(() => {
         modalVer.firstElementChild.classList.remove('scale-95', 'opacity-0');
