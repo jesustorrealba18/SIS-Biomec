@@ -302,168 +302,169 @@ const Asistencia = {
         }
     },
 
-    cargarListaAtletas: async () => {
-        if (!Asistencia.idSesionActual) return;
+cargarListaAtletas: async () => {
+    if (!Asistencia.idSesionActual) return;
 
-        const tbody = document.getElementById('tablaAtletas');
+    const tbody = document.getElementById('tablaAtletas');
+    
+    if ($.fn.DataTable.isDataTable('#tablaAsistenciaDT')) {
+        $('#tablaAsistenciaDT').DataTable().destroy();
+    }
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="4" class="py-8 text-center text-gray-500 dark:text-gray-400">
+                <i class="fas fa-spinner animate-spin mr-2 text-indigo-500"></i> Cargando convocados...
+            </td>
+        </tr>`;
+
+    const respuesta = await peticionAjax(`cargar_atletas&id_sesion=${Asistencia.idSesionActual}`);
+
+    if (!respuesta || respuesta.status !== 'success') {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-red-600 dark:text-red-400">${respuesta?.message || 'Error al cargar los datos.'}</td></tr>`;
+        return;
+    }
+
+    const atletas = respuesta.data;
+    
+    if (atletas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-gray-500 dark:text-gray-400 italic">No hay atletas activos registrados para esta sesión.</td></tr>';
+        document.getElementById('statTotal').textContent = '0';
+        document.getElementById('statPresentes').textContent = '0';
+        document.getElementById('statAusentes').textContent = '0';
+        return;
+    }
+
+    let html = '';
+    let contPresentes = 0;
+    let contAusentes = 0;
+
+    atletas.forEach(atleta => {
         
-        if ($.fn.DataTable.isDataTable('#tablaAsistenciaDT')) {
-            $('#tablaAsistenciaDT').DataTable().destroy();
-        }
+        if (atleta.estado === 'Presente') contPresentes++;
+        else if (atleta.estado === 'Ausente' || atleta.estado === 'Justificado') contAusentes++;
 
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="4" class="py-8 text-center text-gray-500">
-                    <i class="fas fa-spinner animate-spin mr-2 text-indigo-500"></i> Cargando convocados...
-                </td>
-            </tr>`;
-
-        const respuesta = await peticionAjax(`cargar_atletas&id_sesion=${Asistencia.idSesionActual}`);
-
-        if (!respuesta || respuesta.status !== 'success') {
-            tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-red-500">${respuesta?.message || 'Error al cargar los datos.'}</td></tr>`;
-            return;
-        }
-
-        const atletas = respuesta.data;
+        let badgeClass = 'bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-500/20';
+        let textoEstado = '<i class="fas fa-minus mr-1"></i> Pendiente';
+        let etiquetaQR = atleta.tipo === 'QR' ? ' <span class="ml-1 text-[9px] text-blue-600 dark:text-blue-400 font-bold">(QR)</span>' : '';
         
-        if (atletas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-gray-500 italic">No hay atletas activos registrados para esta sesión.</td></tr>';
-            document.getElementById('statTotal').textContent = '0';
-            document.getElementById('statPresentes').textContent = '0';
-            document.getElementById('statAusentes').textContent = '0';
-            return;
+        if (atleta.estado === 'Presente') {
+            badgeClass = 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30';
+            textoEstado = `<i class="fas fa-check-circle mr-1"></i> Presente${etiquetaQR}`;
+        } else if (atleta.estado === 'Ausente') {
+            badgeClass = 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/30';
+            textoEstado = '<i class="fas fa-times-circle mr-1"></i> Faltó';
+        } else if (atleta.estado === 'Justificado') {
+            badgeClass = 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30';
+            textoEstado = '<i class="fas fa-user-clock mr-1"></i> Justificado';
         }
 
-        let html = '';
-        let contPresentes = 0;
-        let contAusentes = 0;
+        const esInmutableQR = (atleta.tipo === 'QR' && atleta.estado === 'Presente');
 
-        atletas.forEach(atleta => {
+        const renderBtn = (accionBtn, iconoNormal) => {
+            const baseClass = "w-7 h-7 rounded border transition-all shadow-sm flex items-center justify-center";
             
-            // Lógica de contadores
-            if (atleta.estado === 'Presente') contPresentes++;
-            else if (atleta.estado === 'Ausente' || atleta.estado === 'Justificado') contAusentes++;
-
-            // Lógica visual del Badge (Etiqueta de estado)
-            let badgeClass = 'bg-gray-500/10 text-gray-400 border-gray-500/20'; // Por defecto: Pendiente
-            let textoEstado = '<i class="fas fa-minus mr-1"></i> Pendiente';
-            
-            // Identificador extra visual si fue por QR
-            let etiquetaQR = atleta.tipo === 'QR' ? ' <span class="ml-1 text-[9px] text-blue-400 font-bold">(QR)</span>' : '';
-            
-            if (atleta.estado === 'Presente') {
-                badgeClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
-                textoEstado = `<i class="fas fa-check-circle mr-1"></i> Presente${etiquetaQR}`;
-            } else if (atleta.estado === 'Ausente') {
-                badgeClass = 'bg-red-500/10 text-red-400 border-red-500/30';
-                textoEstado = '<i class="fas fa-times-circle mr-1"></i> Faltó';
-            } else if (atleta.estado === 'Justificado') {
-                badgeClass = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
-                textoEstado = '<i class="fas fa-user-clock mr-1"></i> Justificado';
+            if (esInmutableQR) {
+                return `
+                    <button class="${baseClass} opacity-30 cursor-not-allowed border-gray-300 dark:border-gray-500/30 bg-gray-100 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400" 
+                            disabled title="Inmutable: Validado mediante Escáner QR">
+                        <i class="fas fa-lock text-xs"></i>
+                    </button>`;
             }
 
-            // MOTOR INTELIGENTE DE BOTONES (Inmutabilidad visual)
-            const esInmutableQR = (atleta.tipo === 'QR' && atleta.estado === 'Presente');
-
-            const renderBtn = (accionBtn, iconoNormal) => {
-                const baseClass = "w-7 h-7 rounded border transition-all shadow-sm flex items-center justify-center";
-                
-                if (esInmutableQR) {
-                    return `
-                        <button class="${baseClass} opacity-30 cursor-not-allowed border-gray-500/30 bg-gray-500/10 text-gray-500" 
-                                disabled title="Inmutable: Validado mediante Escáner QR">
-                            <i class="fas fa-lock text-xs"></i>
-                        </button>`;
+            const estilos = {
+                'Presente': { 
+                    color: 'emerald', 
+                    bg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20' 
+                },
+                'Ausente': { 
+                    color: 'red', 
+                    bg: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20' 
+                },
+                'Justificado': { 
+                    color: 'amber', 
+                    bg: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20' 
                 }
-
-                const estilos = {
-                    'Presente': { color: 'emerald', bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
-                    'Ausente': { color: 'red', bg: 'bg-red-500/10 text-red-400 border-red-500/20' },
-                    'Justificado': { color: 'amber', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' }
-                };
-
-                const cfg = estilos[accionBtn];
-
-                if (atleta.estado === accionBtn) {
-                    return `
-                        <button class="${baseClass} opacity-30 cursor-not-allowed ${cfg.bg}" 
-                                disabled title="El atleta ya se encuentra registrado como ${accionBtn}">
-                            <i class="fas ${iconoNormal} text-xs"></i>
-                        </button>`;
-                }
-
-                return `
-                    <button onclick="Asistencia.accionManual(${atleta.id_atleta}, '${accionBtn}', '${atleta.nombres} ${atleta.apellidos}')" 
-                            class="${baseClass} ${cfg.bg} hover:bg-${cfg.color}-500 hover:text-white cursor-pointer" 
-                            title="Marcar como ${accionBtn}">
-                        <i class="fas ${iconoNormal} text-xs"></i>
-                    </button>`;
             };
 
-            // Inyección del <tr>
-            html += `
-                <tr class="border-b border-[#252345] hover:bg-[#1b1937] transition-colors">
-                    <td class="py-3 pl-2">
-                        <p class="text-white font-bold text-xs">${atleta.nombres} ${atleta.apellidos}</p>
-                        <p class="text-[10px] text-gray-500 font-mono tracking-wider">${atleta.cedula}</p>
-                    </td>
-                    <td class="py-3 text-indigo-300 font-medium text-xs">
-                        ${atleta.categoria_nombre || 'S/C'}
-                    </td>
-                    <td class="py-3 text-center">
-                        <div class="flex flex-col items-center justify-center">
-                            <span class="px-2 py-1 rounded-full text-[9px] uppercase font-bold tracking-widest border ${badgeClass}">
-                                ${textoEstado}
-                            </span>
-                            ${atleta.justificacion && atleta.estado !== 'Presente' && atleta.justificacion !== 'No aplica' 
-                                ? `<p class="text-[9px] text-gray-500 mt-1 truncate max-w-[120px] italic" title="${atleta.justificacion}">${atleta.justificacion}</p>` 
-                                : ''}
-                        </div>
-                    </td>
-                    <td class="py-3 pr-2 text-right">
-                        <div class="flex justify-end gap-1.5">
-                            ${renderBtn('Presente', 'fa-check')}
-                            ${renderBtn('Ausente', 'fa-times')}
-                            ${renderBtn('Justificado', 'fa-clock')}
-                        </div>
-                    </td>
-                </tr>
-            `;
-        });
+            const cfg = estilos[accionBtn];
 
-        // Renderizar el HTML en la tabla
-        tbody.innerHTML = html;
+            if (atleta.estado === accionBtn) {
+                return `
+                    <button class="${baseClass} opacity-30 cursor-not-allowed ${cfg.bg}" 
+                            disabled title="El atleta ya se encuentra registrado como ${accionBtn}">
+                        <i class="fas ${iconoNormal} text-xs"></i>
+                    </button>`;
+            }
 
-        //  INICIALIZAR DATATABLES (Ahora que ya existe el HTML en el DOM)
-        $('#tablaAsistenciaDT').DataTable({
-            responsive: true,
-            paging: true,
-            pageLength: 10,
-            lengthMenu: [5, 10, 25, 50],
-            info: true,
-            searching: true,
-            language: {
-                    url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json',
-                    search: "Buscar:",
-                    lengthMenu: "Mostrar _MENU_ registros",
-                    info: "Mostrando _START_ a _END_ de _TOTAL_ representantes",
-                    paginate: { first: "Primero", last: "Último", next: "Siguiente", previous: "Anterior" }
-                },
-            // Configuramos las prioridades de responsive (si no cabe en móvil, esconde lo menos importante)
-            columnDefs: [
-                { responsivePriority: 1, targets: 0 }, // Atleta (Siempre visible)
-                { responsivePriority: 3, targets: 1 }, // Categoría (Se esconde primero)
-                { responsivePriority: 2, targets: 2 }, // Estado
-                { responsivePriority: 1, targets: 3, orderable: false } // Acciones (Siempre visible, no se puede ordenar por aquí)
-            ]
-        });
+            return `
+                <button onclick="Asistencia.accionManual(${atleta.id_atleta}, '${accionBtn}', '${atleta.nombres} ${atleta.apellidos}')" 
+                        class="${baseClass} ${cfg.bg} hover:bg-${cfg.color}-500 hover:text-white cursor-pointer" 
+                        title="Marcar como ${accionBtn}">
+                    <i class="fas ${iconoNormal} text-xs"></i>
+                </button>`;
+        };
 
-        // 8. Actualizar las Estadísticas Visuales en los cuadros de arriba
-        document.getElementById('statPresentes').textContent = contPresentes;
-        document.getElementById('statAusentes').textContent = contAusentes;
-        document.getElementById('statTotal').textContent = atletas.length;
-    }
+        html += `
+            <tr class="border-b border-gray-200 dark:border-[#252345] hover:bg-gray-100 dark:hover:bg-[#1b1937] transition-colors">
+                <td class="py-3 pl-2">
+                    <p class="text-gray-900 dark:text-white font-bold text-xs">${atleta.nombres} ${atleta.apellidos}</p>
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400 font-mono tracking-wider">${atleta.cedula}</p>
+                </td>
+                <td class="py-3 text-indigo-600 dark:text-indigo-300 font-medium text-xs">
+                    ${atleta.categoria_nombre || 'S/C'}
+                </td>
+                <td class="py-3 text-center">
+                    <div class="flex flex-col items-center justify-center">
+                        <span class="px-2 py-1 rounded-full text-[9px] uppercase font-bold tracking-widest border ${badgeClass}">
+                            ${textoEstado}
+                        </span>
+                        ${atleta.justificacion && atleta.estado !== 'Presente' && atleta.justificacion !== 'No aplica' 
+                            ? `<p class="text-[9px] text-gray-500 dark:text-gray-400 mt-1 truncate max-w-[120px] italic" title="${atleta.justificacion}">${atleta.justificacion}</p>` 
+                            : ''}
+                    </div>
+                </td>
+                <td class="py-3 pr-2 text-right">
+                    <div class="flex justify-end gap-1.5">
+                        ${renderBtn('Presente', 'fa-check')}
+                        ${renderBtn('Ausente', 'fa-times')}
+                        ${renderBtn('Justificado', 'fa-clock')}
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+
+    // Inicializar DataTables
+    $('#tablaAsistenciaDT').DataTable({
+        responsive: true,
+        paging: true,
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50],
+        info: true,
+        searching: true,
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json',
+            search: "Buscar:",
+            lengthMenu: "Mostrar _MENU_ registros",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ representantes",
+            paginate: { first: "Primero", last: "Último", next: "Siguiente", previous: "Anterior" }
+        },
+        columnDefs: [
+            { responsivePriority: 1, targets: 0 },
+            { responsivePriority: 3, targets: 1 },
+            { responsivePriority: 2, targets: 2 },
+            { responsivePriority: 1, targets: 3, orderable: false }
+        ]
+    });
+
+    // Actualizar estadísticas
+    document.getElementById('statPresentes').textContent = contPresentes;
+    document.getElementById('statAusentes').textContent = contAusentes;
+    document.getElementById('statTotal').textContent = atletas.length;
+}
 
 };
 
