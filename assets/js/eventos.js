@@ -56,43 +56,43 @@ async function cargarTablaEventos() {
     const tbody = document.getElementById('tbodyEventos');
 
     if (!datos || datos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-gray-500">No se encontraron eventos.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-gray-500 dark:text-gray-400">No se encontraron eventos.</td></tr>`;
         return;
     }
 
     tbody.innerHTML = datos.map(ev => `
-        <tr class="hover:bg-white/5 transition">
+        <tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345]">
             <td class="p-4">
-                <p class="text-white font-medium">${ev.nombre}</p>
-                ${ev.organizador ? `<p class="text-[10px] text-gray-500 mt-0.5">${ev.organizador}</p>` : ''}
+                <p class="text-gray-900 dark:text-white font-medium">${ev.nombre}</p>
+                ${ev.organizador ? `<p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">${ev.organizador}</p>` : ''}
             </td>
-            <td class="p-4 font-mono text-xs">${formatoFechaRango(ev.fecha_inicio, ev.fecha_fin)}</td>
-            <td class="p-4 text-xs">${ev.sede || '-'}</td>
+            <td class="p-4 font-mono text-xs text-gray-700 dark:text-gray-300">${formatoFechaRango(ev.fecha_inicio, ev.fecha_fin)}</td>
+            <td class="p-4 text-xs text-gray-700 dark:text-gray-300">${ev.sede || '-'}</td>
             <td class="p-4">${badgeTipo(ev.tipo)}</td>
-            <td class="p-4 text-xs">${ev.nivel || '-'}</td>
+            <td class="p-4 text-xs text-gray-700 dark:text-gray-300">${ev.nivel || '-'}</td>
             <td class="p-4">${badgeEstado(ev.estado)}</td>
             <td class="p-4 text-center">
-                <span class="bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded-lg text-xs font-bold">${ev.total_inscritos || 0}</span>
+                <span class="bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-2 py-1 rounded-lg text-xs font-bold">${ev.total_inscritos || 0}</span>
             </td>
             <td class="p-4 text-center">
-                <span class="bg-amber-500/10 text-amber-400 px-2 py-1 rounded-lg text-xs font-bold">${ev.total_metas || 0}</span>
+                <span class="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-1 rounded-lg text-xs font-bold">${ev.total_metas || 0}</span>
             </td>
             <td class="p-4 text-right">
                 <div class="flex items-center justify-end gap-1">
-                    <button onclick="verDetalle(${ev.id_evento})" class="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded-lg transition cursor-pointer" title="Ver detalle">
+                    <button onclick="verDetalle(${ev.id_evento})" class="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition cursor-pointer" title="Ver detalle">
                         <i class="fas fa-eye text-sm"></i>
                     </button>
-                    <button onclick="abrirModalMetas(${ev.id_evento})" class="p-2 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition cursor-pointer" title="Metas">
+                    <button onclick="abrirModalMetas(${ev.id_evento})" class="p-2 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition cursor-pointer" title="Metas">
                         <i class="fas fa-bullseye text-sm"></i>
                     </button>
                     ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
-                    <button onclick="abrirModalInscripcion(${ev.id_evento})" class="p-2 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 rounded-lg transition cursor-pointer" title="Inscribir atletas">
+                    <button onclick="abrirModalInscripcion(${ev.id_evento})" class="p-2 text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 rounded-lg transition cursor-pointer" title="Inscribir atletas">
                         <i class="fas fa-user-plus text-sm"></i>
                     </button>
-                    <button onclick="abrirModalEvento(${ev.id_evento})" class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition cursor-pointer" title="Editar">
+                    <button onclick="abrirModalEvento(${ev.id_evento})" class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition cursor-pointer" title="Editar">
                         <i class="fas fa-pen text-sm"></i>
                     </button>
-                    <button onclick="accionEstado(${ev.id_evento}, '${ev.estado}')" class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition cursor-pointer" title="Cambiar estado">
+                    <button onclick="accionEstado(${ev.id_evento}, '${ev.estado}')" class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition cursor-pointer" title="Cambiar estado">
                         <i class="fas fa-exchange-alt text-sm"></i>
                     </button>
                     ` : ''}
@@ -291,16 +291,16 @@ function agregarFilaMeta(datos = null) {
             <input type="hidden" name="meta_id_atleta[]" value="${datos ? datos.id_atleta : ''}" class="meta-id-atleta">
             <input type="hidden" name="meta_id_meta[]" value="${datos ? datos.id_meta || '' : ''}" class="meta-id-meta">
             <div class="relative">
-                <input type="text" name="meta_atleta_nombre[]" data-validar="requerido" data-nombre="Atleta" value="${datos ? datos.nombre_atleta || '' : ''}" placeholder="Buscar atleta..." class="input-dark p-2 rounded-lg text-xs w-40 meta-nombre-atleta" autocomplete="off">
-                <div class="dropdown-atleta-meta absolute z-50 w-full mt-1 bg-[#111026] border border-[#252345] rounded-lg shadow-lg max-h-40 overflow-y-auto hidden"></div>
+                <input type="text" name="meta_atleta_nombre[]" data-validar="requerido" data-nombre="Atleta" value="${datos ? datos.nombre_atleta || '' : ''}" placeholder="Buscar atleta..." class="input-adapt p-2 rounded-lg text-xs w-40 meta-nombre-atleta" autocomplete="off">
+                <div class="dropdown-atleta-meta absolute z-50 w-full mt-1 bg-white dark:bg-[#111026] border border-gray-200 dark:border-[#252345] rounded-lg shadow-lg max-h-40 overflow-y-auto hidden"></div>
             </div>
         </td>
-        <td class="p-2"><select name="meta_estilo[]" data-validar="requerido" data-nombre="Estilo" class="input-dark p-2 rounded-lg text-xs">${opcionesEst}</select></td>
-        <td class="p-2"><select name="meta_distancia[]" data-validar="requerido" data-nombre="Distancia" class="input-dark p-2 rounded-lg text-xs">${opcionesDist}</select></td>
-        <td class="p-2"><input type="number" step="0.01" name="meta_objetivo[]" data-validar="requerido|decimal" data-nombre="Marca objetivo" value="${datos ? datos.marca_objetivo_seg || '' : ''}" placeholder="0.00" class="input-dark p-2 rounded-lg text-xs font-mono text-center w-20"></td>
-        <td class="p-2"><span class="text-xs font-mono text-gray-400 meta-pb">${datos && datos.pb_actual_seg ? datos.pb_actual_seg : '-'}</span></td>
-        <td class="p-2"><span class="text-xs font-mono meta-dif ${datos && datos.diferencia_pct !== null ? (datos.diferencia_pct <= 0 ? 'text-green-400' : 'text-red-400') : 'text-gray-500'}">${datos && datos.diferencia_pct !== null ? datos.diferencia_pct + '%' : '-'}</span></td>
-        <td class="p-2"><button type="button" onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-300 transition cursor-pointer"><i class="fas fa-trash-alt"></i></button></td>
+        <td class="p-2"><select name="meta_estilo[]" data-validar="requerido" data-nombre="Estilo" class="input-adapt p-2 rounded-lg text-xs">${opcionesEst}</select></td>
+        <td class="p-2"><select name="meta_distancia[]" data-validar="requerido" data-nombre="Distancia" class="input-adapt p-2 rounded-lg text-xs">${opcionesDist}</select></td>
+        <td class="p-2"><input type="number" step="0.01" name="meta_objetivo[]" data-validar="requerido|decimal" data-nombre="Marca objetivo" value="${datos ? datos.marca_objetivo_seg || '' : ''}" placeholder="0.00" class="input-adapt p-2 rounded-lg text-xs font-mono text-center w-20"></td>
+        <td class="p-2"><span class="text-xs font-mono text-gray-500 dark:text-gray-400 meta-pb">${datos && datos.pb_actual_seg ? datos.pb_actual_seg : '-'}</span></td>
+        <td class="p-2"><span class="text-xs font-mono meta-dif ${datos && datos.diferencia_pct !== null ? (datos.diferencia_pct <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400') : 'text-gray-500 dark:text-gray-400'}">${datos && datos.diferencia_pct !== null ? datos.diferencia_pct + '%' : '-'}</span></td>
+        <td class="p-2"><button type="button" onclick="this.closest('tr').remove()" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition cursor-pointer"><i class="fas fa-trash-alt"></i></button></td>
     `;
 
     tbody.appendChild(tr);
@@ -322,7 +322,7 @@ function agregarFilaMeta(datos = null) {
         if (resultados.length === 0) { dropdown.classList.add('hidden'); return; }
 
         dropdown.innerHTML = resultados.map(a =>
-            `<div class="px-3 py-2 hover:bg-indigo-500/20 cursor-pointer text-xs text-gray-300 transition" data-id="${a.id_atleta}" data-nombre="${a.nombres} ${a.apellidos}">${a.nombres} ${a.apellidos} <span class="text-gray-500">(${a.cedula})</span></div>`
+            `<div class="px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 cursor-pointer text-xs text-gray-800 dark:text-gray-300 transition" data-id="${a.id_atleta}" data-nombre="${a.nombres} ${a.apellidos}">${a.nombres} ${a.apellidos} <span class="text-gray-500 dark:text-gray-400">(${a.cedula})</span></div>`
         ).join('');
         dropdown.classList.remove('hidden');
 
@@ -466,7 +466,6 @@ async function inscribirAtletas() {
 // =====================================================================
 // DETALLE
 // =====================================================================
-
 async function verDetalle(id_evento) {
     const detalle = await peticionAjax(`obtenerDetalle&id=${id_evento}`);
     if (!detalle) { UI.error('Error', 'No se pudo obtener el detalle.'); return; }
@@ -475,32 +474,32 @@ async function verDetalle(id_evento) {
 
     let html = `
         <div class="mb-6">
-            <h2 class="text-xl font-bold text-white mb-1">${detalle.nombre}</h2>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">${detalle.nombre}</h2>
             <div class="flex flex-wrap gap-2 mt-2">
                 ${badgeTipo(detalle.tipo)}
                 ${badgeEstado(detalle.estado)}
-                ${detalle.nivel ? `<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-purple-500/20 text-purple-400">Nivel ${detalle.nivel}</span>` : ''}
+                ${detalle.nivel ? `<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-purple-50 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30">Nivel ${detalle.nivel}</span>` : ''}
             </div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-black/20 rounded-xl">
-            <div><p class="text-[10px] text-gray-500 uppercase">Fecha Inicio</p><p class="text-white font-mono text-sm">${formatoFecha(detalle.fecha_inicio)}</p></div>
-            <div><p class="text-[10px] text-gray-500 uppercase">Fecha Fin</p><p class="text-white font-mono text-sm">${formatoFecha(detalle.fecha_fin)}</p></div>
-            <div><p class="text-[10px] text-gray-500 uppercase">Sede</p><p class="text-white text-sm">${detalle.sede || '-'}</p></div>
-            <div><p class="text-[10px] text-gray-500 uppercase">Organizador</p><p class="text-white text-sm">${detalle.organizador || '-'}</p></div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-100 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/5">
+            <div><p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Fecha Inicio</p><p class="text-gray-900 dark:text-white font-mono text-sm">${formatoFecha(detalle.fecha_inicio)}</p></div>
+            <div><p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Fecha Fin</p><p class="text-gray-900 dark:text-white font-mono text-sm">${formatoFecha(detalle.fecha_fin)}</p></div>
+            <div><p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Sede</p><p class="text-gray-900 dark:text-white text-sm">${detalle.sede || '-'}</p></div>
+            <div><p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Organizador</p><p class="text-gray-900 dark:text-white text-sm">${detalle.organizador || '-'}</p></div>
         </div>
     `;
 
     if (detalle.tiempos_corte && detalle.tiempos_corte.length > 0) {
         html += `
             <div class="mb-6">
-                <h4 class="text-sm font-bold text-amber-400 mb-3"><i class="fas fa-cut mr-2"></i>Tiempos de Corte</h4>
+                <h4 class="text-sm font-bold text-amber-600 dark:text-amber-400 mb-3"><i class="fas fa-cut mr-2"></i>Tiempos de Corte</h4>
                 <div class="overflow-x-auto">
                     <table class="w-full text-xs text-left">
-                        <thead><tr class="text-gray-500 uppercase tracking-wider border-b border-[#252345]">
+                        <thead><tr class="text-gray-600 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-[#252345]">
                             <th class="p-2">Categoria</th><th class="p-2">Estilo</th><th class="p-2">Distancia</th><th class="p-2">Tiempo Corte</th>
                         </tr></thead>
-                        <tbody class="divide-y divide-[#252345] text-gray-300">
+                        <tbody class="divide-y divide-gray-200 dark:divide-[#252345] text-gray-800 dark:text-gray-300">
                             ${detalle.tiempos_corte.map(tc => `
                                 <tr>
                                     <td class="p-2">${tc.categoria_nombre || '-'}</td>
@@ -519,21 +518,21 @@ async function verDetalle(id_evento) {
     if (detalle.metas && detalle.metas.length > 0) {
         html += `
             <div class="mb-6">
-                <h4 class="text-sm font-bold text-amber-400 mb-3"><i class="fas fa-bullseye mr-2"></i>Metas Competitivas</h4>
+                <h4 class="text-sm font-bold text-amber-600 dark:text-amber-400 mb-3"><i class="fas fa-bullseye mr-2"></i>Metas Competitivas</h4>
                 <div class="overflow-x-auto">
                     <table class="w-full text-xs text-left">
-                        <thead><tr class="text-gray-500 uppercase tracking-wider border-b border-[#252345]">
+                        <thead><tr class="text-gray-600 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-[#252345]">
                             <th class="p-2">Atleta</th><th class="p-2">Estilo</th><th class="p-2">Distancia</th><th class="p-2">Objetivo</th><th class="p-2">PB</th><th class="p-2">Dif %</th>
                         </tr></thead>
-                        <tbody class="divide-y divide-[#252345] text-gray-300">
+                        <tbody class="divide-y divide-gray-200 dark:divide-[#252345] text-gray-800 dark:text-gray-300">
                             ${detalle.metas.map(m => `
                                 <tr>
-                                    <td class="p-2 text-white">${m.nombre_atleta}</td>
+                                    <td class="p-2 text-gray-900 dark:text-white">${m.nombre_atleta}</td>
                                     <td class="p-2">${m.estilo}</td>
                                     <td class="p-2">${m.distancia}m</td>
                                     <td class="p-2 font-mono">${m.marca_objetivo_seg || '-'}</td>
                                     <td class="p-2 font-mono">${m.pb_actual_seg || '-'}</td>
-                                    <td class="p-2 font-mono ${m.diferencia_pct !== null ? (m.diferencia_pct <= 0 ? 'text-green-400' : 'text-red-400') : 'text-gray-500'}">${m.diferencia_pct !== null ? m.diferencia_pct + '%' : '-'}</td>
+                                    <td class="p-2 font-mono ${m.diferencia_pct !== null ? (m.diferencia_pct <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400') : 'text-gray-500 dark:text-gray-400'}">${m.diferencia_pct !== null ? m.diferencia_pct + '%' : '-'}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -546,15 +545,15 @@ async function verDetalle(id_evento) {
     if (detalle.inscripciones && detalle.inscripciones.length > 0) {
         html += `
             <div class="mb-6">
-                <h4 class="text-sm font-bold text-cyan-400 mb-3"><i class="fas fa-users mr-2"></i>Atletas Inscritos (${detalle.inscripciones.length})</h4>
+                <h4 class="text-sm font-bold text-cyan-600 dark:text-cyan-400 mb-3"><i class="fas fa-users mr-2"></i>Atletas Inscritos (${detalle.inscripciones.length})</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                     ${detalle.inscripciones.map(i => `
-                        <div class="flex items-center justify-between p-2 bg-black/20 rounded-lg">
+                        <div class="flex items-center justify-between p-2 bg-gray-100 dark:bg-black/20 rounded-lg border border-gray-200 dark:border-white/5">
                             <div>
-                                <p class="text-sm text-white">${i.nombre_atleta}</p>
-                                <p class="text-[10px] text-gray-500">${i.cedula}</p>
+                                <p class="text-sm text-gray-900 dark:text-white">${i.nombre_atleta}</p>
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400">${i.cedula}</p>
                             </div>
-                            <button onclick="quitarInscripcion(${detalle.id_evento}, ${i.id_atleta})" class="text-red-400 hover:text-red-300 p-1 transition cursor-pointer text-xs" title="Quitar inscripcion">
+                            <button onclick="quitarInscripcion(${detalle.id_evento}, ${i.id_atleta})" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1 transition cursor-pointer text-xs" title="Quitar inscripcion">
                                 <i class="fas fa-user-minus"></i>
                             </button>
                         </div>
@@ -566,17 +565,17 @@ async function verDetalle(id_evento) {
 
     if (detalle.observaciones) {
         html += `
-            <div class="p-4 bg-black/20 rounded-xl">
-                <p class="text-[10px] text-gray-500 uppercase mb-1">Observaciones</p>
-                <p class="text-sm text-gray-300">${detalle.observaciones}</p>
+            <div class="p-4 bg-gray-100 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/5">
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase mb-1">Observaciones</p>
+                <p class="text-sm text-gray-800 dark:text-gray-300">${detalle.observaciones}</p>
             </div>
         `;
     }
 
     contenedor.innerHTML = html;
-
     modalVer.classList.remove('hidden');
 }
+
 
 function cerrarModalVer() {
     modalVer.classList.add('hidden');
