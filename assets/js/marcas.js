@@ -227,7 +227,78 @@ const btnLimpiar = document.getElementById('btnLimpiarAtleta');
 
 
 // Función para dibujar los cuadritos de los atletas en la lista
+
 function renderizarDropdown(lista) {
+    ulAtletas.innerHTML = '';
+    
+    if (lista.length === 0) {
+        ulAtletas.innerHTML = '<li class="p-4 text-gray-500 dark:text-gray-400 text-center text-xs">No se encontraron coincidencias</li>';
+        return;
+    }
+
+    lista.forEach(atleta => {
+        const li = document.createElement('li');
+        li.className = "p-3 hover:bg-indigo-100 dark:hover:bg-indigo-600/20 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer transition-colors flex justify-between items-center";
+        li.innerHTML = `
+            <div>
+                <div class="font-bold text-gray-900 dark:text-white">${atleta.nombres} ${atleta.apellidos}</div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 font-mono mt-0.5">C.I: ${atleta.cedula}</div>
+            </div>
+            <i class="fas fa-check-circle text-indigo-500/0 transition-all"></i>
+        `;
+        
+        li.onclick = () => {
+            seleccionarAtleta(atleta);
+        };
+        ulAtletas.appendChild(li);
+    });
+}
+
+function seleccionarAtleta(atleta) {
+    inputIdOculto.value = atleta.id_atleta;
+    inputBuscar.value = `${atleta.nombres} ${atleta.apellidos}`;
+    inputBuscar.classList.add('text-indigo-600', 'dark:text-emerald-400', 'font-bold');
+    inputBuscar.setAttribute('readonly', true);
+    
+    dropdown.classList.add('hidden');
+    btnLimpiar.classList.remove('hidden');
+}
+
+// Asegurar que el botón limpiar esté definido (si no existe, se crea)
+if (typeof btnLimpiar !== 'undefined' && btnLimpiar) {
+    btnLimpiar.onclick = () => {
+        inputIdOculto.value = '';
+        inputBuscar.value = '';
+        inputBuscar.classList.remove('text-indigo-600', 'dark:text-emerald-400', 'font-bold');
+        inputBuscar.removeAttribute('readonly');
+        btnLimpiar.classList.add('hidden');
+        inputBuscar.focus();
+    };
+}
+
+// El evento input ya usa las clases adaptadas, solo ajustamos el texto de la cédula a minúsculas para búsqueda
+inputBuscar.addEventListener('input', (e) => {
+    // 1. EXPRESIÓN REGULAR: Solo letras (incluyendo acentos/ñ), números, espacios y guiones.
+    e.target.value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\-\s]/g, '');
+
+    const texto = e.target.value.toLowerCase();
+    
+    // 2. Limpiar selección previa
+    inputIdOculto.value = '';
+    inputBuscar.classList.remove('text-indigo-600', 'dark:text-emerald-400', 'font-bold');
+
+    // 3. Filtrado
+    const filtrados = atletasGlobal.filter(a => 
+        a.nombres.toLowerCase().includes(texto) || 
+        a.apellidos.toLowerCase().includes(texto) ||
+        a.cedula.toLowerCase().includes(texto)
+    );
+    
+    // 4. Mostrar resultados
+    dropdown.classList.remove('hidden');
+    renderizarDropdown(filtrados);
+});
+/* function renderizarDropdown(lista) {
     ulAtletas.innerHTML = '';
     
     if (lista.length === 0) {
@@ -295,7 +366,7 @@ inputBuscar.addEventListener('input', (e) => {
     renderizarDropdown(filtrados);
 });
 
-
+ */
 inputBuscar.addEventListener('focus', () => {
     if (!inputIdOculto.value) { 
         dropdown.classList.remove('hidden');
@@ -511,9 +582,9 @@ function generarCajasSplits() {
     for (let i = 1; i <= cantidadTramos; i++) {
         let distanciaActual = i * tamanoTramo; // 25, 50, 75, 100...
         
-        const cajaHTML = `
+         const cajaHTML = `
             <div class="relative">
-                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">
+                <label class="block text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">
                     Parcial ${distanciaActual}m
                 </label>
                 <div class="relative">
@@ -521,10 +592,10 @@ function generarCajasSplits() {
                            name="splits[${distanciaActual}]" 
                            data-validar="requerido|decimal_tiempo" 
                            required 
-                            data-nombre="Parcial de ${distanciaActual}m" 
+                           data-nombre="Parcial de ${distanciaActual}m" 
                            placeholder="00.00" 
-                           class="w-full bg-[#161430] border border-gray-700 text-emerald-400 font-mono text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-center split-input">
-                    <span class="absolute right-3 top-2.5 text-gray-600 text-xs">s</span>
+                           class="w-full bg-gray-100 dark:bg-[#161430] border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-emerald-400 font-mono text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-center split-input">
+                    <span class="absolute right-3 top-2.5 text-gray-400 dark:text-gray-600 text-xs">s</span>
                 </div>
             </div>
         `;
@@ -1115,6 +1186,249 @@ async function cargarFiltroAtletas() {
 let instanciaGrafica = null; 
 let instanciaGraficaSplits = null; 
 
+function generarCajasSplits() {
+    const distanciaTotal = parseInt(selectDistancia.value);
+    
+    if (isNaN(distanciaTotal)) {
+        contenedorSplits.classList.add('hidden');
+        rejillaSplits.innerHTML = '';
+        return;
+    }
+
+    const tamanoTramo = 25; 
+    const cantidadTramos = distanciaTotal / tamanoTramo;
+    
+    rejillaSplits.innerHTML = '';
+    
+    for (let i = 1; i <= cantidadTramos; i++) {
+        let distanciaActual = i * tamanoTramo;
+        
+        const cajaHTML = `
+            <div class="relative">
+                <label class="block text-[10px] text-gray-600 dark:text-gray-400 uppercase font-bold mb-1">
+                    Parcial ${distanciaActual}m
+                </label>
+                <div class="relative">
+                    <input type="text" 
+                           name="splits[${distanciaActual}]" 
+                           data-validar="requerido|decimal_tiempo" 
+                           required 
+                           data-nombre="Parcial de ${distanciaActual}m" 
+                           placeholder="00.00" 
+                           class="w-full bg-white dark:bg-[#161430] border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-emerald-400 font-mono text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-center split-input">
+                    <span class="absolute right-3 top-2.5 text-gray-400 dark:text-gray-600 text-xs">s</span>
+                </div>
+            </div>
+        `;
+        
+        rejillaSplits.innerHTML += cajaHTML;
+    }
+
+    contadorSplits.innerText = `${cantidadTramos} Tramos (Cada 25m)`;
+    contadorSplits.className = 'text-[10px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-mono font-bold';
+    contenedorSplits.classList.remove('hidden');
+    
+    rejillaSplits.style.opacity = 0;
+    setTimeout(() => {
+        rejillaSplits.style.transition = "opacity 0.3s ease-in-out";
+        rejillaSplits.style.opacity = 1;
+    }, 50);
+}
+
+async function verDetallesMarca(id_marca) {
+    const modalVer = document.getElementById('modalVer');
+    const contenedor = document.getElementById('detalleContenido');
+    
+    contenedor.innerHTML = `
+        <div class="text-center p-12 text-gray-500 dark:text-gray-400">
+            <i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-3"></i>
+            <p class="text-xs font-mono uppercase tracking-widest">Sincronizando métricas biomecánicas...</p>
+        </div>
+    `;
+    
+    modalVer.classList.remove('hidden');
+    
+    const data = await peticionAjax(`obtenerDetalleMarca&id=${id_marca}`);
+    if (!data) {
+        UI.error('Error de Consulta', 'No se pudo estructurar el análisis técnico del registro.');
+        cerrarModalVer();
+        return;
+    }
+
+    const tiempoFinalHumano = formatearTiempoDesdeSegundos(data.tiempo_final_seg);
+    const swolfScore = data.swolf_data ? data.swolf_data.swolf : '🚫 N/A';
+    const numBrazadas = data.swolf_data ? data.swolf_data.num_brazadas : 'Sin conteo';
+    const tReaccion = data.tiempo_reaccion_seg ? data.tiempo_reaccion_seg + 's' : '—';
+    const tViraje = data.tiempo_viraje_seg ? data.tiempo_viraje_seg + 's' : '—';
+    
+    let tramosHTML = '';
+    if (data.splits && data.splits.length > 0) {
+        data.splits.forEach(split => {
+            tramosHTML += `
+                <div class="bg-gray-100 dark:bg-[#161430] border border-gray-200 dark:border-gray-800 p-3 rounded-xl text-center shadow-inner">
+                    <p class="text-[9px] text-gray-600 dark:text-gray-500 uppercase font-black tracking-wider mb-0.5">${split.distancia_parcial_m} Metros</p>
+                    <p class="font-mono text-xs text-emerald-600 dark:text-emerald-400 font-bold">${parseFloat(split.tiempo_parcial_seg).toFixed(2)}s</p>
+                </div>
+            `;
+        });
+    } else {
+        tramosHTML = '<div class="col-span-4 p-4 text-center text-xs text-gray-500 dark:text-gray-500 italic">No se recolectaron parciales en este control.</div>';
+    }
+
+    contenedor.innerHTML = `
+        <div class="mb-6">
+            <span class="px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold rounded-md uppercase tracking-widest">
+                <i class="fas fa-microscope mr-1"></i> Telemetría Deportiva
+            </span>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mt-2">${data.atleta_nombres} ${data.atleta_apellidos}</h2>
+            <p class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">C.I: ${data.cedula} • Registro: ${formatearFecha(data.fecha)}</p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div class="bg-gray-100 dark:bg-black/30 p-3.5 rounded-xl border border-gray-200 dark:border-white/5 text-center">
+                <p class="text-[9px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-wider mb-1">Tiempo de Registro</p>
+                <p class="text-base font-mono text-emerald-600 dark:text-emerald-400 font-black">${tiempoFinalHumano}</p>
+                ${data.es_pb == 1 ? '<span class="text-[9px] text-amber-600 dark:text-amber-400 font-bold animate-pulse"><i class="fas fa-trophy mr-1"></i>Récord (PB)</span>' : ''}
+            </div>
+            
+            <div class="bg-gray-100 dark:bg-black/30 p-3.5 rounded-xl border border-gray-200 dark:border-white/5 text-center">
+                <p class="text-[9px] text-amber-600 dark:text-amber-400 uppercase font-bold tracking-wider mb-1">Índice SWOLF</p>
+                <p class="text-base font-mono text-amber-600 dark:text-amber-400 font-black">${swolfScore}</p>
+                <p class="text-[8px] text-gray-500 dark:text-gray-500 uppercase font-medium">Eficiencia Dinámica</p>
+            </div>
+
+            <div class="bg-gray-100 dark:bg-black/30 p-3.5 rounded-xl border border-gray-200 dark:border-white/5 text-center">
+                <p class="text-[9px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-wider mb-1">Ciclos de Brazada</p>
+                <p class="text-base font-mono text-gray-800 dark:text-white font-bold">${numBrazadas}</p>
+                <p class="text-[8px] text-gray-500 dark:text-gray-500 uppercase">Por Longitud</p>
+            </div>
+
+            <div class="bg-gray-100 dark:bg-black/30 p-3.5 rounded-xl border border-gray-200 dark:border-white/5 text-center">
+                <p class="text-[9px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-wider mb-1">Reacción / Viraje</p>
+                <p class="text-xs font-mono text-gray-700 dark:text-gray-300 font-bold mt-1.5">${tReaccion} | ${tViraje}</p>
+                <p class="text-[8px] text-gray-500 dark:text-gray-500 uppercase">Bloque / Pared</p>
+            </div>
+        </div>
+
+        <div class="mb-6 bg-gray-50 dark:bg-black/10 p-4 rounded-xl border border-gray-200 dark:border-white/5">
+            <p class="text-[10px] uppercase text-gray-600 dark:text-gray-400 font-bold tracking-widest mb-3">
+                <i class="fas fa-chart-bar text-emerald-600 dark:text-emerald-400 mr-2"></i>Pacing: Desglose de Ritmo por Tramo
+            </p>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                ${tramosHTML}
+            </div>
+        </div>
+
+        <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-xl border border-gray-200 dark:border-white/5">
+            <p class="text-[10px] uppercase text-gray-600 dark:text-gray-400 font-bold tracking-widest mb-3">
+                <i class="fas fa-chart-line text-indigo-600 dark:text-indigo-400 mr-2"></i>Curva Histórica de Progresión (${data.distancia_m}m ${data.estilo} - Piscina ${data.tipo_piscina})
+            </p>
+            <div class="w-full h-44 relative">
+                <canvas id="canvasEvolucion"></canvas>
+            </div>
+        </div>
+        <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-xl border border-gray-200 dark:border-white/5 mt-4">
+                <p class="text-[10px] uppercase text-gray-600 dark:text-gray-400 font-bold tracking-widest mb-3">
+                    <i class="fas fa-chart-line text-cyan-600 dark:text-cyan-400 mr-2"></i> Análisis de Ritmo y Caída de Velocidad
+                </p>
+                <div class="w-full h-44 relative">
+                    <canvas id="graficaSplits"></canvas> 
+                </div>
+        </div>
+    `;
+
+    // Detectar tema actual para gráficas
+    const esDark = document.documentElement.classList.contains('dark');
+    const colorTexto = esDark ? '#6b7280' : '#4b5563';
+    const colorGrid = esDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.05)';
+
+    if (data.historial_evolucion && data.historial_evolucion.length > 0) {
+        const ejeFechas = data.historial_evolucion.map(h => formatearFecha(h.fecha));
+        const ejeTiempos = data.historial_evolucion.map(h => parseFloat(h.tiempo_final_seg));
+
+        if (instanciaGrafica) instanciaGrafica.destroy();
+
+        const contextoLienzo = document.getElementById('canvasEvolucion').getContext('2d');
+        instanciaGrafica = new Chart(contextoLienzo, {
+            type: 'line',
+            data: {
+                labels: ejeFechas,
+                datasets: [{
+                    data: ejeTiempos,
+                    borderColor: '#6366f1', 
+                    backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#10b981', 
+                    pointBorderColor: '#fff',
+                    pointRadius: 3.5,
+                    tension: 0.25 
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        grid: { color: colorGrid },
+                        ticks: { color: colorTexto, font: { size: 9, family: 'monospace' } }
+                    },
+                    y: {
+                        grid: { color: colorGrid },
+                        ticks: { 
+                            color: colorTexto, 
+                            font: { size: 9, family: 'monospace' },
+                            callback: function(val) { return val + 's'; }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    if (data.splits && data.splits.length > 0) {
+        const ejeDistancias = data.splits.map(s => s.distancia_parcial_m + 'm');
+        const ejeTiemposSplits = data.splits.map(s => parseFloat(s.tiempo_parcial_seg));
+
+        if (instanciaGraficaSplits) instanciaGraficaSplits.destroy();
+
+        const ctxSplits = document.getElementById('graficaSplits').getContext('2d');
+        instanciaGraficaSplits = new Chart(ctxSplits, {
+            type: 'line',
+            data: {
+                labels: ejeDistancias,
+                datasets: [{
+                    data: ejeTiemposSplits,
+                    borderColor: '#06b6d4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.05)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#06b6d4',
+                    pointBorderColor: '#fff',
+                    pointRadius: 3.5,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { 
+                        grid: { display: false }, 
+                        ticks: { color: colorTexto, font: { size: 9, family: 'monospace' } } 
+                    },
+                    y: { 
+                        grid: { color: colorGrid }, 
+                        ticks: { color: colorTexto, font: { size: 9, family: 'monospace' }, callback: function(val) { return val + 's'; } } 
+                    }
+                }
+            }
+        });
+    }
+}
+
+/* 
 async function verDetallesMarca(id_marca) {
     const modalVer = document.getElementById('modalVer');
     const contenedor = document.getElementById('detalleContenido');
@@ -1306,7 +1620,7 @@ async function verDetallesMarca(id_marca) {
         });
     }
 
-}
+} */
 
 function cerrarModalVer() {
     document.getElementById('modalVer').classList.add('hidden');
