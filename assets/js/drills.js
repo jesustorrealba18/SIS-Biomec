@@ -95,15 +95,15 @@ async function cargarTablaDrills() {
     const tbody = document.getElementById('listaDrills');
     if (!tbody) return;
     
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando datos...</span></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center p-12 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando datos...</span></td></tr>`;
 
     const drills = await peticionAjax('listarDrills');
 
     if (!drills || drills.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center p-12 text-gray-500">
-                    <i class="fas fa-dumbbell text-4xl mb-3 block text-gray-600 animate-pulse"></i>
+                <td colspan="8" class="text-center p-12 text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-dumbbell text-4xl mb-3 block text-gray-400 dark:text-gray-600 animate-pulse"></i>
                     <span class="text-xs uppercase tracking-wider block">No hay entrenamientos registrados en el sistema</span>
                 </td>
             </tr>
@@ -118,33 +118,33 @@ async function cargarTablaDrills() {
 
     tbody.innerHTML = drills.map(ent => {
         const badgePersonalizado = parseInt(ent.personalizado) === 1 
-            ? `<span class="px-2 py-1 text-[10px] font-bold bg-purple-500/10 text-purple-400 rounded-md border border-purple-500/20">SÍ</span>`
-            : `<span class="px-2 py-1 text-[10px] font-bold bg-gray-500/10 text-gray-400 rounded-md">NO</span>`;
+            ? `<span class="px-2 py-1 text-[10px] font-bold bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-md border border-purple-200 dark:border-purple-500/20">SÍ</span>`
+            : `<span class="px-2 py-1 text-[10px] font-bold bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded-md">NO</span>`;
 
         const badgeActivo = parseInt(ent.activo) === 1 
-            ? `<span class="px-2 py-1 text-[10px] font-bold bg-green-500/10 text-green-400 rounded-md border border-green-500/20">ACTIVO</span>`
-            : `<span class="px-2 py-1 text-[10px] font-bold bg-red-500/10 text-red-400 rounded-md border border-red-500/20">INACTIVO</span>`;
+            ? `<span class="px-2 py-1 text-[10px] font-bold bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 rounded-md border border-green-200 dark:border-green-500/20">ACTIVO</span>`
+            : `<span class="px-2 py-1 text-[10px] font-bold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-md border border-red-200 dark:border-red-500/20">INACTIVO</span>`;
 
         const badgeDificultad = `<span class="badge-dificultad dificultad-${ent.dificultad}">${ent.dificultad}</span>`;
 
         return `
-            <tr class="drills-row border-b border-gray-800/50 hover:bg-[#1c1a3a]/40 transition-colors duration-200" data-busqueda="${ent.nombre} ${ent.estilo} ${ent.categoria}">
-                <td class="p-4 font-medium text-white max-w-[180px] truncate" title="${escapeHtml(ent.nombre)}">${escapeHtml(ent.nombre)}</td>
-                <td class="p-4 text-gray-300 text-xs">${escapeHtml(ent.estilo)}</td>
-                <td class="p-4 text-gray-400 text-xs">${escapeHtml(ent.categoria)}</td>
+            <tr class="drills-row border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-100 dark:hover:bg-[#1c1a3a]/40 transition-colors duration-200" data-busqueda="${ent.nombre} ${ent.estilo} ${ent.categoria}">
+                <td class="p-4 font-medium text-gray-900 dark:text-white max-w-[180px] truncate" title="${escapeHtml(ent.nombre)}">${escapeHtml(ent.nombre)}</td>
+                <td class="p-4 text-gray-700 dark:text-gray-300 text-xs">${escapeHtml(ent.estilo)}</td>
+                <td class="p-4 text-gray-600 dark:text-gray-400 text-xs">${escapeHtml(ent.categoria)}</td>
                 <td class="p-4">${badgeDificultad}</td>
-                <td class="p-4 text-gray-400 text-xs">${escapeHtml(ent.material_requerido)}</td>
+                <td class="p-4 text-gray-600 dark:text-gray-400 text-xs">${escapeHtml(ent.material_requerido)}</td>
                 <td class="p-4 text-center">${badgePersonalizado}</td>
                 <td class="p-4 text-center">${badgeActivo}</td>
                 <td class="p-4 text-right">
                     <div class="flex justify-end gap-2">
-                        <button onclick="verDetalleDrill(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all" title="Ver Perfil">
+                        <button onclick="verDetalleDrill(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all" title="Ver Perfil">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button onclick="abrirModalDrills(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all" title="Editar">
+                        <button onclick="abrirModalDrills(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button onclick="eliminarDrills(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all" title="Eliminar">
+                        <button onclick="eliminarDrills(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-all" title="Eliminar">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -170,8 +170,8 @@ async function verDetalleDrill(id) {
     }
 
     const badgePersonalizado = parseInt(drill.personalizado) === 1 
-        ? `<span class="px-2 py-1 text-[10px] font-bold bg-purple-500/10 text-purple-400 rounded-md border border-purple-500/20">PERSONALIZADO</span>`
-        : `<span class="px-2 py-1 text-[10px] font-bold bg-gray-500/10 text-gray-400 rounded-md">ESTÁNDAR</span>`;
+        ? `<span class="px-2 py-1 text-[10px] font-bold bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-md border border-purple-200 dark:border-purple-500/20">PERSONALIZADO</span>`
+        : `<span class="px-2 py-1 text-[10px] font-bold bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded-md">ESTÁNDAR</span>`;
 
     const badgeActivo = parseInt(drill.activo) === 1 
         ? `<span class="estado-activo px-3 py-1 rounded-full text-xs font-bold">ACTIVO</span>`
@@ -181,10 +181,10 @@ async function verDetalleDrill(id) {
 
     const html = `
         <div class="text-center mb-8">
-            <div class="w-28 h-28 rounded-full mx-auto mb-4 bg-indigo-500/20 flex items-center justify-center text-4xl text-indigo-400 border-4 border-indigo-500/20">
+            <div class="w-28 h-28 rounded-full mx-auto mb-4 bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center text-4xl text-indigo-600 dark:text-indigo-400 border-4 border-indigo-200 dark:border-indigo-500/20">
                 <i class="fas fa-dumbbell"></i>
             </div>
-            <h2 class="text-2xl font-bold text-white">${escapeHtml(drill.nombre)}</h2>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${escapeHtml(drill.nombre)}</h2>
             <div class="flex justify-center gap-2 mt-3 flex-wrap">
                 ${badgeDificultad}
                 ${badgeActivo}
@@ -193,40 +193,40 @@ async function verDetalleDrill(id) {
         </div>
 
         <div class="mb-6">
-            <p class="text-[10px] uppercase text-indigo-400 font-bold tracking-widest mb-3"><i class="fas fa-tags mr-2"></i>Clasificación</p>
-            <div class="grid grid-cols-2 gap-3 text-left bg-black/20 p-4 rounded-2xl border border-white/5">
-                <div><p class="text-[10px] uppercase text-gray-500">Estilo</p><p class="text-white">${escapeHtml(drill.estilo)}</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Categoría</p><p class="text-indigo-300">${escapeHtml(drill.categoria)}</p></div>
-                <div class="col-span-2"><p class="text-[10px] uppercase text-gray-500">Enfoque Técnico</p><p class="text-white text-sm">${escapeHtml(drill.enfoque_tecnico)}</p></div>
+            <p class="text-[10px] uppercase text-indigo-600 dark:text-indigo-400 font-bold tracking-widest mb-3"><i class="fas fa-tags mr-2"></i>Clasificación</p>
+            <div class="grid grid-cols-2 gap-3 text-left bg-gray-100 dark:bg-black/20 p-4 rounded-2xl border border-gray-200 dark:border-white/5">
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Estilo</p><p class="text-gray-900 dark:text-white">${escapeHtml(drill.estilo)}</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Categoría</p><p class="text-indigo-600 dark:text-indigo-300">${escapeHtml(drill.categoria)}</p></div>
+                <div class="col-span-2"><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Enfoque Técnico</p><p class="text-gray-900 dark:text-white text-sm">${escapeHtml(drill.enfoque_tecnico)}</p></div>
             </div>
         </div>
 
         <div class="mb-6">
-            <p class="text-[10px] uppercase text-emerald-400 font-bold tracking-widest mb-3"><i class="fas fa-align-left mr-2"></i>Descripción</p>
-            <div class="bg-black/20 p-4 rounded-2xl border border-white/5">
-                <p class="text-gray-300 text-sm leading-relaxed">${escapeHtml(drill.descripcion) || 'Sin descripción registrada'}</p>
+            <p class="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-widest mb-3"><i class="fas fa-align-left mr-2"></i>Descripción</p>
+            <div class="bg-gray-100 dark:bg-black/20 p-4 rounded-2xl border border-gray-200 dark:border-white/5">
+                <p class="text-gray-800 dark:text-gray-300 text-sm leading-relaxed">${escapeHtml(drill.descripcion) || 'Sin descripción registrada'}</p>
             </div>
         </div>
 
         <div class="mb-6">
-            <p class="text-[10px] uppercase text-amber-400 font-bold tracking-widest mb-3"><i class="fas fa-tasks mr-2"></i>Instrucciones</p>
-            <div class="bg-black/20 p-4 rounded-2xl border border-white/5">
-                <p class="text-gray-300 text-sm leading-relaxed whitespace-pre-line">${escapeHtml(drill.instrucciones) || 'Sin instrucciones registradas'}</p>
+            <p class="text-[10px] uppercase text-amber-600 dark:text-amber-400 font-bold tracking-widest mb-3"><i class="fas fa-tasks mr-2"></i>Instrucciones</p>
+            <div class="bg-gray-100 dark:bg-black/20 p-4 rounded-2xl border border-gray-200 dark:border-white/5">
+                <p class="text-gray-800 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-line">${escapeHtml(drill.instrucciones) || 'Sin instrucciones registradas'}</p>
             </div>
         </div>
 
         <div>
-            <p class="text-[10px] uppercase text-purple-400 font-bold tracking-widest mb-3"><i class="fas fa-chart-line mr-2"></i>Especificaciones Técnicas</p>
-            <div class="grid grid-cols-2 gap-3 text-left bg-black/20 p-4 rounded-2xl border border-white/5">
-                <div><p class="text-[10px] uppercase text-gray-500">Metraje Sugerido</p><p class="text-indigo-300 font-mono font-bold">${escapeHtml(drill.metraje_sugerido) || 'No especificado'}</p></div>
-                <div><p class="text-[10px] uppercase text-gray-500">Material Requerido</p><p class="text-white">${escapeHtml(drill.material_requerido) || 'Ninguno'}</p></div>
-                <div class="col-span-2"><p class="text-[10px] uppercase text-gray-500">Fecha de Creación</p><p class="text-gray-400 text-sm">${drill.fecha_creacion ? new Date(drill.fecha_creacion).toLocaleString() : 'No registrada'}</p></div>
+            <p class="text-[10px] uppercase text-purple-600 dark:text-purple-400 font-bold tracking-widest mb-3"><i class="fas fa-chart-line mr-2"></i>Especificaciones Técnicas</p>
+            <div class="grid grid-cols-2 gap-3 text-left bg-gray-100 dark:bg-black/20 p-4 rounded-2xl border border-gray-200 dark:border-white/5">
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Metraje Sugerido</p><p class="text-indigo-600 dark:text-indigo-300 font-mono font-bold">${escapeHtml(drill.metraje_sugerido) || 'No especificado'}</p></div>
+                <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Material Requerido</p><p class="text-gray-900 dark:text-white">${escapeHtml(drill.material_requerido) || 'Ninguno'}</p></div>
+                <div class="col-span-2"><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Fecha de Creación</p><p class="text-gray-700 dark:text-gray-400 text-sm">${drill.fecha_creacion ? new Date(drill.fecha_creacion).toLocaleString() : 'No registrada'}</p></div>
             </div>
         </div>
 
-        <div class="flex flex-col items-center justify-center p-4 bg-[#161430] border border-[#252345] rounded-xl mt-4">
-            <span class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">Información del Creador</span>
-            <span class="text-[10px] text-gray-500 font-mono">ID Usuario: ${drill.id_usuario_creador || '1'}</span>
+        <div class="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-xl mt-4">
+            <span class="text-xs text-gray-600 dark:text-gray-400 font-bold uppercase tracking-wider mb-2">Información del Creador</span>
+            <span class="text-[10px] text-gray-500 dark:text-gray-400 font-mono">ID Usuario: ${drill.id_usuario_creador || '1'}</span>
         </div>
     `;
 
