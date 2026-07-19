@@ -1,18 +1,24 @@
 // alertas.js - Gestor centralizado de SweetAlert2
-
 const UI = {
-    // Configuración base (tus colores oscuros estandarizados)
-    config: {
-        background: '#161430',
-        color: '#fff',
-        confirmButtonColor: '#6366f1',
-        cancelButtonColor: '#374151'
+    // ============================================================
+    //  CONFIGURACIÓN DINÁMICA SEGÚN TEMA
+    // ============================================================
+    obtenerConfig: function() {
+        const esOscuro = document.documentElement.classList.contains('dark');
+        return {
+            background: esOscuro ? '#161430' : '#ffffff',
+            color: esOscuro ? '#ffffff' : '#1f2937',
+            confirmButtonColor: esOscuro ? '#6366f1' : '#4f46e5',
+            cancelButtonColor: esOscuro ? '#374151' : '#9ca3af'
+        };
     },
 
-    // Métodos simplificados
+    // ============================================================
+    //  MÉTODOS DE ALERTA
+    // ============================================================
     exito: function(titulo, mensaje) {
         return Swal.fire({
-            ...this.config,
+            ...this.obtenerConfig(),
             icon: 'success',
             title: titulo,
             text: mensaje
@@ -21,7 +27,7 @@ const UI = {
 
     error: function(titulo, mensaje) {
         return Swal.fire({
-            ...this.config,
+            ...this.obtenerConfig(),
             icon: 'error',
             title: titulo,
             html: mensaje
@@ -30,17 +36,16 @@ const UI = {
 
     advertencia: function(titulo, mensaje) {
         return Swal.fire({
-            ...this.config,
+            ...this.obtenerConfig(),
             icon: 'warning',
             title: titulo,
             html: mensaje
         });
     },
 
-    // Ideal para el botón de eliminar
     confirmar: function(titulo, mensaje) {
         return Swal.fire({
-            ...this.config,
+            ...this.obtenerConfig(),
             icon: 'warning',
             title: titulo,
             text: mensaje,
@@ -50,21 +55,20 @@ const UI = {
         });
     },
 
-    // NUEVO MÉTODO CENTRALIZADO: Para Soft Delete con Auditoría
     pedirJustificacion: function(titulo, mensaje, placeholder = 'Escriba la justificación detallada aquí...') {
         return Swal.fire({
-            ...this.config,
+            ...this.obtenerConfig(),
             title: titulo,
             text: mensaje,
             icon: 'warning',
-            input: 'textarea', // El textarea da más espacio visual para redactar
+            input: 'textarea',
             inputPlaceholder: placeholder,
             inputAttributes: {
                 'aria-label': 'Justificación'
             },
             showCancelButton: true,
-            confirmButtonColor: '#ef4444', // Rojo para acciones destructivas
-            cancelButtonColor: this.config.cancelButtonColor,
+            confirmButtonColor: '#ef4444', // Rojo fijo para acciones destructivas
+            cancelButtonColor: this.obtenerConfig().cancelButtonColor,
             confirmButtonText: '<i class="fas fa-archive mr-2"></i> Archivar Registro',
             cancelButtonText: 'Cancelar',
             inputValidator: (value) => {
