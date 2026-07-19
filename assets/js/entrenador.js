@@ -341,7 +341,7 @@ async function cargarTablaEntrenador() {
     const tbody = document.getElementById('listaEntrenador');
     if (!tbody) return;
     
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando datos...</span></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-12 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando datos...</span></td></tr>`;
 
     const entrenadores = await peticionAjax('listarEntrenador');
 
@@ -349,8 +349,8 @@ async function cargarTablaEntrenador() {
         if(totalEntrenador) totalEntrenador.textContent = '0 Registrados';
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center p-12 text-gray-500">
-                    <i class="fas fa-users-slash text-4xl mb-3 block text-gray-600 animate-pulse"></i>
+                <td colspan="5" class="text-center p-12 text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-users-slash text-4xl mb-3 block text-gray-400 dark:text-gray-600 animate-pulse"></i>
                     <span class="text-xs uppercase tracking-wider block">No hay entrenadores registrados en el sistema</span>
                 </td>
             </tr>
@@ -363,34 +363,34 @@ async function cargarTablaEntrenador() {
     tbody.innerHTML = entrenadores.map(ent => {
         const InicialesHtml = ent.foto 
             ? `<img src="${ent.foto}" class="w-8 h-8 rounded-full object-cover">`
-            : `<div class="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xs font-bold uppercase">${ent.nombres[0]}${ent.apellidos[0]}</div>`;
+            : `<div class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold uppercase">${ent.nombres[0]}${ent.apellidos[0]}</div>`;
 
         return `
-        <tr class="entrenador-row border-b border-gray-800/50 hover:bg-[#1c1a3a]/40 transition-colors duration-200" data-busqueda="${ent.cedula} ${ent.nombres} ${ent.apellidos}">
-            <td class="p-4 font-medium text-white flex items-center gap-3">
+        <tr class="entrenador-row border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-100 dark:hover:bg-[#1c1a3a]/40 transition-colors duration-200" data-busqueda="${ent.cedula} ${ent.nombres} ${ent.apellidos}">
+            <td class="p-4 font-medium text-gray-900 dark:text-white flex items-center gap-3">
                 ${InicialesHtml}
                 <div>
                     <span class="block">${ent.nombres} ${ent.apellidos}</span>
-                    <span class="text-xs text-gray-500">${ent.correo || ''}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">${ent.correo || ''}</span>
                 </div>
             </td>
-            <td class="p-4 text-gray-300 font-mono text-xs">${ent.cedula}</td>
-            <td class="p-4 text-gray-400">${ent.telefono}</td>
-            <td class="p-4 text-gray-400 max-w-xs truncate">${ent.direccion}</td>
+            <td class="p-4 text-gray-700 dark:text-gray-300 font-mono text-xs">${ent.cedula}</td>
+            <td class="p-4 text-gray-600 dark:text-gray-400">${ent.telefono}</td>
+            <td class="p-4 text-gray-600 dark:text-gray-400 max-w-xs truncate">${ent.direccion}</td>
             <td class="p-4 text-right">
                 ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
                 <div class="flex justify-end gap-2">
-                    <button onclick="verDetalle(${ent.id_entrenador})" class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 p-2 rounded-lg transition" title="Ver Perfil">
+                    <button onclick="verDetalle(${ent.id_entrenador})" class="bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 p-2 rounded-lg transition" title="Ver Perfil">
                         <i class="fas fa-eye text-xs"></i>
                     </button>
-                    <button onclick="abrirModalEntrenador(${ent.id_entrenador})" class="bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 p-2 rounded-lg transition" title="Editar">
+                    <button onclick="abrirModalEntrenador(${ent.id_entrenador})" class="bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 p-2 rounded-lg transition" title="Editar">
                         <i class="fas fa-edit text-xs"></i>
                     </button>
-                    <button onclick="eliminarEntrenador(${ent.id_entrenador})" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-lg transition" title="Eliminar">
+                    <button onclick="eliminarEntrenador(${ent.id_entrenador})" class="bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 p-2 rounded-lg transition" title="Eliminar">
                         <i class="fas fa-trash text-xs"></i>
                     </button>
                 </div>
-                ` : '<span class="text-gray-600 text-xs">Solo lectura</span>'}
+                ` : '<span class="text-gray-500 dark:text-gray-400 text-xs">Solo lectura</span>'}
             </td>
         </tr>
     `}).join('');
