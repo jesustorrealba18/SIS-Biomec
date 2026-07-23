@@ -31,6 +31,17 @@ async function peticionAjax(accion, datos = null) {
 }
 
 // =====================================================================
+// DETECCIÓN DE TEMA PARA CHART.JS
+// =====================================================================
+function getChartColors() {
+    const esOscuro = document.documentElement.classList.contains('dark');
+    return {
+        texto: esOscuro ? '#a0a0c0' : '#4b5563',
+        grid: esOscuro ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+    };
+}
+
+// =====================================================================
 // RF-05.1: CÁLCULO DE IMC EN TIEMPO REAL (PREVIEW VISUAL)
 // =====================================================================
 const inputPeso = document.getElementById('peso');
@@ -45,22 +56,21 @@ function calcularIMCEnVivo() {
         let tallaMetros = t / 100;
         let imc = (p / (tallaMetros * tallaMetros)).toFixed(2);
         
-        // Colores dinámicos según estándar de la OMS
-        let colorClass = 'text-white';
-        if (imc < 18.5) colorClass = 'text-blue-400'; // Bajo peso
-        else if (imc >= 18.5 && imc <= 24.9) colorClass = 'text-green-400'; // Normal
-        else if (imc >= 25 && imc <= 29.9) colorClass = 'text-yellow-400'; // Sobrepeso
-        else colorClass = 'text-red-400'; // Obesidad
+        // Colores dinámicos según estándar de la OMS (adaptados claro/oscuro)
+        let colorClass = 'text-gray-900 dark:text-white';
+        if (imc < 18.5) colorClass = 'text-blue-600 dark:text-blue-400';
+        else if (imc >= 18.5 && imc <= 24.9) colorClass = 'text-emerald-600 dark:text-emerald-400';
+        else if (imc >= 25 && imc <= 29.9) colorClass = 'text-amber-600 dark:text-amber-400';
+        else colorClass = 'text-red-600 dark:text-red-400';
 
         imcPreview.className = `text-xl font-bold ${colorClass}`;
         imcPreview.textContent = imc;
     } else {
-        imcPreview.className = 'text-xl font-bold text-white';
+        imcPreview.className = 'text-xl font-bold text-gray-900 dark:text-white';
         imcPreview.textContent = '--';
     }
 }
 
-// Eventos jQuery-like usando Vanilla JS
 inputPeso.addEventListener('input', calcularIMCEnVivo);
 inputTalla.addEventListener('input', calcularIMCEnVivo);
 
@@ -74,9 +84,12 @@ function abrirModalMedicion() {
     
     document.getElementById('accion').value = 'guardar';
     document.getElementById('id_medicion').value = '';
-    document.getElementById('modalMedicionTitulo').innerHTML = '<div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center mr-4"><i class="fas fa-weight text-indigo-400"></i></div> Registrar Medición';
+    document.getElementById('modalMedicionTitulo').innerHTML = `
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center mr-4">
+            <i class="fas fa-weight text-indigo-600 dark:text-indigo-400"></i>
+        </div> Registrar Medición
+    `;
     
-    // Ocultar campo de justificación (Solo es para edición)
     document.getElementById('contenedorJustificacion').classList.add('hidden');
     document.getElementById('justificacion').removeAttribute('data-validar');
     
@@ -97,8 +110,14 @@ function cerrarModalMedicion() {
 
 function cerrarModalGraficas() {
     modalGraficas.classList.add('hidden');
-    if (chartPesoTallaInstancia) chartPesoTallaInstancia.destroy();
-    if (chartIMCInstancia) chartIMCInstancia.destroy();
+    if (chartPesoTallaInstancia) {
+        chartPesoTallaInstancia.destroy();
+        chartPesoTallaInstancia = null;
+    }
+    if (chartIMCInstancia) {
+        chartIMCInstancia.destroy();
+        chartIMCInstancia = null;
+    }
 }
 
 // =====================================================================
@@ -111,49 +130,52 @@ async function cargarAtletas() {
         const select = document.getElementById('id_atleta');
         select.innerHTML = '<option value="">Seleccione un atleta...</option>';
         data.forEach(atleta => {
-            select.innerHTML += `<option value="${atleta.id_atleta}">${atleta.cedula} -${atleta.nombres} ${atleta.apellidos} - ${atleta.categoria_nombre}</option>`;
+            select.innerHTML += `<option value="${atleta.id_atleta}">${atleta.cedula} - ${atleta.nombres} ${atleta.apellidos} - ${atleta.categoria_nombre}</option>`;
         });
     }
 }
 
 async function cargarDashboard() {
     const tbody = document.getElementById('tablaDashboardBody');
-    tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando...</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando...</td></tr>`;
     
     const respuesta = await peticionAjax('cargarDashboard');
     
     if (respuesta && respuesta.data) {
         tbody.innerHTML = '';
         if (respuesta.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-gray-500">No hay atletas registrados.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-500 dark:text-gray-400">No hay atletas registrados.</td></tr>`;
             return;
         }
 
         respuesta.data.forEach(fila => {
-            // Validar si el atleta tiene mucho tiempo sin evaluación (Ej: > 90 días)
             let alertaDias = '';
             if (fila.dias_sin_evaluacion === null) {
-                alertaDias = `<span class="bg-red-500/10 text-red-400 py-1 px-2 rounded font-bold text-xs"><i class="fas fa-exclamation-circle"></i> Sin evaluar</span>`;
+                alertaDias = `<span class="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 py-1 px-2 rounded font-bold text-xs"><i class="fas fa-exclamation-circle"></i> Sin evaluar</span>`;
             } else if (fila.dias_sin_evaluacion > 90) {
-                alertaDias = `<span class="bg-orange-500/10 text-orange-400 py-1 px-2 rounded font-bold text-xs"><i class="fas fa-clock"></i> Hace ${fila.dias_sin_evaluacion} días</span>`;
+                alertaDias = `<span class="bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 py-1 px-2 rounded font-bold text-xs"><i class="fas fa-clock"></i> Hace ${fila.dias_sin_evaluacion} días</span>`;
             } else {
-                alertaDias = `<span class="text-green-400 font-medium text-xs">Hace ${fila.dias_sin_evaluacion} días</span>`;
+                alertaDias = `<span class="text-emerald-600 dark:text-emerald-400 font-medium text-xs">Hace ${fila.dias_sin_evaluacion} días</span>`;
             }
 
             let pesoTalla = fila.peso ? `${fila.peso} kg / ${fila.talla} cm` : '--';
-            let imc = fila.imc ? `<span class="font-bold text-white">${fila.imc}</span>` : '--';
+            let imc = fila.imc ? `<span class="font-bold text-gray-900 dark:text-white">${fila.imc}</span>` : '--';
             let fechaEval = fila.ultima_fecha || '--';
 
             tbody.innerHTML += `
-                <tr class="hover:bg-white/5 transition duration-200">
-                    <td class="p-4 font-medium text-white">${fila.nombres} ${fila.apellidos}</td>
-                    <td class="p-4 text-gray-400">${fila.categoria}</td>
-                    <td class="p-4 text-center text-gray-300">${fechaEval}<br>${alertaDias}</td>
-                    <td class="p-4 text-center text-gray-300">${pesoTalla}</td>
+                <tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition duration-200 border-b border-gray-200 dark:border-[#252345]">
+                    <td class="p-4 font-medium text-gray-900 dark:text-white">${fila.nombres} ${fila.apellidos}</td>
+                    <td class="p-4 text-gray-500 dark:text-gray-400">${fila.categoria}</td>
+                    <td class="p-4 text-center text-gray-700 dark:text-gray-300">${fechaEval}<br>${alertaDias}</td>
+                    <td class="p-4 text-center text-gray-700 dark:text-gray-300">${pesoTalla}</td>
                     <td class="p-4 text-center">${imc}</td>
-                    <td class="p-4 text-center"><span class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold">Activo</span></td>
+                    <td class="p-4 text-center">
+                        <span class="bg-green-50 dark:bg-green-500/20 text-green-600 dark:text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-200 dark:border-green-500/30">Activo</span>
+                    </td>
                     <td class="p-4 text-center space-x-2">
-                        <button onclick="verHistorial(${fila.id_atleta}, '${fila.nombres} ${fila.apellidos}')" class="bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white w-8 h-8 rounded-lg transition-colors cursor-pointer" title="Ver Gráficas e Historial">
+                        <button onclick="verHistorial(${fila.id_atleta}, '${fila.nombres} ${fila.apellidos}')" 
+                                class="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white w-8 h-8 rounded-lg transition-colors cursor-pointer" 
+                                title="Ver Gráficas e Historial">
                             <i class="fas fa-chart-line"></i>
                         </button>
                     </td>
@@ -169,7 +191,6 @@ async function cargarDashboard() {
 formMedicion.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // 1. Uso estricto de tu validador
     if (typeof Validador !== 'undefined') {
         const erroresHTML = Validador.validarFormulario(formMedicion);
         if (erroresHTML) {
@@ -195,14 +216,12 @@ formMedicion.addEventListener('submit', async (e) => {
             cerrarModalMedicion();
             cargarDashboard();
             
-            // Si estábamos viendo el historial, lo recargamos
             if (!modalGraficas.classList.contains('hidden')) {
                 const idAtleta = document.getElementById('id_atleta').value;
                 const nombreAtleta = document.getElementById('graficaAtletaNombre').innerText;
                 verHistorial(idAtleta, nombreAtleta);
             }
         } else {
-            // Manejo de errores del backend (Caja Negra)
             let msgError = resultado.message || 'Corrige los siguientes campos:';
             if (resultado.errores) {
                 msgError += '<br><div class="text-left mt-2 text-sm">' + resultado.errores.join('<br>') + '</div>';
@@ -226,28 +245,29 @@ async function verHistorial(id_atleta, nombreCompleto) {
         const tbody = document.getElementById('tablaHistorialBody');
         tbody.innerHTML = '';
 
-        // Arrays para Chart.js
         let labels = [];
         let dataPeso = [];
         let dataTalla = [];
         let dataIMC = [];
 
         if (registros.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">No hay mediciones previas.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500 dark:text-gray-400">No hay mediciones previas.</td></tr>`;
         } else {
             registros.forEach(r => {
-                // Llenado de tabla histórica
                 const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-200 dark:border-[#252345]';
                 tr.innerHTML = `
-                    <td class="p-3 text-gray-300">${r.fecha}</td>
-                    <td class="p-3 text-gray-300">${r.peso} kg</td>
-                    <td class="p-3 text-gray-300">${r.talla} cm</td>
-                    <td class="p-3 text-gray-300">${r.envergadura} cm</td>
-                    <td class="p-3 font-bold text-indigo-400">${r.imc}</td>
-                    <td class="p-3 text-gray-400 text-xs">${r.responsable}</td>
+                    <td class="p-3 text-gray-700 dark:text-gray-300">${r.fecha}</td>
+                    <td class="p-3 text-gray-700 dark:text-gray-300">${r.peso} kg</td>
+                    <td class="p-3 text-gray-700 dark:text-gray-300">${r.talla} cm</td>
+                    <td class="p-3 text-gray-700 dark:text-gray-300">${r.envergadura} cm</td>
+                    <td class="p-3 font-bold text-indigo-600 dark:text-indigo-400">${r.imc}</td>
+                    <td class="p-3 text-gray-500 dark:text-gray-400 text-xs">${r.responsable}</td>
                     <td class="p-3 text-center">
                         ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar ? `
-                        <button onclick="prepararEdicion('${encodeURIComponent(JSON.stringify(r))}')" class="text-orange-400 hover:text-orange-300 transition-colors" title="Corregir Registro">
+                        <button onclick="prepararEdicion('${encodeURIComponent(JSON.stringify(r))}')" 
+                                class="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors" 
+                                title="Corregir Registro">
                             <i class="fas fa-edit"></i>
                         </button>
                         ` : ''}
@@ -255,7 +275,6 @@ async function verHistorial(id_atleta, nombreCompleto) {
                 `;
                 tbody.appendChild(tr);
 
-                // Llenado de arrays para gráficos
                 labels.push(r.fecha);
                 dataPeso.push(r.peso);
                 dataTalla.push(r.talla);
@@ -266,20 +285,30 @@ async function verHistorial(id_atleta, nombreCompleto) {
         renderizarGraficos(labels, dataPeso, dataTalla, dataIMC);
         
         modalGraficas.classList.remove('hidden');
+        setTimeout(() => {
+            modalGraficas.firstElementChild.classList.remove('scale-95', 'opacity-0');
+        }, 10);
     }
 }
 
 function renderizarGraficos(labels, dataPeso, dataTalla, dataIMC) {
-    if (chartPesoTallaInstancia) chartPesoTallaInstancia.destroy();
-    if (chartIMCInstancia) chartIMCInstancia.destroy();
+    if (chartPesoTallaInstancia) {
+        chartPesoTallaInstancia.destroy();
+        chartPesoTallaInstancia = null;
+    }
+    if (chartIMCInstancia) {
+        chartIMCInstancia.destroy();
+        chartIMCInstancia = null;
+    }
 
     const ctxPT = document.getElementById('chartPesoTalla').getContext('2d');
     const ctxIMC = document.getElementById('chartIMC').getContext('2d');
 
-    Chart.defaults.color = '#a0a0c0';
+    const colors = getChartColors();
+    
+    Chart.defaults.color = colors.texto;
     Chart.defaults.font.family = 'Inter';
 
-    // Gráfico 1: Peso vs Talla
     chartPesoTallaInstancia = new Chart(ctxPT, {
         type: 'line',
         data: {
@@ -288,7 +317,7 @@ function renderizarGraficos(labels, dataPeso, dataTalla, dataIMC) {
                 {
                     label: 'Peso (kg)',
                     data: dataPeso,
-                    borderColor: '#6366f1', // Indigo
+                    borderColor: '#6366f1',
                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
                     yAxisID: 'y',
                     tension: 0.3,
@@ -297,7 +326,7 @@ function renderizarGraficos(labels, dataPeso, dataTalla, dataIMC) {
                 {
                     label: 'Talla (cm)',
                     data: dataTalla,
-                    borderColor: '#10b981', // Green
+                    borderColor: '#10b981',
                     borderDash: [5, 5],
                     yAxisID: 'y1',
                     tension: 0.3
@@ -308,13 +337,25 @@ function renderizarGraficos(labels, dataPeso, dataTalla, dataIMC) {
             responsive: true,
             interaction: { mode: 'index', intersect: false },
             scales: {
-                y: { type: 'linear', display: true, position: 'left' },
-                y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
+                y: { 
+                    type: 'linear', 
+                    display: true, 
+                    position: 'left',
+                    grid: { color: colors.grid }
+                },
+                y1: { 
+                    type: 'linear', 
+                    display: true, 
+                    position: 'right', 
+                    grid: { drawOnChartArea: false }
+                },
+                x: {
+                    grid: { color: colors.grid }
+                }
             }
         }
     });
 
-    // Gráfico 2: Evolución IMC
     chartIMCInstancia = new Chart(ctxIMC, {
         type: 'line',
         data: {
@@ -322,7 +363,7 @@ function renderizarGraficos(labels, dataPeso, dataTalla, dataIMC) {
             datasets: [{
                 label: 'IMC',
                 data: dataIMC,
-                borderColor: '#f59e0b', // Amber
+                borderColor: '#f59e0b',
                 backgroundColor: 'rgba(245, 158, 11, 0.2)',
                 tension: 0.4,
                 fill: true,
@@ -330,15 +371,23 @@ function renderizarGraficos(labels, dataPeso, dataTalla, dataIMC) {
                 pointRadius: 4
             }]
         },
-        options: { responsive: true }
+        options: { 
+            responsive: true,
+            scales: {
+                y: {
+                    grid: { color: colors.grid }
+                },
+                x: {
+                    grid: { color: colors.grid }
+                }
+            }
+        }
     });
 }
-
 
 function prepararEdicion(registroStr) {
     const r = JSON.parse(decodeURIComponent(registroStr));
     
-    // Rellenamos el formulario
     document.getElementById('id_medicion').value = r.id_medicion;
     document.getElementById('id_atleta').value = r.id_atleta;
     document.getElementById('fecha').value = r.fecha;
@@ -348,23 +397,39 @@ function prepararEdicion(registroStr) {
     document.getElementById('perimetro_abdominal').value = r.perimetro_abdominal;
     document.getElementById('grasa_corporal').value = r.grasa_corporal || '';
     
-    // Cambiamos configuración del modal
     document.getElementById('accion').value = 'editar';
-    document.getElementById('modalMedicionTitulo').innerHTML = '<div class="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center mr-4"><i class="fas fa-edit text-orange-400"></i></div> Corregir Medición';
+    document.getElementById('modalMedicionTitulo').innerHTML = `
+        <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-500/20 flex items-center justify-center mr-4">
+            <i class="fas fa-edit text-orange-600 dark:text-orange-400"></i>
+        </div> Corregir Medición
+    `;
     
-    // RF-05.3: Habilitar y hacer obligatoria la justificación
     document.getElementById('contenedorJustificacion').classList.remove('hidden');
     document.getElementById('justificacion').value = '';
     document.getElementById('justificacion').setAttribute('data-validar', 'requerido');
     
     calcularIMCEnVivo();
     
-    modalGraficas.classList.add('hidden'); // Ocultamos el historial temporalmente
+    modalGraficas.classList.add('hidden');
     modalMedicion.classList.remove('hidden');
     setTimeout(() => {
         modalMedicion.firstElementChild.classList.remove('scale-95', 'opacity-0');
     }, 10);
 }
+
+// =====================================================================
+// CIERRE DE MODALES CON ESC
+// =====================================================================
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if (!modalMedicion.classList.contains('hidden')) {
+            cerrarModalMedicion();
+        }
+        if (!modalGraficas.classList.contains('hidden')) {
+            cerrarModalGraficas();
+        }
+    }
+});
 
 // =====================================================================
 // INICIALIZADOR
