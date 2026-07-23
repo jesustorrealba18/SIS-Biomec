@@ -39,44 +39,45 @@ async function cargarTabla() {
     const tbody = document.getElementById('tbodyTemporadas');
 
     if (!datos || datos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">
-            <i class="fas fa-calendar-alt text-4xl mb-3 block text-gray-600"></i>
+        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500 dark:text-gray-400">
+            <i class="fas fa-calendar-alt text-4xl mb-3 block text-gray-400 dark:text-gray-600"></i>
             <span class="text-xs uppercase tracking-wider block">No se encontraron temporadas.</span>
         </td></tr>`;
         return;
     }
 
-    tbody.innerHTML = datos.map(t => `
-        <tr class="hover:bg-white/5 transition fila-temporada" data-nombre="${(t.nombre || '').toLowerCase()}">
+    tbody.innerHTML = datos.map(t => {
+        const badgeActiva = parseInt(t.activa) === 1
+            ? '<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-green-50 dark:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/30">ACTIVA</span>'
+            : '<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/30">INACTIVA</span>';
+
+        return `
+        <tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345] fila-temporada" data-nombre="${(t.nombre || '').toLowerCase()}">
             <td class="p-4">
-                <p class="text-white font-medium">${t.nombre || 'Sin nombre'}</p>
+                <p class="text-gray-900 dark:text-white font-medium">${t.nombre || 'Sin nombre'}</p>
             </td>
-            <td class="p-4 font-mono text-xs">${formatoFecha(t.fecha_inicio)}</td>
-            <td class="p-4 font-mono text-xs">${formatoFecha(t.fecha_fin)}</td>
+            <td class="p-4 font-mono text-xs text-gray-700 dark:text-gray-300">${formatoFecha(t.fecha_inicio)}</td>
+            <td class="p-4 font-mono text-xs text-gray-700 dark:text-gray-300">${formatoFecha(t.fecha_fin)}</td>
             <td class="p-4 text-center">
-                <span class="bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded-lg text-xs font-bold">${t.total_macrociclos || 0}</span>
+                <span class="bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-2 py-1 rounded-lg text-xs font-bold border border-cyan-200 dark:border-cyan-500/30">${t.total_macrociclos || 0}</span>
             </td>
-            <td class="p-4 text-center">
-                ${parseInt(t.activa) === 1
-                    ? '<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-green-500/20 text-green-400">ACTIVA</span>'
-                    : '<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-gray-500/20 text-gray-400">INACTIVA</span>'}
-            </td>
+            <td class="p-4 text-center">${badgeActiva}</td>
             <td class="p-4 text-right">
                 <div class="flex items-center justify-end gap-1">
-                    <button onclick="abrirModalTemporada(${t.id_temporada})" class="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded-lg transition cursor-pointer" title="Editar">
+                    <button onclick="abrirModalTemporada(${t.id_temporada})" class="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition cursor-pointer" title="Editar">
                         <i class="fas fa-pen text-sm"></i>
                     </button>
                     ${parseInt(t.activa) !== 1 ? `
-                    <button onclick="activarTemporada(${t.id_temporada})" class="p-2 text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded-lg transition cursor-pointer" title="Activar temporada">
+                    <button onclick="activarTemporada(${t.id_temporada})" class="p-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition cursor-pointer" title="Activar temporada">
                         <i class="fas fa-toggle-on text-sm"></i>
                     </button>` : ''}
-                    <button onclick="eliminarTemporada(${t.id_temporada}, '${t.nombre.replace(/'/g, "\\'")}')" class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition cursor-pointer" title="Eliminar">
+                    <button onclick="eliminarTemporada(${t.id_temporada}, '${t.nombre.replace(/'/g, "\\'")}')" class="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition cursor-pointer" title="Eliminar">
                         <i class="fas fa-trash text-sm"></i>
                     </button>
                 </div>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
 
 function filtrarTabla() {
@@ -213,7 +214,7 @@ function mostrarErroresFormulario(errores) {
         if (input) {
             input.classList.add('border-red-500');
             const errorSpan = document.createElement('p');
-            errorSpan.className = 'text-red-400 text-[10px] mt-1';
+            errorSpan.className = 'text-red-600 dark:text-red-400 text-[10px] mt-1';
             errorSpan.textContent = mensaje;
             input.parentElement.appendChild(errorSpan);
             setTimeout(() => {
