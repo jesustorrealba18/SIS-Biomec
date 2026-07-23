@@ -74,24 +74,27 @@ async function cargarTablaRPE() {
 
     let html = '';
     registros.forEach(r => {
-        const estadoBadge = r.deleted_at ? '<span class="text-red-400 bg-red-500/10 px-2 py-1 rounded text-xs"><i class="fas fa-trash-alt"></i> Anulado</span>' : '<span class="text-green-400 bg-green-500/10 px-2 py-1 rounded text-xs"><i class="fas fa-check"></i> Activo</span>';
-        let botones = `<button onclick="verDetalleRPE(${r.id_rpe})" class="bg-[#252345] hover:bg-indigo-600 text-white w-8 h-8 rounded-lg transition-colors" title="Ver detalle"><i class="fas fa-eye text-xs"></i></button>`;
+        const estadoBadge = r.deleted_at 
+            ? '<span class="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded text-xs border border-red-200 dark:border-red-500/30"><i class="fas fa-trash-alt"></i> Anulado</span>' 
+            : '<span class="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded text-xs border border-emerald-200 dark:border-emerald-500/30"><i class="fas fa-check"></i> Activo</span>';
+        
+        let botones = `<button onclick="verDetalleRPE(${r.id_rpe})" class="bg-gray-200 dark:bg-[#252345] hover:bg-indigo-600 text-gray-700 dark:text-white w-8 h-8 rounded-lg transition-colors" title="Ver detalle"><i class="fas fa-eye text-xs"></i></button>`;
         if (!r.deleted_at) {
-            if (PERMISOS_RPE.editar) botones += `<button onclick="abrirModalRPE(${r.id_rpe})" class="bg-[#252345] hover:bg-amber-600 text-amber-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Editar"><i class="fas fa-edit text-xs"></i></button>`;
-            if (PERMISOS_RPE.eliminar) botones += `<button onclick="softDeleteRPE(${r.id_rpe})" class="bg-[#252345] hover:bg-red-600 text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Mover a papelera"><i class="fas fa-trash-alt text-xs"></i></button>`;
+            if (PERMISOS_RPE.editar) botones += `<button onclick="abrirModalRPE(${r.id_rpe})" class="bg-gray-200 dark:bg-[#252345] hover:bg-amber-600 text-amber-600 dark:text-amber-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Editar"><i class="fas fa-edit text-xs"></i></button>`;
+            if (PERMISOS_RPE.eliminar) botones += `<button onclick="softDeleteRPE(${r.id_rpe})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Mover a papelera"><i class="fas fa-trash-alt text-xs"></i></button>`;
         } else {
-            if (PERMISOS_RPE.reactivar) botones += `<button onclick="reactivarRPE(${r.id_rpe})" class="bg-[#252345] hover:bg-green-600 text-green-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Restaurar"><i class="fas fa-undo-alt text-xs"></i></button>`;
-            if (PERMISOS_RPE.eliminardb) botones += `<button onclick="eliminarFisicoRPE(${r.id_rpe})" class="bg-[#252345] hover:bg-red-600 text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Eliminar permanentemente"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
+            if (PERMISOS_RPE.reactivar) botones += `<button onclick="reactivarRPE(${r.id_rpe})" class="bg-gray-200 dark:bg-[#252345] hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Restaurar"><i class="fas fa-undo-alt text-xs"></i></button>`;
+            if (PERMISOS_RPE.eliminardb) botones += `<button onclick="eliminarFisicoRPE(${r.id_rpe})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Eliminar permanentemente"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
         }
-        const alertaIcono = r.inconsistencia ? '<i class="fas fa-exclamation-triangle text-amber-400 ml-2" title="Inconsistencia biológica"></i>' : '';
+        const alertaIcono = r.inconsistencia ? '<i class="fas fa-exclamation-triangle text-amber-500 dark:text-amber-400 ml-2" title="Inconsistencia biológica"></i>' : '';
 
-        let colorRpe = r.rpe >= 8 ? 'text-red-400 bg-red-500/10' : (r.rpe >= 5 ? 'text-yellow-400 bg-yellow-500/10' : 'text-emerald-400 bg-emerald-500/10');
-        html += `<tr class="hover:bg-white/5 transition-colors">
-            <td class="px-6 py-4 font-medium text-white">${formatearFecha(r.fecha)}</td>
-            <td class="px-6 py-4 text-indigo-300 font-semibold">${r.nombre_atleta} ${alertaIcono}</td>
+        let colorRpe = r.rpe >= 8 ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10' : (r.rpe >= 5 ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10');
+        html += `<tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors border-b border-gray-200 dark:border-[#252345]">
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${formatearFecha(r.fecha)}</td>
+            <td class="px-6 py-4 text-indigo-600 dark:text-indigo-300 font-semibold">${r.nombre_atleta} ${alertaIcono}</td>
             <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold border border-current ${colorRpe}">${r.rpe}/10</span></td>
-            <td class="px-6 py-4">${r.srpe || '-'}</td>
-            <td class="px-6 py-4">${r.horas_sueno || '-'}</td>
+            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${r.srpe || '-'}</td>
+            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${r.horas_sueno || '-'}</td>
             <td class="px-6 py-4 text-center">${estadoBadge}</td>
             <td class="px-6 py-4 text-right flex justify-end gap-1">${botones}</td>
         </tr>`;
@@ -152,7 +155,7 @@ function actualizarUIRPE() {
         if (isActive) {
             toggleBtnRPE.classList.remove('active');
             document.getElementById('toggleTextoRPE').innerText = 'Activos';
-            document.getElementById('toggleIconoRPE').className = 'fas fa-trash-alt text-gray-400';
+            document.getElementById('toggleIconoRPE').className = 'fas fa-trash-alt text-gray-500 dark:text-gray-400';
             document.getElementById('estadoBadgeRPE').innerHTML = 'A';
             document.getElementById('estadoBadgeRPE').classList.remove('bg-red-500');
             document.getElementById('estadoBadgeRPE').classList.add('bg-indigo-500');
@@ -165,17 +168,27 @@ function actualizarUIRPE() {
             document.getElementById('estadoBadgeRPE').classList.add('bg-red-500');
         }
     }
+    // Actualizar título de la tabla con colores adaptados
+    const container = document.getElementById('tablaRPEContainer');
     if (tituloTablaRPE) {
         if (modoPapeleraRPE) {
-            tituloTablaRPE.innerHTML = '<i class="fas fa-trash-alt text-red-400"></i> Mostrando Registros Anulados (Papelera)';
-            tituloTablaRPE.classList.remove('text-emerald-400');
-            tituloTablaRPE.classList.add('text-red-400');
+            tituloTablaRPE.innerHTML = '<i class="fas fa-trash-alt"></i> Mostrando Registros Anulados (Papelera)';
+            tituloTablaRPE.className = 'text-lg font-bold text-red-600 dark:text-red-400 mb-3 ml-2 flex items-center gap-2';
+            if (container) {
+                container.classList.remove('border-t-indigo-500');
+                container.classList.add('border-t-red-500');
+            }
         } else {
-            tituloTablaRPE.innerHTML = '<i class="fas fa-check-circle text-emerald-400"></i> Mostrando Registros Activos';
-            tituloTablaRPE.classList.remove('text-red-400');
-            tituloTablaRPE.classList.add('text-emerald-400');
+            tituloTablaRPE.innerHTML = '<i class="fas fa-check-circle"></i> Mostrando Registros Activos';
+            tituloTablaRPE.className = 'text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-3 ml-2 flex items-center gap-2';
+            if (container) {
+                container.classList.remove('border-t-red-500');
+                container.classList.add('border-t-indigo-500');
+            }
         }
     }
+    // Disparar evento para que el HTML lo capture si es necesario
+    document.dispatchEvent(new CustomEvent('modoPapeleraRPEChanged'));
 }
 
 if (toggleBtnRPE) {
@@ -268,8 +281,8 @@ async function softDeleteRPE(id_rpe) {
             inputAttributes: { required: true, minlength: 5 },
             showCancelButton: true,
             confirmButtonText: 'Mover a papelera',
-            background: '#111026',
-            color: '#e5e7eb'
+            background: document.documentElement.classList.contains('dark') ? '#111026' : '#ffffff',
+            color: document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#1f2937'
         })
     );
     if (!justificacion.isConfirmed) return;
@@ -295,8 +308,8 @@ async function reactivarRPE(id_rpe) {
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Sí, restaurar',
-            background: '#111026',
-            color: '#e5e7eb'
+            background: document.documentElement.classList.contains('dark') ? '#111026' : '#ffffff',
+            color: document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#1f2937'
         })
     );
     if (!confirm.isConfirmed) return;
@@ -320,8 +333,8 @@ async function eliminarFisicoRPE(id_rpe) {
             icon: 'error',
             showCancelButton: true,
             confirmButtonText: 'Sí, purgar',
-            background: '#111026',
-            color: '#e5e7eb'
+            background: document.documentElement.classList.contains('dark') ? '#111026' : '#ffffff',
+            color: document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#1f2937'
         })
     );
     if (!confirm.isConfirmed) return;
@@ -341,29 +354,29 @@ async function verDetalleRPE(id_rpe) {
     const modal = document.getElementById('modalVerRPE');
     const contenedor = document.getElementById('contenidoDetalleRPE');
     modal.classList.remove('hidden');
-    contenedor.innerHTML = '<div class="text-center py-20"><i class="fas fa-spinner fa-spin text-4xl text-indigo-500"></i></div>';
+    contenedor.innerHTML = '<div class="text-center py-20 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-4xl text-indigo-500"></i></div>';
     const data = await peticionAjaxRPE('obtenerRPE', null, 'GET', { id: id_rpe });
     if (!data) return cerrarModalVerRPE();
-    const anulado = data.deleted_at ? `<div class="bg-red-500/20 border border-red-500/50 p-3 rounded-xl mb-4"><i class="fas fa-trash-alt text-red-400 mr-2"></i><strong class="text-red-400">Anulado:</strong> <span class="text-gray-300">${data.justificacion_softdelete || 'Sin motivo'}</span></div>` : '';
+    const anulado = data.deleted_at ? `<div class="bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 p-3 rounded-xl mb-4"><i class="fas fa-trash-alt text-red-600 dark:text-red-400 mr-2"></i><strong class="text-red-600 dark:text-red-400">Anulado:</strong> <span class="text-gray-700 dark:text-gray-300">${data.justificacion_softdelete || 'Sin motivo'}</span></div>` : '';
     contenedor.innerHTML = `
         ${anulado}
-        <div class="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
-            <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-3xl">
+        <div class="flex items-center gap-4 mb-8 border-b border-gray-200 dark:border-white/10 pb-6">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-3xl">
                 <i class="fas fa-heartbeat"></i>
             </div>
             <div>
-                <h2 class="text-2xl font-black text-white">${data.nombre_atleta}</h2>
-                <p class="text-indigo-400 text-sm">${formatearFecha(data.fecha)}</p>
+                <h2 class="text-2xl font-black text-gray-900 dark:text-white">${data.nombre_atleta}</h2>
+                <p class="text-indigo-600 dark:text-indigo-400 text-sm">${formatearFecha(data.fecha)}</p>
             </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
-            <div class="bg-[#161430] p-4 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">RPE</p><p class="text-2xl font-bold text-amber-400">${data.rpe}/10</p></div>
-            <div class="bg-[#161430] p-4 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">sRPE</p><p class="text-white font-bold">${data.srpe || '-'}</p></div>
-            <div class="bg-[#161430] p-4 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">Sueño (h)</p><p class="text-white">${data.horas_sueno || '-'}</p></div>
-            <div class="bg-[#161430] p-4 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">Calidad sueño</p><p class="text-white">${data.calidad_sueno || '-'}</p></div>
-            <div class="bg-[#161430] p-4 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">Sensación muscular</p><p class="text-white">${data.sensacion_muscular || '-'}</p></div>
-            <div class="bg-[#161430] p-4 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">Estrés</p><p class="text-white">${data.estres_percibido || '-'}</p></div>
-            <div class="col-span-2 bg-[#161430] p-4 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">Observaciones</p><p class="text-gray-300 text-sm">${data.observaciones || 'Ninguna'}</p></div>
+            <div class="bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]"><p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">RPE</p><p class="text-2xl font-bold text-amber-600 dark:text-amber-400">${data.rpe}/10</p></div>
+            <div class="bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]"><p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">sRPE</p><p class="text-gray-900 dark:text-white font-bold">${data.srpe || '-'}</p></div>
+            <div class="bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]"><p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Sueño (h)</p><p class="text-gray-900 dark:text-white">${data.horas_sueno || '-'}</p></div>
+            <div class="bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]"><p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Calidad sueño</p><p class="text-gray-900 dark:text-white">${data.calidad_sueno || '-'}</p></div>
+            <div class="bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]"><p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Sensación muscular</p><p class="text-gray-900 dark:text-white">${data.sensacion_muscular || '-'}</p></div>
+            <div class="bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]"><p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Estrés</p><p class="text-gray-900 dark:text-white">${data.estres_percibido || '-'}</p></div>
+            <div class="col-span-2 bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]"><p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Observaciones</p><p class="text-gray-700 dark:text-gray-300 text-sm">${data.observaciones || 'Ninguna'}</p></div>
         </div>
     `;
 }
@@ -376,23 +389,23 @@ function cerrarModalVerRPE() {
 // ================== INCONSISTENCIAS BIOLÓGICAS ==================
 async function cargarTablaInconsistenciasRPE() {
     const tbody = document.getElementById('listaInconsistenciasRPE');
-    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl"></i><br>Cargando alertas...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl"></i><br>Cargando alertas...</td></tr>`;
 
     const inconsistencias = await peticionAjaxRPE('listarInconsistencias');
     if (!inconsistencias || inconsistencias.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-check-circle text-green-500 mr-2"></i> No se detectaron inconsistencias biológicas.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-check-circle text-emerald-600 dark:text-emerald-400 mr-2"></i> No se detectaron inconsistencias biológicas.</td></tr>`;
         return;
     }
 
     let html = '';
     inconsistencias.forEach(inc => {
-        html += `<tr class="hover:bg-white/5 transition-colors">
-            <td class="px-6 py-4 text-white">${formatearFecha(inc.fecha)}</td>
-            <td class="px-6 py-4 text-indigo-300 font-semibold">${inc.nombre_atleta}</td>
-            <td class="px-6 py-4"><span class="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-bold">RPE = 1</span></td>
-            <td class="px-6 py-4 text-emerald-400">🏆 ${inc.estilo} ${inc.distancia_m}m - ${inc.marca_segundos}s</td>
+        html += `<tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors border-b border-gray-200 dark:border-[#252345]">
+            <td class="px-6 py-4 text-gray-900 dark:text-white">${formatearFecha(inc.fecha)}</td>
+            <td class="px-6 py-4 text-indigo-600 dark:text-indigo-300 font-semibold">${inc.nombre_atleta}</td>
+            <td class="px-6 py-4"><span class="px-2 py-1 bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-full text-xs font-bold border border-red-200 dark:border-red-500/30">RPE = 1</span></td>
+            <td class="px-6 py-4 text-emerald-600 dark:text-emerald-400">🏆 ${inc.estilo} ${inc.distancia_m}m - ${inc.marca_segundos}s</td>
             <td class="px-6 py-4">
-                <button onclick="anularPorInconsistencia(${inc.id_rpe})" class="btn-blink bg-red-500/20 border border-red-500 text-red-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition">
+                <button onclick="anularPorInconsistencia(${inc.id_rpe})" class="btn-blink bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500 text-red-600 dark:text-red-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-red-600 hover:text-white transition">
                     <i class="fas fa-exclamation-triangle"></i> Anular y Auditar
                 </button>
             </td>
@@ -405,7 +418,6 @@ async function cargarTablaInconsistenciasRPE() {
 async function anularPorInconsistencia(id_registro) {
     const motivoAutomatico = "Inconsistencia biológica detectada: RPE (Reposo) incongruente con marcas de rendimiento (Récord) registradas este día.";
     
-    // Mostramos un SweetAlert configurado para este caso especial
     const confirmacion = await Swal.fire({
         title: '¿Anular Registro Inválido?',
         text: motivoAutomatico,
@@ -413,23 +425,26 @@ async function anularPorInconsistencia(id_registro) {
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
         confirmButtonText: 'Sí, Anular y Auditar',
-        cancelButtonText: 'Mantener'
+        cancelButtonText: 'Mantener',
+        background: document.documentElement.classList.contains('dark') ? '#111026' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#1f2937'
     });
 
     if (confirmacion.isConfirmed) {
         let datos = new FormData();
         datos.append('id_registro', id_registro);
-        datos.append('motivo', motivoAutomatico); // Se envía directamente al backend para el Soft Delete
+        datos.append('motivo', motivoAutomatico);
         
-        const res = await peticionAjax('?c=carga&accion=anular', datos, 'POST');
-        if (res.status === 'success') cargarTablaRPE();
+        const res = await peticionAjaxRPE('anularRPE', datos, 'POST');
+        if (res?.status === 'success') {
+            if (typeof UI !== 'undefined') UI.exito('Anulado', res.message);
+            cargarTablaRPE();
+            cargarTablaInconsistenciasRPE();
+        } else {
+            if (typeof UI !== 'undefined') UI.error('Error', res?.message || 'No se pudo anular.');
+        }
     }
 }
-
-// Al generar la tabla, si detectas la bandera 'inconsistencia', inyectas este botón:
-// <button onclick="anularPorInconsistencia(${registro.id_registro})" class="bg-red-500 text-white p-2 rounded animate-pulse shadow-[0_0_10px_red]">
-//     <i class="fas fa-exclamation-triangle"></i> Corregir Inconsistencia
-// </button>
 
 // ================== UTILIDAD ==================
 function formatearFecha(fechaISO) {
@@ -444,11 +459,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarTablaRPE();
     cargarTablaInconsistenciasRPE();
 
-    // Validación en tiempo real para el formulario (opcional, si usas Validador)
     if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
         Validador.vincularTiempoReal(formRPE);
     }
 
-    // Actualizar título de tabla al inicio
     actualizarUIRPE();
 });
