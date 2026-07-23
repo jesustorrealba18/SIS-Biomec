@@ -4,17 +4,17 @@ const modalCompletarSesion = document.getElementById('modalCompletar');
 const formSesion = document.getElementById('formSesion');
 const formCompletarSesion = document.getElementById('formCompletar');
 
-let gruposCache = [];       
-let microciclosCache = [];   
-let drillsCache = [];        
-let entrenadoresCache = [];  
+let gruposCache = [];
+let microciclosCache = [];
+let drillsCache = [];
+let entrenadoresCache = [];
 let sesionEditando = false;
 
 const coloresEstado = {
-    'Planificada': 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',
-    'Completada':  'bg-green-500/20 text-green-400 border border-green-500/30',
-    'Parcial':     'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
-    'Cancelada':   'bg-red-500/20 text-red-400 border border-red-500/30'
+    'Planificada': 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30',
+    'Completada': 'bg-green-50 dark:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/30',
+    'Parcial': 'bg-yellow-50 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-500/30',
+    'Cancelada': 'bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30'
 };
 
 function setupValidacionTiempoRealSesion() {
@@ -36,7 +36,7 @@ function setupValidacionTiempoRealSesion() {
         let errorContainer = input.parentElement.querySelector('.error-msg');
         if (!errorContainer) {
             errorContainer = document.createElement('span');
-            errorContainer.className = 'error-msg text-red-400 text-[10px] mt-1 block hidden';
+            errorContainer.className = 'error-msg text-red-600 dark:text-red-400 text-[10px] mt-1 block hidden';
             input.parentElement.appendChild(errorContainer);
         }
 
@@ -45,18 +45,18 @@ function setupValidacionTiempoRealSesion() {
                 validarCampoSesion(this, reglas, nombre, min, max);
             });
         }
-        
+
         if (input.tagName === 'SELECT') {
             input.addEventListener('change', function() {
                 validarCampoSesion(this, reglas, nombre, min, max);
             });
         }
-        
+
         input.addEventListener('blur', function() {
             this.dataset.touched = 'true';
             validarCampoSesion(this, reglas, nombre, min, max);
         });
-        
+
         input.addEventListener('focus', function() {
             this.dataset.touched = 'true';
         });
@@ -75,10 +75,10 @@ function validarCampoSesion(input, reglas, nombre, min = null, max = null) {
     const valor = input.value.trim();
     let error = '';
     let errorContainer = input.parentElement.querySelector('.error-msg');
-    
+
     if (!errorContainer) {
         errorContainer = document.createElement('span');
-        errorContainer.className = 'error-msg text-red-400 text-[10px] mt-1 block hidden';
+        errorContainer.className = 'error-msg text-red-600 dark:text-red-400 text-[10px] mt-1 block hidden';
         input.parentElement.appendChild(errorContainer);
     }
 
@@ -158,7 +158,7 @@ function validarFormularioSesionCompleto(form) {
         { id: 'tipo_sesion', reglas: 'requerido', nombre: 'Tipo de sesión' },
         { id: 'duracion_minutos', reglas: 'requerido|numero', nombre: 'Duración', min: 15 }
     ];
-    
+
     let hasError = false;
     let errores = [];
 
@@ -200,11 +200,11 @@ async function peticionAjax(accion, datos = null) {
         }
 
         const respuesta = await fetch(url, opciones);
-        
+
         if (!respuesta.ok) {
             throw new Error(`HTTP error! status: ${respuesta.status}`);
         }
-        
+
         return await respuesta.json();
     } catch (error) {
         Swal.fire('Error', 'Error de comunicación con el servidor', 'error');
@@ -222,22 +222,22 @@ async function cargarTablaSesiones() {
     if (!tbody) return;
 
     if (!datos || datos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">No se encontraron sesiones de entrenamiento.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500 dark:text-gray-400">No se encontraron sesiones de entrenamiento.</td></tr>`;
         return;
     }
 
     tbody.innerHTML = datos.map(s => `
-        <tr class="hover:bg-white/5 transition border-b border-[#252345]">
+        <tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition border-b border-gray-200 dark:border-[#252345]">
             <td class="p-4">
-                <p class="text-white font-medium">${s.fecha}</p>
-                <p class="text-[10px] text-gray-500 mt-0.5">Duración: ${s.duracion_minutos || 0} min</p>
+                <p class="text-gray-900 dark:text-white font-medium">${s.fecha}</p>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Duración: ${s.duracion_minutos || 0} min</p>
             </td>
             <td class="p-4">
-                <p class="text-white font-medium">${s.grupo_nombre}</p>
-                <p class="text-[10px] text-gray-400">Microciclo: ${s.microciclo_nombre || 'Ninguno'}</p>
+                <p class="text-gray-900 dark:text-white font-medium">${s.grupo_nombre}</p>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400">Microciclo: ${s.microciclo_nombre || 'Ninguno'}</p>
             </td>
             <td class="p-4">
-                <span class="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 text-blue-400">
+                <span class="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
                     ${s.tipo_sesion}
                 </span>
                 <br>
@@ -245,21 +245,21 @@ async function cargarTablaSesiones() {
                     ${s.estado}
                 </span>
              </td>
-            <td class="p-4 text-center font-mono text-indigo-400 font-bold">${s.volumen_planificado || 0}m</td>
-            <td class="p-4 text-center font-mono text-emerald-400 font-bold">${s.volumen_ejecutado || 0}m</td>
+            <td class="p-4 text-center font-mono text-indigo-600 dark:text-indigo-400 font-bold">${s.volumen_planificado || 0}m</td>
+            <td class="p-4 text-center font-mono text-emerald-600 dark:text-emerald-400 font-bold">${s.volumen_ejecutado || 0}m</td>
             <td class="p-4 text-right">
                 <div class="flex items-center justify-end gap-1">
-                    <button onclick="verDetalleSesion(${s.id_sesion})" class="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded-lg transition" title="Ver Detalles">
+                    <button onclick="verDetalleSesion(${s.id_sesion})" class="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition" title="Ver Detalles">
                         <i class="fas fa-eye text-sm"></i>
                     </button>
                     ${s.estado === 'Planificada' ? `
-                        <button onclick="abrirModalCompletarSesion(${s.id_sesion})" class="p-2 text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded-lg transition" title="Completar">
+                        <button onclick="abrirModalCompletarSesion(${s.id_sesion})" class="p-2 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-500/10 rounded-lg transition" title="Completar">
                             <i class="fas fa-check-circle text-sm"></i>
                         </button>
-                        <button onclick="abrirModalSesion(${s.id_sesion})" class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition" title="Editar">
+                        <button onclick="abrirModalSesion(${s.id_sesion})" class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition" title="Editar">
                             <i class="fas fa-pen text-sm"></i>
                         </button>
-                        <button onclick="cancelarSesion(${s.id_sesion})" class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition" title="Cancelar">
+                        <button onclick="cancelarSesion(${s.id_sesion})" class="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition" title="Cancelar">
                             <i class="fas fa-ban text-sm"></i>
                         </button>
                     ` : ''}
@@ -271,9 +271,9 @@ async function cargarTablaSesiones() {
 
 function abrirModalSesion(id_sesion = null) {
     if (!formSesion || !modalSesion) return;
-    
+
     sesionEditando = !!id_sesion;
-    
+
     formSesion.reset();
     document.getElementById('id_sesion').value = '';
     document.getElementById('tbodySeries').innerHTML = '';
@@ -285,7 +285,7 @@ function abrirModalSesion(id_sesion = null) {
     document.querySelectorAll('.border-red-500, .border-green-500').forEach(el => {
         el.classList.remove('border-red-500', 'border-green-500', 'border-2', 'border');
     });
-    
+
     const inputFecha = document.getElementById('fecha');
     const hoy = new Date().toISOString().split('T')[0];
     if (inputFecha) {
@@ -301,7 +301,7 @@ function abrirModalSesion(id_sesion = null) {
                 Swal.fire('Error', 'No se pudo cargar la sesión', 'error');
                 return;
             }
-            
+
             document.getElementById('id_sesion').value = det.id_sesion;
             document.getElementById('id_entrenador').value = det.id_entrenador || '';
             document.getElementById('id_grupo').value = det.id_grupo || '';
@@ -314,14 +314,14 @@ function abrirModalSesion(id_sesion = null) {
             document.getElementById('duracion_minutos').value = det.duracion_minutos || '';
 
             document.getElementById('tbodySeries').innerHTML = '';
-            
+
             if (det.series && det.series.length > 0) {
                 det.series.forEach(serie => agregarFilaSerie(serie));
             } else {
                 agregarFilaSerie();
             }
             calcularVolumenTotalSesion();
-            
+
             setTimeout(() => activarValidacionesEnModal(), 200);
         });
     } else {
@@ -363,7 +363,7 @@ async function verDetalleSesion(id_sesion) {
         let volCalentamiento = 0;
         let volPrincipal = 0;
         let volVueltaCalma = 0;
-        
+
         if (det.series && det.series.length > 0) {
             det.series.forEach(serie => {
                 const volumen = (parseInt(serie.repeticiones) || 0) * (parseInt(serie.distancia_m) || 0);
@@ -374,38 +374,47 @@ async function verDetalleSesion(id_sesion) {
         }
 
         let html = `
-            <div class="mb-4 border-b border-white/10 pb-4">
-                <h3 class="text-xl font-bold text-white">${det.grupo_nombre || 'Sin grupo'}</h3>
-                <p class="text-xs text-gray-400">Fecha: <span class="text-white font-mono">${det.fecha || 'N/A'}</span> | Tipo: <span class="text-indigo-400">${det.tipo_sesion || 'N/A'}</span></p>
-                <p class="text-xs text-gray-400 mt-1">Estado: <span class="${coloresEstado[det.estado] || 'bg-gray-500/20 text-gray-400'} px-2 py-0.5 rounded text-[10px] font-bold">${det.estado || 'Desconocido'}</span></p>
+            <div class="mb-4 border-b border-gray-200 dark:border-white/10 pb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">${det.grupo_nombre || 'Sin grupo'}</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Fecha: <span class="text-gray-900 dark:text-white font-mono">${det.fecha || 'N/A'}</span> | Tipo: <span class="text-indigo-600 dark:text-indigo-400">${det.tipo_sesion || 'N/A'}</span></p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Estado: <span class="${coloresEstado[det.estado] || 'bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400'} px-2 py-0.5 rounded text-[10px] font-bold">${det.estado || 'Desconocido'}</span></p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 text-center text-xs">
-                <div class="bg-black/20 p-2 rounded-lg"><p class="text-gray-500 uppercase font-bold">Calentamiento</p><p class="text-sm font-bold text-gray-300">${volCalentamiento}m</p></div>
-                <div class="bg-black/20 p-2 rounded-lg"><p class="text-gray-500 uppercase font-bold">Bloque Principal</p><p class="text-sm font-bold text-indigo-400">${volPrincipal}m</p></div>
-                <div class="bg-black/20 p-2 rounded-lg"><p class="text-gray-500 uppercase font-bold">Vuelta a la Calma</p><p class="text-sm font-bold text-emerald-400">${volVueltaCalma}m</p></div>
+                <div class="bg-gray-100 dark:bg-black/20 p-2 rounded-lg border border-gray-200 dark:border-white/5">
+                    <p class="text-gray-500 dark:text-gray-400 uppercase font-bold">Calentamiento</p>
+                    <p class="text-sm font-bold text-gray-700 dark:text-gray-300">${volCalentamiento}m</p>
+                </div>
+                <div class="bg-gray-100 dark:bg-black/20 p-2 rounded-lg border border-gray-200 dark:border-white/5">
+                    <p class="text-gray-500 dark:text-gray-400 uppercase font-bold">Bloque Principal</p>
+                    <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400">${volPrincipal}m</p>
+                </div>
+                <div class="bg-gray-100 dark:bg-black/20 p-2 rounded-lg border border-gray-200 dark:border-white/5">
+                    <p class="text-gray-500 dark:text-gray-400 uppercase font-bold">Vuelta a la Calma</p>
+                    <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400">${volVueltaCalma}m</p>
+                </div>
             </div>
-            <div class="space-y-1 text-xs bg-black/10 p-3 rounded-xl border border-white/5 mb-4 text-gray-300">
+            <div class="space-y-1 text-xs bg-gray-50 dark:bg-black/10 p-3 rounded-xl border border-gray-200 dark:border-white/5 mb-4 text-gray-700 dark:text-gray-300">
                 <p><strong>Calentamiento:</strong> ${det.calentamiento || 'Ninguno'}</p>
                 <p><strong>Vuelta a la Calma:</strong> ${det.vuelta_calma || 'Ninguno'}</p>
                 <p><strong>Observaciones:</strong> ${det.observaciones || 'Ninguna'}</p>
-                <p><strong>Volumen Planificado:</strong> <span class="text-indigo-400 font-mono">${det.volumen_planificado || 0}m</span></p>
-                ${det.volumen_ejecutado ? `<p><strong>Volumen Ejecutado:</strong> <span class="text-emerald-400 font-mono">${det.volumen_ejecutado}m</span></p>` : ''}
+                <p><strong>Volumen Planificado:</strong> <span class="text-indigo-600 dark:text-indigo-400 font-mono">${det.volumen_planificado || 0}m</span></p>
+                ${det.volumen_ejecutado ? `<p><strong>Volumen Ejecutado:</strong> <span class="text-emerald-600 dark:text-emerald-400 font-mono">${det.volumen_ejecutado}m</span></p>` : ''}
             </div>
         `;
 
         if (det.series && det.series.length > 0) {
             html += `
-                <div class="bg-black/20 p-3 rounded-xl border border-white/5">
-                    <p class="text-xs font-bold text-gray-400 uppercase mb-2">Series Planificadas (${det.series.length})</p>
+                <div class="bg-gray-50 dark:bg-black/20 p-3 rounded-xl border border-gray-200 dark:border-white/5">
+                    <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Series Planificadas (${det.series.length})</p>
                     <div class="space-y-1 max-h-60 overflow-y-auto">
                         ${det.series.map((s, i) => `
-                            <div class="flex justify-between items-center p-2 bg-black/20 rounded-lg text-xs border border-white/5">
-                                <span class="text-gray-400">#${i+1}</span>
-                                <span class="text-indigo-400 font-medium">${s.bloque}</span>
-                                <span class="text-white">${s.drill_nombre || s.ejercicio_descripcion || 'Ejercicio libre'}</span>
-                                <span class="text-gray-300">${s.repeticiones}x${s.distancia_m}m</span>
-                                <span class="text-gray-400">${s.zona_intensidad}</span>
-                                <span class="text-emerald-400 font-mono">${(s.repeticiones || 0) * (s.distancia_m || 0)}m</span>
+                            <div class="flex justify-between items-center p-2 bg-gray-100 dark:bg-black/20 rounded-lg text-xs border border-gray-200 dark:border-white/5">
+                                <span class="text-gray-500 dark:text-gray-400">#${i+1}</span>
+                                <span class="text-indigo-600 dark:text-indigo-400 font-medium">${s.bloque}</span>
+                                <span class="text-gray-900 dark:text-white">${s.drill_nombre || s.ejercicio_descripcion || 'Ejercicio libre'}</span>
+                                <span class="text-gray-700 dark:text-gray-300">${s.repeticiones}x${s.distancia_m}m</span>
+                                <span class="text-gray-500 dark:text-gray-400">${s.zona_intensidad}</span>
+                                <span class="text-emerald-600 dark:text-emerald-400 font-mono">${(s.repeticiones || 0) * (s.distancia_m || 0)}m</span>
                             </div>
                         `).join('')}
                     </div>
@@ -417,7 +426,7 @@ async function verDetalleSesion(id_sesion) {
 
         modalVerSesion.classList.remove('hidden');
         modalVerSesion.style.display = 'flex';
-        
+
         const modalContent = modalVerSesion.firstElementChild;
         if (modalContent) {
             modalContent.classList.remove('scale-95', 'opacity-0');
@@ -442,7 +451,7 @@ function cerrarModalVer() {
 
 async function abrirModalCompletarSesion(id_sesion) {
     if (!formCompletarSesion || !modalCompletarSesion) return;
-    
+
     formCompletarSesion.reset();
     document.querySelectorAll('#modalCompletar .error-msg').forEach(el => {
         el.textContent = '';
@@ -451,19 +460,19 @@ async function abrirModalCompletarSesion(id_sesion) {
     document.querySelectorAll('#modalCompletar .border-red-500, #modalCompletar .border-green-500').forEach(el => {
         el.classList.remove('border-red-500', 'border-green-500', 'border-2', 'border');
     });
-    
+
     const det = await peticionAjax(`obtenerDetalle&id=${id_sesion}`);
     if (!det) {
         Swal.fire('Error', 'No se pudo cargar la sesión', 'error');
         return;
     }
- 
+
     document.getElementById('id_sesion_completar').value = det.id_sesion;
     document.getElementById('compFecha').textContent = det.fecha || 'N/A';
     document.getElementById('compTipo').textContent = det.tipo_sesion || 'N/A';
     document.getElementById('compGrupo').textContent = det.grupo_nombre || 'N/A';
     document.getElementById('compVolPlanificado').textContent = `${det.volumen_planificado || 0} metros`;
-    
+
     document.getElementById('volumen_ejecutado').value = det.volumen_planificado || 0;
     document.getElementById('observaciones_completar').value = det.observaciones || '';
 
@@ -497,21 +506,21 @@ function cerrarModalCompletar() {
 function agregarFilaSerie(datos = null) {
     const contenedor = document.getElementById('tbodySeries');
     if (!contenedor) return;
-    
+
     const filasExistentes = contenedor.querySelectorAll('.fila-serie').length;
-    const nuevoOrden = filasExistentes + 1; 
+    const nuevoOrden = filasExistentes + 1;
 
     const tr = document.createElement('tr');
-    tr.className = 'fila-serie hover:bg-white/5 transition';
+    tr.className = 'fila-serie hover:bg-gray-100 dark:hover:bg-white/5 transition';
 
-    const opcionesDrills = `<option value="">Ejercicio Libre</option>` + 
+    const opcionesDrills = `<option value="">Ejercicio Libre</option>` +
         (drillsCache || []).map(d => `<option value="${d.id_drill}" ${datos && datos.id_drill == d.id_drill ? 'selected' : ''}>${d.nombre}</option>`).join('');
 
     tr.innerHTML = `
         <input type="hidden" name="serie_orden_ejecucion[]" value="${datos ? datos.orden_ejecucion : nuevoOrden}" class="serie-orden">
-        
+
         <td class="p-2">
-            <select name="serie_bloque[]" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white bloque-select" onchange="calcularVolumenTotalSesion()">
+            <select name="serie_bloque[]" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white bloque-select" onchange="calcularVolumenTotalSesion()">
                 <option value="Calentamiento" ${datos && datos.bloque === 'Calentamiento' ? 'selected' : ''}>Calentamiento</option>
                 <option value="Principal" ${datos && datos.bloque === 'Principal' ? 'selected' : (!datos && filasExistentes === 0 ? 'selected' : '')}>Principal</option>
                 <option value="VuletaCalma" ${datos && datos.bloque === 'VuletaCalma' ? 'selected' : (!datos && filasExistentes === 1 ? 'selected' : '')}>Vuelta Calma</option>
@@ -519,30 +528,30 @@ function agregarFilaSerie(datos = null) {
          </td>
 
         <td class="p-2">
-            <select name="serie_id_drill[]" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white w-full drill-select" onchange="alternarCampoDescripcion(this)">
+            <select name="serie_id_drill[]" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white w-full drill-select" onchange="alternarCampoDescripcion(this)">
                 ${opcionesDrills}
             </select>
-            <input type="text" name="serie_ejercicio_descripcion[]" value="${datos ? datos.ejercicio_descripcion || '' : ''}" placeholder="Descripción libre..." class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white w-full mt-1 desc-input">
+            <input type="text" name="serie_ejercicio_descripcion[]" value="${datos ? datos.ejercicio_descripcion || '' : ''}" placeholder="Descripción libre..." class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white w-full mt-1 desc-input">
          </td>
 
         <td class="p-2">
-            <input type="text" name="serie_ritmo_objetivo[]" value="${datos ? datos.ritmo_objetivo || '' : ''}" placeholder="Ej: 1:30" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white text-center font-mono w-full">
+            <input type="text" name="serie_ritmo_objetivo[]" value="${datos ? datos.ritmo_objetivo || '' : ''}" placeholder="Ej: 1:30" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white text-center font-mono w-full">
          </td>
 
         <td class="p-2 text-center">
-            <input type="number" min="1" max="100" name="serie_repeticiones[]" value="${datos ? datos.repeticiones : '1'}" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white text-center font-mono w-14 rep-input" oninput="calcularVolumenSerie(this)">
+            <input type="number" min="1" max="100" name="serie_repeticiones[]" value="${datos ? datos.repeticiones : '1'}" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white text-center font-mono w-14 rep-input" oninput="calcularVolumenSerie(this)">
          </td>
 
         <td class="p-2 text-center">
-            <input type="number" min="0" max="10000" step="25" name="serie_distancia_m[]" value="${datos ? datos.distancia_m : '50'}" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white text-center font-mono w-16 dist-input" oninput="calcularVolumenSerie(this)">
+            <input type="number" min="0" max="10000" step="25" name="serie_distancia_m[]" value="${datos ? datos.distancia_m : '50'}" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white text-center font-mono w-16 dist-input" oninput="calcularVolumenSerie(this)">
          </td>
 
         <td class="p-2 text-center">
-            <input type="number" min="0" max="600" name="serie_descanso_seg[]" value="${datos ? datos.descanso_seg : '15'}" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white text-center font-mono w-14">
+            <input type="number" min="0" max="600" name="serie_descanso_seg[]" value="${datos ? datos.descanso_seg : '15'}" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white text-center font-mono w-14">
          </td>
 
         <td class="p-2">
-            <select name="serie_zona_intensidad[]" class="bg-[#0f0d23] border border-white/10 rounded-xl p-1.5 text-xs text-white">
+            <select name="serie_zona_intensidad[]" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white">
                 <option value="Z1" ${datos && datos.zona_intensidad === 'Z1' ? 'selected' : ''}>Z1</option>
                 <option value="Z2" ${datos && datos.zona_intensidad === 'Z2' ? 'selected' : ''}>Z2</option>
                 <option value="Z3" ${datos && datos.zona_intensidad === 'Z3' ? 'selected' : ''}>Z3</option>
@@ -551,10 +560,10 @@ function agregarFilaSerie(datos = null) {
             </select>
          </td>
 
-        <td class="p-2 text-center font-mono font-bold text-indigo-400 vol-serie-badge">0m</td>
+        <td class="p-2 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400 vol-serie-badge">0m</td>
 
         <td class="p-2 text-right">
-            <button type="button" onclick="removerFilaSerie(this)" class="text-red-400 hover:text-red-300 transition">
+            <button type="button" onclick="removerFilaSerie(this)" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition">
                 <i class="fas fa-trash-alt"></i>
             </button>
          </td>
@@ -595,17 +604,17 @@ function calcularVolumenSerie(input) {
     const fila = input.closest('.fila-serie');
     const repeticiones = parseInt(fila.querySelector('.rep-input').value) || 0;
     const distancia = parseInt(fila.querySelector('.dist-input').value) || 0;
-    
-    const volumenSerie = repeticiones * distancia; 
+
+    const volumenSerie = repeticiones * distancia;
     fila.querySelector('.vol-serie-badge').textContent = `${volumenSerie}m`;
-    
+
     calcularVolumenTotalSesion();
 }
 
 function calcularVolumenTotalSesion() {
-    let volCalentamiento = 0; 
-    let volPrincipal = 0;    
-    let volVueltaCalma = 0; 
+    let volCalentamiento = 0;
+    let volPrincipal = 0;
+    let volVueltaCalma = 0;
 
     document.querySelectorAll('.fila-serie').forEach(fila => {
         const bloque = fila.querySelector('.bloque-select').value;
@@ -613,17 +622,17 @@ function calcularVolumenTotalSesion() {
         const distancia = parseInt(fila.querySelector('.dist-input').value) || 0;
         const subtotal = repeticiones * distancia;
 
-        if (bloque === 'Calentamiento') volCalentamiento += subtotal; 
-        else if (bloque === 'Principal') volPrincipal += subtotal;    
-        else if (bloque === 'VuletaCalma') volVueltaCalma += subtotal; 
+        if (bloque === 'Calentamiento') volCalentamiento += subtotal;
+        else if (bloque === 'Principal') volPrincipal += subtotal;
+        else if (bloque === 'VuletaCalma') volVueltaCalma += subtotal;
     });
 
-    const volTotal = volCalentamiento + volPrincipal + volVueltaCalma; 
+    const volTotal = volCalentamiento + volPrincipal + volVueltaCalma;
 
-    if(document.getElementById('lblVolCalentamiento')) document.getElementById('lblVolCalentamiento').textContent = `${volCalentamiento}m`;
-    if(document.getElementById('lblVolPrincipal')) document.getElementById('lblVolPrincipal').textContent = `${volPrincipal}m`;
-    if(document.getElementById('lblVolVueltaCalma')) document.getElementById('lblVolVueltaCalma').textContent = `${volVueltaCalma}m`;
-    if(document.getElementById('lblVolTotalPlanificado')) {
+    if (document.getElementById('lblVolCalentamiento')) document.getElementById('lblVolCalentamiento').textContent = `${volCalentamiento}m`;
+    if (document.getElementById('lblVolPrincipal')) document.getElementById('lblVolPrincipal').textContent = `${volPrincipal}m`;
+    if (document.getElementById('lblVolVueltaCalma')) document.getElementById('lblVolVueltaCalma').textContent = `${volVueltaCalma}m`;
+    if (document.getElementById('lblVolTotalPlanificado')) {
         document.getElementById('lblVolTotalPlanificado').textContent = `${volTotal}m`;
         document.getElementById('volumen_planificado').value = volTotal;
     }
@@ -632,9 +641,9 @@ function calcularVolumenTotalSesion() {
 if (formSesion) {
     formSesion.addEventListener('submit', async function(e) {
         e.preventDefault();
-    
+
         const { hasError, errores } = validarFormularioSesionCompleto(this);
-        
+
         if (hasError) {
             Swal.fire({
                 icon: 'warning',
@@ -642,7 +651,7 @@ if (formSesion) {
                 html: errores.join('<br>') || 'Por favor corrige los campos marcados en rojo.',
                 confirmButtonColor: '#4f46e5'
             });
-            
+
             const primerError = this.querySelector('.border-red-500');
             if (primerError) {
                 primerError.focus();
@@ -652,7 +661,7 @@ if (formSesion) {
         }
 
         const id_grupo = document.getElementById('id_grupo').value;
-        if (!id_grupo) { 
+        if (!id_grupo) {
             Swal.fire('Validación', 'Debe seleccionar un grupo obligatoriamente.', 'warning');
             return;
         }
@@ -689,7 +698,7 @@ if (formSesion) {
         const id_sesion = document.getElementById('id_sesion').value;
         const formData = new FormData(formSesion);
         const series = [];
-        
+
         document.querySelectorAll('.fila-serie').forEach(f => {
             const descansoInputs = f.querySelectorAll('input[type="number"]');
             series.push({
@@ -699,7 +708,7 @@ if (formSesion) {
                 ejercicio_descripcion: f.querySelector('.desc-input').value || null,
                 repeticiones: f.querySelector('.rep-input').value,
                 distancia_m: f.querySelector('.dist-input').value,
-                descanso_seg: descansoInputs[2] ? descansoInputs[2].value : 15, 
+                descanso_seg: descansoInputs[2] ? descansoInputs[2].value : 15,
                 zona_intensidad: f.querySelector('select[name="serie_zona_intensidad[]"]').value,
                 ritmo_objetivo: f.querySelector('input[name="serie_ritmo_objetivo[]"]').value || null
             });
@@ -712,7 +721,7 @@ if (formSesion) {
         }
 
         const resultado = await peticionAjax(accion, formData);
-        
+
         if (resultado && resultado.status === 'success') {
             Swal.fire('Correcto', resultado.message, 'success');
             cerrarModalSesion();
@@ -723,10 +732,10 @@ if (formSesion) {
     });
 }
 
-if(formCompletarSesion) {
+if (formCompletarSesion) {
     formCompletarSesion.addEventListener('submit', async function(e) {
         e.preventDefault();
-   
+
         const volumenEjecutado = document.getElementById('volumen_ejecutado');
         if (volumenEjecutado) {
             volumenEjecutado.dataset.touched = 'true';
@@ -743,24 +752,24 @@ if(formCompletarSesion) {
                 return;
             }
         }
-        
+
         const volumenPlanificadoText = document.getElementById('compVolPlanificado').textContent;
         const volumenPlanificado = parseInt(volumenPlanificadoText) || 0;
         const volumenEjecutadoVal = parseInt(document.getElementById('volumen_ejecutado').value) || 0;
-        
+
         if (volumenEjecutadoVal > volumenPlanificado) {
             Swal.fire('Validación', 'El volumen ejecutado no puede superar al volumen planificado.', 'warning');
             return;
         }
-        
+
         if (volumenEjecutadoVal < 0) {
             Swal.fire('Validación', 'El volumen ejecutado no puede ser negativo.', 'warning');
             return;
         }
-        
+
         const formData = new FormData(formCompletarSesion);
         const resultado = await peticionAjax('completarSesion', formData);
-        
+
         if (resultado && resultado.status === 'success') {
             Swal.fire('Sesión Cerrada', resultado.message, 'success');
             cerrarModalCompletar();
@@ -789,7 +798,7 @@ async function cancelarSesion(id_sesion) {
 
     const resultado = await peticionAjax('cancelarSesion', formData);
     if (resultado && resultado.status === 'success') {
-        Swal.fire('Cancelada', 'La planificación ha sido anulada.', 'success'); 
+        Swal.fire('Cancelada', 'La planificación ha sido anulada.', 'success');
         cargarTablaSesiones();
     } else {
         Swal.fire('Error', 'No se pudo anular la sesión.', 'error');
@@ -834,7 +843,7 @@ async function cargarRecursosIniciales() {
             const selectEntrenador = document.getElementById('id_entrenador');
             if (selectEntrenador) {
                 let opciones = '<option value="">Seleccione un Entrenador</option>';
-                
+
                 entrenadores.forEach(e => {
                     let nombreCompleto = '';
                     if (e.nombres && e.apellidos) {
@@ -846,10 +855,10 @@ async function cargarRecursosIniciales() {
                     } else {
                         nombreCompleto = 'Entrenador ID: ' + e.id_entrenador;
                     }
-                    
+
                     opciones += `<option value="${e.id_entrenador}">${nombreCompleto}</option>`;
                 });
-                
+
                 selectEntrenador.innerHTML = opciones;
             }
         }
