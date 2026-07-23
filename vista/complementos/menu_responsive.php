@@ -209,6 +209,19 @@
         </a>
         <?php endif; ?>
 
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('observacionesTecnicas', 'ver')): ?>
+        <a href="?p=observacionesTecnicas" 
+           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                  text-gray-700 dark:text-gray-300 
+                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                  <?php echo ($pagina == 'observacionesTecnicas') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-clipboard-check w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'observacionesTecnicas') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <span class="font-medium">Observaciones Tecnicas</span>
+        </a>
+        <?php endif; ?>
+
          <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('mi_perfil', 'ver')): ?>
         <a href="?p=mi_perfil" 
            class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 

@@ -10,14 +10,20 @@ let atletasGlobal = [];
 let aspectosGlobal = [];
 let sesionesGlobal = [];
 
+// =====================================================================
+// LABELS DE CALIFICACIÓN CON SOPORTE CLARO/OSCURO
+// =====================================================================
 const LABELS_CALIFICACION = {
-    1: { texto: 'Necesita trabajo urgente', color: 'text-red-400', bg: 'bg-red-500/20' },
-    2: { texto: 'Regular', color: 'text-amber-400', bg: 'bg-amber-500/20' },
-    3: { texto: 'Bueno', color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
-    4: { texto: 'Muy bueno', color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
-    5: { texto: 'Excelente', color: 'text-green-400', bg: 'bg-green-500/20' }
+    1: { texto: 'Necesita trabajo urgente', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-500/20' },
+    2: { texto: 'Regular', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/20' },
+    3: { texto: 'Bueno', color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-500/20' },
+    4: { texto: 'Muy bueno', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/20' },
+    5: { texto: 'Excelente', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-500/20' }
 };
 
+// =====================================================================
+// PETICION AJAX
+// =====================================================================
 async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
     if (datos) opciones.body = datos;
@@ -33,11 +39,14 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
+// =====================================================================
+// RENDERIZADO DE ESTRELLAS Y BADGES
+// =====================================================================
 function renderEstrellas(calificacion) {
     let html = '<div class="flex items-center gap-1">';
     for (let i = 1; i <= 5; i++) {
         const activa = i <= calificacion;
-        const color = activa ? 'text-indigo-400' : 'text-gray-700';
+        const color = activa ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-300 dark:text-gray-700';
         html += `<i class="fas fa-circle ${color}" style="font-size: 8px;"></i>`;
     }
     html += '</div>';
@@ -46,7 +55,7 @@ function renderEstrellas(calificacion) {
 
 function renderBadgeCalificacion(calificacion) {
     const info = LABELS_CALIFICACION[calificacion] || LABELS_CALIFICACION[3];
-    return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold ${info.bg} ${info.color}">
+    return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold ${info.bg} ${info.color} border border-gray-200 dark:border-transparent">
                 ${calificacion} - ${info.texto}
             </span>`;
 }
@@ -63,6 +72,9 @@ function seleccionarCalificacion(valor) {
     document.getElementById('textoCalificacion').className = `text-[10px] mt-1 font-bold ${info.color}`;
 }
 
+// =====================================================================
+// MODALES: ABRIR / CERRAR
+// =====================================================================
 function cerrarModalObservacion() {
     modalObs.classList.add('hidden');
     modalObs.firstElementChild.classList.add('scale-95', 'opacity-0');
@@ -72,7 +84,7 @@ function cerrarModalObservacion() {
     document.getElementById('calificacion').value = '';
     document.querySelectorAll('.estrella').forEach(e => e.classList.remove('seleccionada'));
     document.getElementById('textoCalificacion').textContent = '1=Necesita trabajo | 2=Regular | 3=Bueno | 4=Muy bueno | 5=Excelente';
-    document.getElementById('textoCalificacion').className = 'text-[10px] text-gray-500 mt-1';
+    document.getElementById('textoCalificacion').className = 'text-[10px] text-gray-500 dark:text-gray-400 mt-1';
     const inputBuscar = document.getElementById('inputBuscarAtleta');
     if (inputBuscar) {
         inputBuscar.value = '';
@@ -101,6 +113,9 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// =====================================================================
+// ABRIR MODAL (REGISTRAR / EDITAR)
+// =====================================================================
 async function abrirModalObservacion(id_observacion = null) {
     cerrarModalObservacion();
     modalObs.classList.remove('hidden');
@@ -125,7 +140,7 @@ async function abrirModalObservacion(id_observacion = null) {
         const inputAtleta = document.getElementById('inputBuscarAtleta');
         inputAtleta.value = `${data.nombre_atleta} (CI: ${data.cedula})`;
         inputAtleta.readOnly = true;
-        inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-800');
+        inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-100 dark:bg-gray-800');
         document.getElementById('btnLimpiarAtleta').classList.add('hidden');
 
         document.getElementById('id_aspecto_tecnico').value = data.id_aspecto_tecnico;
@@ -147,6 +162,9 @@ async function abrirModalObservacion(id_observacion = null) {
     }
 }
 
+// =====================================================================
+// CARGA DE RECURSOS (Atletas, Aspectos, Sesiones)
+// =====================================================================
 async function cargarAtletasBuscador() {
     const respuesta = await peticionAjax('listarAtletasSelect');
     if (respuesta) atletasGlobal = respuesta;
@@ -197,6 +215,9 @@ async function cargarSesionesSelect() {
     }
 }
 
+// =====================================================================
+// DROPDOWN DE ATLETAS (BÚSQUEDA)
+// =====================================================================
 const inputBuscar = document.getElementById('inputBuscarAtleta');
 const dropdown = document.getElementById('dropdownAtletas');
 const ulAtletas = document.getElementById('ulAtletas');
@@ -206,13 +227,18 @@ const btnLimpiar = document.getElementById('btnLimpiarAtleta');
 function renderizarDropdown(lista) {
     ulAtletas.innerHTML = '';
     if (lista.length === 0) {
-        ulAtletas.innerHTML = '<li class="p-4 text-gray-500 text-center text-xs">No se encontraron coincidencias</li>';
+        ulAtletas.innerHTML = '<li class="p-4 text-gray-500 dark:text-gray-400 text-center text-xs">No se encontraron coincidencias</li>';
         return;
     }
     lista.forEach(atleta => {
         const li = document.createElement('li');
-        li.className = 'p-3 hover:bg-indigo-600/20 hover:text-indigo-300 cursor-pointer transition-colors flex justify-between items-center';
-        li.innerHTML = `<div><div class="font-bold text-white">${atleta.nombres} ${atleta.apellidos}</div><div class="text-[10px] text-gray-500 font-mono mt-0.5">C.I: ${atleta.cedula}</div></div>`;
+        li.className = 'p-3 hover:bg-indigo-100 dark:hover:bg-indigo-600/20 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer transition-colors flex justify-between items-center';
+        li.innerHTML = `
+            <div>
+                <div class="font-bold text-gray-900 dark:text-white">${atleta.nombres} ${atleta.apellidos}</div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 font-mono mt-0.5">C.I: ${atleta.cedula}</div>
+            </div>
+        `;
         li.onclick = () => seleccionarAtleta(atleta);
         ulAtletas.appendChild(li);
     });
@@ -221,7 +247,7 @@ function renderizarDropdown(lista) {
 function seleccionarAtleta(atleta) {
     inputIdOculto.value = atleta.id_atleta;
     inputBuscar.value = `${atleta.nombres} ${atleta.apellidos}`;
-    inputBuscar.classList.add('text-emerald-400', 'font-bold');
+    inputBuscar.classList.add('text-indigo-600', 'dark:text-emerald-400', 'font-bold');
     inputBuscar.setAttribute('readonly', true);
     dropdown.classList.add('hidden');
     btnLimpiar.classList.remove('hidden');
@@ -230,7 +256,7 @@ function seleccionarAtleta(atleta) {
 btnLimpiar.onclick = () => {
     inputIdOculto.value = '';
     inputBuscar.value = '';
-    inputBuscar.classList.remove('text-emerald-400', 'font-bold');
+    inputBuscar.classList.remove('text-indigo-600', 'dark:text-emerald-400', 'font-bold');
     inputBuscar.removeAttribute('readonly');
     btnLimpiar.classList.add('hidden');
     inputBuscar.focus();
@@ -260,6 +286,9 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// =====================================================================
+// ENVÍO DEL FORMULARIO
+// =====================================================================
 formObs.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -302,6 +331,9 @@ formObs.addEventListener('submit', async (e) => {
     btnGuardar.disabled = false;
 });
 
+// =====================================================================
+// TABLA PRINCIPAL
+// =====================================================================
 async function cargarTabla() {
     const id_atleta = document.getElementById('filtroAtleta')?.value || '';
     const id_aspecto = document.getElementById('filtroAspecto')?.value || '';
@@ -313,12 +345,12 @@ async function cargarTabla() {
     if (id_sesion) params.append('id_sesion', id_sesion);
 
     const tbody = document.getElementById('tbodyObservaciones');
-    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando...</td></tr>';
 
     const observaciones = await peticionAjax(`listarObservaciones&${params.toString()}`);
 
     if (!observaciones || observaciones.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500 font-mono text-xs">No hay observaciones registradas.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500 dark:text-gray-400 font-mono text-xs">No hay observaciones registradas.</td></tr>';
         return;
     }
 
@@ -328,30 +360,30 @@ async function cargarTabla() {
         const badge = renderBadgeCalificacion(obs.calificacion);
         const obsTexto = obs.observacion_texto
             ? (obs.observacion_texto.length > 60 ? obs.observacion_texto.substring(0, 60) + '...' : obs.observacion_texto)
-            : '<span class="text-gray-600 italic text-xs">Sin notas</span>';
+            : '<span class="text-gray-500 dark:text-gray-500 italic text-xs">Sin notas</span>';
 
         const puedeEditar = typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar;
 
-        html += `<tr class="hover:bg-white/5 transition-colors duration-200 border-b border-[#252345]">
-            <td class="p-4 text-xs font-mono text-gray-400">${fecha}</td>
+        html += `<tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345]">
+            <td class="p-4 text-xs font-mono text-gray-600 dark:text-gray-400">${fecha}</td>
             <td class="p-4">
-                <div class="font-bold text-white text-sm">${obs.nombre_atleta}</div>
-                <div class="text-[10px] text-gray-500 font-mono">C.I: ${obs.cedula}</div>
+                <div class="font-bold text-gray-900 dark:text-white text-sm">${obs.nombre_atleta}</div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 font-mono">C.I: ${obs.cedula}</div>
             </td>
             <td class="p-4">
-                <span class="text-indigo-300 text-sm font-medium">${obs.nombre_aspecto}</span>
+                <span class="text-indigo-600 dark:text-indigo-300 text-sm font-medium">${obs.nombre_aspecto}</span>
             </td>
             <td class="p-4 text-center">${badge}</td>
-            <td class="p-4 text-xs text-gray-400 max-w-xs">${obsTexto}</td>
+            <td class="p-4 text-xs text-gray-600 dark:text-gray-400 max-w-xs">${obsTexto}</td>
             <td class="p-4 text-right space-x-1">
-                <button onclick="verDetalle(${obs.id_observacion})" class="text-indigo-400 hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Detalle">
+                <button onclick="verDetalle(${obs.id_observacion})" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Detalle">
                     <i class="fas fa-eye text-base"></i>
                 </button>
                 ${puedeEditar ? `
-                <button onclick="abrirModalObservacion(${obs.id_observacion})" class="text-amber-400 hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar">
+                <button onclick="abrirModalObservacion(${obs.id_observacion})" class="text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar">
                     <i class="fas fa-edit text-base"></i>
                 </button>
-                <button onclick="eliminarObservacion(${obs.id_observacion})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Eliminar">
+                <button onclick="eliminarObservacion(${obs.id_observacion})" class="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 p-2 rounded-lg transition" title="Eliminar">
                     <i class="fas fa-trash-alt text-base"></i>
                 </button>` : ''}
             </td>
@@ -370,9 +402,12 @@ function filtrarTabla() {
     });
 }
 
+// =====================================================================
+// VER DETALLE
+// =====================================================================
 async function verDetalle(id) {
     const contenedor = document.getElementById('detalleContenido');
-    contenedor.innerHTML = '<div class="text-center p-12 text-gray-500"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-3"></i><p class="text-xs font-mono uppercase tracking-widest">Cargando detalle...</p></div>';
+    contenedor.innerHTML = '<div class="text-center p-12 text-gray-500 dark:text-gray-400"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-3"></i><p class="text-xs font-mono uppercase tracking-widest">Cargando detalle...</p></div>';
     modalVer.classList.remove('hidden');
 
     const data = await peticionAjax(`obtenerDetalle&id=${id}`);
@@ -389,59 +424,59 @@ async function verDetalle(id) {
     let html = `
         <div class="mb-6">
             <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                    <i class="fas fa-clipboard-check text-indigo-400 text-xl"></i>
+                <div class="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center">
+                    <i class="fas fa-clipboard-check text-indigo-600 dark:text-indigo-400 text-xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-bold text-white">Observacion Tecnica</h2>
-                    <p class="text-xs text-gray-400">${fecha}</p>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Observacion Tecnica</h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">${fecha}</p>
                 </div>
             </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="bg-black/20 rounded-xl p-4 border border-white/5">
-                <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Atleta</p>
-                <p class="text-white font-bold">${data.nombre_atleta}</p>
-                <p class="text-xs text-gray-500 font-mono">C.I: ${data.cedula}</p>
+            <div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5">
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Atleta</p>
+                <p class="text-gray-900 dark:text-white font-bold">${data.nombre_atleta}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-mono">C.I: ${data.cedula}</p>
             </div>
-            <div class="bg-black/20 rounded-xl p-4 border border-white/5">
-                <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Aspecto Tecnico</p>
-                <p class="text-indigo-300 font-bold">${data.nombre_aspecto}</p>
-                <p class="text-xs text-gray-500">${data.desc_aspecto || ''}</p>
+            <div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5">
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Aspecto Tecnico</p>
+                <p class="text-indigo-600 dark:text-indigo-300 font-bold">${data.nombre_aspecto}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">${data.desc_aspecto || ''}</p>
             </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="bg-black/20 rounded-xl p-4 border border-white/5 text-center">
-                <p class="text-[10px] text-gray-500 uppercase font-bold mb-2">Calificacion</p>
+            <div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5 text-center">
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-2">Calificacion</p>
                 ${badge}
             </div>
-            <div class="bg-black/20 rounded-xl p-4 border border-white/5">
-                <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Sesion</p>
-                <p class="text-white text-sm">${data.fecha_sesion ? data.fecha_sesion + ' - ' + (data.tipo_sesion || '') : 'Sin sesion asociada'}</p>
+            <div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5">
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Sesion</p>
+                <p class="text-gray-900 dark:text-white text-sm">${data.fecha_sesion ? data.fecha_sesion + ' - ' + (data.tipo_sesion || '') : 'Sin sesion asociada'}</p>
             </div>
         </div>`;
 
     if (data.observacion_texto) {
-        html += `<div class="bg-black/20 rounded-xl p-4 border border-white/5 mb-6">
-            <p class="text-[10px] text-gray-500 uppercase font-bold mb-2">Observacion del Entrenador</p>
-            <p class="text-gray-300 text-sm leading-relaxed">${data.observacion_texto}</p>
+        html += `<div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5 mb-6">
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-2">Observacion del Entrenador</p>
+            <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">${data.observacion_texto}</p>
         </div>`;
     }
 
     if (data.historial_aspecto && data.historial_aspecto.length > 0) {
-        html += `<div class="mt-6 border-t border-[#252345] pt-4">
-            <p class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-3">
-                <i class="fas fa-chart-line mr-2 text-emerald-400"></i>Evolucion del Aspecto: ${data.nombre_aspecto}
+        html += `<div class="mt-6 border-t border-gray-200 dark:border-[#252345] pt-4">
+            <p class="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-3">
+                <i class="fas fa-chart-line mr-2 text-emerald-600 dark:text-emerald-400"></i>Evolucion del Aspecto: ${data.nombre_aspecto}
             </p>
             <div class="space-y-2">`;
 
         data.historial_aspecto.forEach(h => {
             const fechaH = formatoFecha(h.fecha_registro);
             const badgeH = renderBadgeCalificacion(h.calificacion);
-            html += `<div class="flex items-center justify-between bg-black/20 rounded-lg p-3 border border-white/5">
-                <span class="text-xs font-mono text-gray-400">${fechaH}</span>
+            html += `<div class="flex items-center justify-between bg-gray-100 dark:bg-black/20 rounded-lg p-3 border border-gray-200 dark:border-white/5">
+                <span class="text-xs font-mono text-gray-600 dark:text-gray-400">${fechaH}</span>
                 ${badgeH}
             </div>`;
         });
@@ -452,6 +487,9 @@ async function verDetalle(id) {
     contenedor.innerHTML = html;
 }
 
+// =====================================================================
+// RESUMEN POR ATLETA
+// =====================================================================
 async function verResumenAtleta() {
     const select = document.getElementById('filtroAtletaResumen');
     const id_atleta = parseInt(select.value);
@@ -461,7 +499,7 @@ async function verResumenAtleta() {
     }
 
     const contenedor = document.getElementById('resumenContenido');
-    contenedor.innerHTML = '<div class="text-center p-12 text-gray-500"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-3"></i><p class="text-xs font-mono uppercase tracking-widest">Calculando promedios...</p></div>';
+    contenedor.innerHTML = '<div class="text-center p-12 text-gray-500 dark:text-gray-400"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-3"></i><p class="text-xs font-mono uppercase tracking-widest">Calculando promedios...</p></div>';
     modalResumen.classList.remove('hidden');
 
     const data = await peticionAjax(`resumenAspectos&id_atleta=${id_atleta}`);
@@ -475,12 +513,12 @@ async function verResumenAtleta() {
     let html = `
         <div class="mb-6">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                    <i class="fas fa-chart-bar text-emerald-400 text-xl"></i>
+                <div class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-500/20 flex items-center justify-center">
+                    <i class="fas fa-chart-bar text-emerald-600 dark:text-emerald-400 text-xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-bold text-white">Resumen Tecnico</h2>
-                    <p class="text-xs text-gray-400">${nombreAtleta}</p>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Resumen Tecnico</h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">${nombreAtleta}</p>
                 </div>
             </div>
         </div>
@@ -494,34 +532,37 @@ async function verResumenAtleta() {
         const porcentaje = Math.min((promedio / 5) * 100, 100);
         const barColor = promedio < 2.5 ? 'bg-red-500' : promedio < 3.5 ? 'bg-yellow-500' : promedio < 4.5 ? 'bg-emerald-500' : 'bg-green-500';
 
-        html += `<div class="bg-black/20 rounded-xl p-4 border border-white/5">
+        html += `<div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5">
             <div class="flex items-center justify-between mb-2">
                 <div>
-                    <p class="text-white font-bold text-sm">${aspecto.nombre}</p>
-                    <p class="text-[10px] text-gray-500">${aspecto.descripcion || ''}</p>
+                    <p class="text-gray-900 dark:text-white font-bold text-sm">${aspecto.nombre}</p>
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400">${aspecto.descripcion || ''}</p>
                 </div>
                 <div class="text-right">
-                    ${total > 0 ? `<span class="text-lg font-bold ${info.color}">${promedio.toFixed(1)}</span><span class="text-gray-500 text-xs">/5</span>` : '<span class="text-gray-600 text-xs">Sin datos</span>'}
+                    ${total > 0 ? `<span class="text-lg font-bold ${info.color}">${promedio.toFixed(1)}</span><span class="text-gray-500 dark:text-gray-400 text-xs">/5</span>` : '<span class="text-gray-500 dark:text-gray-500 text-xs">Sin datos</span>'}
                 </div>
             </div>
-            <div class="w-full bg-gray-800 rounded-full h-2">
+            <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
                 <div class="${barColor} h-2 rounded-full transition-all" style="width: ${porcentaje}%"></div>
             </div>
             <div class="flex justify-between mt-1">
-                <span class="text-[10px] text-gray-600">${total} evaluacion(es)</span>
-                ${aspecto.ultima_evaluacion ? `<span class="text-[10px] text-gray-600">Ultima: ${formatoFecha(aspecto.ultima_evaluacion)}</span>` : ''}
+                <span class="text-[10px] text-gray-500 dark:text-gray-400">${total} evaluacion(es)</span>
+                ${aspecto.ultima_evaluacion ? `<span class="text-[10px] text-gray-500 dark:text-gray-400">Ultima: ${formatoFecha(aspecto.ultima_evaluacion)}</span>` : ''}
             </div>
         </div>`;
     });
 
     if (data.length === 0) {
-        html += '<div class="text-center py-8 text-gray-500"><i class="fas fa-inbox text-3xl mb-2"></i><p class="text-xs">No hay aspectos evaluados para este atleta.</p></div>';
+        html += '<div class="text-center py-8 text-gray-500 dark:text-gray-400"><i class="fas fa-inbox text-3xl mb-2"></i><p class="text-xs">No hay aspectos evaluados para este atleta.</p></div>';
     }
 
     html += '</div>';
     contenedor.innerHTML = html;
 }
 
+// =====================================================================
+// ELIMINAR OBSERVACION
+// =====================================================================
 async function eliminarObservacion(id) {
     const confirmado = await UI.confirmar(
         'Eliminar Observacion',
@@ -543,6 +584,9 @@ async function eliminarObservacion(id) {
     }
 }
 
+// =====================================================================
+// CARGA DE FILTROS Y RECURSOS
+// =====================================================================
 async function cargarFiltrosAtletas() {
     const atletas = await peticionAjax('listarAtletasSelect');
     if (!atletas) return;
@@ -573,5 +617,8 @@ document.getElementById('filtroAtletaResumen')?.addEventListener('change', funct
     if (this.value) verResumenAtleta();
 });
 
+// =====================================================================
+// INICIALIZACIÓN
+// =====================================================================
 cargarRecursos().then(() => cargarTabla());
 Validador.vincularTiempoReal(formObs);
