@@ -21,13 +21,16 @@
         </a>
 
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
-        <div class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
-                    text-gray-700 dark:text-gray-300 
-                    hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white">
-            <i class="fas fa-chart-pie w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i> 
+        <a href="?p=analitica" 
+           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                  text-gray-700 dark:text-gray-300 
+                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                  <?php echo ($pagina == 'analitica') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-chart-pie w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'analitica') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i>
             <span>Analítica</span>
-        </div>
-        <?php endif; ?>
+        </a>
+<?php endif; ?>
 
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
        <a href="?p=entrenador" 

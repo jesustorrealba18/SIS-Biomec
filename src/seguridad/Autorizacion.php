@@ -10,6 +10,7 @@ class Autorizacion {
     private static array $mapaRutas = [
         'inicio'        => null,
         'salir'         => null,
+        'analitica'        => null,
         'entrenador'    => ['atletas', 'gestionar'],
         'drills'        => ['drills', 'ver'],
         'atleta'        => ['atletas', 'ver'],

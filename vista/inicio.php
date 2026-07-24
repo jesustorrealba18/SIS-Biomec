@@ -1,204 +1,251 @@
+<?php
+// Declaramos la variable para que el menú sepa qué botón iluminar
+$pagina = 'inicio';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<link rel="icon" type="image/png" href="assets/img/logo_nadador.png">
-    <title>SGRD</title>
+    <link rel="icon" type="image/png" href="assets/img/logo_nadador.png">
+    <title>Inicio | SGRD</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="assets/js/modoInterfaz.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0f0d23; color: #a0a0c0; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { background-color: #161430; width: 260px; border-right: 1px solid #252345; }
-        .tarjeta { background-color: #161430; border-radius: 15px; border: 1px solid #252345; padding: 1.5rem; }
-        .gradiente-boton { background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%); }
+        body { font-family: 'Inter', sans-serif; }
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #252345; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        .dark ::-webkit-scrollbar-track { background: #0f0d23; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #252345; }
+        .menu-transition {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .gradiente-boton {
+            background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
+        }
     </style>
 </head>
-<body class="flex min-h-screen">
+<body class="bg-gray-100 text-gray-800 dark:bg-[#0f0d23] dark:text-gray-300 font-sans antialiased transition-colors duration-300 overflow-x-hidden">
 
-    <?php include RAIZ . 'vista/complementos/menu.php'; ?>
+<?php
+if (isset($_SESSION['id'])) {
+    \GrupoProyecto\SisBiomec\seguridad\Autorizacion::cargarPermisos($_SESSION['id']);
+}
+?>
 
-    <main class="flex-1 p-8 overflow-y-auto">
-        
-        <header class="flex justify-between items-center mb-8">
-    <h1 class="text-2xl font-bold text-white">Panel de Inicio</h1>
-    <div class="flex items-center gap-6">
+    <div class="flex h-screen overflow-hidden">
 
-        <!-- Botón Notificaciones -->
-        <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
-            <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
-                <i class="fas fa-bell text-xl"></i>
-                <span class="absolute top-2 right-12 bg-red-500 w-2 h-2 rounded-full border border-[#0f0d23]"></span>
-            </div>
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-                Notificaciones
-            </div>
-        </div>
+        <!-- Overlay para móvil cuando el menú está abierto -->
+        <div id="menuOverlay" class="fixed inset-0 bg-black/70 z-30 opacity-0 pointer-events-none transition-opacity lg:hidden"></div>
 
-        <!-- Botón Guía de Ayuda -->
-        <div class="relative group flex items-center justify-center w-32 h-10 transition-all duration-300 cursor-pointer">
-            <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 group-hover:opacity-0 group-hover:scale-50 text-gray-400">
-                <i class="fas fa-question-circle text-xl"></i>
-                <span class="absolute top-2 right-12 bg-red-500 w-2 h-2 rounded-full border border-[#0f0d23]"></span>
+        <!-- Sidebar - responsive -->
+        <aside id="sidebarMenu" class="fixed top-0 left-0 h-full w-72 bg-white dark:bg-[#0f0d23] border-r border-gray-200 dark:border-[#252345] z-40 transform -translate-x-full menu-transition lg:relative lg:translate-x-0 lg:flex-shrink-0 overflow-y-auto transition-colors duration-300">
+            <div class="p-4 flex justify-between items-center border-b border-gray-200 dark:border-[#252345] lg:hidden">
+                <div class="flex items-center gap-2">
+                    <div class="bg-indigo-600 p-1.5 rounded-lg text-white shadow-lg shadow-indigo-500/20">
+                        <i class="fas fa-swimmer text-sm"></i>
+                    </div>
+                    <span class="text-lg font-black text-gray-900 dark:text-white italic tracking-tighter">SGRD</span>
+                </div>
+                <button id="closeMenuBtn" class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white text-xl">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 text-white font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-                Guía de ayuda
-            </div>
-        </div>
+            <?php include 'vista/complementos/menu_responsive.php'; ?>
+        </aside>
 
-        <!-- Perfil y Botón de Salida -->
-        <div class="flex items-center gap-3 border-l border-gray-700 pl-6">
-            <div class="text-right mr-2">
-                <p class="text-sm text-white font-medium"><?php echo $_SESSION['nombre']; ?></p>
-                <!-- Enlace de Cerrar Sesión -->
-                <a href="?p=salir" class="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-widest transition">
-                    Cerrar Sesión <i class="fas fa-sign-out-alt ml-1"></i>
-                </a>
-            </div>
-            <img src="https://ui-avatars.com/api/?name=<?php echo $_SESSION['nombre']; ?>&background=4f46e5&color=fff" 
-                 class="w-10 h-10 rounded-full border-2 border-indigo-500 shadow-lg shadow-indigo-500/20">
+        <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+            <?php
+                $tituloPagina = "Inicio";
+                $tituloPaginaResponsive = "Inicio";
+                $iconModulo = "fas fa-home";
+                include 'vista/complementos/header.php';
+            ?>
+
+            <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
+
+                <!-- Saludo personalizado -->
+                <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-6 transition-colors duration-300">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+                                <span>👋</span>
+                                <?php
+                                    $hora = date('H');
+                                    $saludo = $hora < 12 ? 'Buenos días' : ($hora < 18 ? 'Buenas tardes' : 'Buenas noches');
+                                    $nombre = $_SESSION['nombre'] ?? 'Usuario';
+                                    echo $saludo . ', ' . htmlspecialchars($nombre) . '!';
+                                ?>
+                            </h2>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Bienvenido al Sistema de Gestión de Rendimiento Deportivo</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-calendar-alt text-indigo-500"></i>
+                            <span><?php echo date('d/m/Y'); ?></span>
+                            <span class="mx-1">|</span>
+                            <i class="fas fa-clock text-indigo-500"></i>
+                            <span><?php echo date('H:i'); ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acceso rápido a módulos principales -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <?php
+                    $modulos = [
+                        ['url' => '?p=atleta', 'icon' => 'fa-swimmer', 'label' => 'Atletas', 'color' => 'text-indigo-400'],
+                        ['url' => '?p=entrenador', 'icon' => 'fa-user-tie', 'label' => 'Entrenadores', 'color' => 'text-emerald-400'],
+                        ['url' => '?p=sesiones', 'icon' => 'fa-swimming-pool', 'label' => 'Sesiones', 'color' => 'text-cyan-400'],
+                        ['url' => '?p=marcas', 'icon' => 'fa-stopwatch', 'label' => 'Marcas', 'color' => 'text-amber-400'],
+                        ['url' => '?p=eventos', 'icon' => 'fa-calendar-alt', 'label' => 'Eventos', 'color' => 'text-rose-400'],
+                        ['url' => '?p=analitica', 'icon' => 'fa-chart-pie', 'label' => 'Analítica', 'color' => 'text-purple-400']
+                    ];
+                    foreach ($modulos as $modulo):
+                    ?>
+                    <a href="<?php echo $modulo['url']; ?>" class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-4 text-center transition-all hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/10 cursor-pointer group">
+                        <div class="w-12 h-12 mx-auto rounded-xl bg-gray-100 dark:bg-[#0f0d23] flex items-center justify-center mb-2 group-hover:bg-indigo-500/10 transition">
+                            <i class="fas <?php echo $modulo['icon']; ?> text-xl <?php echo $modulo['color']; ?> group-hover:text-indigo-500 transition"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-500 transition"><?php echo $modulo['label']; ?></span>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Últimas actividades y resumen rápido -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Últimas actividades -->
+                    <div class="lg:col-span-2 bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-6 transition-colors duration-300">
+                        <h3 class="text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="fas fa-history text-indigo-500"></i> Últimas Actividades
+                        </h3>
+                        <div class="space-y-3">
+                            <?php
+                            // Simulación de actividades recientes (idealmente vendrían de la bitácora)
+                            $actividades = [
+                                ['icon' => 'fa-user-plus', 'text' => 'Nuevo atleta registrado: Jesús Hernández', 'time' => 'Hace 5 min', 'color' => 'text-emerald-400'],
+                                ['icon' => 'fa-edit', 'text' => 'Marca actualizada: 50m Libre - 00:24.50', 'time' => 'Hace 15 min', 'color' => 'text-amber-400'],
+                                ['icon' => 'fa-calendar-check', 'text' => 'Sesión planificada para mañana 8:00 AM', 'time' => 'Hace 1 hora', 'color' => 'text-cyan-400'],
+                                ['icon' => 'fa-trophy', 'text' => 'Evento "Gala Regional 2026" creado', 'time' => 'Hace 2 horas', 'color' => 'text-purple-400'],
+                                ['icon' => 'fa-user-check', 'text' => 'Asistencia registrada para 15 atletas', 'time' => 'Hace 3 horas', 'color' => 'text-green-400']
+                            ];
+                            foreach ($actividades as $act):
+                            ?>
+                            <div class="flex items-center gap-3 p-3 bg-gray-100 dark:bg-[#0f0d23] rounded-xl border border-gray-200 dark:border-[#252345]">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-[#252345] flex items-center justify-center">
+                                    <i class="fas <?php echo $act['icon']; ?> <?php echo $act['color']; ?> text-xs"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-gray-800 dark:text-gray-200"><?php echo $act['text']; ?></p>
+                                    <p class="text-[10px] text-gray-500 dark:text-gray-400"><?php echo $act['time']; ?></p>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <!-- Resumen rápido -->
+                    <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-6 transition-colors duration-300">
+                        <h3 class="text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="fas fa-chart-simple text-indigo-500"></i> Resumen Rápido
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-3 bg-gray-100 dark:bg-[#0f0d23] rounded-xl border border-gray-200 dark:border-[#252345]">
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Atletas Activos</p>
+                                    <p class="text-xl font-bold text-gray-900 dark:text-white">156</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-100 dark:bg-[#0f0d23] rounded-xl border border-gray-200 dark:border-[#252345]">
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Sesiones este Mes</p>
+                                    <p class="text-xl font-bold text-gray-900 dark:text-white">42</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                    <i class="fas fa-swimming-pool"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-100 dark:bg-[#0f0d23] rounded-xl border border-gray-200 dark:border-[#252345]">
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Eventos Próximos</p>
+                                    <p class="text-xl font-bold text-gray-900 dark:text-white">5</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-100 dark:bg-[#0f0d23] rounded-xl border border-gray-200 dark:border-[#252345]">
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Marcas Registradas</p>
+                                    <p class="text-xl font-bold text-gray-900 dark:text-white">284</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                                    <i class="fas fa-stopwatch"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
         </div>
     </div>
-</header>
 
-        <div class="grid grid-cols-12 gap-6 mb-8">
-            <div class="col-span-12 md:col-span-4 tarjeta">
-                <h3 class="text-sm font-semibold mb-2 text-gray-400">Calificaciones de clientes</h3>
-                <div class="flex items-end gap-2 mb-4">
-                    <span class="text-4xl font-bold text-white">4.0</span>
-                    <span class="text-yellow-400 text-sm mb-1">★★★★☆</span>
-                </div>
-                <div class="h-32">
-                    <canvas id="graficaRating"></canvas>
-                </div>
-            </div>
-
-            <div class="col-span-12 md:col-span-4 tarjeta">
-                <h3 class="text-sm font-semibold mb-4 text-gray-400">Ventas Mensuales</h3>
-                <div class="h-40">
-                    <canvas id="graficaVentas"></canvas>
-                </div>
-            </div>
-
-            <div class="col-span-12 md:col-span-4 flex flex-col gap-4">
-                <div class="tarjeta flex justify-between items-center p-4">
-                    <div>
-                        <p class="text-xs text-gray-500">Sesiones Totales</p>
-                        <h4 class="text-2xl font-bold text-white">2,845</h4>
-                    </div>
-                    <div class="text-green-500 bg-green-500/10 p-2 rounded-lg"><i class="fas fa-users"></i></div>
-                </div>
-                <div class="tarjeta flex justify-between items-center p-4 border-l-4 border-red-500">
-                    <div>
-                        <p class="text-xs text-gray-500">Órdenes Nuevas</p>
-                        <h4 class="text-2xl font-bold text-white">$1,286</h4>
-                        <span class="text-red-500 text-[10px]">-13.2% vs ayer</span>
-                    </div>
-                    <i class="fas fa-shopping-bag text-gray-700 text-3xl"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-12 gap-6">
-            <div class="col-span-12 lg:col-span-8 tarjeta">
-                <h3 class="font-bold text-white mb-6">Atletas destacados en el mes</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="text-xs text-gray-500 border-b border-gray-800">
-                            <tr>
-                                <th class="pb-4 uppercase">Nombre</th>
-                                <th class="pb-4 uppercase text-center">Rendimiento</th>
-                                <th class="pb-4 uppercase text-right">Edad</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-sm">
-                            <tr class="border-b border-gray-800/50 hover:bg-white/5 transition">
-                                <td class="py-4 flex items-center gap-3">
-                                    <div class="bg-indigo-500/20 p-2 rounded text-indigo-400"><i class="fas fa-swimmer text-xl"></i></div>
-                                    <div>Jesus <br><small class="text-gray-500 italic">Hernandez</small></div>
-                                </td>
-                                <td class="text-center">12.4k <span class="text-green-500 ml-2">↑</span></td>
-                                <td class="text-right font-bold text-white">19</td>
-                            </tr>
-                            <tr class="border-b border-gray-800/50 hover:bg-white/5 transition">
-                                <td class="py-4 flex items-center gap-3">
-                                    <div class="bg-orange-500/20 p-2 rounded text-orange-400"><i class="fas fa-swimmer text-xl"></i></div>
-                                    <div>Maikol <br><small class="text-gray-500 italic">Parra</small></div>
-                                </td>
-                                <td class="text-center">8.2k <span class="text-red-500 ml-2">↓</span></td>
-                                <td class="text-right font-bold text-white">21</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="col-span-12 lg:col-span-4 tarjeta flex flex-col items-center justify-center">
-                <h3 class="text-sm font-semibold mb-6 text-gray-400">Objetivo de Ventas</h3>
-                <div class="relative w-48 h-48">
-                    <canvas id="graficaProgreso"></canvas>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center">
-                        <span class="text-3xl font-bold text-white">75%</span>
-                        <span class="text-[10px] text-gray-500 uppercase tracking-widest">Logrado</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <button class="fixed bottom-8 right-8 gradiente-boton px-8 py-4 rounded-2xl font-bold text-white shadow-2xl hover:scale-110 transition duration-300">
-            Generar Reporte
-        </button>
-
-    </main>
-
+    <!-- ===== SCRIPTS ===== -->
     <script>
-        // Lógica de gráficas idéntica a la anterior
-        new Chart(document.getElementById('graficaRating'), {
-            type: 'line',
-            data: {
-                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-                datasets: [{
-                    data: [3.5, 3.8, 3.2, 4.0, 3.7, 4.0],
-                    borderColor: '#6366f1',
-                    borderWidth: 3,
-                    tension: 0.4,
-                    fill: true,
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    pointRadius: 0
-                }]
-            },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
-        });
+        (function() {
+            const sidebar = document.getElementById('sidebarMenu');
+            const overlay = document.getElementById('menuOverlay');
+            const openBtn = document.getElementById('openMenuBtn');
+            const closeBtn = document.getElementById('closeMenuBtn');
 
-        new Chart(document.getElementById('graficaVentas'), {
-            type: 'bar',
-            data: {
-                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-                datasets: [{
-                    data: [45, 70, 55, 90, 65, 80],
-                    backgroundColor: '#f87171',
-                    borderRadius: 8,
-                    barThickness: 12
-                }]
-            },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false } } }
-        });
+            function openMenu() {
+                if (!sidebar) return;
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+                if (overlay) {
+                    overlay.classList.remove('opacity-0', 'pointer-events-none');
+                    overlay.classList.add('opacity-100', 'pointer-events-auto');
+                }
+                document.body.style.overflow = 'hidden';
+            }
 
-        new Chart(document.getElementById('graficaProgreso'), {
-            type: 'doughnut',
-            data: {
-                datasets: [{
-                    data: [75, 25],
-                    backgroundColor: ['#10b981', '#252345'],
-                    borderWidth: 0
-                }]
-            },
-            options: { cutout: '85%', plugins: { tooltip: { enabled: false } } }
-        });
+            function closeMenu() {
+                if (!sidebar) return;
+                sidebar.classList.remove('translate-x-0');
+                sidebar.classList.add('-translate-x-full');
+                if (overlay) {
+                    overlay.classList.remove('opacity-100', 'pointer-events-auto');
+                    overlay.classList.add('opacity-0', 'pointer-events-none');
+                }
+                document.body.style.overflow = '';
+            }
+
+            if (openBtn) openBtn.addEventListener('click', openMenu);
+            if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+            if (overlay) overlay.addEventListener('click', closeMenu);
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 1024) {
+                    if (sidebar && sidebar.classList.contains('translate-x-0')) {
+                        sidebar.classList.remove('translate-x-0');
+                        sidebar.classList.add('-translate-x-full');
+                    }
+                    if (overlay) {
+                        overlay.classList.remove('opacity-100', 'pointer-events-auto');
+                        overlay.classList.add('opacity-0', 'pointer-events-none');
+                    }
+                    document.body.style.overflow = '';
+                }
+            });
+        })();
     </script>
+
 </body>
 </html>
