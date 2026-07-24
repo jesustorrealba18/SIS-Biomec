@@ -20,14 +20,29 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
+/**
+ * Obtiene los colores de SweetAlert según el tema actual
+ */
+function obtenerConfigSweetAlert() {
+    const esOscuro = document.documentElement.classList.contains('dark');
+    return {
+        background: esOscuro ? '#161430' : '#ffffff',
+        color: esOscuro ? '#ffffff' : '#1f2937',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: esOscuro ? '#4B5563' : '#9ca3af'
+    };
+}
+
 const Mantenimiento = {
 
     /**
      * Inicia el proceso de creación del Backup
      */
     generarRespaldo: async () => {
+        const config = obtenerConfigSweetAlert();
         // Alerta que bloquea la pantalla mientras se empaca la base de datos
         Swal.fire({
+            ...config,
             title: 'Generando Respaldo...',
             html: 'Empaquetando <b>sis_natacion</b> y <b>sis_seguridad</b>.<br>Por favor, no recargues la página.',
             allowOutsideClick: false,
@@ -44,7 +59,8 @@ const Mantenimiento = {
             UI.exito('Respaldo Exitoso', 'Las bases de datos han sido respaldadas correctamente.')
               .then(() => {
                   window.location.href = resultado.url_descarga;
-                  document.getElementById('txtUltimoRespaldo').textContent = 'Hace un momento';
+                  document.getElementById('txtUltimoRespaldo').innerHTML = 
+                      `<span class="text-indigo-600 dark:text-indigo-400 font-bold">Hace un momento</span>`;
               });
         } else if (resultado) {
             UI.error('Fallo en el Respaldo', resultado.message || 'Error desconocido al generar el archivo.');
@@ -81,6 +97,7 @@ const Mantenimiento = {
             }
         });
     },
+
     /**
      * Consulta al servidor la fecha del último backup y actualiza la vista
      */
@@ -91,9 +108,10 @@ const Mantenimiento = {
         if (resultado && resultado.status === 'success') {
             if (resultado.fecha) {
                 // Usamos la función global que creamos en utilidades para formatear la fecha bonito
-                txtUltimo.innerHTML = `<span class="text-indigo-400 font-bold">${formatoFechaHora(resultado.fecha)}</span>`;
+                txtUltimo.innerHTML = 
+                    `<span class="text-indigo-600 dark:text-indigo-400 font-bold">${formatoFechaHora(resultado.fecha)}</span>`;
             } else {
-                txtUltimo.innerHTML = '<span class="text-orange-400">Nunca se ha respaldado</span>';
+                txtUltimo.innerHTML = '<span class="text-orange-600 dark:text-orange-400">Nunca se ha respaldado</span>';
             }
         } else {
             txtUltimo.textContent = 'Error al consultar';
@@ -147,7 +165,10 @@ const Mantenimiento = {
         
         if (!input.files || input.files.length === 0) return;
 
+        const config = obtenerConfigSweetAlert();
+
         Swal.fire({
+            ...config,
             title: '¡ADVERTENCIA CRÍTICA!',
             icon: 'warning',
             html: 'Estás a punto de sobrescribir <b>TODA LA BASE DE DATOS</b>.<br>Los registros actuales se perderán si no están en este respaldo.<br><br>Escribe <b>CONFIRMAR</b> para continuar:',
@@ -157,9 +178,6 @@ const Mantenimiento = {
             confirmButtonText: 'Restaurar Ahora',
             cancelButtonText: 'Cancelar',
             confirmButtonColor: '#EF4444',
-            cancelButtonColor: '#4B5563',
-            background: '#161430',
-            color: '#fff',
             preConfirm: (texto) => {
                 if (texto !== 'CONFIRMAR') {
                     Swal.showValidationMessage('Debes escribir CONFIRMAR (en mayúsculas) para proceder.');
@@ -173,10 +191,12 @@ const Mantenimiento = {
     },
 
     ejecutarRestauracion: async (archivo) => {
+        const config = obtenerConfigSweetAlert();
         const formData = new FormData();
         formData.append('archivo_respaldo', archivo);
 
         Swal.fire({
+            ...config,
             title: 'Restaurando Sistema...',
             html: 'Este proceso puede tardar varios minutos.<br><b>No apagues el equipo ni cierres esta ventana.</b>',
             allowOutsideClick: false,
@@ -196,8 +216,6 @@ const Mantenimiento = {
         }
     }
 };
-
-
 
 document.addEventListener('DOMContentLoaded', () => {
     Mantenimiento.initDropzone();
