@@ -416,14 +416,14 @@ async function abrirModalAsignacion(idGrupo = null) {
 
 async function cargarAtletasDisponibles() {
     const container = document.getElementById('atletas-disponibles');
-    container.innerHTML = '<div class="text-center py-4 text-gray-400"><i class="fas fa-spinner fa-spin"></i> Cargando atletas...</div>';
+    container.innerHTML = '<div class="text-center py-4 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin"></i> Cargando atletas...</div>';
 
     try {
         const atletas = await peticionAjax('listarAtletasDisponibles');
 
         if (!atletas || atletas.length === 0) {
             container.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                     <i class="fas fa-users text-4xl mb-3 block opacity-30"></i>
                     <span class="text-sm">No hay atletas disponibles para asignar</span>
                 </div>
@@ -436,15 +436,15 @@ async function cargarAtletasDisponibles() {
             const edad = atleta.edad || 'N/A';
             const categoria = atleta.categoria_nombre || 'Sin categoría';
             html += `
-                <label class="flex items-center p-2 hover:bg-white/5 rounded-lg cursor-pointer transition">
+                <label class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer transition">
                     <input type="checkbox" name="atletas[]" value="${atleta.id_atleta}" 
-                           class="form-checkbox h-4 w-4 text-indigo-600 bg-gray-700 border-gray-600 rounded">
+                           class="form-checkbox h-4 w-4 text-indigo-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded">
                     <span class="ml-3 text-sm flex-1">
-                        <span class="font-medium">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
-                        <span class="text-gray-400 text-xs ml-2">${edad} años</span>
-                        <span class="text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
+                        <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
+                        <span class="text-gray-500 dark:text-gray-400 text-xs ml-2">${edad} años</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
                     </span>
-                    <span class="text-gray-500 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
+                    <span class="text-gray-500 dark:text-gray-400 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
                 </label>
             `;
         });
@@ -465,7 +465,7 @@ async function cargarAtletasDisponibles() {
 
     } catch (error) {
         console.error('Error cargando atletas:', error);
-        container.innerHTML = '<div class="text-center py-4 text-red-400">Error al cargar atletas disponibles</div>';
+        container.innerHTML = '<div class="text-center py-4 text-red-600 dark:text-red-400">Error al cargar atletas disponibles</div>';
     }
 }
 
@@ -486,14 +486,14 @@ async function filtrarAtletasPorCategoria() {
     }
     
     const container = document.getElementById('atletas-disponibles');
-    container.innerHTML = '<div class="text-center py-4 text-gray-400"><i class="fas fa-spinner fa-spin"></i> Cargando atletas...</div>';
+    container.innerHTML = '<div class="text-center py-4 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin"></i> Cargando atletas...</div>';
     
     try {
         const atletas = await peticionAjax(`listarAtletasPorCategoria&id_categoria=${idCategoria}`);
         
         if (!atletas || atletas.length === 0) {
             container.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                     <i class="fas fa-users text-4xl mb-3 block opacity-30"></i>
                     <span class="text-sm">No hay atletas disponibles en esta categoría</span>
                 </div>
@@ -506,15 +506,15 @@ async function filtrarAtletasPorCategoria() {
             const edad = atleta.edad || 'N/A';
             const categoria = atleta.categoria_nombre || 'Sin categoría';
             html += `
-                <label class="flex items-center p-2 hover:bg-white/5 rounded-lg cursor-pointer transition">
+                <label class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer transition">
                     <input type="checkbox" name="atletas[]" value="${atleta.id_atleta}" 
-                           class="form-checkbox h-4 w-4 text-indigo-600 bg-gray-700 border-gray-600 rounded">
+                           class="form-checkbox h-4 w-4 text-indigo-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded">
                     <span class="ml-3 text-sm flex-1">
-                        <span class="font-medium">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
-                        <span class="text-gray-400 text-xs ml-2">${edad} años</span>
-                        <span class="text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
+                        <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
+                        <span class="text-gray-500 dark:text-gray-400 text-xs ml-2">${edad} años</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
                     </span>
-                    <span class="text-gray-500 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
+                    <span class="text-gray-500 dark:text-gray-400 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
                 </label>
             `;
         });
@@ -535,7 +535,7 @@ async function filtrarAtletasPorCategoria() {
         
     } catch (error) {
         console.error('Error filtrando atletas:', error);
-        container.innerHTML = '<div class="text-center py-4 text-red-400">Error al filtrar atletas</div>';
+        container.innerHTML = '<div class="text-center py-4 text-red-600 dark:text-red-400">Error al filtrar atletas</div>';
     }
 }
 
@@ -556,14 +556,14 @@ async function filtrarAtletasPorEdad() {
     }
 
     const container = document.getElementById('atletas-disponibles');
-    container.innerHTML = '<div class="text-center py-4 text-gray-400"><i class="fas fa-spinner fa-spin"></i> Filtrando atletas...</div>';
+    container.innerHTML = '<div class="text-center py-4 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin"></i> Filtrando atletas...</div>';
 
     try {
         const atletas = await peticionAjax(`listarAtletasPorEdad&edad_min=${edadMin}&edad_max=${edadMax}`);
 
         if (!atletas || atletas.length === 0) {
             container.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                     <i class="fas fa-search text-4xl mb-3 block opacity-30"></i>
                     <span class="text-sm">No hay atletas en este rango de edad</span>
                 </div>
@@ -576,15 +576,15 @@ async function filtrarAtletasPorEdad() {
             const edad = atleta.edad || 'N/A';
             const categoria = atleta.categoria_nombre || 'Sin categoría';
             html += `
-                <label class="flex items-center p-2 hover:bg-white/5 rounded-lg cursor-pointer transition">
+                <label class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer transition">
                     <input type="checkbox" name="atletas[]" value="${atleta.id_atleta}" 
-                           class="form-checkbox h-4 w-4 text-indigo-600 bg-gray-700 border-gray-600 rounded">
+                           class="form-checkbox h-4 w-4 text-indigo-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded">
                     <span class="ml-3 text-sm flex-1">
-                        <span class="font-medium">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
-                        <span class="text-gray-400 text-xs ml-2">${edad} años</span>
-                        <span class="text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
+                        <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
+                        <span class="text-gray-500 dark:text-gray-400 text-xs ml-2">${edad} años</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
                     </span>
-                    <span class="text-gray-500 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
+                    <span class="text-gray-500 dark:text-gray-400 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
                 </label>
             `;
         });
@@ -605,7 +605,7 @@ async function filtrarAtletasPorEdad() {
 
     } catch (error) {
         console.error('Error filtrando atletas:', error);
-        container.innerHTML = '<div class="text-center py-4 text-red-400">Error al filtrar atletas</div>';
+        container.innerHTML = '<div class="text-center py-4 text-red-600 dark:text-red-400">Error al filtrar atletas</div>';
     }
 }
 
@@ -631,7 +631,7 @@ async function abrirModalVerGrupo(idGrupo) {
     contenido.innerHTML = `
         <div class="text-center py-8">
             <i class="fas fa-spinner fa-spin text-3xl text-indigo-500"></i>
-            <p class="text-gray-400 mt-3 text-sm">Cargando detalles del grupo...</p>
+            <p class="text-gray-500 dark:text-gray-400 mt-3 text-sm">Cargando detalles del grupo...</p>
         </div>
     `;
 
@@ -647,7 +647,7 @@ async function abrirModalVerGrupo(idGrupo) {
             contenido.innerHTML = `
                 <div class="text-center py-12">
                     <i class="fas fa-exclamation-triangle text-4xl text-red-400 mb-4"></i>
-                    <p class="text-gray-400">No se pudo cargar la información del grupo</p>
+                    <p class="text-gray-500 dark:text-gray-400">No se pudo cargar la información del grupo</p>
                 </div>
             `;
             return;
@@ -664,7 +664,7 @@ async function abrirModalVerGrupo(idGrupo) {
         contenido.innerHTML = `
             <div class="text-center py-12">
                 <i class="fas fa-exclamation-circle text-4xl text-red-400 mb-4"></i>
-                <p class="text-gray-400">Error al cargar los detalles del grupo</p>
+                <p class="text-gray-500 dark:text-gray-400">Error al cargar los detalles del grupo</p>
             </div>
         `;
     }
@@ -674,8 +674,8 @@ function renderizarDetalleGrupo(grupo, atletas) {
     const contenido = document.getElementById('detalleGrupoContenido');
 
     const badgeEstado = grupo.activo == 1 
-        ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">ACTIVO</span>`
-        : `<span class="px-3 py-1 rounded-full text-xs font-bold bg-gray-500/10 text-gray-400 border border-gray-500/20">ARCHIVADO</span>`;
+        ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">ACTIVO</span>`
+        : `<span class="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20">ARCHIVADO</span>`;
 
     const tieneAtletas = atletas && Array.isArray(atletas) && atletas.length > 0;
 
@@ -684,17 +684,17 @@ function renderizarDetalleGrupo(grupo, atletas) {
         atletasHtml = `
             <div class="space-y-2 max-h-60 overflow-y-auto pr-2">
                 ${atletas.map(atleta => `
-                    <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition">
+                    <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-white/5 rounded-xl hover:bg-gray-200 dark:hover:bg-white/10 transition">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                            <div class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                                 <i class="fas fa-user"></i>
                             </div>
                             <div>
-                                <p class="text-white font-medium text-sm">${escapeHtml(atleta.nombres || '')} ${escapeHtml(atleta.apellidos || '')}</p>
-                                <div class="flex gap-3 text-xs text-gray-400">
+                                <p class="text-gray-900 dark:text-white font-medium text-sm">${escapeHtml(atleta.nombres || '')} ${escapeHtml(atleta.apellidos || '')}</p>
+                                <div class="flex gap-3 text-xs text-gray-500 dark:text-gray-400">
                                     <span>${atleta.edad || 'N/A'} años</span>
-                                    <span class="text-emerald-400">${escapeHtml(atleta.categoria_nombre || 'Sin categoría')}</span>
-                                    <span class="text-gray-500">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
+                                    <span class="text-emerald-600 dark:text-emerald-400">${escapeHtml(atleta.categoria_nombre || 'Sin categoría')}</span>
+                                    <span class="text-gray-500 dark:text-gray-400">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
                                 </div>
                             </div>
                         </div>
@@ -704,7 +704,7 @@ function renderizarDetalleGrupo(grupo, atletas) {
         `;
     } else {
         atletasHtml = `
-            <div class="text-center py-8 text-gray-500">
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                 <i class="fas fa-users text-4xl mb-3 block opacity-30"></i>
                 <p class="text-sm">No hay atletas asignados a este grupo</p>
             </div>
@@ -713,50 +713,50 @@ function renderizarDetalleGrupo(grupo, atletas) {
 
     contenido.innerHTML = `
         <div class="text-center mb-8">
-            <div class="w-28 h-28 rounded-full mx-auto mb-4 bg-indigo-500/20 flex items-center justify-center text-4xl text-indigo-400 border-4 border-indigo-500/20">
+            <div class="w-28 h-28 rounded-full mx-auto mb-4 bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center text-4xl text-indigo-600 dark:text-indigo-400 border-4 border-indigo-200 dark:border-indigo-500/20">
                 <i class="fas fa-users"></i>
             </div>
-            <h2 class="text-2xl font-bold text-white">${escapeHtml(grupo.nombre)}</h2>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${escapeHtml(grupo.nombre)}</h2>
             <div class="flex justify-center gap-2 mt-3 flex-wrap">
                 ${badgeEstado}
-                <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20">
                     ${tieneAtletas ? atletas.length : 0} atletas
                 </span>
             </div>
         </div>
 
         <div class="mb-6">
-            <p class="text-[10px] uppercase text-indigo-400 font-bold tracking-widest mb-3">
+            <p class="text-[10px] uppercase text-indigo-600 dark:text-indigo-400 font-bold tracking-widest mb-3">
                 <i class="fas fa-info-circle mr-2"></i>INFORMACIÓN DEL GRUPO
             </p>
-            <div class="grid grid-cols-2 gap-3 text-left bg-black/20 p-4 rounded-2xl border border-white/5">
+            <div class="grid grid-cols-2 gap-3 text-left bg-gray-100 dark:bg-black/20 p-4 rounded-2xl border border-gray-200 dark:border-white/5">
                 <div>
-                    <p class="text-[10px] uppercase text-gray-500">Entrenador</p>
-                    <p class="text-white font-medium">${escapeHtml(grupo.entrenador_nombre || 'Sin asignar')}</p>
-                    ${grupo.entrenador_cedula ? `<p class="text-gray-500 text-xs">${escapeHtml(grupo.entrenador_cedula)}</p>` : ''}
+                    <p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Entrenador</p>
+                    <p class="text-gray-900 dark:text-white font-medium">${escapeHtml(grupo.entrenador_nombre || 'Sin asignar')}</p>
+                    ${grupo.entrenador_cedula ? `<p class="text-gray-500 dark:text-gray-400 text-xs">${escapeHtml(grupo.entrenador_cedula)}</p>` : ''}
                 </div>
                 <div>
-                    <p class="text-[10px] uppercase text-gray-500">Estado</p>
-                    <p class="${grupo.activo == 1 ? 'text-emerald-400' : 'text-gray-400'}">${grupo.activo == 1 ? 'Activo' : 'Archivado'}</p>
+                    <p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Estado</p>
+                    <p class="${grupo.activo == 1 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}">${grupo.activo == 1 ? 'Activo' : 'Archivado'}</p>
                 </div>
                 <div class="col-span-2">
-                    <p class="text-[10px] uppercase text-gray-500">Descripción</p>
-                    <p class="text-gray-300 text-sm">${escapeHtml(grupo.descripcion) || 'Sin descripción registrada'}</p>
+                    <p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Descripción</p>
+                    <p class="text-gray-700 dark:text-gray-300 text-sm">${escapeHtml(grupo.descripcion) || 'Sin descripción registrada'}</p>
                 </div>
             </div>
         </div>
 
         <div>
-            <p class="text-[10px] uppercase text-emerald-400 font-bold tracking-widest mb-3">
+            <p class="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-widest mb-3">
                 <i class="fas fa-user-check mr-2"></i>ATLETAS ASIGNADOS (${tieneAtletas ? atletas.length : 0})
             </p>
-            <div class="bg-black/20 p-4 rounded-2xl border border-white/5">
+            <div class="bg-gray-100 dark:bg-black/20 p-4 rounded-2xl border border-gray-200 dark:border-white/5">
                 ${atletasHtml}
             </div>
         </div>
 
-        <div class="mt-6 flex gap-3 pt-4 border-t border-white/5">
-            <button onclick="cerrarModalVerGrupo()" class="w-full bg-gray-800 text-gray-400 py-3 rounded-xl font-bold hover:bg-gray-700 transition">
+        <div class="mt-6 flex gap-3 pt-4 border-t border-gray-200 dark:border-white/5">
+            <button onclick="cerrarModalVerGrupo()" class="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-400 py-3 rounded-xl font-bold transition">
                 <i class="fas fa-times mr-2"></i> CERRAR
             </button>
         </div>
@@ -775,7 +775,7 @@ function abrirModalVerGrupoDesdeAsignacion() {
 
 async function cargarTablaGrupos() {
     const tbody = document.getElementById('listaGrupos');
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando grupos...</span></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center p-12 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando grupos...</span></td></tr>`;
 
     const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
     const grupos = await peticionAjax(`listarGrupos&estado=${filtroEstado}`);
@@ -783,8 +783,8 @@ async function cargarTablaGrupos() {
     if (!grupos || grupos.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center p-12 text-gray-500">
-                    <i class="fas fa-layer-group text-4xl mb-3 block text-gray-600 animate-pulse"></i>
+                <td colspan="6" class="text-center p-12 text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-layer-group text-4xl mb-3 block text-gray-400 dark:text-gray-600 animate-pulse"></i>
                     <span class="text-xs uppercase tracking-wider block">No hay grupos registrados en este estado</span>
                 </td>
             </tr>
@@ -794,52 +794,52 @@ async function cargarTablaGrupos() {
 
     let html = '';
     grupos.forEach(g => {
-        const entrenadorText = g.entrenador_nombre ? `${g.entrenador_nombre} <span class="text-[10px] text-gray-500">(${g.entrenador_cedula})</span>` : '<span class="text-xs text-gray-600 italic">Sin entrenador asignado</span>';
+        const entrenadorText = g.entrenador_nombre ? `${g.entrenador_nombre} <span class="text-[10px] text-gray-500 dark:text-gray-400">(${g.entrenador_cedula})</span>` : '<span class="text-xs text-gray-500 dark:text-gray-400 italic">Sin entrenador asignado</span>';
         const busqueda = `${g.nombre} ${g.descripcion} ${g.entrenador_nombre || ''}`.toLowerCase();
         
         let botonAccion = '';
         if (g.activo == 1) {
             botonAccion = `
-                <button onclick="eliminarGrupo(${g.id_grupo})" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition duration-200" title="Archivar Grupo">
+                <button onclick="eliminarGrupo(${g.id_grupo})" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition duration-200" title="Archivar Grupo">
                     <i class="fas fa-trash-alt text-base"></i>
                 </button>
             `;
         } else {
             botonAccion = `
-                <button onclick="reactivarGrupo(${g.id_grupo})" class="text-emerald-400 hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-500/10 transition duration-200" title="Reactivar Grupo">
+                <button onclick="reactivarGrupo(${g.id_grupo})" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition duration-200" title="Reactivar Grupo">
                     <i class="fas fa-check-circle text-base"></i>
                 </button>
             `;
         }
 
         html += `
-            <tr class="grupo-row hover:bg-white/5 transition-colors duration-200" data-busqueda="${busqueda}">
-                <td class="p-4 font-medium text-white">${escapeHtml(g.nombre)}</td>
-                <td class="p-4 text-gray-300 text-xs max-w-xs truncate">${escapeHtml(g.descripcion) || '—'}</td>
-                <td class="p-4 text-gray-300">${entrenadorText}</td>
+            <tr class="grupo-row hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-gray-800/50" data-busqueda="${busqueda}">
+                <td class="p-4 font-medium text-gray-900 dark:text-white">${escapeHtml(g.nombre)}</td>
+                <td class="p-4 text-gray-600 dark:text-gray-300 text-xs max-w-xs truncate">${escapeHtml(g.descripcion) || '—'}</td>
+                <td class="p-4 text-gray-700 dark:text-gray-300">${entrenadorText}</td>
                 <td class="p-4 text-center">
-                    <span class="px-2.5 py-1 text-xs font-bold rounded-full ${g.total_atletas > 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'}">
+                    <span class="px-2.5 py-1 text-xs font-bold rounded-full ${g.total_atletas > 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' : 'bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20'}">
                         ${g.total_atletas || 0}
                     </span>
                 </td>
                 <td class="p-4">
-                    <span class="px-2.5 py-1 text-[11px] font-bold rounded-full ${g.activo == 1 ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'} uppercase tracking-wide">
+                    <span class="px-2.5 py-1 text-[11px] font-bold rounded-full ${g.activo == 1 ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20' : 'bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20'} uppercase tracking-wide">
                         ${g.activo == 1 ? 'Activo' : 'Archivado'}
                     </span>
                 </td>
                 <td class="p-4 text-right space-x-1">
                     ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
-                    <button onclick="abrirModalVerGrupo(${g.id_grupo})" class="text-cyan-400 hover:text-cyan-300 p-2 rounded-lg hover:bg-cyan-500/10 transition duration-200" title="Ver Detalles">
+                    <button onclick="abrirModalVerGrupo(${g.id_grupo})" class="text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 p-2 rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-500/10 transition duration-200" title="Ver Detalles">
                         <i class="fas fa-eye text-base"></i>
                     </button>
-                    <button onclick="abrirModalGrupo(${g.id_grupo})" class="text-indigo-400 hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-500/10 transition duration-200" title="Editar Grupo">
+                    <button onclick="abrirModalGrupo(${g.id_grupo})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition duration-200" title="Editar Grupo">
                         <i class="fas fa-edit text-base"></i>
                     </button>
-                    <button onclick="abrirModalAsignacion(${g.id_grupo})" class="text-emerald-400 hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-500/10 transition duration-200" title="Asignar Atletas">
+                    <button onclick="abrirModalAsignacion(${g.id_grupo})" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition duration-200" title="Asignar Atletas">
                         <i class="fas fa-user-plus text-base"></i>
                     </button>
                     ${botonAccion}
-                    ` : '<span class="text-gray-600 text-xs">Solo lectura</span>'}
+                    ` : '<span class="text-gray-500 dark:text-gray-400 text-xs">Solo lectura</span>'}
                 </td>
             </tr>
         `;
