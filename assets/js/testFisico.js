@@ -9,12 +9,18 @@ let atletasGlobal = [];
 let tiposGlobal = [];
 let variablesCache = {};
 
+// =====================================================================
+// BADGES DE ESTADO CON SOPORTE CLARO/OSCURO
+// =====================================================================
 const BADGES_ESTADO = {
-    'Completo': 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-    'Parcial': 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-    'Cancelado': 'bg-red-500/20 text-red-400 border border-red-500/30'
+    'Completo': 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30',
+    'Parcial': 'bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30',
+    'Cancelado': 'bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30'
 };
 
+// =====================================================================
+// PETICION AJAX
+// =====================================================================
 async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
     if (datos) opciones.body = datos;
@@ -30,6 +36,9 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
+// =====================================================================
+// MODALES: CERRAR
+// =====================================================================
 function cerrarModalTest() {
     modalTest.classList.add('hidden');
     modalTest.firstElementChild.classList.add('scale-95', 'opacity-0');
@@ -42,7 +51,7 @@ function cerrarModalTest() {
     const inputBuscar = document.getElementById('inputBuscarAtleta');
     if (inputBuscar) {
         inputBuscar.value = '';
-        inputBuscar.classList.remove('text-emerald-400', 'font-bold', 'opacity-50', 'cursor-not-allowed', 'bg-gray-800');
+        inputBuscar.classList.remove('text-indigo-600', 'dark:text-emerald-400', 'font-bold', 'opacity-50', 'cursor-not-allowed', 'bg-gray-100', 'dark:bg-gray-800');
         inputBuscar.removeAttribute('readonly');
         document.getElementById('btnLimpiarAtleta').classList.add('hidden');
     }
@@ -62,9 +71,14 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         if (!modalTest.classList.contains('hidden')) cerrarModalTest();
         else if (!modalVer.classList.contains('hidden')) cerrarModalVer();
+        else if (!document.getElementById('modalTipo').classList.contains('hidden')) cerrarModalTipo();
+        else if (!document.getElementById('modalPersonalizado').classList.contains('hidden')) cerrarModalPersonalizado();
     }
 });
 
+// =====================================================================
+// ABRIR MODAL TEST
+// =====================================================================
 async function abrirModalTest(id_registro = null) {
     cerrarModalTest();
     modalTest.classList.remove('hidden');
@@ -88,7 +102,7 @@ async function abrirModalTest(id_registro = null) {
         const inputAtleta = document.getElementById('inputBuscarAtleta');
         inputAtleta.value = `${data.nombre_atleta} (CI: ${data.cedula})`;
         inputAtleta.readOnly = true;
-        inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-800');
+        inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-100', 'dark:bg-gray-800');
         document.getElementById('btnLimpiarAtleta').classList.add('hidden');
 
         document.getElementById('id_tipo_test').value = data.id_tipo_test || '';
@@ -128,6 +142,9 @@ async function abrirModalTest(id_registro = null) {
     }
 }
 
+// =====================================================================
+// CARGA DE RECURSOS (Atletas, Tipos, Tests Personalizados)
+// =====================================================================
 async function cargarAtletasBuscador() {
     const respuesta = await peticionAjax('listarAtletasSelect');
     if (respuesta) atletasGlobal = respuesta;
@@ -155,6 +172,23 @@ async function cargarTiposSelect() {
     });
 }
 
+async function cargarTestsPersonalizadosDropdown() {
+    const select = document.getElementById('id_test_pers');
+    if (!select) return;
+    while (select.options.length > 1) select.remove(select.options.length - 1);
+    const tests = await peticionAjax('listarTestsPersonalizados');
+    if (!tests || tests.length === 0) return;
+    tests.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id_test_pers;
+        opt.textContent = t.nombre + (t.unidad_medida ? ' (' + t.unidad_medida + ')' : '');
+        select.appendChild(opt);
+    });
+}
+
+// =====================================================================
+// VARIABLES DEL TEST
+// =====================================================================
 async function cargarVariables() {
     const origen = document.getElementById('origen_test').value;
     const id_tipo_test = parseInt(document.getElementById('id_tipo_test').value);
@@ -190,7 +224,7 @@ async function cargarVariables() {
 
     const variables = await peticionAjax(`obtenerVariables&${idVar}`);
     if (!variables || variables.length === 0) {
-        rejilla.innerHTML = '<p class="text-gray-500 text-xs col-span-full">No hay variables configuradas para este test.</p>';
+        rejilla.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-xs col-span-full">No hay variables configuradas para este test.</p>';
         contenedor.classList.remove('hidden');
         return;
     }
@@ -221,20 +255,6 @@ function cambiarOrigenTest() {
     }
 }
 
-async function cargarTestsPersonalizadosDropdown() {
-    const select = document.getElementById('id_test_pers');
-    if (!select) return;
-    while (select.options.length > 1) select.remove(select.options.length - 1);
-    const tests = await peticionAjax('listarTestsPersonalizados');
-    if (!tests || tests.length === 0) return;
-    tests.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.id_test_pers;
-        opt.textContent = t.nombre + (t.unidad_medida ? ' (' + t.unidad_medida + ')' : '');
-        select.appendChild(opt);
-    });
-}
-
 function renderVariables(variables) {
     const rejilla = document.getElementById('rejillaVariables');
     const contenedor = document.getElementById('contenedorVariables');
@@ -245,12 +265,12 @@ function renderVariables(variables) {
         const caja = document.createElement('div');
         caja.className = 'relative';
         caja.innerHTML = `
-            <label class="block text-[10px] text-gray-400 uppercase font-bold mb-1">${v.nombre_variable}</label>
+            <label class="block text-[10px] text-gray-600 dark:text-gray-400 uppercase font-bold mb-1">${v.nombre_variable}</label>
             <div class="relative">
                 <input type="number" step="0.01" name="valores[${v.id_variable}]" 
                        data-validar="requerido" data-nombre="${v.nombre_variable}"
-                       placeholder="0.00" class="w-full input-dark p-2.5 rounded-lg text-sm text-center font-mono pr-12">
-                <span class="absolute right-3 top-2.5 text-gray-600 text-xs">${v.unidad || ''}</span>
+                       placeholder="0.00" class="w-full input-adapt p-2.5 rounded-lg text-sm text-center font-mono pr-12">
+                <span class="absolute right-3 top-2.5 text-gray-400 dark:text-gray-600 text-xs">${v.unidad || ''}</span>
             </div>`;
         rejilla.appendChild(caja);
     });
@@ -264,6 +284,9 @@ function renderVariables(variables) {
     }, 50);
 }
 
+// =====================================================================
+// DROPDOWN DE ATLETAS (BÚSQUEDA)
+// =====================================================================
 const inputBuscar = document.getElementById('inputBuscarAtleta');
 const dropdown = document.getElementById('dropdownAtletas');
 const ulAtletas = document.getElementById('ulAtletas');
@@ -273,13 +296,18 @@ const btnLimpiar = document.getElementById('btnLimpiarAtleta');
 function renderizarDropdown(lista) {
     ulAtletas.innerHTML = '';
     if (lista.length === 0) {
-        ulAtletas.innerHTML = '<li class="p-4 text-gray-500 text-center text-xs">No se encontraron coincidencias</li>';
+        ulAtletas.innerHTML = '<li class="p-4 text-gray-500 dark:text-gray-400 text-center text-xs">No se encontraron coincidencias</li>';
         return;
     }
     lista.forEach(atleta => {
         const li = document.createElement('li');
-        li.className = 'p-3 hover:bg-indigo-600/20 hover:text-indigo-300 cursor-pointer transition-colors flex justify-between items-center';
-        li.innerHTML = `<div><div class="font-bold text-white">${atleta.nombres} ${atleta.apellidos}</div><div class="text-[10px] text-gray-500 font-mono mt-0.5">C.I: ${atleta.cedula}</div></div>`;
+        li.className = 'p-3 hover:bg-indigo-100 dark:hover:bg-indigo-600/20 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer transition-colors flex justify-between items-center';
+        li.innerHTML = `
+            <div>
+                <div class="font-bold text-gray-900 dark:text-white">${atleta.nombres} ${atleta.apellidos}</div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 font-mono mt-0.5">C.I: ${atleta.cedula}</div>
+            </div>
+        `;
         li.onclick = () => seleccionarAtleta(atleta);
         ulAtletas.appendChild(li);
     });
@@ -288,7 +316,7 @@ function renderizarDropdown(lista) {
 function seleccionarAtleta(atleta) {
     inputIdOculto.value = atleta.id_atleta;
     inputBuscar.value = `${atleta.nombres} ${atleta.apellidos}`;
-    inputBuscar.classList.add('text-emerald-400', 'font-bold');
+    inputBuscar.classList.add('text-indigo-600', 'dark:text-emerald-400', 'font-bold');
     inputBuscar.setAttribute('readonly', true);
     dropdown.classList.add('hidden');
     btnLimpiar.classList.remove('hidden');
@@ -297,7 +325,7 @@ function seleccionarAtleta(atleta) {
 btnLimpiar.onclick = () => {
     inputIdOculto.value = '';
     inputBuscar.value = '';
-    inputBuscar.classList.remove('text-emerald-400', 'font-bold');
+    inputBuscar.classList.remove('text-indigo-600', 'dark:text-emerald-400', 'font-bold');
     inputBuscar.removeAttribute('readonly');
     btnLimpiar.classList.add('hidden');
     inputBuscar.focus();
@@ -327,12 +355,15 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// =====================================================================
+// ENVÍO DEL FORMULARIO TEST
+// =====================================================================
 formTest.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const erroresFormulario = Validador.validarFormulario(formTest);
     if (erroresFormulario) {
-        UI.error('Datos Incompletos', `<div class="text-left text-sm mt-2 text-gray-300"><p class="mb-2 font-bold text-white">Corrige lo siguiente:</p>${erroresFormulario}</div>`);
+        UI.error('Datos Incompletos', `<div class="text-left text-sm mt-2 text-gray-700 dark:text-gray-300"><p class="mb-2 font-bold text-gray-900 dark:text-white">Corrige lo siguiente:</p>${erroresFormulario}</div>`);
         return;
     }
 
@@ -385,6 +416,9 @@ formTest.addEventListener('submit', async (e) => {
     btnGuardar.disabled = false;
 });
 
+// =====================================================================
+// TABLA PRINCIPAL
+// =====================================================================
 async function cargarTabla() {
     const id_atleta = document.getElementById('filtroAtleta')?.value || '';
     const id_tipo_test = document.getElementById('filtroTipoTest')?.value || '';
@@ -396,12 +430,12 @@ async function cargarTabla() {
     if (estado) params.append('estado', estado);
 
     const tbody = document.getElementById('tbodyTests');
-    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando...</td></tr>';
 
     const tests = await peticionAjax(`listarTests&${params.toString()}`);
 
     if (!tests || tests.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500 font-mono text-xs">No hay tests registrados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500 dark:text-gray-400 font-mono text-xs">No hay tests registrados.</td></tr>';
         return;
     }
 
@@ -412,28 +446,28 @@ async function cargarTabla() {
 
         const puedeEditar = typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar;
 
-        html += `<tr class="hover:bg-white/5 transition-colors duration-200 border-b border-[#252345]">
-            <td class="p-4 text-xs font-mono text-gray-400">${fecha}</td>
+        html += `<tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345]">
+            <td class="p-4 text-xs font-mono text-gray-600 dark:text-gray-400">${fecha}</td>
             <td class="p-4">
-                <div class="font-bold text-white text-sm">${test.nombre_atleta}</div>
-                <div class="text-[10px] text-gray-500 font-mono">C.I: ${test.cedula}</div>
+                <div class="font-bold text-gray-900 dark:text-white text-sm">${test.nombre_atleta}</div>
+                <div class="text-[10px] text-gray-500 dark:text-gray-400 font-mono">C.I: ${test.cedula}</div>
             </td>
             <td class="p-4">
-                <span class="text-indigo-300 text-sm font-medium">${test.nombre_test || 'N/A'}</span>
+                <span class="text-indigo-600 dark:text-indigo-300 text-sm font-medium">${test.nombre_test || 'N/A'}</span>
             </td>
-            <td class="p-4 text-sm font-mono text-gray-300">—</td>
+            <td class="p-4 text-sm font-mono text-gray-700 dark:text-gray-300">—</td>
             <td class="p-4">
                 <span class="px-2 py-1 rounded-lg text-[10px] font-bold ${badgeEstado}">${test.estado}</span>
             </td>
             <td class="p-4 text-right space-x-1">
-                <button onclick="verDetalle(${test.id_registro_test})" class="text-indigo-400 hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Detalle">
+                <button onclick="verDetalle(${test.id_registro_test})" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Detalle">
                     <i class="fas fa-eye text-base"></i>
                 </button>
                 ${puedeEditar ? `
-                <button onclick="abrirModalTest(${test.id_registro_test})" class="text-amber-400 hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar">
+                <button onclick="abrirModalTest(${test.id_registro_test})" class="text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar">
                     <i class="fas fa-edit text-base"></i>
                 </button>
-                <button onclick="eliminarTest(${test.id_registro_test})" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition" title="Eliminar">
+                <button onclick="eliminarTest(${test.id_registro_test})" class="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 p-2 rounded-lg transition" title="Eliminar">
                     <i class="fas fa-trash-alt text-base"></i>
                 </button>` : ''}
             </td>
@@ -452,9 +486,12 @@ function filtrarTabla() {
     });
 }
 
+// =====================================================================
+// VER DETALLE
+// =====================================================================
 async function verDetalle(id) {
     const contenedor = document.getElementById('detalleContenido');
-    contenedor.innerHTML = '<div class="text-center p-12 text-gray-500"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-3"></i><p class="text-xs font-mono uppercase tracking-widest">Cargando detalle...</p></div>';
+    contenedor.innerHTML = '<div class="text-center p-12 text-gray-500 dark:text-gray-400"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-3"></i><p class="text-xs font-mono uppercase tracking-widest">Cargando detalle...</p></div>';
     modalVer.classList.remove('hidden');
 
     const data = await peticionAjax(`obtenerDetalle&id=${id}`);
@@ -470,46 +507,46 @@ async function verDetalle(id) {
     let html = `
         <div class="mb-6">
             <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                    <i class="fas fa-dumbbell text-indigo-400 text-xl"></i>
+                <div class="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center">
+                    <i class="fas fa-dumbbell text-indigo-600 dark:text-indigo-400 text-xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-bold text-white">${data.nombre_test || 'Test Fisico'}</h2>
-                    <p class="text-xs text-gray-400">${fecha}</p>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">${data.nombre_test || 'Test Fisico'}</h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">${fecha}</p>
                 </div>
             </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="bg-black/20 rounded-xl p-4 border border-white/5">
-                <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Atleta</p>
-                <p class="text-white font-bold">${data.nombre_atleta}</p>
-                <p class="text-xs text-gray-500 font-mono">C.I: ${data.cedula}</p>
+            <div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5">
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Atleta</p>
+                <p class="text-gray-900 dark:text-white font-bold">${data.nombre_atleta}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-mono">C.I: ${data.cedula}</p>
             </div>
-            <div class="bg-black/20 rounded-xl p-4 border border-white/5">
-                <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Tipo de Medicion</p>
-                <p class="text-indigo-300 font-bold">${data.tipo_medicion || 'N/A'}</p>
-                <p class="text-xs text-gray-500">Unidad: ${data.unidad_test || 'N/A'}</p>
+            <div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5">
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Tipo de Medicion</p>
+                <p class="text-indigo-600 dark:text-indigo-300 font-bold">${data.tipo_medicion || 'N/A'}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Unidad: ${data.unidad_test || 'N/A'}</p>
             </div>
         </div>
 
-        <div class="bg-black/20 rounded-xl p-4 border border-white/5 mb-6 text-center">
+        <div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5 mb-6 text-center">
             <span class="px-2 py-1 rounded-lg text-[10px] font-bold ${badgeEstado}">${data.estado}</span>
         </div>`;
 
     if (data.valores_detalle && data.valores_detalle.length > 0) {
-        html += `<div class="bg-black/20 rounded-xl p-4 border border-white/5 mb-6">
-            <p class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-3">
-                <i class="fas fa-vials mr-2 text-emerald-400"></i>Valores Registrados
+        html += `<div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5 mb-6">
+            <p class="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-3">
+                <i class="fas fa-vials mr-2 text-emerald-600 dark:text-emerald-400"></i>Valores Registrados
             </p>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">`;
 
         data.valores_detalle.forEach(v => {
             const valorMostrar = parseFloat(v.valor).toFixed(2);
-            html += `<div class="bg-black/30 rounded-lg p-3 border border-white/5 text-center">
-                <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">${v.nombre_variable}</p>
-                <p class="text-lg font-bold text-white font-mono">${valorMostrar}</p>
-                <p class="text-[10px] text-gray-600">${v.unidad_medida || v.variable_unidad || ''}</p>
+            html += `<div class="bg-gray-100 dark:bg-black/30 rounded-lg p-3 border border-gray-200 dark:border-white/5 text-center">
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">${v.nombre_variable}</p>
+                <p class="text-lg font-bold text-gray-900 dark:text-white font-mono">${valorMostrar}</p>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400">${v.unidad_medida || v.variable_unidad || ''}</p>
             </div>`;
         });
 
@@ -517,27 +554,27 @@ async function verDetalle(id) {
     }
 
     if (data.valor_referencia_min !== null && data.valor_referencia_max !== null) {
-        html += `<div class="bg-black/20 rounded-xl p-4 border border-white/5 mb-6">
-            <p class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-2">
-                <i class="fas fa-ruler mr-2 text-amber-400"></i>Rango Normativo de Referencia
+        html += `<div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5 mb-6">
+            <p class="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-2">
+                <i class="fas fa-ruler mr-2 text-amber-600 dark:text-amber-400"></i>Rango Normativo de Referencia
             </p>
-            <p class="text-sm text-gray-400">Min: <span class="text-amber-400 font-bold font-mono">${parseFloat(data.valor_referencia_min).toFixed(2)}</span> 
-               | Max: <span class="text-amber-400 font-bold font-mono">${parseFloat(data.valor_referencia_max).toFixed(2)}</span> 
+            <p class="text-sm text-gray-600 dark:text-gray-400">Min: <span class="text-amber-600 dark:text-amber-400 font-bold font-mono">${parseFloat(data.valor_referencia_min).toFixed(2)}</span> 
+               | Max: <span class="text-amber-600 dark:text-amber-400 font-bold font-mono">${parseFloat(data.valor_referencia_max).toFixed(2)}</span> 
                ${data.unidad_test ? '(' + data.unidad_test + ')' : ''}</p>
         </div>`;
     }
 
     if (data.observaciones) {
-        html += `<div class="bg-black/20 rounded-xl p-4 border border-white/5 mb-6">
-            <p class="text-[10px] text-gray-500 uppercase font-bold mb-2">Observaciones</p>
-            <p class="text-gray-300 text-sm leading-relaxed">${data.observaciones}</p>
+        html += `<div class="bg-gray-100 dark:bg-black/20 rounded-xl p-4 border border-gray-200 dark:border-white/5 mb-6">
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-2">Observaciones</p>
+            <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">${data.observaciones}</p>
         </div>`;
     }
 
     if (data.historial_evolucion && data.historial_evolucion.length > 1) {
-        html += `<div class="mt-6 border-t border-[#252345] pt-4">
-            <p class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-3">
-                <i class="fas fa-chart-line mr-2 text-emerald-400"></i>Evolucion Temporal
+        html += `<div class="mt-6 border-t border-gray-200 dark:border-[#252345] pt-4">
+            <p class="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-3">
+                <i class="fas fa-chart-line mr-2 text-emerald-600 dark:text-emerald-400"></i>Evolucion Temporal
             </p>
             <canvas id="graficoEvolucion" height="200"></canvas>
         </div>`;
@@ -550,6 +587,9 @@ async function verDetalle(id) {
     }
 }
 
+// =====================================================================
+// GRÁFICO DE EVOLUCIÓN (con soporte claro/oscuro)
+// =====================================================================
 function renderGraficoEvolucion(historial) {
     const canvas = document.getElementById('graficoEvolucion');
     if (!canvas) return;
@@ -558,16 +598,17 @@ function renderGraficoEvolucion(historial) {
         window.graficoEvolucion.destroy();
     }
 
-    const etiquetas = historial.map(h => formatearFecha(h.fecha));
-    const valores = historial.map(h => parseFloat(h.valor));
+    const esOscuro = document.documentElement.classList.contains('dark');
+    const colorTexto = esOscuro ? '#6b7280' : '#4b5563';
+    const colorGrid = esOscuro ? '#25234540' : '#e5e7eb40';
 
     window.graficoEvolucion = new Chart(canvas, {
         type: 'line',
         data: {
-            labels: etiquetas,
+            labels: historial.map(h => formatearFecha(h.fecha)),
             datasets: [{
                 label: 'Valor',
-                data: valores,
+                data: historial.map(h => parseFloat(h.valor)),
                 borderColor: '#6366f1',
                 backgroundColor: 'rgba(99, 102, 241, 0.1)',
                 borderWidth: 2,
@@ -584,18 +625,21 @@ function renderGraficoEvolucion(historial) {
             },
             scales: {
                 x: {
-                    ticks: { color: '#6b7280', font: { size: 10 } },
-                    grid: { color: '#25234520' }
+                    ticks: { color: colorTexto, font: { size: 10 } },
+                    grid: { color: colorGrid }
                 },
                 y: {
-                    ticks: { color: '#6b7280', font: { size: 10 } },
-                    grid: { color: '#25234540' }
+                    ticks: { color: colorTexto, font: { size: 10 } },
+                    grid: { color: colorGrid }
                 }
             }
         }
     });
 }
 
+// =====================================================================
+// ELIMINAR TEST
+// =====================================================================
 async function eliminarTest(id) {
     const confirmado = await UI.confirmar(
         'Eliminar Test',
@@ -617,6 +661,9 @@ async function eliminarTest(id) {
     }
 }
 
+// =====================================================================
+// FILTROS ATLETAS
+// =====================================================================
 async function cargarFiltrosAtletas() {
     const atletas = await peticionAjax('listarAtletasSelect');
     if (!atletas) return;
@@ -666,9 +713,9 @@ function agregarVariableTipo() {
     const row = document.createElement('div');
     row.className = 'flex items-center gap-2';
     row.innerHTML = `
-        <input type="text" placeholder="Nombre variable" class="flex-1 input-dark p-2.5 rounded-lg text-xs nombre_var" data-validar="requerido|texto" data-nombre="Nombre variable" data-max="80" maxlength="80" required>
-        <input type="text" placeholder="Unidad" class="w-24 input-dark p-2.5 rounded-lg text-xs unidad_var" data-validar="texto" data-nombre="Unidad" data-max="20" maxlength="20">
-        <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-2 cursor-pointer"><i class="fas fa-trash text-xs"></i></button>
+        <input type="text" placeholder="Nombre variable" class="flex-1 input-adapt p-2.5 rounded-lg text-xs nombre_var" data-validar="requerido|texto" data-nombre="Nombre variable" data-max="80" maxlength="80" required>
+        <input type="text" placeholder="Unidad" class="w-24 input-adapt p-2.5 rounded-lg text-xs unidad_var" data-validar="texto" data-nombre="Unidad" data-max="20" maxlength="20">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 cursor-pointer"><i class="fas fa-trash text-xs"></i></button>
     `;
     cont.appendChild(row);
 }
@@ -750,7 +797,7 @@ async function eliminarTipoPredefinido(id, nombre) {
         showCancelButton: true,
         confirmButtonText: 'Eliminar',
         cancelButtonText: 'Cancelar',
-        ...UI.config
+        ...UI.obtenerConfig()
     });
     if (!confirmado.isConfirmed) return;
 
@@ -774,21 +821,21 @@ async function cargarTiposPredefinidos() {
 
     const tipos = await peticionAjax('listarTiposTests');
     if (!tipos || tipos.length === 0) {
-        cont.innerHTML = '<p class="text-gray-500 text-xs text-center py-4">No hay tipos predefinidos.</p>';
+        cont.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-xs text-center py-4">No hay tipos predefinidos.</p>';
         return;
     }
 
     cont.innerHTML = tipos.map(t => `
-        <div class="flex items-center justify-between p-3 bg-[#0f0d23] rounded-xl border border-[#252345]">
+        <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-[#0f0d23] rounded-xl border border-gray-200 dark:border-[#252345]">
             <div class="flex-1 min-w-0">
-                <p class="text-sm text-white font-medium truncate">${t.nombre}</p>
-                <p class="text-[10px] text-gray-500">${t.tipo_medicion || ''} ${t.unidad_medida ? '(' + t.unidad_medida + ')' : ''}</p>
+                <p class="text-sm text-gray-900 dark:text-white font-medium truncate">${t.nombre}</p>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400">${t.tipo_medicion || ''} ${t.unidad_medida ? '(' + t.unidad_medida + ')' : ''}</p>
             </div>
             <div class="flex gap-1 ml-2">
-                <button onclick="abrirModalTipo(${t.id_tipo_test})" class="p-1.5 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition cursor-pointer" title="Editar">
+                <button onclick="abrirModalTipo(${t.id_tipo_test})" class="p-1.5 text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 rounded-lg transition cursor-pointer" title="Editar">
                     <i class="fas fa-pen text-xs"></i>
                 </button>
-                <button onclick="eliminarTipoPredefinido(${t.id_tipo_test}, '${t.nombre.replace(/'/g, "\\'")}')" class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer" title="Eliminar">
+                <button onclick="eliminarTipoPredefinido(${t.id_tipo_test}, '${t.nombre.replace(/'/g, "\\'")}')" class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition cursor-pointer" title="Eliminar">
                     <i class="fas fa-trash text-xs"></i>
                 </button>
             </div>
@@ -802,21 +849,21 @@ async function cargarTestsPersonalizados() {
 
     const tests = await peticionAjax('listarTestsPersonalizados');
     if (!tests || tests.length === 0) {
-        cont.innerHTML = '<p class="text-gray-500 text-xs text-center py-4">No hay tests personalizados.</p>';
+        cont.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-xs text-center py-4">No hay tests personalizados.</p>';
         return;
     }
 
     cont.innerHTML = tests.map(t => `
-        <div class="flex items-center justify-between p-3 bg-[#0f0d23] rounded-xl border border-[#252345]">
+        <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-[#0f0d23] rounded-xl border border-gray-200 dark:border-[#252345]">
             <div class="flex-1 min-w-0">
-                <p class="text-sm text-white font-medium truncate">${t.nombre}</p>
-                <p class="text-[10px] text-gray-500">${t.variables ? t.variables.length + ' variables' : ''} ${t.unidad_medida ? '(' + t.unidad_medida + ')' : ''} - Creado: ${t.fecha_creacion ? t.fecha_creacion.substring(0, 10) : ''}</p>
+                <p class="text-sm text-gray-900 dark:text-white font-medium truncate">${t.nombre}</p>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400">${t.variables ? t.variables.length + ' variables' : ''} ${t.unidad_medida ? '(' + t.unidad_medida + ')' : ''} - Creado: ${t.fecha_creacion ? t.fecha_creacion.substring(0, 10) : ''}</p>
             </div>
             <div class="flex items-center gap-1">
-                <button onclick="editarTestPers(${t.id_test_pers})" class="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition cursor-pointer" title="Editar">
+                <button onclick="editarTestPers(${t.id_test_pers})" class="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition cursor-pointer" title="Editar">
                     <i class="fas fa-pen text-xs"></i>
                 </button>
-                <button onclick="eliminarTestPers(${t.id_test_pers}, '${t.nombre.replace(/'/g, "\\'")}')" class="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer" title="Eliminar">
+                <button onclick="eliminarTestPers(${t.id_test_pers}, '${t.nombre.replace(/'/g, "\\'")}')" class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition cursor-pointer" title="Eliminar">
                     <i class="fas fa-trash text-xs"></i>
                 </button>
             </div>
@@ -860,7 +907,7 @@ async function eliminarTestPers(id, nombre) {
         showCancelButton: true,
         confirmButtonText: 'Eliminar',
         cancelButtonText: 'Cancelar',
-        ...UI.config
+        ...UI.obtenerConfig()
     });
     if (!confirmado.isConfirmed) return;
 
@@ -901,9 +948,9 @@ function agregarVariablePers(nombre = '', unidad = '') {
     const row = document.createElement('div');
     row.className = 'flex items-center gap-2';
     row.innerHTML = `
-        <input type="text" placeholder="Nombre variable" class="flex-1 input-dark p-2.5 rounded-lg text-xs nombre_var" data-validar="requerido|texto" data-nombre="Nombre variable" data-max="80" maxlength="80" required>
-        <input type="text" placeholder="Unidad" class="w-24 input-dark p-2.5 rounded-lg text-xs unidad_var" data-validar="texto" data-nombre="Unidad" data-max="20" maxlength="20">
-        <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-2 cursor-pointer"><i class="fas fa-trash text-xs"></i></button>
+        <input type="text" placeholder="Nombre variable" class="flex-1 input-adapt p-2.5 rounded-lg text-xs nombre_var" data-validar="requerido|texto" data-nombre="Nombre variable" data-max="80" maxlength="80" required>
+        <input type="text" placeholder="Unidad" class="w-24 input-adapt p-2.5 rounded-lg text-xs unidad_var" data-validar="texto" data-nombre="Unidad" data-max="20" maxlength="20">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 cursor-pointer"><i class="fas fa-trash text-xs"></i></button>
     `;
     if (nombre) row.querySelector('.nombre_var').value = nombre;
     if (unidad) row.querySelector('.unidad_var').value = unidad;
@@ -961,6 +1008,9 @@ async function guardarPersonalizado(e) {
     }
 }
 
+// =====================================================================
+// CARGA DE RECURSOS INICIALES
+// =====================================================================
 async function cargarRecursos() {
     await Promise.all([
         cargarFiltrosAtletas(),
