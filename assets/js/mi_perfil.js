@@ -28,6 +28,42 @@ window.cambiarPestana = function(idPestana) {
         btnActivo.classList.add('bg-indigo-600', 'text-white', 'font-bold', 'shadow-md');
     }
 };  
+
+// =====================================================================
+// CONTROL DEL MODO DE CRONÓMETRO
+// =====================================================================
+window.cambiarModoCrono = function(modo) {
+    const btnManual = document.getElementById('btnCronoManual');
+    const btnLive = document.getElementById('btnCronoLive');
+
+    // Clases de estilo activo e inactivo
+    const clasesActivo = ['bg-white', 'dark:bg-[#161430]', 'text-gray-800', 'dark:text-white', 'shadow'];
+    const clasesInactivo = ['text-gray-500', 'dark:text-gray-500'];
+
+    if (modo === 'live') {
+        // Activar Live, Desactivar Manual
+        btnLive.classList.add(...clasesActivo);
+        btnLive.classList.remove(...clasesInactivo);
+        
+        btnManual.classList.remove(...clasesActivo);
+        btnManual.classList.add(...clasesInactivo);
+    } else {
+        // Activar Manual, Desactivar Live
+        btnManual.classList.add(...clasesActivo);
+        btnManual.classList.remove(...clasesInactivo);
+        
+        btnLive.classList.remove(...clasesActivo);
+        btnLive.classList.add(...clasesInactivo);
+    }
+
+    // Guardar en el navegador (opcional, para lectura rápida)
+    localStorage.setItem('sgrd_crono_mode', modo);
+
+    // Guardar en Base de Datos usando la función global que ya creaste
+    if (typeof guardarPreferenciaGlobal === 'function') {
+        guardarPreferenciaGlobal('crono_mode', modo);
+    }
+};
   
   document.addEventListener('DOMContentLoaded', async () => {
             // El controlador debe responder a esta acción buscando los datos del atleta en sesión
@@ -126,4 +162,7 @@ window.cambiarPestana = function(idPestana) {
                 console.error(error);
                 document.getElementById('contenedorQR').innerHTML = '<i class="fas fa-exclamation-circle text-red-500 text-xl"></i>';
             }
+
+            const modoGuardado = localStorage.getItem('sgrd_crono_mode') || 'manual';
+            cambiarModoCrono(modoGuardado);
         });

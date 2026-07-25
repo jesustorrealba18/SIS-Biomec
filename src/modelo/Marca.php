@@ -19,8 +19,9 @@ class Marca extends Conexion {
     private array $camposPermitidos = [
         'id_atleta', 'id_sesion', 'id_evento', 'estilo', 'distancia_m',
         'tipo_piscina', 'tiempo_final_seg', 'tiempo_reaccion_seg',
-        'tiempo_viraje_seg', 'nivel_evento', 'fecha', 'observaciones',
-        'num_brazadas', 'splits','brazadas_por_largo','id_marca','accion','motivo_eliminacion'
+        'virajes', 'nivel_evento', 'fecha', 'observaciones',
+        'num_brazadas', 'splits','brazadas_por_largo','id_marca','accion','motivo_eliminacion',
+        'distancia_total', 'estado_carrera', 'ultima_distancia_recorrida_m', 'ultimo_tiempo_parcial_ms'
     ];
 
     
@@ -55,103 +56,96 @@ class Marca extends Conexion {
         return $this->datos;
     }
 
-   
-    private function validarAtributosInternos(): bool {
-        $this->resetearErrores();
+   private function validarAtributosInternos(): bool {
+    $this->resetearErrores();
 
-        $id_atleta = (string)($this->datos['id_atleta'] ?? '');
-        $estilo = (string)($this->datos['estilo'] ?? '');
-        $distancia = (string)($this->datos['distancia_m'] ?? '');
-        $piscina = (string)($this->datos['tipo_piscina'] ?? '');
-        $tiempo = (string)($this->datos['tiempo_final_seg'] ?? '');
-        $fecha = (string)($this->datos['fecha'] ?? '');
-        $reaccion = (string)($this->datos['tiempo_reaccion_seg'] ?? '');
-        $viraje = (string)($this->datos['tiempo_viraje_seg'] ?? '');
-        $brazadas = (string)($this->datos['brazadas_por_largo'] ?? '');
-        $obs = (string)($this->datos['observaciones'] ?? '');
-        $splits = $this->datos['splits'] ?? [];
+    $id_atleta = (string)($this->datos['id_atleta'] ?? '');
+    $estilo = (string)($this->datos['estilo'] ?? '');
+    $distancia = (string)($this->datos['distancia_m'] ?? '');
+    $piscina = (string)($this->datos['tipo_piscina'] ?? '');
+    $tiempo = (string)($this->datos['tiempo_final_seg'] ?? '');
+    $fecha = (string)($this->datos['fecha'] ?? '');
+    $reaccion = (string)($this->datos['tiempo_reaccion_seg'] ?? '');
+    $brazadas = (string)($this->datos['brazadas_por_largo'] ?? '');
+    $obs = (string)($this->datos['observaciones'] ?? '');
+    
+    // Capturamos AMBOS arreglos
+    $splits = $this->datos['splits'] ?? [];
+    $virajes = $this->datos['virajes'] ?? [];
 
+    // 1. Validaciones Obligatorias Básicas
+    if ($this->requerido($id_atleta, 'Atleta Seleccionado')) {
+        $this->soloNumeros($id_atleta, 'Atleta Seleccionado');
+    }
 
-        
-        // 1. Validaciones Obligatorias Básicas
-        if ($this->requerido($id_atleta, 'Atleta Seleccionado')) {
-            $this->soloNumeros($id_atleta, 'Atleta Seleccionado');
+    if ($this->requerido($tiempo, 'Tiempo Final')) {
+        $this->decimalValido($tiempo, 'Tiempo Final');
+    }
+
+    if ($this->requerido($fecha, 'Fecha del Registro')) {
+        if ($this->fechaValida($fecha, 'Fecha del Registro')) {
+            $this->fechaNoFutura($fecha, 'Fecha del Registro');
         }
+    }
 
-        if ($this->requerido($tiempo, 'Tiempo Final')) {
-            $this->decimalValido($tiempo, 'Tiempo Final');
-        }
+    // 2. Validaciones de Dominio Restringido (Listas Select)
+    if ($this->requerido($estilo, 'Estilo')) {
+        $this->enEnum($estilo, 'Estilo', ['Libre', 'Espalda', 'Braza', 'Mariposa', 'Combinado']);
+    }
 
-        if ($this->requerido($fecha, 'Fecha del Registro')) {
-            if ($this->fechaValida($fecha, 'Fecha del Registro')) {
-                $this->fechaNoFutura($fecha, 'Fecha del Registro');
-            }
-        }
+    if ($this->requerido($distancia, 'Distancia')) {
+        $this->enEnum($distancia, 'Distancia', ['50', '100', '200', '400', '800', '1500']);
+    }
 
-        // 2. Validaciones de Dominio Restringido (Listas Select)
-        if ($this->requerido($estilo, 'Estilo')) {
-            $this->enEnum($estilo, 'Estilo', ['Libre', 'Espalda', 'Braza', 'Mariposa', 'Combinado']);
-        }
+    if ($this->requerido($piscina, 'Tipo de Piscina')) {
+        $this->enEnum($piscina, 'Tipo de Piscina', ['50m', '25m']);
+    }
 
-        if ($this->requerido($distancia, 'Distancia')) {
-            // Lo pasamos a string porque enEnum compara estrictamente (===)
-            $this->enEnum($distancia, 'Distancia', ['50', '100', '200', '400', '800', '1500']);
-        }
+    // 3. Validaciones Opcionales
+    if ($reaccion !== '') {
+        $this->decimalValido($reaccion, 'Tiempo de Reacción');
+        $this->longitud($reaccion, 'Tiempo de Reacción', 1, 5);
+    }
 
-        if ($this->requerido($piscina, 'Tipo de Piscina')) {
-            $this->enEnum($piscina, 'Tipo de Piscina', ['50m', '25m']);
-        }
+    if ($brazadas !== '') {
+        $this->soloNumeros($brazadas, 'Brazadas por Largo');
+        $this->longitud($brazadas, 'Brazadas por Largo', 1, 3);
+    }
 
-        // 3. Validaciones Opcionales (Solo se validan si el usuario escribió algo)
-        if ($reaccion !== '') {
-            $this->decimalValido($reaccion, 'Tiempo de Reacción');
-            $this->longitud($reaccion, 'Tiempo de Reacción', 1, 5);
-        }
+    if ($obs !== '') {
+        $this->longitud($obs, 'Observaciones Técnicas', 1, 255);
+    }
 
-        if ($viraje !== '') {
-            $this->decimalValido($viraje, 'Tiempo de Viraje');
-            $this->longitud($viraje, 'Tiempo de Viraje', 1, 5);
-        }
+    // 4. VALIDACIÓN ESTRICTA DE SPLITS Y VIRAJES DINÁMICOS
+    if (!empty($distancia) && is_numeric($distancia)) {
+        $distanciaInt = (int)$distancia;
+        $tramosEsperados = $distanciaInt / 25; 
 
-        if ($brazadas !== '') {
-            $this->soloNumeros($brazadas, 'Brazadas por Largo');
-            $this->longitud($brazadas, 'Brazadas por Largo', 1, 3);
-        }
+        if (is_array($splits) && !empty($splits)) {
+            if (count($splits) !== $tramosEsperados) {
+                $this->agregarError('splits', "Incoherencia: Una prueba de {$distanciaInt}m requiere exactamente {$tramosEsperados} tiempos parciales.");
+            } else {
+                foreach ($splits as $distancia_parcial => $tiempo_parcial) {
+                    $dist_parcial_int = (int)$distancia_parcial;
+                    
+                    if ($dist_parcial_int % 25 !== 0 || $dist_parcial_int > $distanciaInt) {
+                        $this->agregarError('splits', "El tramo de {$distancia_parcial}m está corrupto o no pertenece a esta prueba.");
+                    }
+                    
+                    // Validar Split
+                    $this->decimalValido((string)$tiempo_parcial, "Parcial {$distancia_parcial}m");
 
-        if ($obs !== '') {
-            // Protección máxima contra inyecciones largas en textos libres
-            $this->longitud($obs, 'Observaciones Técnicas', 1, 255);
-        }
-
-        // 2. VALIDACIÓN ESTRICTA DE SPLITS (Dependiente de la distancia)
-        if (!empty($distancia) && is_numeric($distancia)) {
-            $distanciaInt = (int)$distancia;
-            $tramosEsperados = $distanciaInt / 25; // Ej: 100 / 25 = 4
-
-            if (is_array($splits) && !empty($splits)) {
-                // Verificar que la cantidad de cajas enviadas coincida con la matemática
-                if (count($splits) !== $tramosEsperados) {
-                    $this->agregarError('splits', "Incoherencia: Una prueba de {$distanciaInt}m requiere exactamente {$tramosEsperados} tiempos parciales.");
-                } else {
-                    // Verificar que cada tramo sea múltiplo de 25 y sea un decimal válido
-                    foreach ($splits as $distancia_parcial => $tiempo_parcial) {
-                        $dist_parcial_int = (int)$distancia_parcial;
-                        
-                        if ($dist_parcial_int % 25 !== 0 || $dist_parcial_int > $distanciaInt) {
-                            $this->agregarError('splits', "El tramo de {$distancia_parcial}m está corrupto o no pertenece a esta prueba.");
-                        }
-                        
-                        // Validar que el tiempo ingresado en la caja sea correcto
-                        $this->decimalValido((string)$tiempo_parcial, "Parcial {$distancia_parcial}m");
+                    // Validar Viraje (Si existe para esta misma distancia y no está vacío)
+                    if (isset($virajes[$distancia_parcial]) && $virajes[$distancia_parcial] !== '') {
+                        $this->decimalValido((string)$virajes[$distancia_parcial], "Viraje en {$distancia_parcial}m");
                     }
                 }
             }
         }
-
-
-
-        return empty($this->obtenerErrores());
     }
+
+    return empty($this->obtenerErrores());
+}
 
 
     /**
@@ -249,6 +243,18 @@ class Marca extends Conexion {
 
     return $this->registrarMarca();
    }
+
+  
+    public function syncTelemetria(): array {
+        $id_atleta = (int)($this->datos['id_atleta'] ?? 0);
+        
+        if ($id_atleta <= 0) {
+            return ['status' => 'error', 'message' => 'Falta el ID del atleta para la telemetría.'];
+        }
+
+        // Delegamos la acción a la función privada
+        return $this->procesarTelemetria();
+    }
 
     public function getActualizarMarca(){
 
@@ -360,24 +366,34 @@ private function guardarSwolf(
 /**
  * Guarda los splits (tramos) de una marca
  */
-private function guardarSplits(int $idMarca, array $splits): void
+private function guardarSplits(int $idMarca, array $splits, array $virajes): void
 {
     if (empty($splits) || !is_array($splits)) {
         return;
     }
 
-    $sql = "INSERT INTO marcas_splits (id_marca, parcial_numero, distancia_parcial_m, tiempo_parcial_seg) 
-            VALUES (:id_marca, :numero, :distancia_parcial, :tiempo_parcial)";
+    // Actualizado para incluir tiempo_viraje_seg
+    $sql = "INSERT INTO marcas_splits (id_marca, parcial_numero, distancia_parcial_m, tiempo_parcial_seg, tiempo_viraje_seg) 
+            VALUES (:id_marca, :numero, :distancia_parcial, :tiempo_parcial, :tiempo_viraje)";
     $stmt = $this->pdo->prepare($sql);
 
     $numeroSplit = 1;
     foreach ($splits as $distanciaParcial => $tiempoSeg) {
         $tiempoParcial = (float)$tiempoSeg;
+        
         if ($tiempoParcial > 0) {
             $stmt->bindValue(':id_marca', $idMarca, PDO::PARAM_INT);
             $stmt->bindValue(':numero', $numeroSplit, PDO::PARAM_INT);
             $stmt->bindValue(':distancia_parcial', (int)$distanciaParcial, PDO::PARAM_INT);
             $stmt->bindValue(':tiempo_parcial', $tiempoParcial, PDO::PARAM_STR);
+            
+            // Buscar si existe un viraje para esta distancia exacta
+            if (isset($virajes[$distanciaParcial]) && $virajes[$distanciaParcial] !== '') {
+                $stmt->bindValue(':tiempo_viraje', (float)$virajes[$distanciaParcial], PDO::PARAM_STR);
+            } else {
+                $stmt->bindValue(':tiempo_viraje', null, PDO::PARAM_NULL);
+            }
+
             $stmt->execute();
             $numeroSplit++;
         }
@@ -436,8 +452,8 @@ private function registrarMarca(): bool
             // -------------------------------------------------------------
             // INSERTAR EN TABLA PRINCIPAL: `marcas`
             // -------------------------------------------------------------
-            $sqlInsert = "INSERT INTO marcas (id_atleta, id_sesion, id_evento, estilo, distancia_m, tipo_piscina, tiempo_final_seg, tiempo_reaccion_seg, tiempo_viraje_seg, es_pb, fecha, observaciones) 
-                          VALUES (:id_atleta, :id_sesion, :id_evento, :estilo, :distancia, :piscina, :tiempo, :reaccion, :viraje, :es_pb, :fecha, :obs)";
+            $sqlInsert = "INSERT INTO marcas (id_atleta, id_sesion, id_evento, estilo, distancia_m, tipo_piscina, tiempo_final_seg, tiempo_reaccion_seg, es_pb, fecha, observaciones) 
+                          VALUES (:id_atleta, :id_sesion, :id_evento, :estilo, :distancia, :piscina, :tiempo, :reaccion, :es_pb, :fecha, :obs)";
             
             $stmt = $this->pdo->prepare($sqlInsert);
             
@@ -451,7 +467,6 @@ private function registrarMarca(): bool
                 ':piscina'   => ['tipo_piscina', PDO::PARAM_STR],
                 ':tiempo'    => ['tiempo_final_seg', PDO::PARAM_STR],
                 ':reaccion'  => ['tiempo_reaccion_seg', PDO::PARAM_STR],
-                ':viraje'    => ['tiempo_viraje_seg', PDO::PARAM_STR],
                 ':es_pb'     => ['es_pb_local', PDO::PARAM_INT], 
                 ':fecha'     => ['fecha', PDO::PARAM_STR],
                 ':obs'       => ['observaciones', PDO::PARAM_STR]
@@ -476,7 +491,7 @@ private function registrarMarca(): bool
             (int)$this->datos['distancia_m'],
             (float)$this->datos['tiempo_final_seg']
         );
-        $this->guardarSplits($idMarca, $this->datos['splits'] ?? []);
+        $this->guardarSplits($idMarca, $this->datos['splits'] ?? [], $this->datos['virajes'] ?? []);
 
         $this->pdo->commit();
         return true;
@@ -493,6 +508,83 @@ private function registrarMarca(): bool
             return false;
     }
 }
+
+// =====================================================================
+    // LOGICA PRIVADA DE TELEMETRÍA (SRP)
+    // =====================================================================
+   // =====================================================================
+    // LOGICA PRIVADA DE TELEMETRÍA (SRP)
+    // =====================================================================
+    private function procesarTelemetria(): array {
+        try {
+            $id_atleta = (int)$this->datos['id_atleta'];
+            $distancia_total = (int)($this->datos['distancia_total'] ?? 0);
+            $tipo_piscina = trim($this->datos['tipo_piscina'] ?? '');
+            $estilo = trim($this->datos['estilo'] ?? '');
+            $estado_carrera = trim($this->datos['estado_carrera'] ?? '');
+            $ultima_distancia = (int)($this->datos['ultima_distancia_recorrida_m'] ?? 0);
+            $ultimo_tiempo = (float)($this->datos['ultimo_tiempo_parcial_ms'] ?? 0);
+
+            if ($estado_carrera === 'finalizado' || $estado_carrera === 'cancelado') {
+                $sqlDel = "DELETE FROM telemetria_live WHERE id_atleta = :id_atleta";
+                $stmtDel = $this->pdo->prepare($sqlDel);
+                $stmtDel->bindValue(':id_atleta', $id_atleta, \PDO::PARAM_INT);
+                $stmtDel->execute();
+                return ['status' => 'success', 'message' => 'Telemetría liberada.'];
+            }
+
+            $inicio_timestamp = round(microtime(true) * 1000); 
+            
+            // 1. LÓGICA EN PHP: Detectamos si es el disparo exacto de salida
+            $es_arranque = ($estado_carrera === 'en_curso' && $ultima_distancia === 0);
+
+            // 2. CONSTRUCCIÓN BASE (Idéntica a la que te funcionaba)
+            $sql = "INSERT INTO telemetria_live 
+                    (id_atleta, distancia_total, tipo_piscina, estilo, estado_carrera, inicio_timestamp_ms, ultima_distancia_recorrida_m, ultimo_tiempo_parcial_ms) 
+                    VALUES 
+                    (:id_atleta, :distancia_total, :tipo_piscina, :estilo, :estado_carrera, :inicio_timestamp, :ultima_distancia, :ultimo_tiempo)
+                    ON DUPLICATE KEY UPDATE 
+                    estado_carrera = :estado_carrera_upd,
+                    ultima_distancia_recorrida_m = :ultima_distancia_upd,
+                    ultimo_tiempo_parcial_ms = :ultimo_tiempo_upd,
+                    ultima_actualizacion = CURRENT_TIMESTAMP";
+
+            // 3. INYECCIÓN DINÁMICA: Si es el arranque, forzamos la actualización del timestamp
+            if ($es_arranque) {
+                $sql .= ", inicio_timestamp_ms = :inicio_timestamp_upd";
+            }
+                    
+            $stmt = $this->pdo->prepare($sql);
+            
+            // 4. MAPEO DE PARÁMETROS
+            $parametros = [
+                ':id_atleta' => $id_atleta,
+                ':distancia_total' => $distancia_total,
+                ':tipo_piscina' => $tipo_piscina,
+                ':estilo' => $estilo,
+                ':estado_carrera' => $estado_carrera,
+                ':inicio_timestamp' => $es_arranque ? $inicio_timestamp : null, 
+                ':ultima_distancia' => $ultima_distancia,
+                ':ultimo_tiempo' => $ultimo_tiempo,
+                // Datos de actualización
+                ':estado_carrera_upd' => $estado_carrera,
+                ':ultima_distancia_upd' => $ultima_distancia,
+                ':ultimo_tiempo_upd' => $ultimo_tiempo
+            ];
+
+            if ($es_arranque) {
+                $parametros[':inicio_timestamp_upd'] = $inicio_timestamp;
+            }
+
+            $stmt->execute($parametros);
+
+            return ['status' => 'success', 'message' => 'Telemetría sincronizada'];
+
+        } catch (\PDOException $e) {
+            error_log("Error de DB en procesarTelemetria: " . $e->getMessage());
+            return ['status' => 'error', 'message' => 'Error interno sincronizando telemetría.'];
+        }
+    }
 
 private function actualizarMarca(): bool
 {
@@ -517,7 +609,7 @@ private function actualizarMarca(): bool
             $sqlUpdate = "UPDATE marcas SET 
                            estilo = :estilo, 
                             distancia_m = :distancia, tipo_piscina = :piscina, tiempo_final_seg = :tiempo, 
-                            tiempo_reaccion_seg = :reaccion, tiempo_viraje_seg = :viraje, 
+                            tiempo_reaccion_seg = :reaccion, 
                             es_pb = :es_pb, fecha = :fecha, observaciones = :obs
                           WHERE id_marca = :id_marca_condicion";
             
@@ -529,8 +621,7 @@ private function actualizarMarca(): bool
                 ':distancia' => ['distancia_m', PDO::PARAM_INT],
                 ':piscina'   => ['tipo_piscina', PDO::PARAM_STR],
                 ':tiempo'    => ['tiempo_final_seg', PDO::PARAM_STR],
-                ':reaccion'  => ['tiempo_reaccion_seg', PDO::PARAM_STR],
-                ':viraje'    => ['tiempo_viraje_seg', PDO::PARAM_STR],     
+                ':reaccion'  => ['tiempo_reaccion_seg', PDO::PARAM_STR],     
                 ':es_pb'     => ['es_pb_local', PDO::PARAM_INT], 
                 ':fecha'     => ['fecha', PDO::PARAM_STR],
                 ':obs'       => ['observaciones', PDO::PARAM_STR],
@@ -567,8 +658,7 @@ private function actualizarMarca(): bool
             (int)$this->datos['distancia_m'],
             (float)$this->datos['tiempo_final_seg']
         );
-        $this->guardarSplits($idMarca, $this->datos['splits'] ?? []);
-
+       $this->guardarSplits($idMarca, $this->datos['splits'] ?? [], $this->datos['virajes'] ?? []);
         $this->pdo->commit();
         return true;
 
@@ -1013,7 +1103,7 @@ public function obtenerDetallePorId(int $id_marca): ?array {
     }
 
     private function obtenerSplits(int $id_marca): array {
-        $sql = "SELECT distancia_parcial_m, tiempo_parcial_seg 
+        $sql = "SELECT distancia_parcial_m, tiempo_parcial_seg, tiempo_viraje_seg
                 FROM marcas_splits 
                 WHERE id_marca = :id_marca 
                 ORDER BY parcial_numero ASC";
@@ -1136,6 +1226,27 @@ public function obtenerDetallePorId(int $id_marca): ?array {
         } catch (\PDOException $e) {
             error_log("Error al recuperar info básica de la marca: " . $e->getMessage());
             return [];
+        }
+    }
+
+    // =====================================================================
+    // MÉTODOS PARA LA PANTALLA PÚBLICA (PIZARRA EN VIVO)
+    // =====================================================================
+    public function obtenerTelemetriaActual(): ?array {
+        try {
+            // Buscamos el registro activo. LIMIT 1 asume 1 nadador a la vez.
+            $sql = "SELECT t.*, a.nombres, a.apellidos, a.cedula 
+                    FROM telemetria_live t 
+                    INNER JOIN atletas a ON t.id_atleta = a.id_atleta 
+                    LIMIT 1";
+                    
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute();
+            
+            return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+        } catch (\PDOException $e) {
+            error_log("Error al consultar telemetría pública: " . $e->getMessage());
+            return null;
         }
     }
 }

@@ -129,6 +129,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       
     }
 
+    // =====================================================================
+    // TELEMETRÍA EN VIVO (Latidos del Cronómetro)
+    // =====================================================================
+    if ($accionPost === 'sync_telemetria') {
+        // 1. Encapsulamiento: Cargamos los datos al estado interno del objeto
+        $objMarca->setAtributos($_POST);
+        
+        // 2. Ejecución: Llamamos al orquestador público
+        $resultado = $objMarca->syncTelemetria();
+        
+        echo json_encode($resultado);
+        exit;
+    }
+
     // Actualizar registro existente
     if ($accionPost === 'actualizar') {
         Autorizacion::exigir('marcas', 'editar');

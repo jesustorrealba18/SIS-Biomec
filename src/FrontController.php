@@ -160,7 +160,7 @@ $paginasPermitidas = [
     'login', 'inicio', 'entrenador', 'drills', 'atleta', 'eventos', 'marcas',
     'periodizacion', 'temporadas', 'antropometria', 'representante', 'calendario', 'salir', 'sesiones', 
     'carriles', 'horario', 'asignacion', 'lesion', 'categorias', 'grupo', 'bitacora', 'usuarios', 'roles', 'mantenimiento', 'cargaBienestar', 'mi_perfil', 'asistencia',
-    'observacionesTecnicas', 'testFisico', 'normalizacion','notificaciones','analitica'
+    'observacionesTecnicas', 'testFisico', 'normalizacion','notificaciones','analitica', 'live'
 ];
 
 
@@ -170,7 +170,7 @@ if (!empty($_GET['p']) && in_array($_GET['p'], $paginasPermitidas, true)) {
     $pagina = $_GET['p'];
 }
 
-$rutasPublicas = ['login'];
+$rutasPublicas = ['login','live'];
 $rutasGlobalesPrivadas = ['notificaciones'];
 
 if (!in_array($pagina, $rutasPublicas, true) && empty($_SESSION['id'])) {

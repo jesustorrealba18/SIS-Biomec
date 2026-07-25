@@ -206,13 +206,25 @@ $iconoPagina = 'fa-id-card'; // opcional, puedes usarlo en el header
                 </button>
             </div>
 
-            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/5 opacity-50 transition-colors duration-300">
-                <div>
-                    <h3 class="text-gray-900 dark:text-white font-medium">Modo de Ingreso de Marcas</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Manual vs. Cronómetro en Vivo.</p>
-                </div>
-                <span class="text-xs font-bold text-amber-600 dark:text-amber-500 bg-amber-500/10 px-2 py-1 rounded">Próximamente</span>
-            </div>
+            <!-- Selector de Modo de Cronómetro -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/5 transition-colors duration-300">
+    <div class="mb-4 sm:mb-0">
+        <h3 class="text-gray-900 dark:text-white font-medium flex items-center gap-2">
+            Cronometraje Inteligente <i class="fas fa-bolt text-amber-500"></i>
+        </h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Activa el motor de telemetría deportiva (Cronómetro en pantalla).</p>
+    </div>
+    
+    <!-- Botones de Selección (Radio Buttons ocultos con labels estilizados) -->
+    <div class="flex bg-gray-200 dark:bg-[#0f0d23] p-1 rounded-lg border border-gray-300 dark:border-[#252345] w-full sm:w-auto">
+        <button type="button" onclick="cambiarModoCrono('manual')" id="btnCronoManual" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-xs font-bold transition-all duration-300 bg-white dark:bg-[#161430] text-gray-800 dark:text-white shadow">
+            <i class="fas fa-keyboard mr-1"></i> Manual
+        </button>
+        <button type="button" onclick="cambiarModoCrono('live')" id="btnCronoLive" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-xs font-bold transition-all duration-300 text-gray-500 hover:text-gray-800 dark:text-gray-500 dark:hover:text-white">
+            <i class="fas fa-stopwatch mr-1"></i> En Vivo
+        </button>
+    </div>
+</div>
         </div>
     </div>
 
