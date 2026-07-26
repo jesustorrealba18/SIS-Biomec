@@ -586,56 +586,7 @@ selectDistancia.addEventListener('change', generarCajasSplits);
 // IMPORTANTE: Agregar este listener para que re-calcule las paredes si cambian el tipo de piscina
 selectPiscina.addEventListener('change', generarCajasSplits);
 
-/* function generarCajasSplits() {
-    const distanciaTotal = parseInt(selectDistancia.value);
-    
-    if (isNaN(distanciaTotal)) {
-        contenedorSplits.classList.add('hidden');
-        rejillaSplits.innerHTML = '';
-        return;
-    }
 
-    const tamanoTramo = 25; 
-    const cantidadTramos = distanciaTotal / tamanoTramo;
-    
-    rejillaSplits.innerHTML = '';
-    
-    for (let i = 1; i <= cantidadTramos; i++) {
-        let distanciaActual = i * tamanoTramo;
-        
-        const cajaHTML = `
-            <div class="relative">
-                <label class="block text-[10px] text-gray-600 dark:text-gray-400 uppercase font-bold mb-1">
-                    Parcial ${distanciaActual}m
-                </label>
-                <div class="relative">
-                    <input type="text" 
-                           name="splits[${distanciaActual}]" 
-                           data-validar="requerido|decimal_tiempo" 
-                           required 
-                           data-nombre="Parcial de ${distanciaActual}m" 
-                           placeholder="00.00" 
-                           class="w-full bg-white dark:bg-[#161430] border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-emerald-400 font-mono text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-center split-input">
-                    <span class="absolute right-3 top-2.5 text-gray-400 dark:text-gray-600 text-xs">s</span>
-                </div>
-            </div>
-        `;
-        
-        rejillaSplits.innerHTML += cajaHTML;
-    }
-
-    contadorSplits.innerText = `${cantidadTramos} Tramos (Cada 25m)`;
-    contadorSplits.className = 'text-[10px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-mono font-bold';
-    contenedorSplits.classList.remove('hidden');
-    
-    rejillaSplits.style.opacity = 0;
-    setTimeout(() => {
-        rejillaSplits.style.transition = "opacity 0.3s ease-in-out";
-        rejillaSplits.style.opacity = 1;
-    }, 50);
-}
-
-selectDistancia.addEventListener('change', generarCajasSplits); */
 
 // =====================================================================
 // MOTOR MATEMÁTICO DE TIEMPOS
@@ -1282,7 +1233,6 @@ function enviarLatidoTelemetria(estado, distancia, tiempoMs) {
     const id_atleta = document.getElementById('id_atleta').value;
     const estilo = document.getElementById('estilo').value || 'Libre';
     
-    // Si no hay atleta seleccionado, abortamos en silencio
     if (!id_atleta) return;
 
     const datos = new FormData();
@@ -1295,12 +1245,11 @@ function enviarLatidoTelemetria(estado, distancia, tiempoMs) {
     datos.append('ultima_distancia_recorrida_m', distancia);
     datos.append('ultimo_tiempo_parcial_ms', tiempoMs);
 
-    // Fetch directo sin await (Fire and forget). No interrumpe la UI del entrenador.
-    fetch(`${API_URL}`, {
+    // INYECCIÓN DIRECTA DE LA ACCIÓN EN LA URL (Más seguro para algunos servidores)
+    fetch(`${API_URL}&accion=sync_telemetria`, {
         method: 'POST',
         body: datos
     }).catch(error => {
-        // Silenciamos el error para no romper la experiencia si hay un micro-corte de red local
         console.debug("Latido de telemetría perdido por red:", error);
     });
 }
@@ -1342,12 +1291,12 @@ function abrirModalCronoLive() {
 function cerrarModalCronoLive() {
     if(cronoActivo) {
         if(!confirm("El cronómetro está corriendo. ¿Desea descartar la medición?")) return;
-        
-        // <-- LIMPIEZA DE TELEMETRÍA: Se descartó la carrera
-        enviarLatidoTelemetria('cancelado', 0, 0);
-        
-        accionarCrono(); // (Para detener la animación actual)
+        accionarCrono(); // (Para detener la animación actual en la UI)
     }
+    
+    // --> LIMPIEZA ABSOLUTA DE TELEMETRÍA: Siempre que se cierre el modal, limpiamos la DB
+    enviarLatidoTelemetria('cancelado', 0, 0);
+    
     const modal = document.getElementById('modalCronoEnVivo');
     modal.classList.add('opacity-0');
     setTimeout(() => modal.classList.add('hidden'), 300);
@@ -1550,18 +1499,6 @@ function registrarTramoMatematico() {
     listaHtml.insertAdjacentHTML('afterbegin', itemHtml);
 }
 
-// ---------------------------------------------------------
-// TRANSFERENCIA AL FORMULARIO MANUAL
-// ---------------------------------------------------------
-// ---------------------------------------------------------
-// TRANSFERENCIA AL FORMULARIO MANUAL (ACTUALIZADA)
-// ---------------------------------------------------------
-// ---------------------------------------------------------
-// TRANSFERENCIA AL FORMULARIO MANUAL (CON VIRAJES DOBLE CLIC)
-// ---------------------------------------------------------
-// ---------------------------------------------------------
-// TRANSFERENCIA AL FORMULARIO MANUAL (CON MATEMÁTICA EXACTA)
-// ---------------------------------------------------------
 // ---------------------------------------------------------
 // TRANSFERENCIA AL FORMULARIO MANUAL (CON MATEMÁTICA EXACTA Y FORMATO 00.00)
 // ---------------------------------------------------------

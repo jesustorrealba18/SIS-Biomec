@@ -515,6 +515,12 @@ private function registrarMarca(): bool
    // =====================================================================
     // LOGICA PRIVADA DE TELEMETRÍA (SRP)
     // =====================================================================
+    // =====================================================================
+    // LOGICA PRIVADA DE TELEMETRÍA (SRP)
+    // =====================================================================
+    // =====================================================================
+    // LOGICA PRIVADA DE TELEMETRÍA (SRP)
+    // =====================================================================
     private function procesarTelemetria(): array {
         try {
             $id_atleta = (int)$this->datos['id_atleta'];
@@ -525,58 +531,71 @@ private function registrarMarca(): bool
             $ultima_distancia = (int)($this->datos['ultima_distancia_recorrida_m'] ?? 0);
             $ultimo_tiempo = (float)($this->datos['ultimo_tiempo_parcial_ms'] ?? 0);
 
-            if ($estado_carrera === 'finalizado' || $estado_carrera === 'cancelado') {
+            // 1. LIMPIEZA ABSOLUTA: Si cancela, finaliza, o REINICIA (iniciando)
+            if (in_array($estado_carrera, ['finalizado', 'cancelado', 'iniciando'])) {
                 $sqlDel = "DELETE FROM telemetria_live WHERE id_atleta = :id_atleta";
                 $stmtDel = $this->pdo->prepare($sqlDel);
-                $stmtDel->bindValue(':id_atleta', $id_atleta, \PDO::PARAM_INT);
-                $stmtDel->execute();
-                return ['status' => 'success', 'message' => 'Telemetría liberada.'];
+                $stmtDel->execute([':id_atleta' => $id_atleta]);
+                
+                // Si solo estábamos limpiando al cancelar o finalizar, salimos con éxito
+                if ($estado_carrera !== 'iniciando') {
+                    return ['status' => 'success', 'message' => 'Telemetría liberada.'];
+                }
             }
 
             $inicio_timestamp = round(microtime(true) * 1000); 
-            
-            // 1. LÓGICA EN PHP: Detectamos si es el disparo exacto de salida
-            $es_arranque = ($estado_carrera === 'en_curso' && $ultima_distancia === 0);
+            $es_arranque = ($estado_carrera === 'en_curso' && $ultima_distancia === 0 && $ultimo_tiempo == 0);
 
-            // 2. CONSTRUCCIÓN BASE (Idéntica a la que te funcionaba)
-            $sql = "INSERT INTO telemetria_live 
-                    (id_atleta, distancia_total, tipo_piscina, estilo, estado_carrera, inicio_timestamp_ms, ultima_distancia_recorrida_m, ultimo_tiempo_parcial_ms) 
-                    VALUES 
-                    (:id_atleta, :distancia_total, :tipo_piscina, :estilo, :estado_carrera, :inicio_timestamp, :ultima_distancia, :ultimo_tiempo)
-                    ON DUPLICATE KEY UPDATE 
-                    estado_carrera = :estado_carrera_upd,
-                    ultima_distancia_recorrida_m = :ultima_distancia_upd,
-                    ultimo_tiempo_parcial_ms = :ultimo_tiempo_upd,
-                    ultima_actualizacion = CURRENT_TIMESTAMP";
+            // 2. BUSCAR REGISTRO EXISTENTE (Evita errores de Unique Keys)
+            $stmtCheck = $this->pdo->prepare("SELECT inicio_timestamp_ms FROM telemetria_live WHERE id_atleta = :id LIMIT 1");
+            $stmtCheck->execute([':id' => $id_atleta]);
+            $existe = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
 
-            // 3. INYECCIÓN DINÁMICA: Si es el arranque, forzamos la actualización del timestamp
-            if ($es_arranque) {
-                $sql .= ", inicio_timestamp_ms = :inicio_timestamp_upd";
+            if ($existe) {
+                // UPDATE EXPLÍCITO
+                $sqlUpd = "UPDATE telemetria_live SET 
+                           estado_carrera = :estado_carrera,
+                           ultima_distancia_recorrida_m = :ultima_distancia,
+                           ultimo_tiempo_parcial_ms = :ultimo_tiempo,
+                           ultima_actualizacion = CURRENT_TIMESTAMP";
+                
+                if ($es_arranque) {
+                    $sqlUpd .= ", inicio_timestamp_ms = :inicio_timestamp";
+                }
+                
+                $sqlUpd .= " WHERE id_atleta = :id_atleta";
+                
+                $stmt = $this->pdo->prepare($sqlUpd);
+                $params = [
+                    ':estado_carrera' => $estado_carrera,
+                    ':ultima_distancia' => $ultima_distancia,
+                    ':ultimo_tiempo' => $ultimo_tiempo,
+                    ':id_atleta' => $id_atleta
+                ];
+                
+                if ($es_arranque) { $params[':inicio_timestamp'] = $inicio_timestamp; }
+                
+                $stmt->execute($params);
+
+            } else {
+                // INSERT LIMPIO
+                $sqlIns = "INSERT INTO telemetria_live 
+                          (id_atleta, distancia_total, tipo_piscina, estilo, estado_carrera, inicio_timestamp_ms, ultima_distancia_recorrida_m, ultimo_tiempo_parcial_ms) 
+                          VALUES 
+                          (:id_atleta, :distancia_total, :tipo_piscina, :estilo, :estado_carrera, :inicio_timestamp, :ultima_distancia, :ultimo_tiempo)";
+                
+                $stmt = $this->pdo->prepare($sqlIns);
+                $stmt->execute([
+                    ':id_atleta' => $id_atleta,
+                    ':distancia_total' => $distancia_total,
+                    ':tipo_piscina' => $tipo_piscina,
+                    ':estilo' => $estilo,
+                    ':estado_carrera' => $estado_carrera,
+                    ':inicio_timestamp' => $inicio_timestamp,
+                    ':ultima_distancia' => $ultima_distancia,
+                    ':ultimo_tiempo' => $ultimo_tiempo
+                ]);
             }
-                    
-            $stmt = $this->pdo->prepare($sql);
-            
-            // 4. MAPEO DE PARÁMETROS
-            $parametros = [
-                ':id_atleta' => $id_atleta,
-                ':distancia_total' => $distancia_total,
-                ':tipo_piscina' => $tipo_piscina,
-                ':estilo' => $estilo,
-                ':estado_carrera' => $estado_carrera,
-                ':inicio_timestamp' => $es_arranque ? $inicio_timestamp : null, 
-                ':ultima_distancia' => $ultima_distancia,
-                ':ultimo_tiempo' => $ultimo_tiempo,
-                // Datos de actualización
-                ':estado_carrera_upd' => $estado_carrera,
-                ':ultima_distancia_upd' => $ultima_distancia,
-                ':ultimo_tiempo_upd' => $ultimo_tiempo
-            ];
-
-            if ($es_arranque) {
-                $parametros[':inicio_timestamp_upd'] = $inicio_timestamp;
-            }
-
-            $stmt->execute($parametros);
 
             return ['status' => 'success', 'message' => 'Telemetría sincronizada'];
 
