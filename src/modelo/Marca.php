@@ -245,16 +245,15 @@ class Marca extends Conexion {
    }
 
   
-    public function syncTelemetria(): array {
-        $id_atleta = (int)($this->datos['id_atleta'] ?? 0);
-        
-        if ($id_atleta <= 0) {
-            return ['status' => 'error', 'message' => 'Falta el ID del atleta para la telemetría.'];
-        }
-
-        // Delegamos la acción a la función privada
-        return $this->procesarTelemetria();
+  public function syncTelemetria(): array {
+    $id_atleta = (int)($this->datos['id_atleta'] ?? 0);
+    
+    if ($id_atleta <= 0) {
+        return ['status' => 'error', 'message' => 'Falta el ID del atleta para la telemetría.'];
     }
+
+    return $this->procesarTelemetria();
+}
 
     public function getActualizarMarca(){
 
@@ -522,88 +521,96 @@ private function registrarMarca(): bool
     // LOGICA PRIVADA DE TELEMETRÍA (SRP)
     // =====================================================================
     private function procesarTelemetria(): array {
-        try {
-            $id_atleta = (int)$this->datos['id_atleta'];
-            $distancia_total = (int)($this->datos['distancia_total'] ?? 0);
-            $tipo_piscina = trim($this->datos['tipo_piscina'] ?? '');
-            $estilo = trim($this->datos['estilo'] ?? '');
-            $estado_carrera = trim($this->datos['estado_carrera'] ?? '');
-            $ultima_distancia = (int)($this->datos['ultima_distancia_recorrida_m'] ?? 0);
-            $ultimo_tiempo = (float)($this->datos['ultimo_tiempo_parcial_ms'] ?? 0);
+    try {
+        $id_atleta = (int)$this->datos['id_atleta'];
+        $distancia_total = (int)($this->datos['distancia_total'] ?? 0);
+        $tipo_piscina = trim($this->datos['tipo_piscina'] ?? '');
+        $estilo = trim($this->datos['estilo'] ?? '');
+        $estado_carrera = trim($this->datos['estado_carrera'] ?? '');
+        $ultima_distancia = (int)($this->datos['ultima_distancia_recorrida_m'] ?? 0);
+        $ultimo_tiempo = (float)($this->datos['ultimo_tiempo_parcial_ms'] ?? 0);
 
-            // 1. LIMPIEZA ABSOLUTA: Si cancela, finaliza, o REINICIA (iniciando)
-            if (in_array($estado_carrera, ['finalizado', 'cancelado', 'iniciando'])) {
-                $sqlDel = "DELETE FROM telemetria_live WHERE id_atleta = :id_atleta";
-                $stmtDel = $this->pdo->prepare($sqlDel);
-                $stmtDel->execute([':id_atleta' => $id_atleta]);
-                
-                // Si solo estábamos limpiando al cancelar o finalizar, salimos con éxito
-                if ($estado_carrera !== 'iniciando') {
-                    return ['status' => 'success', 'message' => 'Telemetría liberada.'];
-                }
+        // =================================================================
+        // 1. LIMPIEZA ABSOLUTA (Solo si se cancela o inicia un nuevo crono)
+        // =================================================================
+        if (in_array($estado_carrera, ['cancelado', 'iniciando'])) {
+            $sqlDel = "DELETE FROM telemetria_live WHERE id_atleta = :id_atleta";
+            $stmtDel = $this->pdo->prepare($sqlDel);
+            $stmtDel->execute([':id_atleta' => $id_atleta]);
+            
+            // Si el entrenador le dio a la "X" (Cancelar), detenemos la ejecución aquí.
+            if ($estado_carrera === 'cancelado') {
+                return ['status' => 'success', 'message' => 'Telemetría purgada con éxito.'];
             }
-
-            $inicio_timestamp = round(microtime(true) * 1000); 
-            $es_arranque = ($estado_carrera === 'en_curso' && $ultima_distancia === 0 && $ultimo_tiempo == 0);
-
-            // 2. BUSCAR REGISTRO EXISTENTE (Evita errores de Unique Keys)
-            $stmtCheck = $this->pdo->prepare("SELECT inicio_timestamp_ms FROM telemetria_live WHERE id_atleta = :id LIMIT 1");
-            $stmtCheck->execute([':id' => $id_atleta]);
-            $existe = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
-
-            if ($existe) {
-                // UPDATE EXPLÍCITO
-                $sqlUpd = "UPDATE telemetria_live SET 
-                           estado_carrera = :estado_carrera,
-                           ultima_distancia_recorrida_m = :ultima_distancia,
-                           ultimo_tiempo_parcial_ms = :ultimo_tiempo,
-                           ultima_actualizacion = CURRENT_TIMESTAMP";
-                
-                if ($es_arranque) {
-                    $sqlUpd .= ", inicio_timestamp_ms = :inicio_timestamp";
-                }
-                
-                $sqlUpd .= " WHERE id_atleta = :id_atleta";
-                
-                $stmt = $this->pdo->prepare($sqlUpd);
-                $params = [
-                    ':estado_carrera' => $estado_carrera,
-                    ':ultima_distancia' => $ultima_distancia,
-                    ':ultimo_tiempo' => $ultimo_tiempo,
-                    ':id_atleta' => $id_atleta
-                ];
-                
-                if ($es_arranque) { $params[':inicio_timestamp'] = $inicio_timestamp; }
-                
-                $stmt->execute($params);
-
-            } else {
-                // INSERT LIMPIO
-                $sqlIns = "INSERT INTO telemetria_live 
-                          (id_atleta, distancia_total, tipo_piscina, estilo, estado_carrera, inicio_timestamp_ms, ultima_distancia_recorrida_m, ultimo_tiempo_parcial_ms) 
-                          VALUES 
-                          (:id_atleta, :distancia_total, :tipo_piscina, :estilo, :estado_carrera, :inicio_timestamp, :ultima_distancia, :ultimo_tiempo)";
-                
-                $stmt = $this->pdo->prepare($sqlIns);
-                $stmt->execute([
-                    ':id_atleta' => $id_atleta,
-                    ':distancia_total' => $distancia_total,
-                    ':tipo_piscina' => $tipo_piscina,
-                    ':estilo' => $estilo,
-                    ':estado_carrera' => $estado_carrera,
-                    ':inicio_timestamp' => $inicio_timestamp,
-                    ':ultima_distancia' => $ultima_distancia,
-                    ':ultimo_tiempo' => $ultimo_tiempo
-                ]);
-            }
-
-            return ['status' => 'success', 'message' => 'Telemetría sincronizada'];
-
-        } catch (\PDOException $e) {
-            error_log("Error de DB en procesarTelemetria: " . $e->getMessage());
-            return ['status' => 'error', 'message' => 'Error interno sincronizando telemetría.'];
+            // NOTA: Si es 'iniciando', el código no entra a este if y CONTINÚA 
+            // hacia abajo para hacer un INSERT limpio. ¡Tu lógica aquí es brillante!
         }
+
+        // =================================================================
+        // 2. INSERCIÓN O ACTUALIZACIÓN (iniciando, en_curso, en_viraje, finalizado)
+        // =================================================================
+        $inicio_timestamp = round(microtime(true) * 1000); 
+        // ¿Es el momento exacto en que suena la bocina?
+        $es_arranque = ($estado_carrera === 'en_curso' && $ultima_distancia === 0 && $ultimo_tiempo == 0);
+
+        // Verificamos si ya existe la carrera
+        $stmtCheck = $this->pdo->prepare("SELECT inicio_timestamp_ms FROM telemetria_live WHERE id_atleta = :id LIMIT 1");
+        $stmtCheck->execute([':id' => $id_atleta]);
+        $existe = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
+
+        if ($existe) {
+            // ---> UPDATE <---
+            $sqlUpd = "UPDATE telemetria_live SET 
+                       estado_carrera = :estado_carrera,
+                       ultima_distancia_recorrida_m = :ultima_distancia,
+                       ultimo_tiempo_parcial_ms = :ultimo_tiempo,
+                       ultima_actualizacion = CURRENT_TIMESTAMP";
+            
+            if ($es_arranque) {
+                $sqlUpd .= ", inicio_timestamp_ms = :inicio_timestamp";
+            }
+            
+            $sqlUpd .= " WHERE id_atleta = :id_atleta";
+            
+            $stmt = $this->pdo->prepare($sqlUpd);
+            $params = [
+                ':estado_carrera' => $estado_carrera,
+                ':ultima_distancia' => $ultima_distancia,
+                ':ultimo_tiempo' => $ultimo_tiempo,
+                ':id_atleta' => $id_atleta
+            ];
+            
+            if ($es_arranque) { $params[':inicio_timestamp'] = $inicio_timestamp; }
+            
+            $stmt->execute($params);
+
+        } else {
+            // ---> INSERT NUEVO <---
+            $sqlIns = "INSERT INTO telemetria_live 
+                      (id_atleta, distancia_total, tipo_piscina, estilo, estado_carrera, inicio_timestamp_ms, ultima_distancia_recorrida_m, ultimo_tiempo_parcial_ms) 
+                      VALUES 
+                      (:id_atleta, :distancia_total, :tipo_piscina, :estilo, :estado_carrera, :inicio_timestamp, :ultima_distancia, :ultimo_tiempo)";
+            
+            $stmt = $this->pdo->prepare($sqlIns);
+            $stmt->execute([
+                ':id_atleta' => $id_atleta,
+                ':distancia_total' => $distancia_total,
+                ':tipo_piscina' => $tipo_piscina,
+                ':estilo' => $estilo,
+                ':estado_carrera' => $estado_carrera,
+                ':inicio_timestamp' => $inicio_timestamp,
+                ':ultima_distancia' => $ultima_distancia,
+                ':ultimo_tiempo' => $ultimo_tiempo
+            ]);
+        }
+
+        return ['status' => 'success', 'message' => 'Telemetría sincronizada'];
+
+    } catch (\PDOException $e) {
+        error_log("Error de DB en procesarTelemetria: " . $e->getMessage());
+        return ['status' => 'error', 'message' => 'Error interno sincronizando telemetría.'];
     }
+}
 
 private function actualizarMarca(): bool
 {

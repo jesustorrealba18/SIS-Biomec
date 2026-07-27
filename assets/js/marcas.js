@@ -1291,12 +1291,15 @@ function abrirModalCronoLive() {
 function cerrarModalCronoLive() {
     if(cronoActivo) {
         if(!confirm("El cronómetro está corriendo. ¿Desea descartar la medición?")) return;
-        accionarCrono(); // (Para detener la animación actual en la UI)
     }
     
-    // --> LIMPIEZA ABSOLUTA DE TELEMETRÍA: Siempre que se cierre el modal, limpiamos la DB
+    // 1. ÚNICA PETICIÓN A LA BD: Limpieza absoluta del Live
     enviarLatidoTelemetria('cancelado', 0, 0);
     
+    // 2. PURGA TOTAL: Limpiamos la pantalla y variables antes de que se oculte
+    reiniciarCrono();
+    
+    // 3. Cerramos el modal visualmente
     const modal = document.getElementById('modalCronoEnVivo');
     modal.classList.add('opacity-0');
     setTimeout(() => modal.classList.add('hidden'), 300);
@@ -1568,23 +1571,34 @@ function transferirCronoAlFormulario() {
 }
 
 function reiniciarCrono() {
+    // 1. Apagar motores y animación
     cronoActivo = false;
     estadoCrono = 'ESPERANDO';
-    distanciaActual = 0;
-    registrosCrono = [];
     cancelAnimationFrame(animacionReloj);
     
+    // 2. Resetear TODAS las variables matemáticas a cero absoluto
+    tiempoInicio = 0;
+    tiempoToquePared = 0;
+    distanciaActual = 0;
+    tramoActual = 0;
+    registrosCrono = [];
+    if (typeof registrosSplits !== 'undefined') registrosSplits = []; // Por seguridad
+    
+    // 3. Limpiar la pantalla del cronómetro (Forzamos los ceros)
     document.getElementById('displayReloj').textContent = "00:00.00";
     document.getElementById('cronoEstadoTexto').textContent = "Esperando Inicio";
     
+    // 4. Restaurar el botón principal a su estado "Play" original
     const btnCrono = document.getElementById('btnAccionCrono');
     btnCrono.className = "flex-1 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-emerald-400/50";
     document.querySelector('#btnAccionCrono i').className = "fas fa-play text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
     document.getElementById('txtBtnAccionCrono').textContent = "Iniciar Prueba";
     
+    // 5. Ocultar botones secundarios de control
     document.getElementById('btnReiniciarCrono').classList.add('hidden');
     document.getElementById('btnTransferirCrono').classList.add('hidden');
     
+    // 6. Limpiar la lista de tramos (splits) en el DOM
     document.getElementById('listaTiemposCrono').innerHTML = `
         <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5 opacity-50">
             <div class="flex items-center gap-3">
