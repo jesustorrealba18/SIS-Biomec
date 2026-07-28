@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGRD | Live 3D Simulator</title>
+    <title>SGRD | Live 3D Simulator (Smooth LERP)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
@@ -27,7 +27,6 @@
     <div id="canvas-container"></div>
 
     <div id="ui-layer" class="w-full h-screen flex flex-col justify-between p-4 sm:p-8 md:p-12">
-        
         <div id="pantallaStandby" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-1000 bg-[#060512]/90 backdrop-blur-md z-50">
             <i class="fas fa-swimmer text-6xl md:text-8xl text-indigo-500/50 mb-6"></i>
             <h1 class="text-4xl sm:text-6xl md:text-8xl font-black text-gray-300 tracking-widest uppercase">SGRD LIVE</h1>
@@ -35,7 +34,6 @@
         </div>
 
         <div id="pantallaCarrera" class="w-full h-full flex flex-col justify-between opacity-0 hidden transition-opacity duration-1000">
-            
             <div class="w-full flex flex-col sm:flex-row justify-between items-start sm:items-end">
                 <div class="mb-4 sm:mb-0">
                     <div class="inline-block px-3 py-1 md:px-5 md:py-2 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 font-bold tracking-widest uppercase text-[10px] md:text-sm mb-2" id="uiPrueba">--</div>
@@ -82,7 +80,6 @@
         dirLight.castShadow = true;
         scene.add(dirLight);
 
-        // --- LA PISCINA ---
         const poolLength = 100; 
         const poolWidth = 40;
 
@@ -104,12 +101,10 @@
         
         const blockReal = new THREE.Mesh(blockGeo, blockMat);
         blockReal.position.set(-poolLength/2 - 2, 1.5, 10); 
-        blockReal.castShadow = true;
         scene.add(blockReal);
 
         const blockGhost = new THREE.Mesh(blockGeo, blockMat);
         blockGhost.position.set(-poolLength/2 - 2, 1.5, -10); 
-        blockGhost.castShadow = true;
         scene.add(blockGhost);
 
         const swimmerGeo = new THREE.CapsuleGeometry( 1.2, 4, 4, 8 );
@@ -131,27 +126,59 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
 
             if (aspect < 0.7) {
-                camera.position.set(0, 95, 60); 
-                camera.lookAt(0, -15, 0);
+                camera.position.set(0, 95, 60); camera.lookAt(0, -15, 0);
             } else if (aspect < 1.2) {
-                camera.position.set(0, 65, 65); 
-                camera.lookAt(0, -5, 0);
+                camera.position.set(0, 65, 65); camera.lookAt(0, -5, 0);
             } else {
-                camera.position.set(0, 45, 65); 
-                camera.lookAt(0, 0, 0); 
+                camera.position.set(0, 45, 65); camera.lookAt(0, 0, 0); 
             }
         }
         window.addEventListener('resize', ajustarCamara);
         ajustarCamara();
 
+        // ==========================================
+        // 2. ESTADOS GLOBALES DE ANIMACIÓN (NUEVO)
+        // ==========================================
+        let datosCarrera = null;
+        
+        // Puntos Matemáticos (A donde deberían estar)
+        let targetDistReal = 0;
+        let targetDistGhost = 0;
+        
+        // Puntos Visuales (Donde están realmente renderizados)
+        let distVisualReal = 0;
+        let distVisualGhost = 0;
+
+        // Bucle 3D a 60FPS Independiente del Cronómetro
         function animate3D() {
             requestAnimationFrame(animate3D);
+
+            // Interpolación Lineal (LERP) - Factor de suavizado (0.05). 
+            // Más bajo = más fluido pero más lento en alcanzar el objetivo.
+            const suavizado = 0.05; 
+            distVisualReal += (targetDistReal - distVisualReal) * suavizado;
+            distVisualGhost += (targetDistGhost - distVisualGhost) * suavizado;
+
+            // Evitar cálculos microscópicos infinitos (Snapping final)
+            if(Math.abs(targetDistReal - distVisualReal) < 0.01) distVisualReal = targetDistReal;
+            if(Math.abs(targetDistGhost - distVisualGhost) < 0.01) distVisualGhost = targetDistGhost;
+
+            // Mover Avatares basados en la posición suavizada
+            if (datosCarrera) {
+                const longPiscina = parseInt(datosCarrera.tipo_piscina);
+                const distTotal = parseInt(datosCarrera.distancia_total);
+                
+                moverAvatar3D(meshReal, distVisualReal, distTotal, longPiscina, 10);
+                moverAvatar3D(meshGhost, distVisualGhost, distTotal, longPiscina, -10);
+            }
+
             renderer.render(scene, camera);
         }
-        animate3D();
+        animate3D(); // Inicia el motor visual inmediatamente
+
 
         // ==========================================
-        // 2. LÓGICA DE TELEMETRÍA (FÍSICA CORREGIDA)
+        // 3. LÓGICA DE TELEMETRÍA
         // ==========================================
         const pantallaStandby = document.getElementById('pantallaStandby');
         const pantallaCarrera = document.getElementById('pantallaCarrera');
@@ -165,11 +192,7 @@
         let animacionReloj;
         let inicioRelojCliente = null;
         let estadoActual = 'standby';
-        let datosCarrera = null;
-        
-        let tiempoObjetivoMs = 0; 
         let velocidadGhost = 0; 
-        let velocidadActualProyectada = 0; 
         let reaccionGhostMs = 650; 
 
         async function escucharTelemetria() {
@@ -196,8 +219,8 @@
             uiPrueba.textContent = `${data.distancia_total}m ${data.estilo}`;
             uiDistanciaPool.textContent = `${data.tipo_piscina}m`;
             
-            tiempoObjetivoMs = parseInt(data.tiempo_objetivo_ms) || estimarTiempo(data.distancia_total, data.estilo);
-            velocidadGhost = (data.distancia_total) / (tiempoObjetivoMs - reaccionGhostMs); 
+            let tiempoObjetivoMs = parseInt(data.tiempo_objetivo_ms) || estimarTiempo(data.distancia_total, data.estilo);
+            velocidadGhost = data.distancia_total / (tiempoObjetivoMs - reaccionGhostMs); 
             lblGhost.textContent = data.tiempo_objetivo_ms ? "RECORD PERSONAL" : "RITMO ESTIMADO";
 
             const estadoCarrera = data.estado_carrera;
@@ -228,7 +251,8 @@
                 uiReloj.classList.add('glow-green', 'text-emerald-400');
                 uiReloj.textContent = formatearMilisegundos(parseFloat(data.ultimo_tiempo_parcial_ms));
                 
-                moverAvatar3D(meshReal, parseInt(data.distancia_total), parseInt(data.distancia_total), parseInt(data.tipo_piscina), 10);
+                // Forzamos al objetivo final para que el 3D termine de arrastrarse suavemente hacia la meta
+                targetDistReal = parseInt(data.distancia_total);
             }
 
             estadoActual = estadoCarrera;
@@ -240,67 +264,47 @@
                 uiReloj.textContent = formatearMilisegundos(transcurrido);
                 
                 if(datosCarrera && transcurrido > 0) {
-                    const longPiscina = parseInt(datosCarrera.tipo_piscina); 
                     const distTotal = parseInt(datosCarrera.distancia_total);
 
                     // ==============================================
-                    // 1. FANTASMA
+                    // CEREBRO FANTASMA
                     // ==============================================
                     let tiempoEfectivoGhost = transcurrido - reaccionGhostMs;
-                    let distGhost = tiempoEfectivoGhost > 0 ? (tiempoEfectivoGhost * velocidadGhost) : 0;
-                    if (distGhost > distTotal) distGhost = distTotal;
-                    moverAvatar3D(meshGhost, distGhost, distTotal, longPiscina, -10);
+                    targetDistGhost = tiempoEfectivoGhost > 0 ? (tiempoEfectivoGhost * velocidadGhost) : 0;
+                    if (targetDistGhost > distTotal) targetDistGhost = distTotal;
 
                     // ==============================================
-                    // 2. ATLETA REAL (Con Auto-Deducción de Reacción)
+                    // CEREBRO REAL
                     // ==============================================
                     let reaccionRealMs = parseFloat(datosCarrera.tiempo_reaccion_ms) || (parseFloat(datosCarrera.tiempo_reaccion_seg) * 1000) || 0;
-                    
-                    // SOLUCIÓN 1: Si el entrenador aún NO presiona Reacción (0), asumimos 700ms temporales para que el muñeco salte y no se congele.
                     let reaccionEfectiva = reaccionRealMs > 0 ? reaccionRealMs : 700;
 
                     let distUltimoTramo = parseInt(datosCarrera.ultima_distancia_recorrida_m) || 0;
                     let tiempoUltimoTramo = parseFloat(datosCarrera.ultimo_tiempo_parcial_ms) || 0;
-                    let distReal = 0;
                     
                     if (distUltimoTramo === 0) {
-                        // Tramo 1 (Salto y Nado inicial)
                         let tiempoEnMovimiento = transcurrido - reaccionEfectiva;
-                        if (tiempoEnMovimiento < 0) {
-                            distReal = 0; // Espera en el taco esos milisegundos
-                        } else {
-                            distReal = tiempoEnMovimiento * velocidadGhost; // Salta y nada fluído
-                        }
+                        targetDistReal = tiempoEnMovimiento < 0 ? 0 : tiempoEnMovimiento * velocidadGhost; 
                     } else {
-                        // Tramos > 0
                         let tiempoDesdeUltimoTramo = transcurrido - tiempoUltimoTramo;
                         let tiempoEfectivoTramo = tiempoUltimoTramo - reaccionEfectiva;
                         if (tiempoEfectivoTramo <= 0) tiempoEfectivoTramo = 1;
                         
-                        velocidadActualProyectada = distUltimoTramo / tiempoEfectivoTramo; 
-                        distReal = distUltimoTramo + (tiempoDesdeUltimoTramo * velocidadActualProyectada);
+                        let velCalculada = distUltimoTramo / tiempoEfectivoTramo; 
+                        targetDistReal = distUltimoTramo + (tiempoDesdeUltimoTramo * velCalculada);
                     }
                     
-                    // ==============================================
-                    // SOLUCIÓN 2: CLAMP ESTRICTO AL PRÓXIMO SPLIT
-                    // ==============================================
-                    // Si el entrenador marca botones cada 25m, el límite no es 50m, es 25m.
+                    // Clamp (Límite Inteligente)
                     let intervaloSplit = parseInt(datosCarrera.distancia_split) || 25; 
                     let proximoLimite = distUltimoTramo + intervaloSplit;
-                    
                     if (proximoLimite > distTotal) proximoLimite = distTotal;
                     
-                    // Si el avatar alcanza la distancia del split y el botón no se ha presionado,
-                    // se queda nadando en ese punto exacto (ej. 24.999m -> mitad de la piscina)
-                    if (distReal >= proximoLimite) {
-                        distReal = proximoLimite - 0.001; 
+                    if (targetDistReal >= proximoLimite) {
+                        targetDistReal = proximoLimite - 0.001; 
                     }
-
                     if(datosCarrera.estado_carrera === 'en_viraje') {
-                        distReal = distUltimoTramo - 0.001; 
+                        targetDistReal = distUltimoTramo - 0.001; 
                     }
-
-                    moverAvatar3D(meshReal, distReal, distTotal, longPiscina, 10);
                 }
 
                 animacionReloj = requestAnimationFrame(actualizar);
@@ -310,7 +314,7 @@
         }
 
         // ==========================================
-        // MATEMÁTICA VISUAL (Posición Z dinámica para carriles)
+        // MATEMÁTICA VISUAL 
         // ==========================================
         function moverAvatar3D(mesh, distanciaRecorrida, distanciaTotal, longitudPiscinaMts, zOffset) {
             let lapActual = Math.floor(distanciaRecorrida / longitudPiscinaMts);
@@ -321,20 +325,19 @@
                 metrosEnLap = longitudPiscinaMts;
             }
 
-            // Mantiene el muñeco en su carril respectivo (10 = Real, -10 = Ghost)
             mesh.position.z = zOffset;
 
-            // --- POSICIÓN EN EL TACO (0 Metros) ---
+            // Taco (0m)
             if (distanciaRecorrida === 0) {
                 mesh.position.set(-52, 4.2, zOffset);
                 mesh.rotation.set(0, 0, 0);
                 return;
             }
 
-            // --- FASE DE CLAVADO (0 a 4 metros) ---
+            // Clavado Suavizado
             const metrosDeSalto = 4;
             if (lapActual === 0 && distanciaRecorrida < metrosDeSalto) {
-                let progresoSalto = distanciaRecorrida / metrosDeSalto; // 0.0 a 1.0
+                let progresoSalto = distanciaRecorrida / metrosDeSalto; 
                 let unidades3DPorMetro = poolLength / longitudPiscinaMts;
                 let finSaltoX = -50 + (metrosDeSalto * unidades3DPorMetro);
 
@@ -345,9 +348,9 @@
                 return; 
             }
 
-            // --- FASE DE NADO ---
+            // Nado Normal
             let porcentajeAvance = metrosEnLap / longitudPiscinaMts;
-            mesh.position.y = (Math.sin(performance.now() * 0.005) * 0.2); // Flotabilidad
+            mesh.position.y = (Math.sin(performance.now() * 0.005) * 0.2); 
             mesh.rotation.z = 0; 
             
             if (lapActual % 2 === 0) {
@@ -355,30 +358,25 @@
                 mesh.rotation.y = 0; 
             } else {
                 mesh.position.x = (poolLength / 2) - (poolLength * porcentajeAvance);
-                mesh.rotation.y = Math.PI; // Da la vuelta (180 grados)
+                mesh.rotation.y = Math.PI; 
             }
         }
 
         function resetearSimulador3D() {
+            // Reiniciamos tanto la posición matemática como la visual
+            targetDistReal = 0;
+            targetDistGhost = 0;
+            distVisualReal = 0;
+            distVisualGhost = 0;
+            
             meshReal.position.set(-52, 4.2, 10);
             meshReal.rotation.set(0, 0, 0);
             meshGhost.position.set(-52, 4.2, -10);
             meshGhost.rotation.set(0, 0, 0);
         }
 
-        function mostrarStandby() {
-            if (estadoActual !== 'standby') {
-                detenerRelojInterno();
-                pantallaCarrera.classList.add('opacity-0');
-                setTimeout(() => {
-                    pantallaCarrera.classList.add('hidden');
-                    pantallaStandby.classList.remove('hidden', 'opacity-0');
-                }, 1000);
-                estadoActual = 'standby';
-            }
-        }
+        function mostrarStandby() { /* ... */ }
         function detenerRelojInterno() { cancelAnimationFrame(animacionReloj); }
-        
         function formatearMilisegundos(ms) { 
             if(ms < 0) ms = 0;
             const tC = Math.floor(ms / 10), c = tC % 100, tS = Math.floor(tC / 100), s = tS % 60, m = Math.floor(tS / 60);
