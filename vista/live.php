@@ -3,64 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGRD | Live 3D Simulator (Smooth LERP)</title>
+    <title>SGRD | Live 3D Simulator (AAA GLTF)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
     
-    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+    <!-- IMPORT MAPS PARA LIBRERÍAS PROFESIONALES DE THREE.JS -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/"
+        }
+      }
+    </script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; overflow: hidden; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; overflow: hidden; margin: 0; padding: 0; transition: background-color 0.5s ease; }
         .font-reloj { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
         
         #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
         #ui-layer { position: relative; z-index: 10; pointer-events: none; }
         
-        .glow-text { text-shadow: 0 0 20px rgba(255,255,255,0.3); }
+        .glow-text { text-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        .dark .glow-text { text-shadow: 0 0 20px rgba(255,255,255,0.3); }
         .glow-green { text-shadow: 0 0 30px rgba(16, 185, 129, 0.8); }
-        .glow-red { text-shadow: 0 0 30px rgba(239, 68, 68, 0.8); }
+        
+        .pointer-auto { pointer-events: auto; }
     </style>
 </head>
-<body class="bg-[#060512]">
+<body class="bg-slate-50 dark:bg-[#060512]">
 
     <div id="canvas-container"></div>
 
     <div id="ui-layer" class="w-full h-screen flex flex-col justify-between p-4 sm:p-8 md:p-12">
-        <div id="pantallaStandby" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-1000 bg-[#060512]/90 backdrop-blur-md z-50">
-            <i class="fas fa-swimmer text-6xl md:text-8xl text-indigo-500/50 mb-6"></i>
-            <h1 class="text-4xl sm:text-6xl md:text-8xl font-black text-gray-300 tracking-widest uppercase">SGRD LIVE</h1>
-            <p class="text-indigo-400 mt-4 animate-pulse uppercase tracking-widest font-bold text-sm md:text-xl">Esperando Atleta...</p>
+        
+        <div class="absolute top-4 right-4 sm:top-8 sm:right-8 pointer-auto z-50">
+            <button id="btnTheme" class="w-12 h-12 rounded-full bg-white/20 dark:bg-black/40 backdrop-blur-md border border-slate-300 dark:border-indigo-500/30 text-slate-700 dark:text-indigo-400 flex items-center justify-center hover:scale-110 transition-transform shadow-lg">
+                <i class="fas fa-moon dark:hidden text-xl"></i>
+                <i class="fas fa-sun hidden dark:block text-xl"></i>
+            </button>
         </div>
 
-        <div id="pantallaCarrera" class="w-full h-full flex flex-col justify-between opacity-0 hidden transition-opacity duration-1000">
-            <div class="w-full flex flex-col sm:flex-row justify-between items-start sm:items-end">
+        <div id="pantallaStandby" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-1000 bg-slate-50/90 dark:bg-[#060512]/90 backdrop-blur-md z-40">
+            <i class="fas fa-swimmer text-6xl md:text-8xl text-indigo-500/50 mb-6"></i>
+            <h1 class="text-4xl sm:text-6xl md:text-8xl font-black text-slate-800 dark:text-gray-300 tracking-widest uppercase transition-colors duration-500">SGRD LIVE</h1>
+            <p class="text-indigo-500 dark:text-indigo-400 mt-4 animate-pulse uppercase tracking-widest font-bold text-sm md:text-xl">Esperando Atleta...</p>
+        </div>
+
+        <div id="pantallaCarrera" class="w-full h-full flex flex-col justify-between opacity-0 hidden transition-opacity duration-1000 z-10">
+            <div class="w-full flex flex-col sm:flex-row justify-between items-start sm:items-end mt-12 sm:mt-0">
                 <div class="mb-4 sm:mb-0">
-                    <div class="inline-block px-3 py-1 md:px-5 md:py-2 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 font-bold tracking-widest uppercase text-[10px] md:text-sm mb-2" id="uiPrueba">--</div>
-                    <h2 class="text-4xl sm:text-6xl lg:text-[80px] font-black text-white tracking-tighter uppercase glow-text leading-none" id="uiAtleta">--</h2>
+                    <div class="inline-block px-3 py-1 md:px-5 md:py-2 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 font-bold tracking-widest uppercase text-[10px] md:text-sm mb-2" id="uiPrueba">--</div>
+                    <h2 class="text-4xl sm:text-6xl lg:text-[80px] font-black text-slate-900 dark:text-white tracking-tighter uppercase glow-text leading-none transition-colors duration-500" id="uiAtleta">--</h2>
                 </div>
                 
                 <div class="text-left sm:text-right mt-2 sm:mt-0">
-                    <span id="uiEstado" class="block text-sm md:text-xl font-bold uppercase tracking-widest text-gray-400 mb-1">--</span>
-                    <span id="uiReloj" class="font-reloj text-[15vw] sm:text-8xl lg:text-[130px] leading-none font-extrabold text-white transition-colors duration-300 block">00:00.00</span>
+                    <span id="uiEstado" class="block text-sm md:text-xl font-bold uppercase tracking-widest text-slate-500 dark:text-gray-400 mb-1">--</span>
+                    <span id="uiReloj" class="font-reloj text-[15vw] sm:text-8xl lg:text-[130px] leading-none font-extrabold text-slate-900 dark:text-white transition-colors duration-300 block">00:00.00</span>
                 </div>
             </div>
 
             <div class="w-full flex justify-between items-end pb-2 md:pb-6">
                 <div class="flex gap-4">
-                    <div class="flex items-center gap-2"><div class="w-3 h-3 md:w-5 md:h-5 bg-emerald-500 rounded-sm shadow-[0_0_15px_#10b981]"></div><span class="text-white text-[10px] md:text-sm font-bold tracking-widest">ATLETA REAL</span></div>
-                    <div class="flex items-center gap-2"><div class="w-3 h-3 md:w-5 md:h-5 bg-gray-400 rounded-sm"></div><span class="text-white text-[10px] md:text-sm font-bold tracking-widest" id="lblGhost">RECORD</span></div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 md:w-5 md:h-5 bg-emerald-500 rounded-sm shadow-[0_0_15px_#10b981]"></div><span class="text-slate-700 dark:text-white text-[10px] md:text-sm font-bold tracking-widest transition-colors duration-500">ATLETA REAL</span></div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 md:w-5 md:h-5 bg-slate-400 rounded-sm"></div><span class="text-slate-700 dark:text-white text-[10px] md:text-sm font-bold tracking-widest transition-colors duration-500" id="lblGhost">RECORD</span></div>
                 </div>
-                <div class="text-gray-500 font-bold text-[10px] md:text-sm uppercase tracking-widest">
+                <div class="text-slate-500 font-bold text-[10px] md:text-sm uppercase tracking-widest">
                     Piscina <span id="uiDistanciaPool">--</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
+    <!-- SCRIPT TIPO MODULE -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
         // ==========================================
-        // 1. CONFIGURACIÓN DEL MOTOR 3D (THREE.JS)
+        // 1. CONFIGURACIÓN DEL MOTOR 3D Y MODO CLARO/OSCURO
         // ==========================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -80,6 +108,7 @@
         dirLight.castShadow = true;
         scene.add(dirLight);
 
+        // --- LA PISCINA ---
         const poolLength = 100; 
         const poolWidth = 40;
 
@@ -98,26 +127,127 @@
 
         const blockGeo = new THREE.BoxGeometry(4, 3, 4);
         const blockMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a });
-        
         const blockReal = new THREE.Mesh(blockGeo, blockMat);
         blockReal.position.set(-poolLength/2 - 2, 1.5, 10); 
         scene.add(blockReal);
-
         const blockGhost = new THREE.Mesh(blockGeo, blockMat);
         blockGhost.position.set(-poolLength/2 - 2, 1.5, -10); 
         scene.add(blockGhost);
 
-        const swimmerGeo = new THREE.CapsuleGeometry( 1.2, 4, 4, 8 );
-        swimmerGeo.rotateZ(Math.PI / 2);
-
-        const realMat = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x059669 });
-        const meshReal = new THREE.Mesh(swimmerGeo, realMat);
-        meshReal.castShadow = true;
+        // ==========================================
+        // 2. CARGA DEL ARCHIVO .GLB Y ANIMACIONES
+        // ==========================================
+        const meshReal = new THREE.Group();
+        const meshGhost = new THREE.Group();
         scene.add(meshReal);
-
-        const ghostMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, transparent: true, opacity: 0.5 });
-        const meshGhost = new THREE.Mesh(swimmerGeo, ghostMat);
         scene.add(meshGhost);
+
+        let mixerReal = null, mixerGhost = null;
+        let accionesReal = {}, accionesGhost = {};
+        let animActualReal = '', animActualGhost = '';
+
+        const loader = new GLTFLoader();
+        
+        loader.load('/ProyectoPiscinaBolivariana/SIS-Biomec/assets/avatar3D/nadador.glb', (gltf) => {
+            console.log("✅ ARCHIVO nadador.glb CARGADO CON ÉXITO");
+            
+            const modeloBase = gltf.scene;
+            
+            modeloBase.scale.set(5.5, 5.5, 5.5); 
+            modeloBase.rotation.y = Math.PI / 2; 
+
+            modeloBase.traverse((c) => {
+                if (c.isMesh) c.castShadow = true;
+            });
+
+            // Filtramos el "Root Motion" (desplazamiento) de Mixamo
+            gltf.animations.forEach((clip) => {
+                clip.tracks = clip.tracks.filter(track => !track.name.match(/Hips.*\.position/i));
+            });
+
+            // 1. Configurar Atleta Real
+            meshReal.add(modeloBase);
+            mixerReal = new THREE.AnimationMixer(modeloBase);
+            gltf.animations.forEach((clip) => {
+                let accionReal = mixerReal.clipAction(clip);
+                if (clip.name === 'Salto') {
+                    accionReal.setLoop(THREE.LoopOnce);
+                    accionReal.clampWhenFinished = true; 
+                }
+                accionesReal[clip.name] = accionReal;
+            });
+
+            // 2. Configurar Atleta Fantasma (Clonado)
+            const modeloGhost = SkeletonUtils.clone(modeloBase);
+            modeloGhost.traverse((c) => {
+                if (c.isMesh) {
+                    c.material = new THREE.MeshStandardMaterial({
+                        color: 0x9ca3af,
+                        transparent: true,
+                        opacity: 0.45
+                    });
+                }
+            });
+            meshGhost.add(modeloGhost);
+            mixerGhost = new THREE.AnimationMixer(modeloGhost);
+            gltf.animations.forEach((clip) => {
+                let accionGhost = mixerGhost.clipAction(clip);
+                if (clip.name === 'Salto') {
+                    accionGhost.setLoop(THREE.LoopOnce);
+                    accionGhost.clampWhenFinished = true;
+                }
+                accionesGhost[clip.name] = accionGhost;
+            });
+
+            reproducirAnimacion('Real', 'Taco');
+            reproducirAnimacion('Ghost', 'Taco');
+        }, undefined, (error) => {
+            console.error('❌ Error cargando nadador.glb:', error);
+        });
+
+        function reproducirAnimacion(tipo, nombreNuevaAnim) {
+            const esReal = (tipo === 'Real');
+            const acciones = esReal ? accionesReal : accionesGhost;
+            const animActual = esReal ? animActualReal : animActualGhost;
+
+            if (!acciones[nombreNuevaAnim] || animActual === nombreNuevaAnim) return;
+
+            if (animActual && acciones[animActual]) {
+                acciones[animActual].fadeOut(0.3); 
+            }
+            
+            acciones[nombreNuevaAnim].reset().fadeIn(0.3).play(); 
+
+            if (esReal) animActualReal = nombreNuevaAnim;
+            else animActualGhost = nombreNuevaAnim;
+        }
+
+        // ==========================================
+        // 3. SISTEMA DE TEMAS (DARK/LIGHT)
+        // ==========================================
+        const htmlElement = document.documentElement;
+        const btnTheme = document.getElementById('btnTheme');
+
+        function actualizarColores3D() {
+            const isDark = htmlElement.classList.contains('dark');
+            if (isDark) {
+                scene.fog.color.setHex(0x060512); 
+                ambientLight.intensity = 0.7;
+                dirLight.intensity = 0.8;
+                water.material.color.setHex(0x0891b2);
+            } else {
+                scene.fog.color.setHex(0xf8fafc); 
+                ambientLight.intensity = 1.2;
+                dirLight.intensity = 1.1;
+                water.material.color.setHex(0x38bdf8); 
+            }
+        }
+        
+        btnTheme.addEventListener('click', () => {
+            htmlElement.classList.toggle('dark');
+            actualizarColores3D();
+        });
+        actualizarColores3D();
 
         function ajustarCamara() {
             const aspect = window.innerWidth / window.innerHeight;
@@ -125,60 +255,143 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
 
-            if (aspect < 0.7) {
-                camera.position.set(0, 95, 60); camera.lookAt(0, -15, 0);
-            } else if (aspect < 1.2) {
-                camera.position.set(0, 65, 65); camera.lookAt(0, -5, 0);
-            } else {
-                camera.position.set(0, 45, 65); camera.lookAt(0, 0, 0); 
-            }
+            if (aspect < 0.7) { camera.position.set(0, 95, 60); camera.lookAt(0, -15, 0); } 
+            else if (aspect < 1.2) { camera.position.set(0, 65, 65); camera.lookAt(0, -5, 0); } 
+            else { camera.position.set(0, 45, 65); camera.lookAt(0, 0, 0); }
         }
         window.addEventListener('resize', ajustarCamara);
         ajustarCamara();
 
         // ==========================================
-        // 2. ESTADOS GLOBALES DE ANIMACIÓN (NUEVO)
+        // 4. ANIMACIÓN VISUAL Y LERP
         // ==========================================
         let datosCarrera = null;
-        
-        // Puntos Matemáticos (A donde deberían estar)
-        let targetDistReal = 0;
-        let targetDistGhost = 0;
-        
-        // Puntos Visuales (Donde están realmente renderizados)
-        let distVisualReal = 0;
-        let distVisualGhost = 0;
+        let targetDistReal = 0, targetDistGhost = 0;
+        let distVisualReal = 0, distVisualGhost = 0;
+        const clock = new THREE.Clock(); 
 
-        // Bucle 3D a 60FPS Independiente del Cronómetro
         function animate3D() {
             requestAnimationFrame(animate3D);
+            const delta = clock.getDelta();
 
-            // Interpolación Lineal (LERP) - Factor de suavizado (0.05). 
-            // Más bajo = más fluido pero más lento en alcanzar el objetivo.
+            if (mixerReal) mixerReal.update(delta);
+            if (mixerGhost) mixerGhost.update(delta);
+
             const suavizado = 0.05; 
             distVisualReal += (targetDistReal - distVisualReal) * suavizado;
             distVisualGhost += (targetDistGhost - distVisualGhost) * suavizado;
 
-            // Evitar cálculos microscópicos infinitos (Snapping final)
             if(Math.abs(targetDistReal - distVisualReal) < 0.01) distVisualReal = targetDistReal;
             if(Math.abs(targetDistGhost - distVisualGhost) < 0.01) distVisualGhost = targetDistGhost;
 
-            // Mover Avatares basados en la posición suavizada
             if (datosCarrera) {
                 const longPiscina = parseInt(datosCarrera.tipo_piscina);
                 const distTotal = parseInt(datosCarrera.distancia_total);
                 
-                moverAvatar3D(meshReal, distVisualReal, distTotal, longPiscina, 10);
-                moverAvatar3D(meshGhost, distVisualGhost, distTotal, longPiscina, -10);
+                moverAvatar3D(meshReal, distVisualReal, distTotal, longPiscina, 10, 'Real');
+                moverAvatar3D(meshGhost, distVisualGhost, distTotal, longPiscina, -10, 'Ghost');
             }
 
             renderer.render(scene, camera);
         }
-        animate3D(); // Inicia el motor visual inmediatamente
+        animate3D();
 
 
         // ==========================================
-        // 3. LÓGICA DE TELEMETRÍA
+        // 5. CONTROL DE MOVIMIENTOS Y REPRODUCTOR GLTF
+        // ==========================================
+// ==========================================
+// 5. CONTROL DE MOVIMIENTOS (CON AJUSTES SOLICITADOS)
+// ==========================================
+function moverAvatar3D(mesh, distanciaRecorrida, distanciaTotal, longitudPiscinaMts, zOffset, tipo) {
+    let lapActual = Math.floor(distanciaRecorrida / longitudPiscinaMts);
+    let metrosEnLap = distanciaRecorrida % longitudPiscinaMts; 
+    
+    if (distanciaRecorrida >= distanciaTotal) {
+        lapActual = Math.floor(distanciaTotal / longitudPiscinaMts) - 1;
+        metrosEnLap = longitudPiscinaMts;
+    }
+
+    let lastX = mesh.userData.lastX || mesh.position.x;
+    let velocidadVisual = Math.abs(mesh.position.x - lastX);
+    mesh.userData.lastX = mesh.position.x;
+
+    mesh.position.z = zOffset;
+
+    // --- CONSTANTES FÍSICAS (AJUSTADAS) ---
+    const Y_TACO = 1.8;            // Altura sobre el taco (pies tocando el bloque)
+    const Y_NADO = -5.5;           // Profundidad de nado (cabeza fuera)
+    const Y_FLECHA = -7.5;         // Reposo en agua (mantenemos tu valor original)
+
+    const radioCuerpo = 7.0; 
+    const paredSalida = (-poolLength / 2) + radioCuerpo;
+    const paredVuelta = (poolLength / 2) - radioCuerpo;
+    const distanciaEfectiva = paredVuelta - paredSalida;
+
+    // --- FASE 0: En el Taco ---
+    if (distanciaRecorrida === 0) {
+        mesh.position.set(-52, Y_TACO, zOffset);
+        mesh.rotation.set(0, 0, 0); 
+        mesh.userData.currentY = Y_TACO; 
+        reproducirAnimacion(tipo, 'Taco');
+        return;
+    }
+
+    // --- FASE 1: Clavado (Salto) ---
+    const metrosDeSalto = 4;
+    if (lapActual === 0 && distanciaRecorrida < metrosDeSalto) {
+        let progresoSalto = distanciaRecorrida / metrosDeSalto; 
+        
+        let avanceSalto3D = distanciaEfectiva * (metrosDeSalto / longitudPiscinaMts);
+        let finSaltoX = paredSalida + avanceSalto3D;
+
+        mesh.position.x = -52 + (finSaltoX - (-52)) * progresoSalto;
+        
+        // Curva de salto: desde Y_TACO hasta Y_NADO
+        let alturaSalto = Y_TACO - ( (Y_TACO - Y_NADO) * Math.pow(progresoSalto, 1.3) );
+        mesh.position.y = alturaSalto;
+        mesh.userData.currentY = alturaSalto;
+
+        mesh.rotation.z = -(Math.PI / 4) * Math.sin(progresoSalto * Math.PI);
+        mesh.rotation.y = 0;
+
+        reproducirAnimacion(tipo, 'Salto');
+        return; 
+    }
+
+    // --- FASE 2: Nado en agua ---
+    let porcentajeAvance = metrosEnLap / longitudPiscinaMts;
+    
+    if (lapActual % 2 === 0) {
+        mesh.position.x = paredSalida + (distanciaEfectiva * porcentajeAvance);
+        mesh.rotation.y = 0; 
+    } else {
+        mesh.position.x = paredVuelta - (distanciaEfectiva * porcentajeAvance);
+        mesh.rotation.y = Math.PI; 
+    }
+    mesh.rotation.z = 0; 
+
+    // Determinar profundidad según si está nadando o en reposo (flecha)
+    let targetY = (velocidadVisual > 0.01) ? Y_NADO : Y_FLECHA;
+    
+    if (velocidadVisual > 0.01) { 
+        reproducirAnimacion(tipo, 'Nado');
+    } else {
+        reproducirAnimacion(tipo, 'Flecha'); 
+    }
+
+    // Transición suave (lerp) con factor 0.15
+    if (mesh.userData.currentY === undefined) mesh.userData.currentY = targetY;
+    mesh.userData.currentY += (targetY - mesh.userData.currentY) * 0.15; 
+    
+    // Aplicamos la altura calculada sumándole el balanceo natural del agua
+    mesh.position.y = mesh.userData.currentY + (Math.sin(performance.now() * 0.005) * 0.1); 
+}
+
+
+
+        // ==========================================
+        // 6. LÓGICA DE TELEMETRÍA
         // ==========================================
         const pantallaStandby = document.getElementById('pantallaStandby');
         const pantallaCarrera = document.getElementById('pantallaCarrera');
@@ -230,13 +443,13 @@
                 uiReloj.textContent = "00:00.00";
                 uiEstado.textContent = "EN SUS MARCAS";
                 uiEstado.className = "text-xl sm:text-2xl font-bold uppercase tracking-widest text-amber-500 animate-pulse";
-                uiReloj.classList.remove('glow-green', 'text-emerald-400');
-                
+                uiReloj.classList.remove('glow-green', 'text-emerald-400', 'dark:text-emerald-400');
+                uiReloj.classList.add('text-slate-900', 'dark:text-white');
                 resetearSimulador3D();
             } 
             else if (estadoCarrera === 'en_curso' || estadoCarrera === 'en_viraje') {
                 uiEstado.textContent = estadoCarrera === 'en_viraje' ? "EN VIRAJE..." : "NADANDO";
-                uiEstado.className = "text-xl sm:text-2xl font-bold uppercase tracking-widest text-emerald-400";
+                uiEstado.className = "text-xl sm:text-2xl font-bold uppercase tracking-widest text-emerald-500 dark:text-emerald-400";
                 
                 if (estadoActual !== 'en_curso' && estadoActual !== 'en_viraje') {
                     const offsetMs = serverTime - parseInt(data.inicio_timestamp_ms);
@@ -247,11 +460,10 @@
             else if (estadoCarrera === 'finalizado') {
                 detenerRelojInterno();
                 uiEstado.textContent = "TIEMPO OFICIAL";
-                uiEstado.className = "text-xl sm:text-2xl font-bold uppercase tracking-widest text-emerald-400";
-                uiReloj.classList.add('glow-green', 'text-emerald-400');
+                uiEstado.className = "text-xl sm:text-2xl font-bold uppercase tracking-widest text-emerald-500 dark:text-emerald-400";
+                uiReloj.classList.remove('text-slate-900', 'dark:text-white');
+                uiReloj.classList.add('glow-green', 'text-emerald-500', 'dark:text-emerald-400');
                 uiReloj.textContent = formatearMilisegundos(parseFloat(data.ultimo_tiempo_parcial_ms));
-                
-                // Forzamos al objetivo final para que el 3D termine de arrastrarse suavemente hacia la meta
                 targetDistReal = parseInt(data.distancia_total);
             }
 
@@ -266,42 +478,51 @@
                 if(datosCarrera && transcurrido > 0) {
                     const distTotal = parseInt(datosCarrera.distancia_total);
 
-                    // ==============================================
-                    // CEREBRO FANTASMA
-                    // ==============================================
                     let tiempoEfectivoGhost = transcurrido - reaccionGhostMs;
                     targetDistGhost = tiempoEfectivoGhost > 0 ? (tiempoEfectivoGhost * velocidadGhost) : 0;
                     if (targetDistGhost > distTotal) targetDistGhost = distTotal;
 
-                    // ==============================================
-                    // CEREBRO REAL
-                    // ==============================================
                     let reaccionRealMs = parseFloat(datosCarrera.tiempo_reaccion_ms) || (parseFloat(datosCarrera.tiempo_reaccion_seg) * 1000) || 0;
                     let reaccionEfectiva = reaccionRealMs > 0 ? reaccionRealMs : 700;
 
                     let distUltimoTramo = parseInt(datosCarrera.ultima_distancia_recorrida_m) || 0;
                     let tiempoUltimoTramo = parseFloat(datosCarrera.ultimo_tiempo_parcial_ms) || 0;
                     
+                    let rawAvance = 0; 
+
                     if (distUltimoTramo === 0) {
                         let tiempoEnMovimiento = transcurrido - reaccionEfectiva;
-                        targetDistReal = tiempoEnMovimiento < 0 ? 0 : tiempoEnMovimiento * velocidadGhost; 
+                        rawAvance = tiempoEnMovimiento < 0 ? 0 : tiempoEnMovimiento * velocidadGhost; 
                     } else {
                         let tiempoDesdeUltimoTramo = transcurrido - tiempoUltimoTramo;
                         let tiempoEfectivoTramo = tiempoUltimoTramo - reaccionEfectiva;
                         if (tiempoEfectivoTramo <= 0) tiempoEfectivoTramo = 1;
-                        
                         let velCalculada = distUltimoTramo / tiempoEfectivoTramo; 
-                        targetDistReal = distUltimoTramo + (tiempoDesdeUltimoTramo * velCalculada);
+                        rawAvance = tiempoDesdeUltimoTramo * velCalculada;
                     }
                     
-                    // Clamp (Límite Inteligente)
                     let intervaloSplit = parseInt(datosCarrera.distancia_split) || 25; 
-                    let proximoLimite = distUltimoTramo + intervaloSplit;
-                    if (proximoLimite > distTotal) proximoLimite = distTotal;
-                    
-                    if (targetDistReal >= proximoLimite) {
-                        targetDistReal = proximoLimite - 0.001; 
+                    let maxAvanceEnSplit = intervaloSplit; 
+                    if (distUltimoTramo + maxAvanceEnSplit > distTotal) {
+                        maxAvanceEnSplit = distTotal - distUltimoTramo;
                     }
+                    maxAvanceEnSplit -= 0.001; 
+
+                    const zonaFrenado = 3.0; 
+                    
+                    if (maxAvanceEnSplit > zonaFrenado && rawAvance > (maxAvanceEnSplit - zonaFrenado)) {
+                        let limiteFuerte = maxAvanceEnSplit - zonaFrenado;
+                        let exceso = rawAvance - limiteFuerte;
+                        
+                        let avanceSuavizado = limiteFuerte + (zonaFrenado * (1 - Math.exp(-exceso / zonaFrenado)));
+                        targetDistReal = distUltimoTramo + avanceSuavizado;
+                    } else {
+                        targetDistReal = distUltimoTramo + rawAvance;
+                        if (targetDistReal >= distUltimoTramo + maxAvanceEnSplit) {
+                            targetDistReal = distUltimoTramo + maxAvanceEnSplit;
+                        }
+                    }
+
                     if(datosCarrera.estado_carrera === 'en_viraje') {
                         targetDistReal = distUltimoTramo - 0.001; 
                     }
@@ -313,75 +534,45 @@
             animacionReloj = requestAnimationFrame(actualizar);
         }
 
-        // ==========================================
-        // MATEMÁTICA VISUAL 
-        // ==========================================
-        function moverAvatar3D(mesh, distanciaRecorrida, distanciaTotal, longitudPiscinaMts, zOffset) {
-            let lapActual = Math.floor(distanciaRecorrida / longitudPiscinaMts);
-            let metrosEnLap = distanciaRecorrida % longitudPiscinaMts; 
-            
-            if (distanciaRecorrida >= distanciaTotal) {
-                lapActual = Math.floor(distanciaTotal / longitudPiscinaMts) - 1;
-                metrosEnLap = longitudPiscinaMts;
-            }
+function resetearSimulador3D() {
+    targetDistReal = 0;
+    targetDistGhost = 0;
+    distVisualReal = 0;
+    distVisualGhost = 0;
+    
+    const Y_TACO = 1.8; // Mismo valor que en moverAvatar3D
+    meshReal.position.set(-52, Y_TACO, 10);
+    meshReal.rotation.set(0, 0, 0);
+    meshReal.userData.currentY = Y_TACO; 
 
-            mesh.position.z = zOffset;
+    meshGhost.position.set(-52, Y_TACO, -10);
+    meshGhost.rotation.set(0, 0, 0);
+    meshGhost.userData.currentY = Y_TACO;
 
-            // Taco (0m)
-            if (distanciaRecorrida === 0) {
-                mesh.position.set(-52, 4.2, zOffset);
-                mesh.rotation.set(0, 0, 0);
-                return;
-            }
+    reproducirAnimacion('Real', 'Taco');
+    reproducirAnimacion('Ghost', 'Taco');
+}
 
-            // Clavado Suavizado
-            const metrosDeSalto = 4;
-            if (lapActual === 0 && distanciaRecorrida < metrosDeSalto) {
-                let progresoSalto = distanciaRecorrida / metrosDeSalto; 
-                let unidades3DPorMetro = poolLength / longitudPiscinaMts;
-                let finSaltoX = -50 + (metrosDeSalto * unidades3DPorMetro);
-
-                mesh.position.x = -52 + (finSaltoX - (-52)) * progresoSalto;
-                mesh.position.y = 4.2 * (1 - Math.pow(progresoSalto, 1.5));
-                mesh.rotation.z = -(Math.PI / 4) * Math.sin(progresoSalto * Math.PI);
-                mesh.rotation.y = 0;
-                return; 
-            }
-
-            // Nado Normal
-            let porcentajeAvance = metrosEnLap / longitudPiscinaMts;
-            mesh.position.y = (Math.sin(performance.now() * 0.005) * 0.2); 
-            mesh.rotation.z = 0; 
-            
-            if (lapActual % 2 === 0) {
-                mesh.position.x = (-poolLength / 2) + (poolLength * porcentajeAvance);
-                mesh.rotation.y = 0; 
-            } else {
-                mesh.position.x = (poolLength / 2) - (poolLength * porcentajeAvance);
-                mesh.rotation.y = Math.PI; 
+        function mostrarStandby() {
+            if (estadoActual !== 'standby') {
+                detenerRelojInterno();
+                pantallaCarrera.classList.add('opacity-0');
+                setTimeout(() => {
+                    pantallaCarrera.classList.add('hidden');
+                    pantallaStandby.classList.remove('hidden', 'opacity-0');
+                }, 1000);
+                estadoActual = 'standby';
             }
         }
 
-        function resetearSimulador3D() {
-            // Reiniciamos tanto la posición matemática como la visual
-            targetDistReal = 0;
-            targetDistGhost = 0;
-            distVisualReal = 0;
-            distVisualGhost = 0;
-            
-            meshReal.position.set(-52, 4.2, 10);
-            meshReal.rotation.set(0, 0, 0);
-            meshGhost.position.set(-52, 4.2, -10);
-            meshGhost.rotation.set(0, 0, 0);
-        }
-
-        function mostrarStandby() { /* ... */ }
         function detenerRelojInterno() { cancelAnimationFrame(animacionReloj); }
+        
         function formatearMilisegundos(ms) { 
             if(ms < 0) ms = 0;
             const tC = Math.floor(ms / 10), c = tC % 100, tS = Math.floor(tC / 100), s = tS % 60, m = Math.floor(tS / 60);
             return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${c.toString().padStart(2, '0')}`;
         }
+        
         function estimarTiempo(dist, est) { return (dist / 50) * 35000; }
     </script>
 </body>
