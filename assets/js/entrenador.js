@@ -1,3 +1,5 @@
+const API_URL = 'index.php?p=entrenador'; 
+
 const modalEntrenador = document.getElementById('modalEntrenador');
 const modalVer = document.getElementById('modalVerEntrenador');
 const formEntrenador = document.getElementById('formEntrenador');
@@ -8,7 +10,17 @@ const fotoPreview = document.getElementById('previsualizarFoto');
 const iconoFotoDefecto = document.getElementById('iconoFotoPorDefecto'); 
 const totalEntrenador = document.getElementById('totalEntrenador');
 
-const API_URL = 'index.php?p=entrenador'; 
+// Referencias para la tabla paginada y ordenada
+const infoTabla = document.getElementById('infoTabla');
+const pieTabla = document.getElementById('pieTabla');
+
+// Estado de la tabla
+let entrenadoresData = [];
+let tablaFiltro = '';
+let tablaSortCol = '';
+let tablaSortDir = '';
+let tablaPagina = 1;
+const tablaPorPagina = 10;
 
 function setupValidacionTiempoReal() {
     const campos = [
@@ -187,7 +199,6 @@ function cerrarModalEntrenador() {
     modalEntrenador.firstElementChild.classList.add('scale-95', 'opacity-0');
     setTimeout(() => {
         modalEntrenador.classList.add('hidden');
-        // Limpiar estilos de validación al cerrar
         const inputs = formEntrenador.querySelectorAll('input:not([type="hidden"]), select, textarea');
         inputs.forEach(input => {
             input.classList.remove('border-red-500', 'border-green-500', 'border-2', 'border');
@@ -346,7 +357,10 @@ async function cargarTablaEntrenador() {
     const entrenadores = await peticionAjax('listarEntrenador');
 
     if (!entrenadores || entrenadores.length === 0) {
-        if(totalEntrenador) totalEntrenador.textContent = '0 Registrados';
+        entrenadoresData = [];
+        if (totalEntrenador) totalEntrenador.textContent = '0 Registrados';
+        if (infoTabla) infoTabla.textContent = '';
+        if (pieTabla) pieTabla.innerHTML = '';
         tbody.innerHTML = `
             <tr>
                 <td colspan="5" class="text-center p-12 text-gray-500 dark:text-gray-400">
@@ -358,54 +372,174 @@ async function cargarTablaEntrenador() {
         return;
     }
 
-    if(totalEntrenador) totalEntrenador.textContent = `${entrenadores.length} Registrados`;
-
-    tbody.innerHTML = entrenadores.map(ent => {
-        const InicialesHtml = ent.foto 
-            ? `<img src="${ent.foto}" class="w-8 h-8 rounded-full object-cover">`
-            : `<div class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold uppercase">${ent.nombres[0]}${ent.apellidos[0]}</div>`;
-
-        return `
-        <tr class="entrenador-row border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-100 dark:hover:bg-[#1c1a3a]/40 transition-colors duration-200" data-busqueda="${ent.cedula} ${ent.nombres} ${ent.apellidos}">
-            <td class="p-4 font-medium text-gray-900 dark:text-white flex items-center gap-3">
-                ${InicialesHtml}
-                <div>
-                    <span class="block">${ent.nombres} ${ent.apellidos}</span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">${ent.correo || ''}</span>
-                </div>
-            </td>
-            <td class="p-4 text-gray-700 dark:text-gray-300 font-mono text-xs">${ent.cedula}</td>
-            <td class="p-4 text-gray-600 dark:text-gray-400">${ent.telefono}</td>
-            <td class="p-4 text-gray-600 dark:text-gray-400 max-w-xs truncate">${ent.direccion}</td>
-            <td class="p-4 text-right">
-                ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
-                <div class="flex justify-end gap-2">
-                    <button onclick="verDetalle(${ent.id_entrenador})" class="bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 p-2 rounded-lg transition" title="Ver Perfil">
-                        <i class="fas fa-eye text-xs"></i>
-                    </button>
-                    <button onclick="abrirModalEntrenador(${ent.id_entrenador})" class="bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 p-2 rounded-lg transition" title="Editar">
-                        <i class="fas fa-edit text-xs"></i>
-                    </button>
-                    <button onclick="eliminarEntrenador(${ent.id_entrenador})" class="bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 p-2 rounded-lg transition" title="Eliminar">
-                        <i class="fas fa-trash text-xs"></i>
-                    </button>
-                </div>
-                ` : '<span class="text-gray-500 dark:text-gray-400 text-xs">Solo lectura</span>'}
-            </td>
-        </tr>
-    `}).join('');
+    entrenadoresData = entrenadores;
+    tablaFiltro = '';
+    tablaSortCol = '';
+    tablaSortDir = '';
+    tablaPagina = 1;
+    renderTablaEntrenador();
 }
-    
+
+function renderTablaEntrenador() {
+    const tbody = document.getElementById('listaEntrenador');
+    if (!tbody) return;
+
+    let datos = entrenadoresData.slice();
+
+    // 1. Filtrar por búsqueda
+    if (tablaFiltro) {
+        const q = tablaFiltro;
+        datos = datos.filter(ent =>
+            (ent.nombres + ' ' + ent.apellidos + ' ' + ent.cedula + ' ' + (ent.correo || '') + ' ' + ent.telefono + ' ' + ent.direccion).toLowerCase().includes(q)
+        );
+    }
+
+    // 2. Ordenar datos
+    if (tablaSortCol) {
+        const col = tablaSortCol;
+        const dir = tablaSortDir === 'asc' ? 1 : -1;
+        datos.sort((a, b) => {
+            let va = '', vb = '';
+            if (col === 'nombre') { va = (a.nombres || '') + ' ' + (a.apellidos || ''); vb = (b.nombres || '') + ' ' + (b.apellidos || ''); }
+            else if (col === 'cedula') { va = a.cedula || ''; vb = b.cedula || ''; }
+            else if (col === 'telefono') { va = a.telefono || ''; vb = b.telefono || ''; }
+            else if (col === 'direccion') { va = a.direccion || ''; vb = b.direccion || ''; }
+            return va.localeCompare(vb, 'es') * dir;
+        });
+    }
+
+    // 3. Paginación
+    const total = datos.length;
+    if (totalEntrenador) totalEntrenador.textContent = `${entrenadoresData.length} Registrados`;
+    if (infoTabla) infoTabla.textContent = `Mostrando ${total === 0 ? 0 : (tablaPagina - 1) * tablaPorPagina + 1}–${Math.min(tablaPagina * tablaPorPagina, total)} de ${total}`;
+
+    const totalPaginas = Math.max(1, Math.ceil(total / tablaPorPagina));
+    if (tablaPagina > totalPaginas) tablaPagina = totalPaginas;
+
+    const inicio = (tablaPagina - 1) * tablaPorPagina;
+    const pagina = datos.slice(inicio, inicio + tablaPorPagina);
+
+    actualizarSortIcons();
+
+    // 4. Inyección del HTML
+    if (pagina.length === 0 && total > 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-500 dark:text-gray-400"><span class="text-xs uppercase tracking-wider">Sin resultados para la búsqueda</span></td></tr>`;
+    } else if (pagina.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center p-12 text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-users-slash text-4xl mb-3 block text-gray-400 dark:text-gray-600 animate-pulse"></i>
+                    <span class="text-xs uppercase tracking-wider block">No hay entrenadores registrados en el sistema</span>
+                </td>
+            </tr>`;
+    } else {
+        tbody.innerHTML = pagina.map(ent => {
+            const InicialesHtml = ent.foto 
+                ? `<img src="${ent.foto}" class="w-8 h-8 rounded-full object-cover">`
+                : `<div class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold uppercase">${ent.nombres[0]}${ent.apellidos[0]}</div>`;
+
+            return `
+            <tr class="entrenador-row border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-100 dark:hover:bg-[#1c1a3a]/40 transition-colors duration-200" data-busqueda="${ent.cedula} ${ent.nombres} ${ent.apellidos}">
+                <td class="p-4 font-medium text-gray-900 dark:text-white flex items-center gap-3">
+                    ${InicialesHtml}
+                    <div>
+                        <span class="block">${ent.nombres} ${ent.apellidos}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">${ent.correo || ''}</span>
+                    </div>
+                </td>
+                <td class="p-4 text-gray-700 dark:text-gray-300 font-mono text-xs">${ent.cedula}</td>
+                <td class="p-4 text-gray-600 dark:text-gray-400">${ent.telefono}</td>
+                <td class="p-4 text-gray-600 dark:text-gray-400 max-w-xs truncate">${ent.direccion}</td>
+                <td class="p-4 text-right">
+                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
+                    <div class="flex justify-end gap-2">
+                        <button onclick="verDetalle(${ent.id_entrenador})" class="bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 p-2 rounded-lg transition" title="Ver Perfil">
+                            <i class="fas fa-eye text-xs"></i>
+                        </button>
+                        <button onclick="abrirModalEntrenador(${ent.id_entrenador})" class="bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 p-2 rounded-lg transition" title="Editar">
+                            <i class="fas fa-edit text-xs"></i>
+                        </button>
+                        <button onclick="eliminarEntrenador(${ent.id_entrenador})" class="bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 p-2 rounded-lg transition" title="Eliminar">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                    ` : '<span class="text-gray-500 dark:text-gray-400 text-xs">Solo lectura</span>'}
+                </td>
+            </tr>
+        `}).join('');
+    }
+
+    renderPaginacion(totalPaginas);
+}
+
+function renderPaginacion(totalPaginas) {
+    if (!pieTabla || totalPaginas <= 1) { 
+        if (pieTabla) pieTabla.innerHTML = ''; 
+        return; 
+    }
+
+    let html = `<span class="text-xs text-gray-500 dark:text-gray-400">Página ${tablaPagina} de ${totalPaginas}</span><div class="flex gap-1">`;
+
+    const btnClass = 'px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition';
+    const btnActivo = 'bg-indigo-600 text-white';
+    const btnInactivo = 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700';
+
+    if (tablaPagina > 1) {
+        html += `<button onclick="tablaPagina--; renderTablaEntrenador()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-left"></i></button>`;
+    }
+
+    const maxVisible = 5;
+    let start = Math.max(1, tablaPagina - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPaginas, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+    for (let i = start; i <= end; i++) {
+        if (i === tablaPagina) {
+            html += `<button class="${btnClass} ${btnActivo}">${i}</button>`;
+        } else {
+            html += `<button onclick="tablaPagina=${i}; renderTablaEntrenador()" class="${btnClass} ${btnInactivo}">${i}</button>`;
+        }
+    }
+
+    if (tablaPagina < totalPaginas) {
+        html += `<button onclick="tablaPagina++; renderTablaEntrenador()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-right"></i></button>`;
+    }
+
+    html += '</div>';
+    pieTabla.innerHTML = html;
+}
+
+function actualizarSortIcons() {
+    document.querySelectorAll('[data-sort]').forEach(th => {
+        const icon = th.querySelector('i');
+        if (!icon) return;
+        icon.className = 'fas fa-sort ml-1 text-gray-600 text-[10px]';
+        if (th.getAttribute('data-sort') === tablaSortCol) {
+            icon.className = `fas fa-sort-${tablaSortDir === 'asc' ? 'up' : 'down'} ml-1 text-indigo-400 text-[10px]`;
+        }
+    });
+}
+
+document.querySelectorAll('[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+        const col = th.getAttribute('data-sort');
+        if (tablaSortCol === col) {
+            tablaSortDir = tablaSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            tablaSortCol = col;
+            tablaSortDir = 'asc';
+        }
+        tablaPagina = 1;
+        renderTablaEntrenador();
+    });
+});
+
 const inputBusqueda = document.getElementById('busquedaCedula');
 if (inputBusqueda) {
     inputBusqueda.addEventListener('input', function(e) {
-        const valor = e.target.value.toLowerCase().trim();
-        const filas = document.querySelectorAll('.entrenador-row');
-        
-        filas.forEach(fila => {
-            const textoFila = fila.getAttribute('data-busqueda') || '';
-            fila.style.display = textoFila.toLowerCase().includes(valor) ? '' : 'none';
-        });
+        tablaFiltro = e.target.value.toLowerCase().trim();
+        tablaPagina = 1;
+        renderTablaEntrenador();
     });
 }
 

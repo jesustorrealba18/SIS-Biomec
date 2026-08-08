@@ -93,10 +93,6 @@ class Sesiones extends Conexion {
             $this->agregarError('observaciones', 'Las observaciones contienen caracteres no permitidos.');
         }
 
-        if (!empty($datos['id_fase_actual'])) {
-            $this->soloNumeros($datos['id_fase_actual'], 'id_fase_actual');
-        }
-
         return $this->obtenerErrores();
     }
 
@@ -378,15 +374,14 @@ class Sesiones extends Conexion {
             }
 
             $volumen_planificado = $volumen_calentamiento + $volumen_principal + $volumen_vuelta_calma;
-            $id_fase_actual = $datosSesion['id_fase_actual'] ?? null;
 
             $sql = "INSERT INTO sesiones (
                         id_microciclo, id_grupo, fecha, tipo_sesion, 
-                        id_fase_actual, calentamiento, vuelta_calma, 
+                        calentamiento, vuelta_calma, 
                         volumen_planificado, observaciones, estado, id_entrenador, duracion_minutos
                     ) VALUES (
                         :id_microciclo, :id_grupo, :fecha, :tipo_sesion, 
-                        :id_fase_actual, :calentamiento, :vuelta_calma, 
+                        :calentamiento, :vuelta_calma, 
                         :volumen_planificado, :observaciones, 'Planificada', :id_entrenador, :duracion_minutos
                     )";
 
@@ -397,7 +392,6 @@ class Sesiones extends Conexion {
                 ':id_grupo'           => (int)$datosSesion['id_grupo'],
                 ':fecha'              => $datosSesion['fecha'],
                 ':tipo_sesion'        => $datosSesion['tipo_sesion'],
-                ':id_fase_actual'     => $id_fase_actual,
                 ':calentamiento'      => $datosSesion['calentamiento'] ?? null,
                 ':vuelta_calma'       => $datosSesion['vuelta_calma'] ?? null,
                 ':volumen_planificado'=> $volumen_planificado,
@@ -473,14 +467,12 @@ class Sesiones extends Conexion {
             }
 
             $volumen_planificado = $volumen_calentamiento + $volumen_principal + $volumen_vuelta_calma;
-            $id_fase_actual = $datosSesion['id_fase_actual'] ?? null;
 
             $sql = "UPDATE sesiones SET 
                         id_microciclo = :id_microciclo, 
                         id_grupo = :id_grupo, 
                         fecha = :fecha, 
                         tipo_sesion = :tipo_sesion, 
-                        id_fase_actual = :id_fase_actual, 
                         calentamiento = :calentamiento, 
                         vuelta_calma = :vuelta_calma, 
                         volumen_planificado = :volumen_planificado, 
@@ -496,7 +488,6 @@ class Sesiones extends Conexion {
                 ':id_grupo'           => (int)$datosSesion['id_grupo'],
                 ':fecha'              => $datosSesion['fecha'],
                 ':tipo_sesion'        => $datosSesion['tipo_sesion'],
-                ':id_fase_actual'     => $id_fase_actual,
                 ':calentamiento'      => $datosSesion['calentamiento'] ?? null,
                 ':vuelta_calma'       => $datosSesion['vuelta_calma'] ?? null,
                 ':volumen_planificado'=> $volumen_planificado,

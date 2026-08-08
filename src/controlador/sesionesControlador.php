@@ -20,15 +20,18 @@ $id_entrenador_sesion = (int)$_SESSION['id'];
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $accion = $_GET['accion'] ?? '';
 
-    if ($accion === 'listarSesiones') {
-        header('Content-Type: application/json');
-        $id_grupo = !empty($_GET['id_grupo']) ? (int)$_GET['id_grupo'] : null;
-        $estado = !empty($_GET['estado']) ? $_GET['estado'] : null;
-        
-        echo json_encode($objSesiones->listarSesiones($id_grupo, $estado));
-        exit;
-    }
-
+if ($accion === 'listarSesiones') {
+    header('Content-Type: application/json');
+    $id_grupo = !empty($_GET['id_grupo']) ? (int)$_GET['id_grupo'] : null;
+    $estado = !empty($_GET['estado']) ? $_GET['estado'] : null;
+    
+    $data = $objSesiones->listarSesiones($id_grupo, $estado);
+    echo json_encode([
+        'status' => 'success',
+        'data' => $data
+    ]);
+    exit;
+}
     if ($accion === 'obtenerDetalle') {
         header('Content-Type: application/json');
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;

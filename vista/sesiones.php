@@ -64,6 +64,9 @@
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+    <link rel="stylesheet" href="assets/css/driver.css">
 </head>
 <body class="bg-gray-100 text-gray-800 dark:bg-[#0f0d23] dark:text-gray-300 font-sans antialiased transition-colors duration-300 overflow-x-hidden">
 
@@ -160,6 +163,7 @@ if (isset($_SESSION['id'])) {
                             </tbody>
                         </table>
                     </div>
+                      <div id="pieTabla" class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-wrap justify-between items-center gap-4 bg-gray-50 dark:bg-white/5"></div>
                 </div>
             </main>
         </div>
@@ -177,7 +181,6 @@ if (isset($_SESSION['id'])) {
             
             <form id="formSesion" autocomplete="off"> 
                 <input type="hidden" id="id_sesion" name="id_sesion" value="">
-                <input type="hidden" id="id_fase_actual" name="id_fase_actual" value="">
                 <input type="hidden" id="volumen_planificado" name="volumen_planificado" value="0">
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -402,11 +405,11 @@ if (isset($_SESSION['id'])) {
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
+    <script src="assets/js/tour.js"></script>
     <script>
         const PERMISOS_MODULO = {
             gestionar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sesiones', 'ver') ? 'true' : 'false'; ?>,
         };
-        const API_URL = '?p=sesiones';
     </script>
     <script src="assets/js/sesion.js"></script>
 </body>

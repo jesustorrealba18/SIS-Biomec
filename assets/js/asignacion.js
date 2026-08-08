@@ -1,11 +1,23 @@
+// ==================== CONFIGURACIÓN DE PAGINACIÓN ====================
+let asignacionData = [];
+let tablaFiltro = '';
+let tablaSortCol = '';
+let tablaSortDir = '';
+let tablaPagina = 1;
+const tablaPorPagina = 10;
+
+// ==================== VARIABLES EXISTENTES ====================
 const modalAsignacion = document.getElementById('modalAsignacion');
 const modalVer = document.getElementById('modalVerAsignacion');
 const formAsignacion = document.getElementById('formAsignacion');
 const btnGuardar = document.getElementById('btnGuardar');
 const totalAsignaciones = document.getElementById('totalAsignaciones');
+const infoTabla = document.getElementById('infoTabla');
+const pieTabla = document.getElementById('pieTabla');
 
 const API_URL = 'index.php?p=asignacion'; 
 
+// ==================== FUNCIONES EXISTENTES (sin cambios) ====================
 function validarCampoAsignacion(input) {
     const valor = input.value.trim();
     const nombre = input.dataset.nombre || input.name || 'Campo';
@@ -132,6 +144,7 @@ function validarFormularioCompletoAsignacion(form) {
     return { hasError, errores: primerosErrores };
 }
 
+// ==================== PETICIÓN AJAX (sin cambios) ====================
 async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
     if (datos) opciones.body = datos; 
@@ -149,6 +162,7 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
+// ==================== FUNCIONES DE CIERRE DE MODALES (sin cambios) ====================
 function cerrarModalAsignacion() {
     if (modalAsignacion && modalAsignacion.firstElementChild) {
         modalAsignacion.firstElementChild.classList.add('scale-95', 'opacity-0');
@@ -212,6 +226,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// ==================== FUNCIONES DE DETALLE (sin cambios) ====================
 async function verDetalleCarril(id) {
     const carril = await peticionAjax(`obtenerDetalleCarril&id=${id}`);
     if (!carril) {
@@ -227,8 +242,8 @@ async function verDetalleCarril(id) {
     if (verCapacidad) verCapacidad.innerText = carril.capacidad_maxima;
     if (verEstado) {
         verEstado.innerHTML = carril.activo == 1 
-            ? '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs">Activo</span>' 
-            : '<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs">Inactivo</span>';
+            ? '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-xs">Activo</span>' 
+            : '<span class="px-2 py-1 bg-red-500/20 text-red-600 dark:text-red-400 rounded-full text-xs">Inactivo</span>';
     }
 
     const modal = document.getElementById('modalVerCarril');
@@ -256,7 +271,7 @@ async function verDetalleBloque(id) {
     if (verInicio) verInicio.innerText = bloque.hora_inicio;
     if (verFin) verFin.innerText = bloque.hora_fin;
     if (verRango) {
-        verRango.innerHTML = `<span class="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-full text-sm">${bloque.hora_inicio} - ${bloque.hora_fin}</span>`;
+        verRango.innerHTML = `<span class="px-3 py-1 bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-full text-sm">${bloque.hora_inicio} - ${bloque.hora_fin}</span>`;
     }
 
     const modal = document.getElementById('modalVerBloque');
@@ -289,8 +304,8 @@ async function verDetalleGrupo(id) {
     }
     if (verEstado) {
         verEstado.innerHTML = grupo.activo == 1 
-            ? '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs">Activo</span>' 
-            : '<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs">Inactivo</span>';
+            ? '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-xs">Activo</span>' 
+            : '<span class="px-2 py-1 bg-red-500/20 text-red-600 dark:text-red-400 rounded-full text-xs">Inactivo</span>';
     }
 
     const modal = document.getElementById('modalVerGrupo');
@@ -302,6 +317,7 @@ async function verDetalleGrupo(id) {
     }
 }
 
+// ==================== FUNCIONES DE CARGA DE SELECTS (sin cambios) ====================
 async function cargarSelects() {
     try {
         console.log("Cargando carriles...");
@@ -352,6 +368,7 @@ async function cargarSelects() {
     }
 }
 
+// ==================== ABRIR MODAL (sin cambios) ====================
 async function abrirModalAsignacion(id_asignacion = null) {
     if (formAsignacion) formAsignacion.reset(); 
     
@@ -426,6 +443,7 @@ async function abrirModalAsignacion(id_asignacion = null) {
     }
 }
 
+// ==================== VER DETALLE (sin cambios) ====================
 async function verDetalle(id) {
     console.log("=== verDetalle() INICIO ===");
     console.log("ID recibido:", id);
@@ -497,8 +515,8 @@ async function verDetalle(id) {
     
     if (verEstado) {
         verEstado.innerHTML = asignacion.activa == 1 
-            ? '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs">Activa</span>' 
-            : '<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs">Inactiva</span>';
+            ? '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-xs">Activa</span>' 
+            : '<span class="px-2 py-1 bg-red-500/20 text-red-600 dark:text-red-400 rounded-full text-xs">Inactiva</span>';
     }
 
     if (modalVer) {
@@ -513,21 +531,190 @@ async function verDetalle(id) {
     console.log("=== verDetalle() FIN ===");
 }
 
+// ==================== RENDERIZAR TABLA CON PAGINACIÓN ====================
+function renderTabla() {
+    const tbody = document.getElementById('listaAsignaciones');
+    if (!tbody) return;
+
+    let datos = asignacionData.slice();
+
+    // Filtro
+    if (tablaFiltro) {
+        const q = tablaFiltro.toLowerCase().trim();
+        datos = datos.filter(a => {
+            const texto = `${a.carril_numero} ${a.dia_semana} ${a.grupo_nombre} ${a.fecha_vigencia_inicio}`.toLowerCase();
+            return texto.includes(q);
+        });
+    }
+
+    // Ordenamiento
+    if (tablaSortCol) {
+        const col = tablaSortCol;
+        const dir = tablaSortDir === 'asc' ? 1 : -1;
+        datos.sort((a, b) => {
+            let va = a[col] ? a[col].toString() : '';
+            let vb = b[col] ? b[col].toString() : '';
+            return va.localeCompare(vb, 'es') * dir;
+        });
+    }
+
+    const total = datos.length;
+    if (totalAsignaciones) totalAsignaciones.textContent = `${asignacionData.length} Asignaciones`;
+    
+    if (infoTabla) {
+        if (total === 0) {
+            infoTabla.textContent = '0 registros';
+        } else {
+            const inicio = (tablaPagina - 1) * tablaPorPagina + 1;
+            const fin = Math.min(tablaPagina * tablaPorPagina, total);
+            infoTabla.textContent = `Mostrando ${inicio}–${fin} de ${total}`;
+        }
+    }
+
+    // Paginación
+    const totalPaginas = Math.max(1, Math.ceil(total / tablaPorPagina));
+    if (tablaPagina > totalPaginas) tablaPagina = totalPaginas;
+    const inicio = (tablaPagina - 1) * tablaPorPagina;
+    const pagina = datos.slice(inicio, inicio + tablaPorPagina);
+
+    // Generar filas
+    if (pagina.length === 0 && total > 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500 dark:text-gray-400"><span class="text-xs uppercase tracking-wider">Sin resultados para la búsqueda</span></td></tr>`;
+    } else if (pagina.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center p-12 text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-exchange-alt text-4xl mb-3 block text-gray-400 dark:text-gray-600 animate-pulse"></i>
+                    <span class="text-xs uppercase tracking-wider block">No hay asignaciones registradas en el sistema</span>
+                </td>
+            </tr>
+        `;
+    } else {
+        tbody.innerHTML = pagina.map(a => {
+            const busqueda = `${a.carril_numero} ${a.dia_semana} ${a.grupo_nombre}`.toLowerCase();
+            
+            let botonAccion = '';
+            if (a.activa == 1) { 
+                botonAccion = `
+                    <button onclick="eliminarAsignacion(${a.id_asignacion})" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition duration-200" title="Desactivar Asignación">
+                        <i class="fas fa-trash-alt text-base"></i>
+                    </button>
+                `;
+            }
+
+            return `
+                <tr class="asignacion-row hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200" data-busqueda="${busqueda}">
+                    <td class="p-4 font-medium text-gray-900 dark:text-white">
+                        <div class="flex items-center gap-2">
+                            Carril ${a.carril_numero}
+                            <button onclick="verDetalleCarril(${a.id_carril})" class="text-indigo-400 hover:text-indigo-300 transition" title="Ver detalle del carril">
+                                <i class="fas fa-info-circle text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="p-4 text-gray-700 dark:text-gray-300">
+                        <div class="flex items-center gap-2">
+                            ${a.dia_semana || '—'} ${a.hora_inicio || ''} - ${a.hora_fin || ''}
+                            <button onclick="verDetalleBloque(${a.id_bloque_horario})" class="text-indigo-400 hover:text-indigo-300 transition" title="Ver detalle del horario">
+                                <i class="fas fa-info-circle text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="p-4 text-gray-700 dark:text-gray-300">
+                        <div class="flex items-center gap-2">
+                            ${a.grupo_nombre || '—'}
+                            <button onclick="verDetalleGrupo(${a.id_grupo})" class="text-indigo-400 hover:text-indigo-300 transition" title="Ver detalle del grupo">
+                                <i class="fas fa-info-circle text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="p-4 text-gray-700 dark:text-gray-300">${a.dia_especifico || '—'}</td>
+                    <td class="p-4 text-gray-700 dark:text-gray-300">${a.fecha_vigencia_inicio || '—'}</td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-1 text-[11px] font-bold rounded-full ${a.activa == 1 ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20' : 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-500/20'} uppercase tracking-wide">
+                            ${a.activa == 1 ? 'Activa' : 'Inactiva'}
+                        </span>
+                    </td>
+                    <td class="p-4 text-right space-x-1">
+                        ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
+                        <button onclick="verDetalle(${a.id_asignacion})" class="text-emerald-400 hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-500/10 transition duration-200" title="Ver Detalle">
+                            <i class="fas fa-eye text-base"></i>
+                        </button>
+                        <button onclick="abrirModalAsignacion(${a.id_asignacion})" class="text-indigo-400 hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-500/10 transition duration-200" title="Editar Asignación">
+                            <i class="fas fa-edit text-base"></i>
+                        </button>
+                        ${botonAccion}
+                        ` : '<span class="text-gray-600 text-xs">Solo lectura</span>'}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    renderPaginacion(totalPaginas);
+}
+
+// ==================== RENDER PAGINACIÓN ====================
+function renderPaginacion(totalPaginas) {
+    if (!pieTabla || totalPaginas <= 1) { 
+        if (pieTabla) pieTabla.innerHTML = ''; 
+        return; 
+    }
+
+    let html = `<span class="text-xs text-gray-500 dark:text-gray-400">Página ${tablaPagina} de ${totalPaginas}</span><div class="flex gap-1">`;
+
+    const btnClass = 'px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition';
+    const btnActivo = 'bg-indigo-600 text-white';
+    const btnInactivo = 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700';
+
+    if (tablaPagina > 1) {
+        html += `<button onclick="tablaPagina--; renderTabla()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-left"></i></button>`;
+    }
+
+    const maxVisible = 5;
+    let start = Math.max(1, tablaPagina - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPaginas, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+    for (let i = start; i <= end; i++) {
+        if (i === tablaPagina) {
+            html += `<button class="${btnClass} ${btnActivo}">${i}</button>`;
+        } else {
+            html += `<button onclick="tablaPagina=${i}; renderTabla()" class="${btnClass} ${btnInactivo}">${i}</button>`;
+        }
+    }
+
+    if (tablaPagina < totalPaginas) {
+        html += `<button onclick="tablaPagina++; renderTabla()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-right"></i></button>`;
+    }
+
+    html += '</div>';
+    pieTabla.innerHTML = html;
+}
+
+// ==================== CARGAR TABLA DE ASIGNACIONES ====================
 async function cargarTablaAsignaciones() {
     const tbody = document.getElementById('listaAsignaciones');
     if (!tbody) return;
     
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center p-12 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Cargando asignaciones...</span></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center p-12 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Cargando asignaciones...</span></tr>`;
 
     const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
     const asignaciones = await peticionAjax(`listarAsignaciones&estado=${filtroEstado}`);
 
     if (!asignaciones || asignaciones.length === 0) {
-        if(totalAsignaciones) totalAsignaciones.textContent = '0 Registrados';
+        asignacionData = [];
+        if(totalAsignaciones) totalAsignaciones.textContent = '0 Asignaciones';
+        tablaFiltro = '';
+        tablaSortCol = '';
+        tablaSortDir = '';
+        tablaPagina = 1;
+        if(infoTabla) infoTabla.textContent = '';
+        if(pieTabla) pieTabla.innerHTML = '';
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center p-12 text-gray-500">
-                    <i class="fas fa-exchange-alt text-4xl mb-3 block text-gray-600 animate-pulse"></i>
+                <td colspan="7" class="text-center p-12 text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-exchange-alt text-4xl mb-3 block text-gray-400 dark:text-gray-600 animate-pulse"></i>
                     <span class="text-xs uppercase tracking-wider block">No hay asignaciones registradas</span>
                 </td>
             </tr>
@@ -535,88 +722,40 @@ async function cargarTablaAsignaciones() {
         return;
     }
 
-    if(totalAsignaciones) totalAsignaciones.textContent = `${asignaciones.length} Asignaciones`;
-
-    let html = '';
-    asignaciones.forEach(a => {
-        const busqueda = `${a.carril_numero} ${a.dia_semana} ${a.grupo_nombre}`.toLowerCase();
-        
-        let botonAccion = '';
-        if (a.activa == 1) { 
-            botonAccion = `
-                <button onclick="eliminarAsignacion(${a.id_asignacion})" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition duration-200" title="Desactivar Asignación">
-                    <i class="fas fa-trash-alt text-base"></i>
-                </button>
-            `;
-        }
-
-        html += `
-            <tr class="asignacion-row hover:bg-white/5 transition-colors duration-200" data-busqueda="${busqueda}">
-                <td class="p-4 font-medium text-white">
-                    <div class="flex items-center gap-2">
-                        Carril ${a.carril_numero}
-                        <button onclick="verDetalleCarril(${a.id_carril})" class="text-indigo-400 hover:text-indigo-300 transition" title="Ver detalle del carril">
-                            <i class="fas fa-info-circle text-xs"></i>
-                        </button>
-                    </div>
-                </td>
-                <td class="p-4 text-gray-300">
-                    <div class="flex items-center gap-2">
-                        ${a.dia_semana || '—'} ${a.hora_inicio || ''} - ${a.hora_fin || ''}
-                        <button onclick="verDetalleBloque(${a.id_bloque_horario})" class="text-indigo-400 hover:text-indigo-300 transition" title="Ver detalle del horario">
-                            <i class="fas fa-info-circle text-xs"></i>
-                        </button>
-                    </div>
-                </td>
-                <td class="p-4 text-gray-300">
-                    <div class="flex items-center gap-2">
-                        ${a.grupo_nombre || '—'}
-                        <button onclick="verDetalleGrupo(${a.id_grupo})" class="text-indigo-400 hover:text-indigo-300 transition" title="Ver detalle del grupo">
-                            <i class="fas fa-info-circle text-xs"></i>
-                        </button>
-                    </div>
-                 </td>
-                <td class="p-4 text-gray-300">${a.dia_especifico || '—'}</td>
-                <td class="p-4 text-gray-300">${a.fecha_vigencia_inicio || '—'}</td>
-                <td class="p-4">
-                    <span class="px-2.5 py-1 text-[11px] font-bold rounded-full ${a.activa == 1 ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'} uppercase tracking-wide">
-                        ${a.activa == 1 ? 'Activa' : 'Inactiva'}
-                    </span>
-                 </td>
-                <td class="p-4 text-right space-x-1">
-                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
-                    <button onclick="verDetalle(${a.id_asignacion})" class="text-emerald-400 hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-500/10 transition duration-200" title="Ver Detalle">
-                        <i class="fas fa-eye text-base"></i>
-                    </button>
-                    <button onclick="abrirModalAsignacion(${a.id_asignacion})" class="text-indigo-400 hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-500/10 transition duration-200" title="Editar Asignación">
-                        <i class="fas fa-edit text-base"></i>
-                    </button>
-                    ${botonAccion}
-                    ` : '<span class="text-gray-600 text-xs">Solo lectura</span>'}
-                 </td>
-             </tr>
-        `;
-    });
-
-    tbody.innerHTML = html;
+    asignacionData = asignaciones;
+    tablaFiltro = '';
+    tablaSortCol = '';
+    tablaSortDir = '';
+    tablaPagina = 1;
+    renderTabla();
 }
 
+// ==================== BUSCADOR ====================
 const inputBusqueda = document.getElementById('busquedaAsignacion');
 if (inputBusqueda) {
     inputBusqueda.addEventListener('input', function(e) {
-        const valor = e.target.value.toLowerCase().trim();
-        const filas = document.querySelectorAll('.asignacion-row');
-        filas.forEach(fila => {
-            const textoFila = fila.getAttribute('data-busqueda');
-            if (textoFila && textoFila.includes(valor)) {
-                fila.style.display = '';
-            } else {
-                fila.style.display = 'none';
-            }
-        });
+        tablaFiltro = e.target.value.toLowerCase().trim();
+        tablaPagina = 1;
+        renderTabla();
     });
 }
 
+// ==================== ORDENAMIENTO POR CLICK EN HEADERS ====================
+document.querySelectorAll('[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+        const col = th.getAttribute('data-sort');
+        if (tablaSortCol === col) {
+            tablaSortDir = tablaSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            tablaSortCol = col;
+            tablaSortDir = 'asc';
+        }
+        tablaPagina = 1;
+        renderTabla();
+    });
+});
+
+// ==================== EVENTOS DOM ====================
 document.addEventListener('DOMContentLoaded', () => {
     cargarTablaAsignaciones();
     
@@ -631,6 +770,14 @@ document.addEventListener('DOMContentLoaded', () => {
             Validador.vincularTiempoReal(formAsignacion); 
         }
     } catch (e) {}
+
+    // Filtro de estado
+    const filtroEstado = document.getElementById('filtroEstado');
+    if (filtroEstado) {
+        filtroEstado.addEventListener('change', function() {
+            cargarTablaAsignaciones();
+        });
+    }
 
     if (formAsignacion) {
         formAsignacion.addEventListener('submit', async function (e) {
@@ -699,6 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// ==================== ELIMINAR ASIGNACIÓN (sin cambios) ====================
 async function eliminarAsignacion(id_asignacion) {
     if (confirm("¿Está seguro de desactivar esta asignación?")) {
         let datosDelete = new FormData();

@@ -167,20 +167,12 @@
 
         // ========== BOTÓN DE AYUDA ==========
         const btnAyuda = document.getElementById('btnAyuda');
-        if (btnAyuda && typeof Swal !== 'undefined') {
-            btnAyuda.addEventListener('click', () => {
-                Swal.fire({
-                    title: 'Centro de Ayuda',
-                    text: 'Próximamente encontrarás guías y tutoriales interactivos.',
-                    icon: 'info',
-                    background: document.documentElement.classList.contains('dark') ? '#161430' : '#fff',
-                    color: document.documentElement.classList.contains('dark') ? '#fff' : '#1f2937',
-                    confirmButtonColor: '#4f46e5',
-                    iconColor: '#4f46e5',
-                    confirmButtonText: 'Entendido'
-                });
-            });
-        }
+if (btnAyuda) {
+    btnAyuda.addEventListener('click', () => {
+        // Notificamos globalmente que se hizo clic en el botón de ayuda
+        document.dispatchEvent(new CustomEvent('iniciar-tour-guiado'));
+    });
+}
 
         // ========== CARGAR NOTIFICACIONES REALES POR AJAX ==========
         async function cargarNotificaciones() {

@@ -1,3 +1,5 @@
+const API_URL = 'index.php?p=grupo';
+
 const modalGrupo = document.getElementById('modalGrupo');
 const modalAsignacion = document.getElementById('modalAsignacion');
 const modalVerGrupo = document.getElementById('modalVerGrupo');
@@ -5,8 +7,16 @@ const formGrupo = document.getElementById('formGrupo');
 const formAsignacion = document.getElementById('formAsignacion');
 const btnGuardar = document.getElementById('btnGuardar');
 const btnAsignar = document.getElementById('btnAsignar');
+const totalGrupos = document.getElementById('totalGrupos');
+const infoTabla = document.getElementById('infoTabla');
+const pieTabla = document.getElementById('pieTabla');
 
-const API_URL = 'index.php?p=grupo';
+let gruposData = [];
+let tablaFiltro = '';
+let tablaSortCol = '';
+let tablaSortDir = '';
+let tablaPagina = 1;
+const tablaPorPagina = 10;
 
 async function peticionAjax(accion, datos = null) {
     const url = `${API_URL}&accion=${accion}`;
@@ -775,12 +785,16 @@ function abrirModalVerGrupoDesdeAsignacion() {
 
 async function cargarTablaGrupos() {
     const tbody = document.getElementById('listaGrupos');
+    if (!tbody) return;
+
     tbody.innerHTML = `<tr><td colspan="6" class="text-center p-12 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Sincronizando grupos...</span></td></tr>`;
 
     const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
     const grupos = await peticionAjax(`listarGrupos&estado=${filtroEstado}`);
 
     if (!grupos || grupos.length === 0) {
+        gruposData = [];
+        actualizarInfoYPieTabla(0, 0);
         tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="text-center p-12 text-gray-500 dark:text-gray-400">
@@ -792,10 +806,59 @@ async function cargarTablaGrupos() {
         return;
     }
 
+    gruposData = grupos;
+    tablaPagina = 1; // Reiniciar a la primera página tras recargar
+    renderTablaGrupos();
+}
+
+function renderTablaGrupos() {
+    const tbody = document.getElementById('listaGrupos');
+    if (!tbody) return;
+
+    let datos = gruposData.slice();
+
+    // 1. Filtrado de búsqueda
+    if (tablaFiltro) {
+        datos = datos.filter(g => {
+            const busqueda = `${g.nombre} ${g.descripcion} ${g.entrenador_nombre || ''}`.toLowerCase();
+            return busqueda.includes(tablaFiltro);
+        });
+    }
+
+    // 2. Ordenamiento por columnas
+    if (tablaSortCol) {
+        const col = tablaSortCol;
+        const dir = tablaSortDir === 'asc' ? 1 : -1;
+        datos.sort((a, b) => {
+            let va = '', vb = '';
+            if (col === 'nombre') { va = a.nombre || ''; vb = b.nombre || ''; }
+            else if (col === 'descripcion') { va = a.descripcion || ''; vb = b.descripcion || ''; }
+            else if (col === 'entrenador') { va = a.entrenador_nombre || ''; vb = b.entrenador_nombre || ''; }
+            else if (col === 'atletas') { return ((a.total_atletas || 0) - (b.total_atletas || 0)) * dir; }
+            else if (col === 'estado') { return ((a.activo || 0) - (b.activo || 0)) * dir; }
+            return va.localeCompare(vb, 'es') * dir;
+        });
+    }
+
+    // 3. Cálculos de Paginación
+    const total = datos.length;
+    const totalPaginas = Math.max(1, Math.ceil(total / tablaPorPagina));
+    if (tablaPagina > totalPaginas) tablaPagina = totalPaginas;
+
+    const inicio = (tablaPagina - 1) * tablaPorPagina;
+    const pagina = datos.slice(inicio, inicio + tablaPorPagina);
+
+    actualizarInfoYPieTabla(total, totalPaginas);
+
+    // 4. Renderizado HTML de los 10 registros de la página actual
+    if (pagina.length === 0 && total > 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500 dark:text-gray-400"><span class="text-xs uppercase tracking-wider">Sin resultados para la búsqueda</span></td></tr>`;
+        return;
+    }
+
     let html = '';
-    grupos.forEach(g => {
-        const entrenadorText = g.entrenador_nombre ? `${g.entrenador_nombre} <span class="text-[10px] text-gray-500 dark:text-gray-400">(${g.entrenador_cedula})</span>` : '<span class="text-xs text-gray-500 dark:text-gray-400 italic">Sin entrenador asignado</span>';
-        const busqueda = `${g.nombre} ${g.descripcion} ${g.entrenador_nombre || ''}`.toLowerCase();
+    pagina.forEach(g => {
+        const entrenadorText = g.entrenador_nombre ? `${escapeHtml(g.entrenador_nombre)} <span class="text-[10px] text-gray-500 dark:text-gray-400">(${escapeHtml(g.entrenador_cedula)})</span>` : '<span class="text-xs text-gray-500 dark:text-gray-400 italic">Sin entrenador asignado</span>';
         
         let botonAccion = '';
         if (g.activo == 1) {
@@ -813,7 +876,7 @@ async function cargarTablaGrupos() {
         }
 
         html += `
-            <tr class="grupo-row hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-gray-800/50" data-busqueda="${busqueda}">
+            <tr class="grupo-row hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-gray-800/50">
                 <td class="p-4 font-medium text-gray-900 dark:text-white">${escapeHtml(g.nombre)}</td>
                 <td class="p-4 text-gray-600 dark:text-gray-300 text-xs max-w-xs truncate">${escapeHtml(g.descripcion) || '—'}</td>
                 <td class="p-4 text-gray-700 dark:text-gray-300">${entrenadorText}</td>
@@ -846,24 +909,80 @@ async function cargarTablaGrupos() {
     });
 
     tbody.innerHTML = html;
-
-    const contador = document.getElementById('contadorGrupos');
-    if (contador) {
-        contador.textContent = `(${grupos.length})`;
-    }
 }
 
+function actualizarInfoYPieTabla(total, totalPaginas) {
+    const contador = document.getElementById('contadorGrupos');
+    const infoTabla = document.getElementById('infoTabla');
+    const pieTabla = document.getElementById('pieTabla');
+
+    if (contador) contador.textContent = `(${gruposData.length})`;
+    
+    if (infoTabla) {
+        infoTabla.textContent = total === 0 ? '' : `Mostrando ${(tablaPagina - 1) * tablaPorPagina + 1}–${Math.min(tablaPagina * tablaPorPagina, total)} de ${total}`;
+    }
+
+    if (!pieTabla) return;
+
+    if (totalPaginas <= 1) {
+        pieTabla.innerHTML = '';
+        return;
+    }
+
+    let html = `<span class="text-xs text-gray-500 dark:text-gray-400">Página ${tablaPagina} de ${totalPaginas}</span><div class="flex gap-1">`;
+    const btnClass = 'px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition';
+    const btnActivo = 'bg-indigo-600 text-white';
+    const btnInactivo = 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700';
+
+    if (tablaPagina > 1) {
+        html += `<button onclick="tablaPagina--; renderTablaGrupos()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-left"></i></button>`;
+    }
+
+    const maxVisible = 5;
+    let start = Math.max(1, tablaPagina - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPaginas, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+    for (let i = start; i <= end; i++) {
+        if (i === tablaPagina) {
+            html += `<button class="${btnClass} ${btnActivo}">${i}</button>`;
+        } else {
+            html += `<button onclick="tablaPagina=${i}; renderTablaGrupos()" class="${btnClass} ${btnInactivo}">${i}</button>`;
+        }
+    }
+
+    if (tablaPagina < totalPaginas) {
+        html += `<button onclick="tablaPagina++; renderTablaGrupos()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-right"></i></button>`;
+    }
+
+    html += '</div>';
+    pieTabla.innerHTML = html;
+}
+
+// Listener para la Búsqueda Instantánea con Paginación
 const inputBusqueda = document.getElementById('busquedaNombre');
 if (inputBusqueda) {
     inputBusqueda.addEventListener('input', function(e) {
-        const valor = e.target.value.toLowerCase().trim();
-        const filas = document.querySelectorAll('.grupo-row');
-        filas.forEach(fila => {
-            const textoFila = fila.getAttribute('data-busqueda');
-            fila.style.display = textoFila.includes(valor) ? '' : 'none';
-        });
+        tablaFiltro = e.target.value.toLowerCase().trim();
+        tablaPagina = 1; // Resetea a la página 1 al filtrar
+        renderTablaGrupos();
     });
 }
+
+// Oyente de clic en los encabezados para ordenar columnas
+document.querySelectorAll('[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+        const col = th.getAttribute('data-sort');
+        if (tablaSortCol === col) {
+            tablaSortDir = tablaSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            tablaSortCol = col;
+            tablaSortDir = 'asc';
+        }
+        tablaPagina = 1;
+        renderTablaGrupos();
+    });
+});
 
 async function eliminarGrupo(id_grupo) {
     if (!confirm("¿Está seguro de archivar este grupo de entrenamiento?")) return;

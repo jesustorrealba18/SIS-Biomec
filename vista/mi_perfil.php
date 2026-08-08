@@ -30,6 +30,9 @@ $iconoPagina = 'fa-id-card'; // opcional, puedes usarlo en el header
         .menu-transition { transition: transform 0.3s ease-in-out; }
         .overlay { transition: opacity 0.3s ease-in-out; }
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+    <link rel="stylesheet" href="assets/css/driver.css">
 </head>
 <body class="bg-gray-50 dark:bg-[#0f0d23] text-gray-800 dark:text-[#a0a0c0] font-sans antialiased transition-colors duration-300">
 
@@ -288,6 +291,7 @@ $iconoPagina = 'fa-id-card'; // opcional, puedes usarlo en el header
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
     <script src="assets/js/mi_perfil.js"></script>
+    <script src="assets/js/tour.js"></script>
     <style>
     /* Animación suave al cambiar de pestaña */
     .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }

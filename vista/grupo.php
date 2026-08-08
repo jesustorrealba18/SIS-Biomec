@@ -13,6 +13,7 @@ $pagina = 'grupo';
     <script src="assets/js/modoInterfaz.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ===== ESTILOS BASE ===== */
@@ -101,6 +102,9 @@ $pagina = 'grupo';
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+    <link rel="stylesheet" href="assets/css/driver.css">
 </head>
 <body class="bg-gray-100 text-gray-800 dark:bg-[#0f0d23] dark:text-gray-300 font-sans antialiased transition-colors duration-300 overflow-x-hidden">
 
@@ -183,15 +187,18 @@ if (isset($_SESSION['id'])) {
 
                 <!-- Tabla -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-2xl transition-colors duration-300">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-800/50 flex justify-between items-center bg-gray-50/50 dark:bg-white/[0.02]">
+                        <span id="infoTabla" class="text-xs text-gray-500 dark:text-gray-400 font-medium"></span>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left" id="tablaGrupos">
                             <thead class="bg-gray-100 dark:bg-[#1c1a3a] text-gray-600 dark:text-gray-400 text-xs uppercase tracking-widest">
                                 <tr>
-                                    <th class="p-4">Nombre del Grupo</th>
-                                    <th class="p-4">Descripción</th>
-                                    <th class="p-4">Entrenador</th>
-                                    <th class="p-4 text-center">Atletas</th>
-                                    <th class="p-4 text-center">Estado</th>
+                                    <th class="p-4 cursor-pointer select-none" data-sort="nombre">Nombre del Grupo <i class="fas fa-sort ml-1 text-gray-400"></i></th>
+                                    <th class="p-4 cursor-pointer select-none" data-sort="descripcion">Descripción <i class="fas fa-sort ml-1 text-gray-400"></i></th>
+                                    <th class="p-4 cursor-pointer select-none" data-sort="entrenador">Entrenador <i class="fas fa-sort ml-1 text-gray-400"></i></th>
+                                    <th class="p-4 text-center cursor-pointer select-none" data-sort="atletas">Atletas <i class="fas fa-sort ml-1 text-gray-400"></i></th>
+                                    <th class="p-4 text-center cursor-pointer select-none" data-sort="estado">Estado <i class="fas fa-sort ml-1 text-gray-400"></i></th>
                                     <th class="p-4 text-right">Acciones</th>
                                 </tr>
                             </thead>
@@ -205,6 +212,7 @@ if (isset($_SESSION['id'])) {
                             </tbody>
                         </table>
                     </div>
+                    <div id="pieTabla" class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-wrap justify-between items-center gap-4 bg-gray-50 dark:bg-white/5"></div>
                 </div>
             </main>
         </div>
@@ -426,6 +434,7 @@ if (isset($_SESSION['id'])) {
 
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/alertas.js"></script>
+    <script src="assets/js/tour.js"></script>
     <script>
         const PERMISOS_MODULO = {
             gestionar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'ver') ? 'true' : 'false'; ?>,

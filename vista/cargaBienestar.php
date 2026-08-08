@@ -192,6 +192,9 @@ $pagina = 'cargaBienestar';
             color: #9ca3af !important;
         }
     </style>
+     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+    <link rel="stylesheet" href="assets/css/driver.css">
 </head>
 <body class="bg-gray-100 text-gray-800 dark:bg-[#0f0d23] dark:text-gray-300 font-sans antialiased transition-colors duration-300 overflow-x-hidden selection:bg-indigo-500/30">
 
@@ -522,6 +525,7 @@ if (isset($_SESSION['id'])) {
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
+    <script src="assets/js/tour.js"></script>
 
     <!-- Permisos inyectados desde PHP -->
     <script>

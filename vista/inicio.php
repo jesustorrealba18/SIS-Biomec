@@ -13,6 +13,7 @@ $pagina = 'inicio';
     <script src="assets/js/modoInterfaz.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <style>
         body { font-family: 'Inter', sans-serif; }
         ::-webkit-scrollbar { width: 6px; }
@@ -27,6 +28,9 @@ $pagina = 'inicio';
             background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
         }
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+    <link rel="stylesheet" href="assets/css/driver.css">
 </head>
 <body class="bg-gray-100 text-gray-800 dark:bg-[#0f0d23] dark:text-gray-300 font-sans antialiased transition-colors duration-300 overflow-x-hidden">
 
@@ -124,10 +128,9 @@ if (isset($_SESSION['id'])) {
                         </h3>
                         <div class="space-y-3">
                             <?php
-                            // Simulación de actividades recientes (idealmente vendrían de la bitácora)
                             $actividades = [
                                 ['icon' => 'fa-user-plus', 'text' => 'Nuevo atleta registrado: Jesús Hernández', 'time' => 'Hace 5 min', 'color' => 'text-emerald-400'],
-                                ['icon' => 'fa-edit', 'text' => 'Marca actualizada: 50m Libre - 00:24.50', 'time' => 'Hace 15 min', 'color' => 'text-amber-400'],
+                                ['icon' => 'fa-edit', 'text' => 'Marca editada: 50m Libre - 00:24.50', 'time' => 'Hace 15 min', 'color' => 'text-amber-400'],
                                 ['icon' => 'fa-calendar-check', 'text' => 'Sesión planificada para mañana 8:00 AM', 'time' => 'Hace 1 hora', 'color' => 'text-cyan-400'],
                                 ['icon' => 'fa-trophy', 'text' => 'Evento "Gala Regional 2026" creado', 'time' => 'Hace 2 horas', 'color' => 'text-purple-400'],
                                 ['icon' => 'fa-user-check', 'text' => 'Asistencia registrada para 15 atletas', 'time' => 'Hace 3 horas', 'color' => 'text-green-400']
@@ -246,6 +249,10 @@ if (isset($_SESSION['id'])) {
             });
         })();
     </script>
+
+    <!-- Librería Driver.js y script principal del tour guiado -->
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+    <script src="assets/js/tour.js"></script>
 
 </body>
 </html>

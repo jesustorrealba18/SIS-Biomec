@@ -1,8 +1,18 @@
+const API_URL = 'index.php?p=drills'; 
+
 const modalDrills = document.getElementById('modalDrills');
 const formDrills = document.getElementById('formDrills');
 const btnGuardar = document.getElementById('btnGuardar');
+const totalDrills = document.getElementById('totalDrills');
+const infoTabla = document.getElementById('infoTabla');
+const pieTabla = document.getElementById('pieTabla');
 
-const API_URL = 'index.php?p=drills'; 
+let drillsData = [];
+let tablaFiltro = '';
+let tablaSortCol = '';
+let tablaSortDir = '';
+let tablaPagina = 1;
+const tablaPorPagina = 10;
 
 async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
@@ -100,6 +110,10 @@ async function cargarTablaDrills() {
     const drills = await peticionAjax('listarDrills');
 
     if (!drills || drills.length === 0) {
+        drillsData = [];
+        if (totalDrills) totalDrills.textContent = '0 Registrados';
+        if (infoTabla) infoTabla.textContent = '';
+        if (pieTabla) pieTabla.innerHTML = '';
         tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="text-center p-12 text-gray-500 dark:text-gray-400">
@@ -111,47 +125,150 @@ async function cargarTablaDrills() {
         return;
     }
 
-    const totalDrills = document.getElementById('totalDrills');
-    if (totalDrills) {
-        totalDrills.textContent = `${drills.length} Registrados`;
+    drillsData = drills;
+    tablaFiltro = '';
+    tablaSortCol = '';
+    tablaSortDir = '';
+    tablaPagina = 1;
+    renderTabla();
+}
+
+function renderTabla() {
+    const tbody = document.getElementById('listaDrills');
+    if (!tbody) return;
+
+    let datos = drillsData.slice();
+
+    if (tablaFiltro) {
+        const q = tablaFiltro;
+        datos = datos.filter(ent =>
+            (ent.nombre + ' ' + ent.estilo + ' ' + ent.categoria + ' ' + ent.material_requerido).toLowerCase().includes(q)
+        );
     }
 
-    tbody.innerHTML = drills.map(ent => {
-        const badgePersonalizado = parseInt(ent.personalizado) === 1 
-            ? `<span class="px-2 py-1 text-[10px] font-bold bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-md border border-purple-200 dark:border-purple-500/20">SÍ</span>`
-            : `<span class="px-2 py-1 text-[10px] font-bold bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded-md">NO</span>`;
+    if (tablaSortCol) {
+        const col = tablaSortCol;
+        const dir = tablaSortDir === 'asc' ? 1 : -1;
+        datos.sort((a, b) => {
+            let va = a[col] ? a[col].toString() : '';
+            let vb = b[col] ? b[col].toString() : '';
+            return va.localeCompare(vb, 'es') * dir;
+        });
+    }
 
-        const badgeActivo = parseInt(ent.activo) === 1 
-            ? `<span class="px-2 py-1 text-[10px] font-bold bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 rounded-md border border-green-200 dark:border-green-500/20">ACTIVO</span>`
-            : `<span class="px-2 py-1 text-[10px] font-bold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-md border border-red-200 dark:border-red-500/20">INACTIVO</span>`;
+    const total = datos.length;
+    if (totalDrills) totalDrills.textContent = `${drillsData.length} Registrados`;
+    if (infoTabla) {
+        infoTabla.textContent = `Mostrando ${total === 0 ? 0 : (tablaPagina - 1) * tablaPorPagina + 1}–${Math.min(tablaPagina * tablaPorPagina, total)} de ${total}`;
+    }
 
-        const badgeDificultad = `<span class="badge-dificultad dificultad-${ent.dificultad}">${ent.dificultad}</span>`;
+    // 4. Corte de 10 registros por página
+    const totalPaginas = Math.max(1, Math.ceil(total / tablaPorPagina));
+    if (tablaPagina > totalPaginas) tablaPagina = totalPaginas;
+    const inicio = (tablaPagina - 1) * tablaPorPagina;
+    const pagina = datos.slice(inicio, inicio + tablaPorPagina);
 
-        return `
-            <tr class="drills-row border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-100 dark:hover:bg-[#1c1a3a]/40 transition-colors duration-200" data-busqueda="${ent.nombre} ${ent.estilo} ${ent.categoria}">
-                <td class="p-4 font-medium text-gray-900 dark:text-white max-w-[180px] truncate" title="${escapeHtml(ent.nombre)}">${escapeHtml(ent.nombre)}</td>
-                <td class="p-4 text-gray-700 dark:text-gray-300 text-xs">${escapeHtml(ent.estilo)}</td>
-                <td class="p-4 text-gray-600 dark:text-gray-400 text-xs">${escapeHtml(ent.categoria)}</td>
-                <td class="p-4">${badgeDificultad}</td>
-                <td class="p-4 text-gray-600 dark:text-gray-400 text-xs">${escapeHtml(ent.material_requerido)}</td>
-                <td class="p-4 text-center">${badgePersonalizado}</td>
-                <td class="p-4 text-center">${badgeActivo}</td>
-                <td class="p-4 text-right">
-                    <div class="flex justify-end gap-2">
-                        <button onclick="verDetalleDrill(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all" title="Ver Perfil">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button onclick="abrirModalDrills(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all" title="Editar">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="eliminarDrills(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-all" title="Eliminar">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+    actualizarSortIcons();
+
+    // 5. Generar filas
+    if (pagina.length === 0 && total > 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-gray-500 dark:text-gray-400"><span class="text-xs uppercase tracking-wider">Sin resultados para la búsqueda</span></td></tr>`;
+    } else if (pagina.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center p-12 text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-dumbbell text-4xl mb-3 block text-gray-400 dark:text-gray-600 animate-pulse"></i>
+                    <span class="text-xs uppercase tracking-wider block">No hay entrenamientos registrados en el sistema</span>
                 </td>
-            </tr>
-        `;
-    }).join('');
+            </tr>`;
+    } else {
+        tbody.innerHTML = pagina.map(ent => {
+            const badgePersonalizado = parseInt(ent.personalizado) === 1 
+                ? `<span class="px-2 py-1 text-[10px] font-bold bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-md border border-purple-200 dark:border-purple-500/20">SÍ</span>`
+                : `<span class="px-2 py-1 text-[10px] font-bold bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded-md">NO</span>`;
+
+            const badgeActivo = parseInt(ent.activo) === 1 
+                ? `<span class="px-2 py-1 text-[10px] font-bold bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 rounded-md border border-green-200 dark:border-green-500/20">ACTIVO</span>`
+                : `<span class="px-2 py-1 text-[10px] font-bold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-md border border-red-200 dark:border-red-500/20">INACTIVO</span>`;
+
+            const badgeDificultad = `<span class="badge-dificultad dificultad-${ent.dificultad}">${ent.dificultad}</span>`;
+
+            return `
+                <tr class="drills-row border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-100 dark:hover:bg-[#1c1a3a]/40 transition-colors duration-200">
+                    <td class="p-4 font-medium text-gray-900 dark:text-white max-w-[180px] truncate" title="${escapeHtml(ent.nombre)}">${escapeHtml(ent.nombre)}</td>
+                    <td class="p-4 text-gray-700 dark:text-gray-300 text-xs">${escapeHtml(ent.estilo)}</td>
+                    <td class="p-4 text-gray-600 dark:text-gray-400 text-xs">${escapeHtml(ent.categoria)}</td>
+                    <td class="p-4">${badgeDificultad}</td>
+                    <td class="p-4 text-gray-600 dark:text-gray-400 text-xs">${escapeHtml(ent.material_requerido)}</td>
+                    <td class="p-4 text-center">${badgePersonalizado}</td>
+                    <td class="p-4 text-center">${badgeActivo}</td>
+                    <td class="p-4 text-right">
+                        <div class="flex justify-end gap-2">
+                            <button onclick="verDetalleDrill(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all" title="Ver Perfil">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="abrirModalDrills(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="eliminarDrills(${ent.id_drill})" class="w-9 h-9 rounded-xl flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-all" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    renderPaginacion(totalPaginas);
+}
+
+function renderPaginacion(totalPaginas) {
+    if (!pieTabla || totalPaginas <= 1) { 
+        if (pieTabla) pieTabla.innerHTML = ''; 
+        return; 
+    }
+
+    let html = `<span class="text-xs text-gray-500 dark:text-gray-400">Página ${tablaPagina} de ${totalPaginas}</span><div class="flex gap-1">`;
+
+    const btnClass = 'px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition';
+    const btnActivo = 'bg-indigo-600 text-white';
+    const btnInactivo = 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700';
+
+    if (tablaPagina > 1) {
+        html += `<button onclick="tablaPagina--; renderTabla()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-left"></i></button>`;
+    }
+
+    const maxVisible = 5;
+    let start = Math.max(1, tablaPagina - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPaginas, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+    for (let i = start; i <= end; i++) {
+        if (i === tablaPagina) {
+            html += `<button class="${btnClass} ${btnActivo}">${i}</button>`;
+        } else {
+            html += `<button onclick="tablaPagina=${i}; renderTabla()" class="${btnClass} ${btnInactivo}">${i}</button>`;
+        }
+    }
+
+    if (tablaPagina < totalPaginas) {
+        html += `<button onclick="tablaPagina++; renderTabla()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-right"></i></button>`;
+    }
+
+    html += '</div>';
+    pieTabla.innerHTML = html;
+}
+
+function actualizarSortIcons() {
+    document.querySelectorAll('[data-sort]').forEach(th => {
+        const icon = th.querySelector('i');
+        if (!icon) return;
+        icon.className = 'fas fa-sort ml-1 text-gray-600 text-[10px]';
+        if (th.getAttribute('data-sort') === tablaSortCol) {
+            icon.className = `fas fa-sort-${tablaSortDir === 'asc' ? 'up' : 'down'} ml-1 text-indigo-400 text-[10px]`;
+        }
+    });
 }
 
 async function verDetalleDrill(id) {
@@ -273,18 +390,28 @@ function cambiarTabDrill(tab) {
     if (content) content.classList.add('active');
 }
 
-const inputBusqueda = document.getElementById('busquedaID');
-if (inputBusqueda) {
-    inputBusqueda.addEventListener('input', function(e) {
-        const valor = e.target.value.toLowerCase().trim();
-        const filas = document.querySelectorAll('.drills-row');
-        
-        filas.forEach(fila => {
-            const textoFila = fila.getAttribute('data-busqueda') || '';
-            fila.style.display = textoFila.toLowerCase().includes(valor) ? '' : 'none';
-        });
+const inputBusquedaID = document.getElementById('busquedaID');
+if (inputBusquedaID) {
+    inputBusquedaID.addEventListener('input', function(e) {
+        tablaFiltro = e.target.value.toLowerCase().trim();
+        tablaPagina = 1;
+        renderTabla();
     });
 }
+
+document.querySelectorAll('[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+        const col = th.getAttribute('data-sort');
+        if (tablaSortCol === col) {
+            tablaSortDir = tablaSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            tablaSortCol = col;
+            tablaSortDir = 'asc';
+        }
+        tablaPagina = 1;
+        renderTabla();
+    });
+});
 
 function setupValidacionTiempoReal() {
     const campos = [

@@ -50,7 +50,7 @@
                    text-gray-700 dark:text-gray-300 
                    hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
                    <?php echo ($pagina == 'drills') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-user-tie w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+            <i class="fas fa-dumbbell text-indigo-500 w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
                       <?php echo ($pagina == 'drills') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
             <span class="font-medium">Drills</span>
         </a>
@@ -86,7 +86,7 @@
                   text-gray-700 dark:text-gray-300 
                   hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
                   <?php echo ($pagina == 'grupo') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-user-shield w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+            <i class="fas fa-layer-group text-indigo-500 w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
                       <?php echo ($pagina == 'grupo') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
             <span class="font-medium">Grupo</span>
         </a>
@@ -98,9 +98,21 @@
                   text-gray-700 dark:text-gray-300 
                   hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
                   <?php echo ($pagina == 'sesiones') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-user-shield w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+            <i class="fas fa-swimming-pool text-indigo-500 w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
                       <?php echo ($pagina == 'sesiones') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
             <span class="font-medium">Sesiones</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('asignacion', 'ver')): ?>
+        <a href="?p=asignacion" 
+           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                  text-gray-700 dark:text-gray-300 
+                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                  <?php echo ($pagina == 'asignacion') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-exchange-alt text-indigo-500 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'asignacion') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <span class="font-medium">Asignacion de Carriles</span>
         </a>
         <?php endif; ?>
 
@@ -162,6 +174,18 @@
             <i class="fas fa-project-diagram w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
                       <?php echo ($pagina == 'periodizacion') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
             <span class="font-medium">Periodizacion ATR</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('horario', 'ver')): ?>
+        <a href="?p=horario" 
+           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                  text-gray-700 dark:text-gray-300 
+                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                  <?php echo ($pagina == 'horario') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-clock text-indigo-500 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'horario') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <span class="font-medium">Horario</span>
         </a>
         <?php endif; ?>
 

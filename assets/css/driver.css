@@ -1,0 +1,93 @@
+.driver-active * {
+  box-sizing: border-box;
+}
+
+.driver-active body {
+  overflow: hidden !important;
+}
+
+.driver-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: auto !important;
+  z-index: 1000000;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.driver-active-element {
+  position: relative !important;
+  z-index: 1000002 !important;
+}
+
+.driver-popover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1000003;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  background: #ffffff;
+  color: #2d3748;
+  padding: 15px;
+  border-radius: 8px;
+  min-width: 250px;
+  max-width: 300px;
+}
+
+.driver-popover-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  color: #1a202c;
+}
+
+.driver-popover-description {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #4a5568;
+}
+
+.driver-popover-footer {
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.driver-popover-progress-text {
+  font-size: 11px;
+  color: #a0aec0;
+}
+
+.driver-popover-navigation-btns {
+  display: flex;
+  gap: 5px;
+}
+
+.driver-popover-navigation-btns button {
+  background-color: #4f46e5;
+  color: #fff;
+  border: none;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.driver-popover-navigation-btns button:hover {
+  background-color: #4338ca;
+}
+
+.driver-popover-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #a0aec0;
+  font-size: 14px;
+}

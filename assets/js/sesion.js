@@ -3,12 +3,18 @@ const modalVerSesion = document.getElementById('modalVer');
 const modalCompletarSesion = document.getElementById('modalCompletar');
 const formSesion = document.getElementById('formSesion');
 const formCompletarSesion = document.getElementById('formCompletar');
+const tablaPorPagina = 10;
+
+// Constante necesaria para peticiones HTTP
+const API_URL = 'index.php?p=sesiones';
 
 let gruposCache = [];
 let microciclosCache = [];
 let drillsCache = [];
 let entrenadoresCache = [];
 let sesionEditando = false;
+let tablaPagina = 1;
+let sesionesData = [];
 
 const coloresEstado = {
     'Planificada': 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30',
@@ -207,42 +213,79 @@ async function peticionAjax(accion, datos = null) {
 
         return await respuesta.json();
     } catch (error) {
-        Swal.fire('Error', 'Error de comunicación con el servidor', 'error');
+        console.error("Error Fetch en Sesiones:", error);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Error', 'Error de comunicación con el servidor', 'error');
+        }
         return null;
     }
 }
 
 async function cargarTablaSesiones() {
-    const filtroGrupo = document.getElementById('filtroGrupo').value || '';
-    const filtroEstado = document.getElementById('filtroTipoSesion').value || '';
+    const inputFiltroGrupo = document.getElementById('filtroGrupo');
+    const inputFiltroTipo = document.getElementById('filtroTipoSesion');
 
-    const datos = await peticionAjax(`listarSesiones&id_grupo=${filtroGrupo}&estado=${filtroEstado}`);
+    const filtroGrupo = inputFiltroGrupo ? inputFiltroGrupo.value : '';
+    const filtroEstado = inputFiltroTipo ? inputFiltroTipo.value : '';
+
     const tbody = document.getElementById('tbodySesiones');
+    const infoTabla = document.getElementById('infoTabla');
+    const totalSesiones = document.getElementById('totalSesiones');
+    const pieTabla = document.getElementById('pieTabla');
 
     if (!tbody) return;
 
+    tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2 block text-indigo-500"></i>Cargando sesiones...</td></tr>`;
+
+    let respuesta = await peticionAjax(`listarSesiones&id_grupo=${filtroGrupo}&estado=${filtroEstado}`);
+    
+    // Normalizar la respuesta
+    let datos = [];
+    if (Array.isArray(respuesta)) {
+        datos = respuesta;
+    } else if (respuesta && Array.isArray(respuesta.data)) {
+        datos = respuesta.data;
+    }
+
     if (!datos || datos.length === 0) {
+        sesionesData = [];
         tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500 dark:text-gray-400">No se encontraron sesiones de entrenamiento.</td></tr>`;
+        if (totalSesiones) totalSesiones.textContent = `0 Registrados`;
+        if (infoTabla) infoTabla.textContent = `Mostrando 0–0 de 0`;
+        if (pieTabla) pieTabla.innerHTML = '';
         return;
     }
 
-    tbody.innerHTML = datos.map(s => `
+    sesionesData = datos;
+    const total = sesionesData.length;
+    
+    if (totalSesiones) totalSesiones.textContent = `${total} Registrados`;
+
+    const totalPaginas = Math.max(1, Math.ceil(total / tablaPorPagina));
+    if (tablaPagina > totalPaginas) tablaPagina = totalPaginas;
+    
+    if (infoTabla) infoTabla.textContent = `Mostrando ${total === 0 ? 0 : (tablaPagina - 1) * tablaPorPagina + 1}–${Math.min(tablaPagina * tablaPorPagina, total)} de ${total}`;
+
+    const inicio = (tablaPagina - 1) * tablaPorPagina;
+    const pagina = sesionesData.slice(inicio, inicio + tablaPorPagina);
+
+    tbody.innerHTML = pagina.map(s => `
         <tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition border-b border-gray-200 dark:border-[#252345]">
             <td class="p-4">
-                <p class="text-gray-900 dark:text-white font-medium">${s.fecha}</p>
+                <p class="text-gray-900 dark:text-white font-medium">${s.fecha || ''}</p>
                 <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Duración: ${s.duracion_minutos || 0} min</p>
             </td>
             <td class="p-4">
-                <p class="text-gray-900 dark:text-white font-medium">${s.grupo_nombre}</p>
+                <p class="text-gray-900 dark:text-white font-medium">${s.grupo_nombre || 'Sin Grupo'}</p>
                 <p class="text-[10px] text-gray-500 dark:text-gray-400">Microciclo: ${s.microciclo_nombre || 'Ninguno'}</p>
             </td>
             <td class="p-4">
                 <span class="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                    ${s.tipo_sesion}
+                    ${s.tipo_sesion || 'N/A'}
                 </span>
                 <br>
-                <span class="${coloresEstado[s.estado]} px-2 py-0.5 rounded-full text-[10px] inline-block mt-1">
-                    ${s.estado}
+                <span class="${coloresEstado[s.estado] || 'bg-gray-100 text-gray-600'} px-2 py-0.5 rounded-full text-[10px] inline-block mt-1">
+                    ${s.estado || 'Desconocido'}
                 </span>
              </td>
             <td class="p-4 text-center font-mono text-indigo-600 dark:text-indigo-400 font-bold">${s.volumen_planificado || 0}m</td>
@@ -267,6 +310,65 @@ async function cargarTablaSesiones() {
              </td>
          </tr>
     `).join('');
+
+    // Renderizar paginación
+    renderPaginacionSesiones(totalPaginas);
+}
+
+function renderPaginacionSesiones(totalPaginas) {
+    const pieTabla = document.getElementById('pieTabla');
+    if (!pieTabla) return;
+    
+    if (totalPaginas <= 1) {
+        pieTabla.innerHTML = '';
+        return;
+    }
+
+    let html = `
+        <span class="text-xs text-gray-500 dark:text-gray-400">Página ${tablaPagina} de ${totalPaginas}</span>
+        <div class="flex gap-1">
+    `;
+
+    const btnClass = 'px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition';
+    const btnActivo = 'bg-indigo-600 text-white';
+    const btnInactivo = 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700';
+
+    // Botón Anterior
+    if (tablaPagina > 1) {
+        html += `<button onclick="tablaPagina--; cargarTablaSesiones()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-left"></i></button>`;
+    }
+
+    // Números de página
+    const maxVisible = 5;
+    let start = Math.max(1, tablaPagina - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPaginas, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+    if (start > 1) {
+        html += `<button onclick="tablaPagina=1; cargarTablaSesiones()" class="${btnClass} ${btnInactivo}">1</button>`;
+        if (start > 2) html += `<span class="px-2 text-gray-500 dark:text-gray-400">...</span>`;
+    }
+
+    for (let i = start; i <= end; i++) {
+        if (i === tablaPagina) {
+            html += `<button class="${btnClass} ${btnActivo}">${i}</button>`;
+        } else {
+            html += `<button onclick="tablaPagina=${i}; cargarTablaSesiones()" class="${btnClass} ${btnInactivo}">${i}</button>`;
+        }
+    }
+
+    if (end < totalPaginas) {
+        if (end < totalPaginas - 1) html += `<span class="px-2 text-gray-500 dark:text-gray-400">...</span>`;
+        html += `<button onclick="tablaPagina=${totalPaginas}; cargarTablaSesiones()" class="${btnClass} ${btnInactivo}">${totalPaginas}</button>`;
+    }
+
+    // Botón Siguiente
+    if (tablaPagina < totalPaginas) {
+        html += `<button onclick="tablaPagina++; cargarTablaSesiones()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-right"></i></button>`;
+    }
+
+    html += '</div>';
+    pieTabla.innerHTML = html;
 }
 
 function abrirModalSesion(id_sesion = null) {
@@ -815,36 +917,36 @@ async function cargarRecursosIniciales() {
         ]);
 
         if (grupos) {
-            gruposCache = grupos;
+            gruposCache = Array.isArray(grupos) ? grupos : (grupos.data || []);
             const selectGrupoForm = document.getElementById('id_grupo');
             const selectGrupoFiltro = document.getElementById('filtroGrupo');
             if (selectGrupoForm) {
                 selectGrupoForm.innerHTML = '<option value="">Seleccione un Grupo</option>' +
-                    grupos.map(g => `<option value="${g.id_grupo}">${g.nombre}</option>`).join('');
+                    gruposCache.map(g => `<option value="${g.id_grupo}">${g.nombre}</option>`).join('');
             }
             if (selectGrupoFiltro) {
                 selectGrupoFiltro.innerHTML = '<option value="">Todos los Grupos</option>' +
-                    grupos.map(g => `<option value="${g.id_grupo}">${g.nombre}</option>`).join('');
+                    gruposCache.map(g => `<option value="${g.id_grupo}">${g.nombre}</option>`).join('');
             }
         }
         if (microciclos) {
-            microciclosCache = microciclos;
+            microciclosCache = Array.isArray(microciclos) ? microciclos : (microciclos.data || []);
             const selectMicroForm = document.getElementById('id_microciclo');
             if (selectMicroForm) {
                 selectMicroForm.innerHTML = '<option value="">Microciclo (Ninguno)</option>' +
-                    microciclos.map(m => `<option value="${m.id_microciclo}">${m.nombre}</option>`).join('');
+                    microciclosCache.map(m => `<option value="${m.id_microciclo}">${m.nombre}</option>`).join('');
             }
         }
         if (drills) {
-            drillsCache = drills;
+            drillsCache = Array.isArray(drills) ? drills : (drills.data || []);
         }
-        if (entrenadores && entrenadores.length > 0) {
-            entrenadoresCache = entrenadores;
+        if (entrenadores) {
+            entrenadoresCache = Array.isArray(entrenadores) ? entrenadores : (entrenadores.data || []);
             const selectEntrenador = document.getElementById('id_entrenador');
-            if (selectEntrenador) {
+            if (selectEntrenador && entrenadoresCache.length > 0) {
                 let opciones = '<option value="">Seleccione un Entrenador</option>';
 
-                entrenadores.forEach(e => {
+                entrenadoresCache.forEach(e => {
                     let nombreCompleto = '';
                     if (e.nombres && e.apellidos) {
                         nombreCompleto = e.nombres + ' ' + e.apellidos;
@@ -863,6 +965,27 @@ async function cargarRecursosIniciales() {
             }
         }
     } catch (error) {
+        console.error("Error al cargar recursos iniciales:", error);
+    }
+}
+
+// Configurar eventos a filtros de la vista
+function setupEventosFiltros() {
+    const filtroGrupo = document.getElementById('filtroGrupo');
+    const filtroTipo = document.getElementById('filtroTipoSesion');
+
+    if (filtroGrupo) {
+        filtroGrupo.addEventListener('change', () => {
+            tablaPagina = 1;
+            cargarTablaSesiones();
+        });
+    }
+
+    if (filtroTipo) {
+        filtroTipo.addEventListener('change', () => {
+            tablaPagina = 1;
+            cargarTablaSesiones();
+        });
     }
 }
 
@@ -876,6 +999,7 @@ document.addEventListener('keydown', (e) => {
 
 function inicializarSesiones() {
     setupValidacionTiempoRealSesion();
+    setupEventosFiltros();
     cargarRecursosIniciales().then(() => cargarTablaSesiones());
 }
 

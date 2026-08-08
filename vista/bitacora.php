@@ -70,6 +70,9 @@ $pagina = 'bitacora';
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+    <link rel="stylesheet" href="assets/css/driver.css">
 </head>
 <body class="bg-gray-100 text-gray-800 dark:bg-[#0f0d23] dark:text-gray-300 font-sans antialiased transition-colors duration-300 overflow-x-hidden">
 
@@ -303,5 +306,6 @@ if (isset($_SESSION['id'])) {
     <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
     <script src="assets/js/bitacora.js"></script>
+    <script src="assets/js/tour.js"></script>
 </body>
 </html>
