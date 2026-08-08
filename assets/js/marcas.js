@@ -61,7 +61,45 @@ function cerrarModalMarca() {
     selectSesion.classList.remove('opacity-30', 'cursor-not-allowed');
     selectEvento.disabled = false;
     selectEvento.classList.remove('opacity-30', 'cursor-not-allowed');
+
+    // 🧹 DESBLOQUEAR INPUTS DE TIEMPO para el próximo registro
+  // Desbloquear inputs de tiempo (excepto brazadas_por_largo)
+document.querySelectorAll('#contenedorTiemposManuales input, #rejillaSplits input').forEach(input => {
+    if (input.id !== 'brazadas_por_largo') {
+        input.removeAttribute('readonly');
+        input.classList.remove('bg-slate-200', 'dark:bg-slate-700', 'cursor-not-allowed', 'opacity-80');
+    }
+});
 }
+
+/* function cerrarModalMarca() {
+    modalMarca.classList.add('hidden');
+    modalMarca.firstElementChild.classList.add('scale-95', 'opacity-0');
+    
+    // 1. Resetear el formulario tradicional
+    formMarca.reset();
+    resetearContexto();
+    
+    // 2. Limpiar el contenedor dinámico de Splits (RF-06)
+    document.getElementById('rejillaSplits').innerHTML = '';
+    document.getElementById('contenedorSplits').classList.add('hidden');
+    document.getElementById('alertaCoherencia').innerHTML = '';
+    
+    // 3. Resetear el Buscador Predictivo de Atletas
+    document.getElementById('id_atleta').value = '';
+    const inputBuscar = document.getElementById('inputBuscarAtleta');
+    if(inputBuscar) {
+        inputBuscar.value = '';
+        inputBuscar.classList.remove('text-emerald-400', 'font-bold');
+        inputBuscar.removeAttribute('readonly');
+        document.getElementById('btnLimpiarAtleta').classList.add('hidden');
+    }
+
+    selectSesion.disabled = false;
+    selectSesion.classList.remove('opacity-30', 'cursor-not-allowed');
+    selectEvento.disabled = false;
+    selectEvento.classList.remove('opacity-30', 'cursor-not-allowed');
+} */
 
 // Cerrar modal con la tecla Escape
 document.addEventListener('keydown', (e) => {
@@ -78,6 +116,14 @@ async function abrirModalMarca(id_marca = null) {
     formMarca.reset(); 
     try { Validador.limpiarEstilos(formMarca); } catch(e) {}
     resetearContexto(); 
+
+     // 🧹 DESBLOQUEAR INPUTS DE TIEMPO (por si quedaron bloqueados)
+    document.querySelectorAll('#contenedorTiemposManuales input, #rejillaSplits input').forEach(input => {
+    if (input.id !== 'brazadas_por_largo') {
+        input.removeAttribute('readonly');
+        input.classList.remove('bg-slate-200', 'dark:bg-slate-700', 'cursor-not-allowed', 'opacity-80');
+    }
+});
     
     document.getElementById('id_marca').value = '';
     document.getElementById('accion_form').value = 'registrar';
@@ -712,7 +758,7 @@ document.getElementById('rejillaSplits').addEventListener('input', function(e) {
 // =====================================================================
 // ENVÍO DEL FORMULARIO (CREATE / UPDATE DINÁMICO)
 // =====================================================================
-formMarca.addEventListener('submit', async (e) => {
+/* formMarca.addEventListener('submit', async (e) => {
     e.preventDefault(); 
 
     const erroresFormulario = Validador.validarFormulario(formMarca);
@@ -770,6 +816,119 @@ formMarca.addEventListener('submit', async (e) => {
         } 
         else {
             UI.error('Error de Sistema', resultado.message || 'Ocurrió un error inesperado al procesar los datos.');
+        }
+    }
+
+    btnGuardar.innerHTML = textoOriginal;
+    btnGuardar.disabled = false;
+}); */
+
+
+// Función auxiliar para convertir milisegundos a Segundos puros (Ej: 75230ms -> "75.23")
+// Tu backend espera decimales estrictos para tiempo_final_seg, splits y virajes.
+function formatoSegundosPuros(ms) {
+    const centesimasTotales = Math.floor(ms / 10);
+    const seg = Math.floor(centesimasTotales / 100);
+    const cent = centesimasTotales % 100;
+    return `${seg}.${cent.toString().padStart(2, '0')}`;
+}
+
+// =====================================================================
+// ENVÍO DEL FORMULARIO (CREATE / UPDATE DINÁMICO) PROTEGIDO
+// =====================================================================
+formMarca.addEventListener('submit', async (e) => {
+    e.preventDefault(); 
+
+    // 1. Validaciones visuales (DOM)
+    const erroresFormulario = Validador.validarFormulario(formMarca);
+    if (erroresFormulario && erroresFormulario.length > 0) {
+        const listaErrores = Array.isArray(erroresFormulario) ? erroresFormulario.join('<br>') : erroresFormulario;
+        UI.error('Datos Incompletos', `<div class="text-left text-sm mt-2 text-gray-300"><p class="mb-2 font-bold text-white">Corrige lo siguiente:</p>${listaErrores}</div>`);
+        return; 
+    }
+
+    let datosFormulario = new FormData(formMarca);
+    const accionActual = document.getElementById('accion_form') ? document.getElementById('accion_form').value : 'registrar';
+    datosFormulario.set('accion', accionActual);
+
+    // =================================================================
+    // EL GOLPE MAESTRO DE SEGURIDAD (ADAPTADO A TU BACKEND EXACTO)
+    // =================================================================
+    const modoCrono = localStorage.getItem('sgrd_crono_mode') || 'manual';
+    
+    if (modoCrono === 'live') {
+        const registrosCompletos = CronometroSeguro.obtenerArrayRegistros();
+        
+        if (!registrosCompletos || registrosCompletos.length === 0) {
+            UI.error('Alerta de Seguridad', 'No hay datos del cronómetro en la memoria segura.');
+            return;
+        }
+
+        // A) LIMPIEZA: Eliminamos del FormData todo lo que el usuario pudo alterar en el HTML
+        for (let key of datosFormulario.keys()) {
+            if (key.startsWith('splits[') || key.startsWith('virajes[') || key === 'tiempo_final_seg' || key === 'tiempo_reaccion_seg') {
+                datosFormulario.delete(key);
+            }
+        }
+
+        // B) INYECCIÓN BLINDADA: Llenamos el FormData con los datos inmutables de la RAM
+        // usando EXACTAMENTE la nomenclatura que espera tu array $this->camposPermitidos en PHP
+        let centesimasAcumuladas = 0;
+
+        registrosCompletos.forEach(registro => {
+            const centesimasActuales = Math.floor(registro.tiempoMs / 10);
+            const valorSegundos = formatoSegundosPuros(registro.tiempoMs);
+
+            if (registro.tipo === 'reaccion') {
+                datosFormulario.set('tiempo_reaccion_seg', valorSegundos);
+            } 
+            else if (registro.tipo === 'viraje') {
+                // PHP lo leerá como el array $virajes[$distancia]
+                datosFormulario.set(`virajes[${registro.distancia}]`, valorSegundos);
+            } 
+            else if (registro.tipo === 'split') {
+                const lapCentesimas = centesimasActuales - centesimasAcumuladas;
+                centesimasAcumuladas = centesimasActuales;
+                
+                const segLap = Math.floor(lapCentesimas / 100);
+                const centLap = lapCentesimas % 100;
+                
+                // PHP lo leerá como el array $splits[$distancia]
+                datosFormulario.set(`splits[${registro.distancia}]`, `${segLap}.${centLap.toString().padStart(2, '0')}`);
+
+                if (registro.distancia === confDistancia) {
+                    datosFormulario.set('tiempo_final_seg', valorSegundos);
+                }
+            }
+        });
+    } else {
+        // Modo Manual: Validamos coherencia porque el usuario sí los escribió
+        if (typeof validarCoherenciaMatematica === 'function' && !validarCoherenciaMatematica()) {
+            UI.error('Incoherencia Matemática', 'La suma de los parciales no coincide con el tiempo final.');
+            return;
+        }
+    }
+
+    // 2. Envío al Servidor
+    const textoOriginal = btnGuardar.innerHTML;
+    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> PROCESANDO...';
+    btnGuardar.disabled = true;
+
+    const resultado = await peticionAjax(accionActual, datosFormulario);
+
+    if (resultado) {
+        if (resultado.status === 'success') {
+            UI.exito('¡Operación Exitosa!', accionActual === 'actualizar' ? 'Registro actualizado.' : 'Rendimiento registrado con éxito.');
+            cerrarModalMarca();
+            cargarTablaMarcas(); 
+            CronometroSeguro.limpiar(); // Limpiar la memoria
+        } 
+        else if (resultado.status === 'warning') {
+            let mensajesError = Object.values(resultado.errores).join('<br>');
+            UI.error('Datos Incoherentes', mensajesError);
+        } 
+        else {
+            UI.error('Error de Sistema', resultado.message || 'Error inesperado.');
         }
     }
 
@@ -1260,11 +1419,18 @@ function abrirModalCronoLive() {
     const distancia = parseInt(document.getElementById('distancia_m').value) || 0;
     const estilo = document.getElementById('estilo').value || 'Desconocido';
     const piscinaStr = document.getElementById('tipo_piscina').value;
+    const idAtleta = document.getElementById('id_atleta').value;
     
     if (distancia === 0) {
         Swal.fire({ icon: 'warning', title: 'Faltan Datos', text: 'Seleccione la distancia y piscina antes de iniciar el cronómetro en vivo.' });
         return;
     }
+
+    if (!idAtleta) {
+    Swal.fire({ icon: 'warning', title: 'Faltan Datos', text: 'Seleccione un atleta antes de iniciar el cronómetro.' });
+    return;
+    }
+
 
     // 2. Configurar la lógica matemática
     confPiscina = piscinaStr === '25m' ? 25 : 50;
@@ -1291,12 +1457,18 @@ function abrirModalCronoLive() {
 function cerrarModalCronoLive() {
     if(cronoActivo) {
         if(!confirm("El cronómetro está corriendo. ¿Desea descartar la medición?")) return;
-        accionarCrono(); // (Para detener la animación actual en la UI)
     }
     
-    // --> LIMPIEZA ABSOLUTA DE TELEMETRÍA: Siempre que se cierre el modal, limpiamos la DB
+    // 1. ÚNICA PETICIÓN A LA BD: Limpieza absoluta del Live
     enviarLatidoTelemetria('cancelado', 0, 0);
     
+    // 2. PURGA TOTAL: Limpiamos la pantalla y variables antes de que se oculte
+    reiniciarCrono();
+
+      // 3. 🧹 LIMPIAR MEMORIA SEGURA (para que no interfiera en próximos usos)
+    CronometroSeguro.limpiar();
+    
+    // 4. Cerramos el modal visualmente
     const modal = document.getElementById('modalCronoEnVivo');
     modal.classList.add('opacity-0');
     setTimeout(() => modal.classList.add('hidden'), 300);
@@ -1446,7 +1618,7 @@ function agregarItemListaCrono(etiqueta, icono, colorBadge, formatoFinal) {
     listaHtml.insertAdjacentHTML('afterbegin', itemHtml);
 }
 
-function registrarTramoMatematico() {
+/* function registrarTramoMatematico() {
     const tiempoActual = performance.now();
     const transcurrido = (tiempoActual - tiempoInicio);
     
@@ -1497,12 +1669,155 @@ function registrarTramoMatematico() {
     `;
     
     listaHtml.insertAdjacentHTML('afterbegin', itemHtml);
-}
+} */
 
-// ---------------------------------------------------------
-// TRANSFERENCIA AL FORMULARIO MANUAL (CON MATEMÁTICA EXACTA Y FORMATO 00.00)
-// ---------------------------------------------------------
+
+
+// =====================================================================
+// MÓDULO DE SEGURIDAD (ANTI-HACKING Y ANTI-CONSOLA F12)
+// Adaptado para el Sistema Multi-Splits SGRD
+// =====================================================================
+const CronometroSeguro = (function() {
+    // CAJA FUERTE: Guarda todos los registros del cronómetro
+    let registrosOficialesInmutables = null; 
+
+    return {
+        // Almacena toda la carrera en RAM al finalizar
+        sellarCarrera: function(arrayRegistrosCrono) {
+            // Clonamos el array para evitar que se modifique por referencia
+            registrosOficialesInmutables = JSON.parse(JSON.stringify(arrayRegistrosCrono));
+        },
+
+        // Devuelve el tiempo final absoluto de la carrera
+        obtenerTiempoFinalMs: function() {
+            if (!registrosOficialesInmutables || registrosOficialesInmutables.length === 0) return null;
+            
+            // Buscamos el último registro que sea 'split' y que coincida con la meta
+            const llegada = registrosOficialesInmutables.find(r => r.tipo === 'split' && r.distancia === confDistancia);
+            
+            return llegada ? llegada.tiempoMs : null;
+        },
+
+        // Devuelve el array completo para que el backend lo procese
+        obtenerArrayRegistros: function() {
+            return registrosOficialesInmutables;
+        },
+
+        limpiar: function() {
+            registrosOficialesInmutables = null;
+        }
+    };
+})();
+
+// =====================================================================
+// TRANSFERENCIA AL FORMULARIO (MODIFICADA CON SEGURIDAD)
+// =====================================================================
 function transferirCronoAlFormulario() {
+    // 1. 🔒 COPIA SEGURA: Guardamos los registros ANTES de cerrar el modal
+    const copiaRegistros = [...registrosCrono];
+    
+    // 2. Verificar que hay datos
+    if (!copiaRegistros || copiaRegistros.length === 0) {
+        UI.error('Sin datos', 'No se registraron tiempos en el cronómetro.');
+        return;
+    }
+
+    // 3. Cerrar el modal (esto reinicia y limpia registrosCrono, pero nosotros usamos la copia)
+    cerrarModalCronoLive();
+
+    // 4. 🔒 SELLAR EN MEMORIA: Guardamos la copia en el módulo de seguridad (para el envío)
+    CronometroSeguro.sellarCarrera(copiaRegistros);
+
+    // 5. Restaurar UI del formulario manual
+    document.getElementById('contenedorTiemposManuales').classList.remove('hidden');
+    document.getElementById('btnIrCrono').classList.add('hidden');
+    document.getElementById('btnGuardar').classList.remove('hidden');
+    document.getElementById('tiempo_final_humano').required = true;
+
+    // 6. Regenerar las cajas de splits según distancia y piscina
+    generarCajasSplits();
+
+    // 7. Formateadores
+    const formatoFinalEstricto = (ms) => {
+        const totalCent = Math.floor(ms / 10);
+        const cent = totalCent % 100;
+        const segTotales = Math.floor(totalCent / 100);
+        const seg = segTotales % 60;
+        const min = Math.floor(segTotales / 60);
+        return `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}.${cent.toString().padStart(2, '0')}`;
+    };
+
+    const formatoParcialEstricto = (centesimas) => {
+        const seg = Math.floor(centesimas / 100);
+        const cent = centesimas % 100;
+        return `${seg.toString().padStart(2, '0')}.${cent.toString().padStart(2, '0')}`;
+    };
+
+    // 8. Llenar los inputs con los datos de la copia
+    let centesimasAcumuladas = 0;
+
+    copiaRegistros.forEach(registro => {
+        const centesimasActuales = Math.floor(registro.tiempoMs / 10);
+        const valorFormateado = formatoParcialEstricto(centesimasActuales);
+
+        if (registro.tipo === 'reaccion') {
+            const inputReaccion = document.getElementById('tiempo_reaccion_seg');
+            if (inputReaccion) {
+                inputReaccion.value = valorFormateado;
+                inputReaccion.setAttribute('readonly', 'true');
+                inputReaccion.classList.add('bg-slate-200', 'dark:bg-slate-700', 'cursor-not-allowed', 'opacity-80');
+            }
+        } else if (registro.tipo === 'viraje') {
+            const inputViraje = document.querySelector(`[name="virajes[${registro.distancia}]"]`);
+            if (inputViraje) {
+                inputViraje.value = valorFormateado;
+                inputViraje.setAttribute('readonly', 'true');
+                inputViraje.classList.add('bg-slate-200', 'dark:bg-slate-700', 'cursor-not-allowed', 'opacity-80');
+            }
+        } else if (registro.tipo === 'split') {
+            // Calcular el tiempo de este tramo (diferencia con el anterior)
+            const lapCentesimas = centesimasActuales - centesimasAcumuladas;
+            centesimasAcumuladas = centesimasActuales;
+
+            const inputSplit = document.querySelector(`[name="splits[${registro.distancia}]"]`);
+            if (inputSplit) {
+                inputSplit.value = formatoParcialEstricto(lapCentesimas);
+                inputSplit.setAttribute('readonly', 'true');
+                inputSplit.classList.add('bg-slate-200', 'dark:bg-slate-700', 'cursor-not-allowed', 'opacity-80');
+            }
+
+            // Si es el split final (distancia == confDistancia), llenar el tiempo final
+            if (registro.distancia === confDistancia) {
+                const inputFinalH = document.getElementById('tiempo_final_humano');
+                const inputFinalS = document.getElementById('tiempo_final_seg');
+                if (inputFinalH) {
+                    inputFinalH.value = formatoFinalEstricto(registro.tiempoMs);
+                    inputFinalH.setAttribute('readonly', 'true');
+                    inputFinalH.classList.add('bg-slate-200', 'dark:bg-slate-700', 'cursor-not-allowed', 'opacity-80', 'font-bold', 'text-indigo-700');
+                }
+                if (inputFinalS) inputFinalS.value = valorFormateado;
+            }
+        }
+    });
+
+    // 9. Bloquear TODOS los inputs de tiempo (por si acaso)
+    /* document.querySelectorAll('#contenedorTiemposManuales input, #rejillaSplits input').forEach(input => {
+        input.setAttribute('readonly', 'true');
+        input.classList.add('bg-slate-200', 'dark:bg-slate-700', 'cursor-not-allowed', 'opacity-80');
+    }); */
+
+    // 9. Bloquear inputs de tiempo (excepto brazadas_por_largo)
+document.querySelectorAll('#contenedorTiemposManuales input, #rejillaSplits input').forEach(input => {
+    if (input.id !== 'brazadas_por_largo') {
+        input.setAttribute('readonly', 'true');
+        input.classList.add('bg-slate-200', 'dark:bg-slate-700', 'cursor-not-allowed', 'opacity-80');
+    }
+});
+
+    // 10. Ejecutar validación de coherencia para actualizar colores
+    validarCoherenciaMatematica();
+}
+/* function transferirCronoAlFormulario() {
     cerrarModalCronoLive();
 
     // Helper 1: Fuerza el formato estricto MM:SS.cc para el input Final visible
@@ -1565,26 +1880,37 @@ function transferirCronoAlFormulario() {
 
     // 4. Disparar la validación visual de colores
     validarCoherenciaMatematica();
-}
+} */
 
 function reiniciarCrono() {
+    // 1. Apagar motores y animación
     cronoActivo = false;
     estadoCrono = 'ESPERANDO';
-    distanciaActual = 0;
-    registrosCrono = [];
     cancelAnimationFrame(animacionReloj);
     
+    // 2. Resetear TODAS las variables matemáticas a cero absoluto
+    tiempoInicio = 0;
+    tiempoToquePared = 0;
+    distanciaActual = 0;
+    tramoActual = 0;
+    registrosCrono = [];
+    if (typeof registrosSplits !== 'undefined') registrosSplits = []; // Por seguridad
+    
+    // 3. Limpiar la pantalla del cronómetro (Forzamos los ceros)
     document.getElementById('displayReloj').textContent = "00:00.00";
     document.getElementById('cronoEstadoTexto').textContent = "Esperando Inicio";
     
+    // 4. Restaurar el botón principal a su estado "Play" original
     const btnCrono = document.getElementById('btnAccionCrono');
     btnCrono.className = "flex-1 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-emerald-400/50";
     document.querySelector('#btnAccionCrono i').className = "fas fa-play text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
     document.getElementById('txtBtnAccionCrono').textContent = "Iniciar Prueba";
     
+    // 5. Ocultar botones secundarios de control
     document.getElementById('btnReiniciarCrono').classList.add('hidden');
     document.getElementById('btnTransferirCrono').classList.add('hidden');
     
+    // 6. Limpiar la lista de tramos (splits) en el DOM
     document.getElementById('listaTiemposCrono').innerHTML = `
         <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5 opacity-50">
             <div class="flex items-center gap-3">
