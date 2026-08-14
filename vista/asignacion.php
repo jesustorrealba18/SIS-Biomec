@@ -60,7 +60,6 @@
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* ===== ESTILOS PARA MODO CLARO (TEXTOS OSCUROS) ===== */
         .text-gray-900 {
             color: #111827 !important;
         }
@@ -92,7 +91,6 @@
             color: #6b7280 !important;
         }
 
-        /* Asegurar que los textos en tablas sean oscuros en modo claro */
         .asignacion-row td {
             color: #1f2937 !important;
         }
@@ -106,7 +104,6 @@
             color: #ffffff !important;
         }
 
-        /* Estilos para badges de estado */
         .estado-activo {
             background: rgba(16, 185, 129, 0.15);
             color: #065f46 !important;
@@ -137,11 +134,9 @@ if (isset($_SESSION['id'])) {
 ?>
 
     <div class="flex h-screen overflow-hidden">
-        
-        <!-- Overlay para móvil cuando el menú está abierto -->
+
         <div id="menuOverlay" class="fixed inset-0 bg-black/70 z-30 opacity-0 pointer-events-none transition-opacity lg:hidden"></div>
 
-        <!-- Sidebar - responsive -->
         <aside id="sidebarMenu" class="fixed top-0 left-0 h-full w-72 bg-white dark:bg-[#0f0d23] border-r border-gray-200 dark:border-[#252345] z-40 transform -translate-x-full menu-transition lg:relative lg:translate-x-0 lg:flex-shrink-0 overflow-y-auto transition-colors duration-300">
             <div class="p-4 flex justify-between items-center border-b border-gray-200 dark:border-[#252345] lg:hidden">
                 <div class="flex items-center gap-2">
@@ -158,17 +153,17 @@ if (isset($_SESSION['id'])) {
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-            
-            <?php 
+
+            <?php
                 $tituloPagina = "Gestión de Asignaciones";
                 $tituloPaginaResponsive = "Asignaciones";
                 $iconModulo = "fas fa-exchange-alt";
-                include 'vista/complementos/header.php'; 
+                include 'vista/complementos/header.php';
             ?>
 
             <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
-                
-                <!-- Encabezado -->
+
+                <!-- Encabezado con botón Historial -->
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#161430] p-6 rounded-2xl border border-gray-200 dark:border-[#252345] transition-colors duration-300">
                     <div>
                         <h2 class="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -177,9 +172,14 @@ if (isset($_SESSION['id'])) {
                         <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Asignación de carriles a grupos en bloques horarios.</p>
                     </div>
                     <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('carriles', 'gestionar')): ?>
-                    <button onclick="abrirModalAsignacion()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
-                        <i class="fas fa-plus-circle text-sm"></i> Nueva Asignación
-                    </button>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="abrirModalAsignacion()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fas fa-plus-circle text-sm"></i> Nueva Asignación
+                        </button>
+                        <button onclick="verHistorialCompletadas()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-emerald-500/20 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fas fa-history text-sm"></i> Historial
+                        </button>
+                    </div>
                     <?php endif; ?>
                 </div>
 
@@ -265,7 +265,6 @@ if (isset($_SESSION['id'])) {
                 <input type="hidden" id="id_asignacion" name="id_asignacion" value="">
 
                 <div class="space-y-5">
-                    <!-- Carril -->
                     <div class="space-y-2">
                         <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Carril</label>
                         <select name="id_carril" id="id_carril" data-validar="requerido" data-nombre="Carril" class="input-adapt w-full p-3 rounded-xl">
@@ -273,7 +272,6 @@ if (isset($_SESSION['id'])) {
                         </select>
                     </div>
 
-                    <!-- Bloque Horario -->
                     <div class="space-y-2">
                         <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Bloque Horario</label>
                         <select name="id_bloque_horario" id="id_bloque_horario" data-validar="requerido" data-nombre="Bloque horario" class="input-adapt w-full p-3 rounded-xl">
@@ -281,7 +279,6 @@ if (isset($_SESSION['id'])) {
                         </select>
                     </div>
 
-                    <!-- Grupo -->
                     <div class="space-y-2">
                         <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Grupo</label>
                         <select name="id_grupo" id="id_grupo" data-validar="requerido" data-nombre="Grupo" class="input-adapt w-full p-3 rounded-xl">
@@ -289,13 +286,11 @@ if (isset($_SESSION['id'])) {
                         </select>
                     </div>
 
-                    <!-- Día Específico -->
                     <div class="space-y-2">
                         <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Día Específico (Opcional)</label>
                         <input type="date" name="dia_especifico" id="dia_especifico" class="input-adapt w-full p-3 rounded-xl">
                     </div>
 
-                    <!-- Fechas de Vigencia -->
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Fecha de Inicio</label>
@@ -307,7 +302,6 @@ if (isset($_SESSION['id'])) {
                         </div>
                     </div>
 
-                    <!-- Activa -->
                     <div class="flex items-center gap-3 p-4 bg-gray-100 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/5">
                         <input type="checkbox" name="activa" id="activa" value="1" checked class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
                         <label for="activa" class="text-sm text-gray-700 dark:text-gray-300 font-medium">Asignación Activa</label>
@@ -363,6 +357,42 @@ if (isset($_SESSION['id'])) {
                         <span class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</span>
                         <span id="verEstado" class="text-sm font-medium">—</span>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL HISTORIAL DE COMPLETADAS ===== -->
+    <div id="modalHistorial" class="fixed inset-0 z-50 hidden bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-4xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[90vh] overflow-y-auto transition-colors duration-300">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-gray-800 pb-4">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-history text-emerald-500"></i> Historial de Asignaciones Completadas
+                    </h3>
+                    <button onclick="cerrarModalHistorial()" class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors cursor-pointer">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-100 dark:bg-[#1c1a3a] text-gray-600 dark:text-gray-400 text-xs uppercase tracking-widest">
+                            <tr>
+                                <th class="p-3">Carril</th>
+                                <th class="p-3">Horario</th>
+                                <th class="p-3">Grupo</th>
+                                <th class="p-3">Vigencia</th>
+                                <th class="p-3 text-right">Completada</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaCompletadas" class="divide-y divide-gray-200 dark:divide-gray-800">
+                            <tr>
+                                <td colspan="5" class="text-center p-8 text-gray-500">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i> Cargando historial...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

@@ -478,6 +478,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 },
                 {
+                    element: 'button[onclick*="verHistorialCompletadas"]',
+                    popover: {
+                        title: 'Historial de Asignaciones',
+                        description: 'Permite consultar el registro histórico de todas las asignaciones que ya han sido completadas.',
+                        side: 'left'
+                    }
+                },
+                {
                     element: '#busquedaAsignacion',
                     popover: {
                         title: 'Buscador de Asignaciones',
@@ -538,6 +546,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     popover: {
                         title: 'Editar Asignación',
                         description: 'Modifica los parámetros de fechas, carriles o grupos de una asignación existente.',
+                        side: 'left'
+                    }
+                },
+                {
+                    element: '#listaAsignaciones tr:first-child button[onclick*="completarAsignacion"]',
+                    popover: {
+                        title: 'Completar Asignación',
+                        description: 'Finaliza la asignación actual y libera los recursos de carriles y horarios para otros grupos.',
                         side: 'left'
                     }
                 },
