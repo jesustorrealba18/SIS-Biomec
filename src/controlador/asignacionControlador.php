@@ -46,6 +46,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit;
         }
+
+        if ($_POST['accion'] === 'completar') {
+            Autorizacion::exigir('asignacion', 'gestionar');
+            $id = isset($_POST['id_asignacion']) ? (int)$_POST['id_asignacion'] : 0;
+            if ($objAsignacion->completarAsignacion($id)) { 
+                echo json_encode(['status' => 'success', 'message' => 'Asignación completada.']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'No se pudo completar la asignación.']);
+            }
+            exit;
+        }
+
+        if ($_POST['accion'] === 'cambiarEstado') {
+            Autorizacion::exigir('asignacion', 'gestionar');
+            $id = isset($_POST['id_asignacion']) ? (int)$_POST['id_asignacion'] : 0;
+            $estado = isset($_POST['estado']) ? $_POST['estado'] : '';
+            if ($objAsignacion->cambiarEstadoAsignacion($id, $estado)) { 
+                echo json_encode(['status' => 'success', 'message' => 'Estado actualizado correctamente.']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'No se pudo actualizar el estado.']);
+            }
+            exit;
+        }
     }
 
     Autorizacion::exigir('asignacion', 'gestionar');
@@ -160,6 +183,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         header('Content-Type: application/json');
         $grupo = $objAsignacion->obtenerGrupoPorId((int)$_GET['id']);
         echo json_encode($grupo);
+        exit;
+    }
+
+    if (isset($_GET['accion']) && $_GET['accion'] === 'listarCompletadas') {
+        header('Content-Type: application/json');
+        echo json_encode($objAsignacion->listarAsignacionesCompletadas());
+        exit;
+    }
+
+    if (isset($_GET['accion']) && $_GET['accion'] === 'verificarVencidas') {
+    header('Content-Type: application/json');
+    $cantidad = $objAsignacion->verificarAsignacionesVencidas();
+    echo json_encode([
+        'status' => 'success', 
+        'message' => "Se completaron $cantidad asignaciones vencidas."
+    ]);
+    exit;
+}
+
+    if (isset($_GET['accion']) && $_GET['accion'] === 'carrilesDisponibles') {
+        header('Content-Type: application/json');
+        $dia = isset($_GET['dia']) ? $_GET['dia'] : null;
+        $horaInicio = isset($_GET['hora_inicio']) ? $_GET['hora_inicio'] : null;
+        $horaFin = isset($_GET['hora_fin']) ? $_GET['hora_fin'] : null;
+        echo json_encode($objAsignacion->obtenerCarrilesDisponibles($dia, $horaInicio, $horaFin));
         exit;
     }
 
