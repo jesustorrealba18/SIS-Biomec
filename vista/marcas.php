@@ -413,6 +413,7 @@ if (isset($_SESSION['id'])) {
                     <div>
                         <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Estilo *</label>
                         <select id="estilo" name="estilo" data-validar="requerido" data-nombre="Estilo" class="w-full input-adapt p-3 rounded-xl text-sm">
+                            <option value="" disabled selected>Seleccione estilo...</option>
                             <option value="Libre">Libre (Crawl)</option>
                             <option value="Espalda">Espalda</option>
                             <option value="Braza">Braza (Pecho)</option>
@@ -437,6 +438,7 @@ if (isset($_SESSION['id'])) {
                     <div>
                         <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Tipo de Piscina *</label>
                         <select id="tipo_piscina" name="tipo_piscina" data-validar="requerido" data-nombre="Tipo de Piscina" class="w-full input-adapt p-3 rounded-xl text-sm">
+                            <option value="" disabled selected>Seleccione tipo de piscina...</option>
                             <option value="50m">Olímpica (50 metros)</option>
                             <option value="25m">Corta (25 metros)</option>
                         </select>
