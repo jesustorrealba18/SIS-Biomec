@@ -511,6 +511,56 @@ async function cargarSelectsContexto() {
     }
 }
 
+
+// =====================================================================
+// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
+// =====================================================================
+// =====================================================================
+// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
+// =====================================================================
+// =====================================================================
+// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
+// =====================================================================
+// =====================================================================
+// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
+// =====================================================================
+// =====================================================================
+// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
+// =====================================================================
+(function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* La caja debe permitir que el mensaje se vea sin recortarse */
+        .split-box {
+            overflow: visible !important;
+        }
+        /* El mensaje de validación se muestra debajo del input, en flujo normal */
+        .split-box .validador-ayuda {
+            margin-top: 4px;
+            margin-bottom: 0;
+            font-size: 10px;
+            line-height: 1.2;
+            display: block;
+            text-align: center;
+        }
+        /* Colores específicos (validador.js ya los asigna, pero los reforzamos) */
+        .split-box .validador-ayuda.v-ok {
+            color: #34d399;
+        }
+        .split-box .validador-ayuda.v-error {
+            color: #f87171;
+        }
+        .split-box .validador-ayuda.v-info {
+            color: #6b7280;
+        }
+        /* El contenedor de inputs usa space-y-2 para separarlos */
+        .split-box .flex-col > .relative {
+            margin-bottom: 0; /* space-y-2 ya maneja el espacio */
+        }
+    `;
+    document.head.appendChild(style);
+})();
+
 const selectDistancia = document.getElementById('distancia_m');
 const contenedorSplits = document.getElementById('contenedorSplits');
 const rejillaSplits = document.getElementById('rejillaSplits');
@@ -519,6 +569,86 @@ const contadorSplits = document.getElementById('contadorSplits');
 const selectPiscina = document.getElementById('tipo_piscina');
 
 function generarCajasSplits() {
+    const distanciaTotal = parseInt(selectDistancia.value);
+    const tipoPiscinaVal = selectPiscina.value;
+    const tamanoPiscina = tipoPiscinaVal === '25m' ? 25 : 50;
+    
+    if (isNaN(distanciaTotal)) {
+        contenedorSplits.classList.add('hidden');
+        rejillaSplits.innerHTML = '';
+        return;
+    }
+
+    const tamanoTramo = 25; 
+    const cantidadTramos = distanciaTotal / tamanoTramo;
+    
+    rejillaSplits.innerHTML = '';
+    
+    for (let i = 1; i <= cantidadTramos; i++) {
+        let distanciaActual = i * tamanoTramo;
+        const esPared = (distanciaActual % tamanoPiscina === 0) && (distanciaActual < distanciaTotal);
+        
+        let cajaHTML = `
+            <div class="bg-white dark:bg-[#161430] p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative split-box">
+                <label class="block text-[10px] text-gray-600 dark:text-gray-400 uppercase font-bold mb-2 text-center border-b border-gray-100 dark:border-gray-800 pb-1">
+                    Tramo ${distanciaActual}m
+                </label>
+                <div class="flex flex-col space-y-2">
+                    <!-- Input de Parcial (Siempre visible) -->
+                    <div class="relative">
+                        <!-- Etiqueta SPLIT fija: top fijo, no inset-y-0 -->
+                        <div class="absolute left-0 pl-2 pointer-events-none" style="top: 0.75rem; height: 1.5rem; display: flex; align-items: center;">
+                            <span class="text-[9px] text-indigo-400 font-bold">SPLIT</span>
+                        </div>
+                        <input type="text" 
+                               name="splits[${distanciaActual}]" 
+                               data-validar="requerido|decimal_tiempo" 
+                               required 
+                               data-nombre="Parcial de ${distanciaActual}m" 
+                               placeholder="00.00" 
+                               class="w-full bg-gray-50 dark:bg-[#0f0d23] border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-emerald-400 font-mono text-sm rounded-lg py-1.5 pr-5 pl-10 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-right split-input">
+                        <span class="absolute right-2 top-1.5 text-gray-400 dark:text-gray-500 text-[10px]">s</span>
+                    </div>
+        `;
+        
+        // Si hay pared en este tramo, inyectamos la cajita de Viraje
+        if (esPared) {
+            cajaHTML += `
+                    <!-- Input de Viraje (Dinámico) -->
+                    <div class="relative">
+                        <!-- Etiqueta VIRAJE fija: top fijo -->
+                        <div class="absolute left-0 pl-2 pointer-events-none" style="top: 0.75rem; height: 1.5rem; display: flex; align-items: center;">
+                            <span class="text-[9px] text-amber-500 font-bold">VIRAJE</span>
+                        </div>
+                        <input type="text" 
+                               name="virajes[${distanciaActual}]" 
+                               data-validar="decimal_tiempo" 
+                               data-nombre="Viraje en ${distanciaActual}m" 
+                               placeholder="00.00" 
+                               class="w-full bg-gray-50 dark:bg-[#0f0d23] border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-amber-400 font-mono text-sm rounded-lg py-1.5 pr-5 pl-10 focus:ring-2 focus:ring-amber-500 outline-none transition-all text-right">
+                        <span class="absolute right-2 top-1.5 text-gray-400 dark:text-gray-500 text-[10px]">s</span>
+                    </div>
+            `;
+        }
+        
+        cajaHTML += `
+                </div>
+            </div>
+        `;
+        
+        rejillaSplits.innerHTML += cajaHTML;
+    }
+
+    contadorSplits.innerText = `${cantidadTramos} Tramos (Cada 25m)`;
+    contenedorSplits.classList.remove('hidden');
+    
+    rejillaSplits.style.opacity = 0;
+    setTimeout(() => {
+        rejillaSplits.style.transition = "opacity 0.3s ease-in-out";
+        rejillaSplits.style.opacity = 1;
+    }, 50);
+}
+/* function generarCajasSplits() {
     const distanciaTotal = parseInt(selectDistancia.value);
     const tipoPiscinaVal = selectPiscina.value; // '25m' o '50m'
     const tamanoPiscina = tipoPiscinaVal === '25m' ? 25 : 50;
@@ -542,7 +672,7 @@ function generarCajasSplits() {
         const esPared = (distanciaActual % tamanoPiscina === 0) && (distanciaActual < distanciaTotal);
         
         let cajaHTML = `
-            <div class="bg-white dark:bg-[#161430] p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative">
+            <div class="bg-white dark:bg-[#161430] p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative split-box">
                 <label class="block text-[10px] text-gray-600 dark:text-gray-400 uppercase font-bold mb-2 text-center border-b border-gray-100 dark:border-gray-800 pb-1">
                     Tramo ${distanciaActual}m
                 </label>
@@ -598,7 +728,7 @@ function generarCajasSplits() {
         rejillaSplits.style.transition = "opacity 0.3s ease-in-out";
         rejillaSplits.style.opacity = 1;
     }, 50);
-}
+} */
 
 selectDistancia.addEventListener('change', generarCajasSplits);
 // IMPORTANTE: Agregar este listener para que re-calcule las paredes si cambian el tipo de piscina
