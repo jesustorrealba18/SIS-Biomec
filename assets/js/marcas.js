@@ -1526,8 +1526,8 @@ function accionarCrono() {
         tiempoInicio = tiempoActual;
         animacionReloj = requestAnimationFrame(actualizarRelojUI);
 
-        btnCrono.className = "flex-1 bg-purple-500 hover:bg-purple-400 active:bg-purple-600 text-white rounded-2xl shadow-[0_0_40px_rgba(168,85,247,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-purple-300/50";
-        btnIcon.className = "fas fa-bolt text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
+        btnCrono.className = "w-full py-3 sm:py-4 bg-purple-500 hover:bg-purple-400 active:bg-purple-600 text-white rounded-2xl shadow-[0_0_40px_rgba(168,85,247,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-purple-300/50";
+        btnIcon.className = "fas fa-bolt text-2xl sm:text-3xl lg:text-4xl mb-0.5 sm:mb-1 group-active:scale-90 transition-transform";
         btnText.textContent = "Tomar Reacción (Salto)";
         document.getElementById('cronoEstadoTexto').textContent = "Prueba en Curso";
         document.getElementById('btnReiniciarCrono').classList.remove('hidden');
@@ -1563,8 +1563,8 @@ function accionarCrono() {
             cancelAnimationFrame(animacionReloj);
             agregarItemListaCrono(`Llegada Final (${confDistancia}m)`, "fa-flag-checkered", "bg-emerald-500", formatearMilisegundos(transcurrido));
 
-            btnCrono.className = "flex-1 bg-gray-700 text-gray-400 rounded-2xl transition-all flex flex-col items-center justify-center cursor-not-allowed border-2 border-gray-600";
-            btnIcon.className = "fas fa-flag-checkered text-4xl sm:text-5xl mb-2";
+            btnCrono.className = "w-full py-3 sm:py-4 bg-gray-700 text-gray-400 rounded-2xl transition-all flex flex-col items-center justify-center cursor-not-allowed border-2 border-gray-600";
+            btnIcon.className = "fas fa-flag-checkered text-3xl sm:text-4xl lg:text-5xl mb-1";
             btnText.textContent = "Prueba Finalizada";
             document.getElementById('cronoEstadoTexto').textContent = "Resultados Listos";
             document.getElementById('btnTransferirCrono').classList.remove('hidden');
@@ -1578,8 +1578,8 @@ function accionarCrono() {
             tiempoToquePared = tiempoActual; 
             agregarItemListaCrono(`Toca Pared (${distanciaActual}m)`, "fa-hand-paper", "bg-amber-500", formatearMilisegundos(transcurrido));
 
-            btnCrono.className = "flex-1 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white rounded-2xl shadow-[0_0_40px_rgba(245,158,11,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-amber-300/50";
-            btnIcon.className = "fas fa-sign-out-alt text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
+           btnCrono.className = "w-full py-3 sm:py-4 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white rounded-2xl shadow-[0_0_40px_rgba(245,158,11,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-amber-300/50";
+            btnIcon.className = "fas fa-sign-out-alt text-3xl sm:text-4xl lg:text-5xl mb-1 group-active:scale-90 transition-transform";
             btnText.textContent = "Suelta la Pared (Fin Viraje)";
 
             // <-- LATIDO TELEMETRÍA: Avisamos al público que está en viraje
@@ -1615,7 +1615,25 @@ function accionarCrono() {
 }
 
 // Helper: Configura visualmente el botón para la siguiente acción
+
 function prepararBotonSiguienteTramo(btnCrono, btnIcon, btnText) {
+    const esPared = (distanciaActual % confPiscina === 0) && (distanciaActual < confDistancia);
+    const esLlegada = (distanciaActual === confDistancia);
+
+    if (esLlegada) {
+        btnIcon.className = "fas fa-flag-checkered text-2xl sm:text-3xl lg:text-4xl mb-0.5 sm:mb-1 group-active:scale-90 transition-transform";
+        btnText.textContent = `Llegada Final (${distanciaActual}m)`;
+    } else if (esPared) {
+        btnIcon.className = "fas fa-hand-paper text-2xl sm:text-3xl lg:text-4xl mb-0.5 sm:mb-1 group-active:scale-90 transition-transform";
+        btnText.textContent = `Toca Pared (${distanciaActual}m)`;
+    } else {
+        btnIcon.className = "fas fa-ruler-horizontal text-2xl sm:text-3xl lg:text-4xl mb-0.5 sm:mb-1 group-active:scale-90 transition-transform";
+        btnText.textContent = `Marca Split (${distanciaActual}m)`;
+    }
+}
+
+
+/* function prepararBotonSiguienteTramo(btnCrono, btnIcon, btnText) {
     const esPared = (distanciaActual % confPiscina === 0) && (distanciaActual < confDistancia);
     const esLlegada = (distanciaActual === confDistancia);
 
@@ -1631,10 +1649,10 @@ function prepararBotonSiguienteTramo(btnCrono, btnIcon, btnText) {
         btnIcon.className = "fas fa-ruler-horizontal text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
         btnText.textContent = `Marca Split (${distanciaActual}m)`;
     }
-}
+} */
 
 // Helper: Pinta el elemento en la lista del cronómetro
-function agregarItemListaCrono(etiqueta, icono, colorBadge, formatoFinal) {
+/* function agregarItemListaCrono(etiqueta, icono, colorBadge, formatoFinal) {
     const listaHtml = document.getElementById('listaTiemposCrono');
     if (distanciaActual === 0 && estadoCrono !== 'EN_VIRAJE') listaHtml.innerHTML = ''; 
 
@@ -1645,6 +1663,22 @@ function agregarItemListaCrono(etiqueta, icono, colorBadge, formatoFinal) {
                 <span class="text-white text-sm font-medium">${etiqueta}</span>
             </div>
             <span class="text-white font-mono font-bold text-sm tracking-wider">${formatoFinal}</span>
+        </li>
+    `;
+    listaHtml.insertAdjacentHTML('afterbegin', itemHtml);
+} */
+
+    function agregarItemListaCrono(etiqueta, icono, colorBadge, formatoFinal) {
+    const listaHtml = document.getElementById('listaTiemposCrono');
+    if (distanciaActual === 0 && estadoCrono !== 'EN_VIRAJE') listaHtml.innerHTML = ''; 
+
+    const itemHtml = `
+        <li class="flex justify-between items-center bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/15 p-3 rounded-lg border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none transition-colors duration-300 animate-fade-in">
+            <div class="flex items-center gap-3">
+                <span class="${colorBadge} text-white text-[10px] font-bold px-2 py-1 rounded w-8 text-center"><i class="fas ${icono}"></i></span>
+                <span class="text-gray-800 dark:text-white text-sm font-medium">${etiqueta}</span>
+            </div>
+            <span class="text-gray-900 dark:text-white font-mono font-bold text-sm tracking-wider">${formatoFinal}</span>
         </li>
     `;
     listaHtml.insertAdjacentHTML('afterbegin', itemHtml);
@@ -1830,18 +1864,17 @@ function reiniciarCrono() {
     document.querySelector('#btnAccionCrono i').className = "fas fa-play text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
     document.getElementById('txtBtnAccionCrono').textContent = "Iniciar Prueba";
     
-    // 5. Ocultar botones secundarios de control
     document.getElementById('btnReiniciarCrono').classList.add('hidden');
     document.getElementById('btnTransferirCrono').classList.add('hidden');
     
-    // 6. Limpiar la lista de tramos (splits) en el DOM
+    // Plantilla inicial dinámica
     document.getElementById('listaTiemposCrono').innerHTML = `
-        <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5 opacity-50">
+        <li class="flex justify-between items-center bg-gray-200 dark:bg-white/5 p-3 rounded-lg border border-gray-300 dark:border-white/5 opacity-60 transition-colors duration-300">
             <div class="flex items-center gap-3">
-                <span class="bg-gray-700 text-white text-[10px] font-bold px-2 py-1 rounded"><i class="fas fa-hourglass-start"></i></span>
-                <span class="text-gray-400 text-sm font-medium">Presione INICIAR cuando suene la bocina.</span>
+                <span class="bg-gray-500 dark:bg-gray-700 text-white text-[10px] font-bold px-2 py-1 rounded"><i class="fas fa-hourglass-start"></i></span>
+                <span class="text-gray-600 dark:text-gray-400 text-sm font-medium">Presione INICIAR cuando suene la bocina.</span>
             </div>
-            <span class="text-gray-500 font-mono font-bold text-sm">--:--.--</span>
+            <span class="text-gray-500 dark:text-gray-400 font-mono font-bold text-sm">--:--.--</span>
         </li>`;
 }
 

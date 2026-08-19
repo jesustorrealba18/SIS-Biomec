@@ -501,7 +501,7 @@ if (isset($_SESSION['id'])) {
                         </p>
                         <span id="contadorSplits" class="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-mono font-bold">0 Tramos</span>
                     </div>
-                    <div id="rejillaSplits" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div id="rejillaSplits" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"">
                     </div>
                     <div id="alertaCoherencia" class="mt-3 text-right text-[11px] font-medium transition-all"></div>
                 </div>
@@ -543,77 +543,68 @@ if (isset($_SESSION['id'])) {
             </div>
         </div>
     </div>
-
-   <!-- ========== MODAL CRONÓMETRO EN VIVO (FULL SCREEN) ========== -->
+<!-- ========== MODAL CRONÓMETRO EN VIVO (FULL SCREEN) ========== -->
 <div id="modalCronoEnVivo" class="fixed inset-0 z-[100] bg-white dark:bg-[#060512] flex flex-col hidden transition-opacity duration-300 opacity-0">
     
-    <!-- Header del Cronómetro -->
-    <div class="flex justify-between items-center p-4 sm:p-6 bg-gray-100 dark:bg-[#0f0d23] border-b border-gray-200 dark:border-[#252345] shadow-lg transition-colors duration-300">
+    <!-- Header del Cronómetro: Más compacto en móvil -->
+    <div class="flex-none flex justify-between items-center p-3 sm:p-5 bg-gray-100 dark:bg-[#0f0d23] border-b border-gray-200 dark:border-[#252345] shadow-lg transition-colors duration-300">
         <div>
-            <span class="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest bg-amber-50 dark:bg-amber-500/10 px-3 py-1 rounded-full animate-pulse border border-amber-200 dark:border-amber-500/30">
-                <i class="fas fa-circle text-[8px] align-middle mr-1"></i> Telemetría en Vivo
+            <span class="text-[10px] sm:text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest bg-amber-50 dark:bg-amber-500/10 px-2 sm:px-3 py-1 rounded-full animate-pulse border border-amber-200 dark:border-amber-500/30">
+                <i class="fas fa-circle text-[8px] align-middle mr-1"></i> Telemetría Live
             </span>
-            <h2 id="cronoAtletaNombre" class="text-gray-900 dark:text-white text-lg sm:text-2xl font-black mt-2">Seleccione Atleta...</h2>
-            <p id="cronoPruebaInfo" class="text-indigo-600 dark:text-indigo-400 text-xs sm:text-sm font-mono mt-1">100m Libre - Piscina 50m</p>
+            <h2 id="cronoAtletaNombre" class="text-gray-900 dark:text-white text-base sm:text-2xl font-black mt-1 sm:mt-2 leading-tight">Seleccione Atleta...</h2>
+            <p id="cronoPruebaInfo" class="text-indigo-600 dark:text-indigo-400 text-[10px] sm:text-sm font-mono mt-0.5 sm:mt-1">100m Libre - Piscina 50m</p>
         </div>
-        <button type="button" onclick="cerrarModalCronoLive()" class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition p-3 bg-gray-200 dark:bg-white/5 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-xl cursor-pointer">
-            <i class="fas fa-times text-2xl"></i>
+        <button type="button" onclick="cerrarModalCronoLive()" class="flex-none text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition p-2 sm:p-3 bg-gray-200 dark:bg-white/5 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-xl cursor-pointer ml-4">
+            <i class="fas fa-times text-xl sm:text-2xl"></i>
         </button>
     </div>
 
-    <!-- Pantalla Central del Reloj -->
-    <div class="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <!-- Pantalla Central del Reloj: flex-none en móvil (ocupa lo justo), flex-1 en PC -->
+    <div class="flex-none lg:flex-1 flex flex-col items-center justify-center py-4 sm:py-6 relative overflow-hidden min-h-[120px] lg:min-h-0">
         <!-- Efecto de resplandor de fondo -->
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-            <div class="w-96 h-96 bg-indigo-500 rounded-full blur-[100px]"></div>
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 dark:opacity-20 transition-opacity">
+            <div class="w-64 h-64 sm:w-96 sm:h-96 bg-indigo-500 rounded-full blur-[80px] sm:blur-[100px]"></div>
         </div>
 
-        <div class="relative z-10 text-center w-full max-w-4xl">
-            <!-- Reloj Principal -->
-            <div id="displayReloj" class="text-6xl sm:text-[8rem] md:text-[10rem] font-black text-gray-900 dark:text-white font-mono tracking-tighter tabular-nums drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+        <div class="relative z-10 text-center w-full max-w-4xl px-4">
+            <!-- Reloj Principal: Ajuste de altura de línea (leading-none) para evitar espacios muertos -->
+            <div id="displayReloj" class="text-6xl sm:text-[6rem] lg:text-[8rem] xl:text-[9rem] leading-none font-black text-gray-900 dark:text-white font-mono tracking-tighter tabular-nums drop-shadow-md dark:drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all">
                 00:00.00
             </div>
-            <div class="text-gray-600 dark:text-gray-400 text-sm sm:text-xl font-bold tracking-widest uppercase mt-2" id="cronoEstadoTexto">Esperando Inicio</div>
+            <div class="text-gray-600 dark:text-gray-400 text-xs sm:text-base lg:text-xl font-bold tracking-widest uppercase mt-1 sm:mt-2" id="cronoEstadoTexto">Esperando Inicio</div>
         </div>
     </div>
 
-    <!-- Panel de Registros y Botón Masivo -->
-    <div class="bg-gray-100 dark:bg-[#0f0d23] border-t border-gray-200 dark:border-[#252345] flex flex-col lg:flex-row h-[40vh] sm:h-auto sm:max-h-[50vh] transition-colors duration-300">
+    <!-- Panel de Registros y Botón Masivo: flex-1 en móvil (ocupa todo el resto), alto máximo en PC -->
+    <div class="flex-1 lg:flex-none flex flex-col lg:flex-row bg-gray-100 dark:bg-[#0f0d23] border-t border-gray-200 dark:border-[#252345] transition-colors duration-300 min-h-0 lg:max-h-[45vh]"> 
         
-        <!-- Timeline de Eventos (Se llena por JS) -->
-        <div class="flex-1 border-r border-gray-200 dark:border-[#252345] overflow-y-auto p-4 sm:p-6 bg-black/5 dark:bg-black/20 transition-colors duration-300">
-            <h3 class="text-xs uppercase text-gray-600 dark:text-gray-500 font-bold mb-4 tracking-widest flex justify-between">
+        <!-- Timeline de Eventos (Splits): Ahora sí tendrá espacio para respirar -->
+        <div class="flex-1 min-h-0 border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-[#252345] overflow-y-auto p-3 sm:p-5 bg-gray-50 dark:bg-black/20 transition-colors duration-300">
+            <h3 class="text-[10px] sm:text-xs uppercase text-gray-600 dark:text-gray-500 font-bold mb-2 sm:mb-4 tracking-widest flex justify-between sticky top-0 bg-gray-50 dark:bg-[#0b091a] py-1 z-10">
                 <span>Registro de Tiempos (Splits)</span>
                 <span id="contadorVueltasCrono" class="text-indigo-600 dark:text-indigo-400">0 / 8 Tramos</span>
             </h3>
             
             <ul id="listaTiemposCrono" class="space-y-2">
-                <!-- Ejemplo de cómo se verá inyectado por JS -->
-                <li class="flex justify-between items-center bg-gray-200 dark:bg-white/5 p-3 rounded-lg border border-gray-300 dark:border-white/5 opacity-50 transition-colors duration-300">
-                    <div class="flex items-center gap-3">
-                        <span class="bg-gray-400 dark:bg-gray-700 text-white text-[10px] font-bold px-2 py-1 rounded">--</span>
-                        <span class="text-gray-600 dark:text-gray-400 text-sm font-medium">Esperando datos...</span>
-                    </div>
-                    <span class="text-gray-500 dark:text-gray-400 font-mono font-bold text-sm">--:--.--</span>
-                </li>
+                <!-- Se inyectará por JS -->
             </ul>
         </div>
 
         <!-- Área del Botón de Acción Masivo -->
-        <div class="w-full lg:w-1/3 p-4 sm:p-6 flex flex-col gap-4 bg-gradient-to-t from-indigo-500/10 dark:from-indigo-900/20 to-transparent transition-colors duration-300">
-            <!-- Botón Multipropósito (INICIAR / SPLIT / FINALIZAR) -->
-            <button id="btnAccionCrono" onclick="accionarCrono()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-emerald-400/50">
-                <i class="fas fa-play text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform"></i>
-                <span id="txtBtnAccionCrono" class="font-black text-xl sm:text-2xl uppercase tracking-widest">Iniciar Prueba</span>
+        <div class="flex-none w-full lg:w-1/3 p-3 sm:p-5 flex flex-col justify-center gap-2 sm:gap-3 bg-gradient-to-t from-indigo-500/10 dark:from-indigo-900/20 to-transparent transition-colors duration-300">
+            <!-- Botón Multipropósito -->
+            <button id="btnAccionCrono" onclick="accionarCrono()" class="w-full py-3 sm:py-4 lg:py-6 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-emerald-400/50">
+                <i class="fas fa-play text-3xl sm:text-4xl lg:text-5xl mb-1 group-active:scale-90 transition-transform"></i>
+                <span id="txtBtnAccionCrono" class="font-black text-sm sm:text-lg lg:text-xl uppercase tracking-widest leading-tight">Iniciar Prueba</span>
             </button>
             
-            <!-- Botón de Reinicio (oculto inicialmente) -->
-            <button id="btnReiniciarCrono" onclick="reiniciarCrono()" class="hidden py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl font-bold uppercase text-sm tracking-wider cursor-pointer transition">
-                <i class="fas fa-undo mr-2"></i> Reiniciar / Descartar
+            <!-- Botones Secundarios -->
+            <button id="btnReiniciarCrono" onclick="reiniciarCrono()" class="hidden w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-500 border border-red-500/30 rounded-xl font-bold uppercase text-xs sm:text-sm tracking-wider cursor-pointer transition">
+                <i class="fas fa-undo mr-2"></i> Reiniciar
             </button>
 
-            <!-- Botón Guardar en Formulario (oculto inicialmente) -->
-            <button id="btnTransferirCrono" onclick="transferirCronoAlFormulario()" class="hidden py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold uppercase text-sm tracking-wider cursor-pointer shadow-lg shadow-indigo-500/20 transition">
+            <button id="btnTransferirCrono" onclick="transferirCronoAlFormulario()" class="hidden w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold uppercase text-xs sm:text-sm tracking-wider cursor-pointer shadow-lg shadow-indigo-500/20 transition">
                 <i class="fas fa-check-circle mr-2"></i> Confirmar y Volver
             </button>
         </div>
