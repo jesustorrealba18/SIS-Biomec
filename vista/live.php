@@ -41,40 +41,55 @@
 
     <div id="canvas-container"></div>
 
-    <div id="ui-layer" class="w-full h-screen flex flex-col justify-between p-4 sm:p-8 md:p-12">
-        
-        <div class="absolute top-4 right-4 sm:top-8 sm:right-8 pointer-auto z-50">
-            <button id="btnTheme" class="w-12 h-12 rounded-full bg-white/20 dark:bg-black/40 backdrop-blur-md border border-slate-300 dark:border-indigo-500/30 text-slate-700 dark:text-indigo-400 flex items-center justify-center hover:scale-110 transition-transform shadow-lg">
-                <i class="fas fa-moon dark:hidden text-xl"></i>
-                <i class="fas fa-sun hidden dark:block text-xl"></i>
+    <!-- AVISO DE GIRO DE PANTALLA (Solo visible en móviles en vertical) -->
+    <div id="overlayGiro" class="fixed inset-0 z-[200] bg-slate-900/95 backdrop-blur-xl flex-col items-center justify-center text-white hidden portrait:flex md:portrait:hidden">
+        <i class="fas fa-mobile-alt text-7xl animate-[spin_2s_ease-in-out_infinite] mb-6 text-indigo-400"></i>
+        <h3 class="text-2xl font-black tracking-widest uppercase mb-2 text-center">Gira tu dispositivo</h3>
+        <p class="text-slate-400 text-center px-8 text-sm">El simulador 3D ofrece una experiencia inmersiva que debe visualizarse en formato horizontal.</p>
+    </div>
+
+    <!-- UI FLOTANTE SOBRE EL 3D -->
+<div id="ui-layer" class="w-full h-screen flex flex-col justify-between p-2 sm:p-4 md:p-6 pointer-events-none">        
+        <!-- Botón de Tema (Con pointer-events-auto para que sea clickeable) -->
+        <div class="absolute top-4 right-4 sm:top-6 sm:right-6 pointer-events-auto z-50">
+            <button id="btnTheme" class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/20 dark:bg-black/40 backdrop-blur-md border border-slate-300 dark:border-indigo-500/30 text-slate-700 dark:text-indigo-400 flex items-center justify-center hover:scale-110 transition-transform shadow-lg cursor-pointer">
+                <i class="fas fa-moon dark:hidden text-lg md:text-xl"></i>
+                <i class="fas fa-sun hidden dark:block text-lg md:text-xl"></i>
             </button>
         </div>
 
         <div id="pantallaStandby" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-1000 bg-slate-50/90 dark:bg-[#060512]/90 backdrop-blur-md z-40">
-            <i class="fas fa-swimmer text-6xl md:text-8xl text-indigo-500/50 mb-6"></i>
-            <h1 class="text-4xl sm:text-6xl md:text-8xl font-black text-slate-800 dark:text-gray-300 tracking-widest uppercase transition-colors duration-500">SGRD LIVE</h1>
-            <p class="text-indigo-500 dark:text-indigo-400 mt-4 animate-pulse uppercase tracking-widest font-bold text-sm md:text-xl">Esperando Atleta...</p>
+            <i class="fas fa-swimmer text-6xl md:text-8xl text-indigo-500/50 mb-6 drop-shadow-lg"></i>
+            <h1 class="text-5xl sm:text-7xl md:text-8xl font-black text-slate-800 dark:text-gray-300 tracking-widest uppercase transition-colors duration-500 drop-shadow-md">SGRD LIVE</h1>
+            <p class="text-indigo-600 dark:text-indigo-400 mt-4 animate-pulse uppercase tracking-widest font-bold text-sm md:text-xl">Esperando Atleta...</p>
         </div>
 
-        <div id="pantallaCarrera" class="w-full h-full flex flex-col justify-between opacity-0 hidden transition-opacity duration-1000 z-10">
-            <div class="w-full flex flex-col sm:flex-row justify-between items-start sm:items-end mt-12 sm:mt-0">
-                <div class="mb-4 sm:mb-0">
-                    <div class="inline-block px-3 py-1 md:px-5 md:py-2 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 font-bold tracking-widest uppercase text-[10px] md:text-sm mb-2" id="uiPrueba">--</div>
-                    <h2 class="text-4xl sm:text-6xl lg:text-[80px] font-black text-slate-900 dark:text-white tracking-tighter uppercase glow-text leading-none transition-colors duration-500" id="uiAtleta">--</h2>
+        <!-- PANTALLA DE CARRERA (Centro libre, elementos anclados a los bordes) -->
+        <div id="pantallaCarrera" class="w-full h-full flex flex-col justify-between opacity-0 hidden transition-opacity duration-1000 z-10 pt-10 sm:pt-0">
+            
+            <!-- Header: Atleta a la izquierda, Reloj a la derecha -->
+            <div class="w-full flex flex-col md:flex-row justify-between items-start md:items-start mt-2">
+                <!-- Info Atleta -->
+                <div class="mb-2 md:mb-0 max-w-full md:max-w-[60%]">
+                    <div class="inline-block px-2 py-0.5 md:px-3 md:py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 font-bold tracking-widest uppercase text-[8px] md:text-xs mb-2 backdrop-blur-sm" id="uiPrueba">--</div>
+                    <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black text-slate-900 dark:text-white tracking-tighter uppercase glow-text leading-none transition-colors duration-500 drop-shadow-xl" id="uiAtleta">--</h2>
                 </div>
                 
-                <div class="text-left sm:text-right mt-2 sm:mt-0">
-                    <span id="uiEstado" class="block text-sm md:text-xl font-bold uppercase tracking-widest text-slate-500 dark:text-gray-400 mb-1">--</span>
-                    <span id="uiReloj" class="font-reloj text-[15vw] sm:text-8xl lg:text-[130px] leading-none font-extrabold text-slate-900 dark:text-white transition-colors duration-300 block">00:00.00</span>
+                <!-- Reloj y Estado -->
+                <div class="text-left md:text-right mt-2 md:mt-0">
+                    <span id="uiEstado" class="block text-[10px] md:text-base font-bold uppercase tracking-widest text-slate-600 dark:text-gray-300 mb-0.5 drop-shadow-md">--</span>
+                    <!-- Tamaño del reloj ajustado para no invadir el centro -->
+                    <span id="uiReloj" class="font-reloj text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-none font-extrabold text-slate-900 dark:text-white transition-colors duration-300 block drop-shadow-xl">00:00.00</span>
                 </div>
             </div>
 
-            <div class="w-full flex justify-between items-end pb-2 md:pb-6">
-                <div class="flex gap-4">
-                    <div class="flex items-center gap-2"><div class="w-3 h-3 md:w-5 md:h-5 bg-emerald-500 rounded-sm shadow-[0_0_15px_#10b981]"></div><span class="text-slate-700 dark:text-white text-[10px] md:text-sm font-bold tracking-widest transition-colors duration-500">ATLETA REAL</span></div>
-                    <div class="flex items-center gap-2"><div class="w-3 h-3 md:w-5 md:h-5 bg-slate-400 rounded-sm"></div><span class="text-slate-700 dark:text-white text-[10px] md:text-sm font-bold tracking-widest transition-colors duration-500" id="lblGhost">RECORD</span></div>
+            <!-- Footer: Leyendas (Piscina y Carriles) -->
+            <div class="w-full flex justify-between items-end pb-2">
+                <div class="flex gap-3 md:gap-4 bg-white/30 dark:bg-black/30 p-2 md:p-3 rounded-xl backdrop-blur-sm border border-slate-200 dark:border-white/10 shadow-lg">
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 md:w-4 md:h-4 bg-emerald-500 rounded-sm shadow-[0_0_15px_#10b981]"></div><span class="text-slate-800 dark:text-white text-[9px] md:text-xs font-bold tracking-widest transition-colors duration-500">REAL</span></div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 md:w-4 md:h-4 bg-slate-400 rounded-sm"></div><span class="text-slate-800 dark:text-white text-[9px] md:text-xs font-bold tracking-widest transition-colors duration-500" id="lblGhost">RECORD</span></div>
                 </div>
-                <div class="text-slate-500 font-bold text-[10px] md:text-sm uppercase tracking-widest">
+                <div class="bg-indigo-500/10 dark:bg-indigo-900/40 p-2 md:p-3 rounded-xl backdrop-blur-sm border border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-bold text-[9px] md:text-xs uppercase tracking-widest shadow-lg">
                     Piscina <span id="uiDistanciaPool">--</span>
                 </div>
             </div>
@@ -249,16 +264,29 @@
         });
         actualizarColores3D();
 
-        function ajustarCamara() {
-            const aspect = window.innerWidth / window.innerHeight;
-            camera.aspect = aspect;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+   function ajustarCamara() {
+    const aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = aspect;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 
-            if (aspect < 0.7) { camera.position.set(0, 95, 60); camera.lookAt(0, -15, 0); } 
-            else if (aspect < 1.2) { camera.position.set(0, 65, 65); camera.lookAt(0, -5, 0); } 
-            else { camera.position.set(0, 45, 65); camera.lookAt(0, 0, 0); }
-        }
+    // Diferencia Y (position.y - lookAt.y) = 37 para todos los casos
+    if (aspect < 0.7) {
+        // Móvil vertical: más altura y más distancia para abarcar la piscina
+        camera.position.set(0, 110, 85);
+        camera.lookAt(0, 73, 0); // 110 - 73 = 37
+    } 
+    else if (aspect < 1.2) {
+        // Tablets: altura media, distancia media
+        camera.position.set(0, 75, 80);
+        camera.lookAt(0, 38, 0); // 75 - 38 = 37
+    } 
+    else {
+        // Escritorio (tu configuración actual)
+        camera.position.set(0, 45, 75);
+        camera.lookAt(0, 8, 0); // 45 - 8 = 37
+    }
+}
         window.addEventListener('resize', ajustarCamara);
         ajustarCamara();
 
