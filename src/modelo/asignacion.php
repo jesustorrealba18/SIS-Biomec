@@ -54,7 +54,6 @@ class Asignacion extends Conexion {
                 try {
                     $diaEspecificoValue = empty($dia_especifico) ? null : $dia_especifico;
                     
-                    // Construir consulta para verificar duplicados
                     if ($excluirId !== null) {
                         $sqlDuplicado = "SELECT COUNT(*) FROM asignacion_carril 
                                          WHERE id_asignacion != :id 
@@ -78,7 +77,6 @@ class Asignacion extends Conexion {
                     $stmtDuplicado->bindParam(':id_carril', $id_carril, PDO::PARAM_INT);
                     $stmtDuplicado->bindParam(':id_bloque_horario', $id_bloque_horario, PDO::PARAM_INT);
                     
-                    // Manejar NULL correctamente
                     if ($diaEspecificoValue === null) {
                         $stmtDuplicado->bindValue(':dia_especifico', null, PDO::PARAM_NULL);
                     } else {
@@ -99,7 +97,7 @@ class Asignacion extends Conexion {
         }
 
         return $this->obtenerErrores();
-    } // <-- Faltaba esta llave para cerrar validarDatos()
+    }
 
     public function registrarAsignacion(): bool {
         return $this->registrarAsignacionP($this->datos);
@@ -570,6 +568,206 @@ class Asignacion extends Conexion {
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             return [];
+        }
+    }
+
+    /**
+     * Notifica a los atletas del grupo y al entrenador sobre la asignación
+     */
+    public function notificarAsignacionGrupo(array $asignacion): void
+    {
+        try {
+            $id_grupo = $asignacion['id_grupo'];
+            $carril_numero = $asignacion['carril_numero'] ?? 'desconocido';
+            $dia_semana = $asignacion['dia_semana'] ?? 'sin día';
+            $hora_inicio = $asignacion['hora_inicio'] ?? '';
+            $hora_fin = $asignacion['hora_fin'] ?? '';
+            $fecha_inicio = $asignacion['fecha_vigencia_inicio'] ?? '';
+
+            error_log("=== INICIANDO notificarAsignacionGrupo ===");
+            error_log("ID Grupo: $id_grupo, Carril: $carril_numero");
+
+            $titulo = "📋 Asignación de Carril";
+            $mensaje = "Tu grupo ha sido asignado al Carril {$carril_numero} los {$dia_semana} de {$hora_inicio} a {$hora_fin} (vigente desde {$fecha_inicio}).";
+            $icono = "fa-bell";
+            $color = "emerald";
+            $enlace = "?p=asignacion";
+
+            $conexNegocio = $this->getConex1(); // sis_natacion
+            
+            // ---- 1. NOTIFICAR A LOS ATLETAS DEL GRUPO ----
+            $sqlAtletas = "SELECT a.id_atleta, a.cedula, CONCAT(a.nombres, ' ', a.apellidos) as nombre_completo
+                           FROM grupo_atleta ga
+                           INNER JOIN atletas a ON ga.id_atleta = a.id_atleta
+                           WHERE ga.id_grupo = :id_grupo AND a.cedula IS NOT NULL AND a.cedula != ''";
+            $stmt = $conexNegocio->prepare($sqlAtletas);
+            $stmt->execute([':id_grupo' => $id_grupo]);
+            $atletas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            error_log("Atletas encontrados: " . count($atletas));
+
+            $conexSeguridad = new Conexion('sis_seguridad');
+            
+            foreach ($atletas as $atleta) {
+                if (!empty($atleta['cedula'])) {
+                    $sqlUser = "SELECT id_usuario FROM usuarios WHERE cedula = :cedula AND activo = 1";
+                    $stmtUser = $conexSeguridad->getConex1()->prepare($sqlUser);
+                    $stmtUser->execute([':cedula' => $atleta['cedula']]);
+                    $usuario = $stmtUser->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($usuario && !empty($usuario['id_usuario'])) {
+                        $resultado = Notificacion::enviar(
+                            $usuario['id_usuario'],
+                            $titulo,
+                            "{$atleta['nombre_completo']}, {$mensaje}",
+                            $icono,
+                            $color,
+                            $enlace
+                        );
+                        error_log("Notificación enviada a atleta {$atleta['nombre_completo']} (ID usuario: {$usuario['id_usuario']}): " . ($resultado ? 'OK' : 'FALLÓ'));
+                    } else {
+                        error_log("Atleta sin usuario en sis_seguridad (cédula: {$atleta['cedula']})");
+                    }
+                }
+            }
+
+            // ---- 2. NOTIFICAR AL ENTRENADOR DEL GRUPO ----
+            $sqlEntrenador = "SELECT e.id_entrenador, e.cedula, CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo
+                              FROM grupos_entrenamiento g
+                              INNER JOIN entrenador e ON g.id_entrenador = e.id_entrenador
+                              WHERE g.id_grupo = :id_grupo AND e.cedula IS NOT NULL AND e.cedula != ''";
+            $stmtEnt = $conexNegocio->prepare($sqlEntrenador);
+            $stmtEnt->execute([':id_grupo' => $id_grupo]);
+            $entrenador = $stmtEnt->fetch(PDO::FETCH_ASSOC);
+            
+            error_log("Entrenador encontrado: " . ($entrenador ? $entrenador['nombre_completo'] : 'NINGUNO'));
+
+            if ($entrenador && !empty($entrenador['cedula'])) {
+                $sqlUserEnt = "SELECT id_usuario FROM usuarios WHERE cedula = :cedula AND activo = 1";
+                $stmtUserEnt = $conexSeguridad->getConex1()->prepare($sqlUserEnt);
+                $stmtUserEnt->execute([':cedula' => $entrenador['cedula']]);
+                $usuarioEnt = $stmtUserEnt->fetch(PDO::FETCH_ASSOC);
+
+                if ($usuarioEnt && !empty($usuarioEnt['id_usuario'])) {
+                    $resultado = Notificacion::enviar(
+                        $usuarioEnt['id_usuario'],
+                        "📋 Nueva Asignación de Carril",
+                        "Tu grupo ha sido asignado al Carril {$carril_numero} los {$dia_semana} de {$hora_inicio} a {$hora_fin}.",
+                        $icono,
+                        "purple",
+                        $enlace
+                    );
+                    error_log("Notificación enviada a entrenador {$entrenador['nombre_completo']} (ID usuario: {$usuarioEnt['id_usuario']}): " . ($resultado ? 'OK' : 'FALLÓ'));
+                } else {
+                    error_log("Entrenador sin usuario en sis_seguridad (cédula: {$entrenador['cedula']})");
+                }
+            }
+
+        } catch (PDOException $e) {
+            error_log("Error notificando asignación de grupo: " . $e->getMessage());
+            error_log($e->getTraceAsString());
+        }
+    }
+
+    /**
+     * Notifica a los atletas y al entrenador que la asignación ha finalizado
+     */
+    public function notificarFinAsignacion(array $asignacion): void
+    {
+        try {
+            $id_grupo = $asignacion['id_grupo'];
+            $carril_numero = $asignacion['carril_numero'] ?? 'desconocido';
+
+            $titulo = "🏊 Asignación Finalizada";
+            $mensaje = "La asignación del Carril {$carril_numero} para tu grupo ha finalizado.";
+            $icono = "fa-flag-checkered";
+            $color = "amber";
+            $enlace = "?p=asignacion";
+
+            $conexNegocio = $this->getConex1(); // sis_natacion
+            
+            // ---- 1. NOTIFICAR A LOS ATLETAS ----
+            $sqlAtletas = "SELECT a.id_atleta, a.cedula, CONCAT(a.nombres, ' ', a.apellidos) as nombre_completo
+                           FROM grupo_atleta ga
+                           INNER JOIN atletas a ON ga.id_atleta = a.id_atleta
+                           WHERE ga.id_grupo = :id_grupo AND a.cedula IS NOT NULL AND a.cedula != ''";
+            $stmt = $conexNegocio->prepare($sqlAtletas);
+            $stmt->execute([':id_grupo' => $id_grupo]);
+            $atletas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $conexSeguridad = new Conexion('sis_seguridad');
+            
+            foreach ($atletas as $atleta) {
+                if (!empty($atleta['cedula'])) {
+                    $sqlUser = "SELECT id_usuario FROM usuarios WHERE cedula = :cedula AND activo = 1";
+                    $stmtUser = $conexSeguridad->getConex1()->prepare($sqlUser);
+                    $stmtUser->execute([':cedula' => $atleta['cedula']]);
+                    $usuario = $stmtUser->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($usuario && !empty($usuario['id_usuario'])) {
+                        Notificacion::enviar(
+                            $usuario['id_usuario'],
+                            $titulo,
+                            "{$atleta['nombre_completo']}, {$mensaje}",
+                            $icono,
+                            $color,
+                            $enlace
+                        );
+                    }
+                }
+            }
+
+            // ---- 2. NOTIFICAR AL ENTRENADOR ----
+            $sqlEntrenador = "SELECT e.id_entrenador, e.cedula, CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo
+                              FROM grupos_entrenamiento g
+                              INNER JOIN entrenador e ON g.id_entrenador = e.id_entrenador
+                              WHERE g.id_grupo = :id_grupo AND e.cedula IS NOT NULL AND e.cedula != ''";
+            $stmtEnt = $conexNegocio->prepare($sqlEntrenador);
+            $stmtEnt->execute([':id_grupo' => $id_grupo]);
+            $entrenador = $stmtEnt->fetch(PDO::FETCH_ASSOC);
+
+            if ($entrenador && !empty($entrenador['cedula'])) {
+                $sqlUserEnt = "SELECT id_usuario FROM usuarios WHERE cedula = :cedula AND activo = 1";
+                $stmtUserEnt = $conexSeguridad->getConex1()->prepare($sqlUserEnt);
+                $stmtUserEnt->execute([':cedula' => $entrenador['cedula']]);
+                $usuarioEnt = $stmtUserEnt->fetch(PDO::FETCH_ASSOC);
+
+                if ($usuarioEnt && !empty($usuarioEnt['id_usuario'])) {
+                    Notificacion::enviar(
+                        $usuarioEnt['id_usuario'],
+                        "🏊 Fin de Asignación",
+                        "La asignación del Carril {$carril_numero} para tu grupo ha finalizado.",
+                        $icono,
+                        "purple",
+                        $enlace
+                    );
+                }
+            }
+
+        } catch (PDOException $e) {
+            error_log("Error notificando fin de asignación: " . $e->getMessage());
+        }
+    }
+
+    public function obtenerUltimoIdAsignacion(): ?int
+    {
+        $conex = $this->getConex1();
+        try {
+            // Usamos lastInsertId de PDO
+            $id = $conex->lastInsertId();
+            if ($id && $id > 0) {
+                return (int) $id;
+            }
+            
+            // Fallback: buscar el último ID insertado
+            $sql = "SELECT MAX(id_asignacion) as id FROM asignacion_carril";
+            $stmt = $conex->prepare($sql);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['id'] ? (int)$result['id'] : null;
+        } catch (PDOException $e) {
+            error_log("Error en obtenerUltimoIdAsignacion: " . $e->getMessage());
+            return null;
         }
     }
 }
