@@ -72,34 +72,6 @@ document.querySelectorAll('#contenedorTiemposManuales input, #rejillaSplits inpu
 });
 }
 
-/* function cerrarModalMarca() {
-    modalMarca.classList.add('hidden');
-    modalMarca.firstElementChild.classList.add('scale-95', 'opacity-0');
-    
-    // 1. Resetear el formulario tradicional
-    formMarca.reset();
-    resetearContexto();
-    
-    // 2. Limpiar el contenedor dinámico de Splits (RF-06)
-    document.getElementById('rejillaSplits').innerHTML = '';
-    document.getElementById('contenedorSplits').classList.add('hidden');
-    document.getElementById('alertaCoherencia').innerHTML = '';
-    
-    // 3. Resetear el Buscador Predictivo de Atletas
-    document.getElementById('id_atleta').value = '';
-    const inputBuscar = document.getElementById('inputBuscarAtleta');
-    if(inputBuscar) {
-        inputBuscar.value = '';
-        inputBuscar.classList.remove('text-emerald-400', 'font-bold');
-        inputBuscar.removeAttribute('readonly');
-        document.getElementById('btnLimpiarAtleta').classList.add('hidden');
-    }
-
-    selectSesion.disabled = false;
-    selectSesion.classList.remove('opacity-30', 'cursor-not-allowed');
-    selectEvento.disabled = false;
-    selectEvento.classList.remove('opacity-30', 'cursor-not-allowed');
-} */
 
 // Cerrar modal con la tecla Escape
 document.addEventListener('keydown', (e) => {
@@ -539,6 +511,56 @@ async function cargarSelectsContexto() {
     }
 }
 
+
+// =====================================================================
+// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
+// =====================================================================
+// =====================================================================
+// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
+// =====================================================================
+// =====================================================================
+// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
+// =====================================================================
+// =====================================================================
+// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
+// =====================================================================
+// =====================================================================
+// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
+// =====================================================================
+(function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* La caja debe permitir que el mensaje se vea sin recortarse */
+        .split-box {
+            overflow: visible !important;
+        }
+        /* El mensaje de validación se muestra debajo del input, en flujo normal */
+        .split-box .validador-ayuda {
+            margin-top: 4px;
+            margin-bottom: 0;
+            font-size: 10px;
+            line-height: 1.2;
+            display: block;
+            text-align: center;
+        }
+        /* Colores específicos (validador.js ya los asigna, pero los reforzamos) */
+        .split-box .validador-ayuda.v-ok {
+            color: #34d399;
+        }
+        .split-box .validador-ayuda.v-error {
+            color: #f87171;
+        }
+        .split-box .validador-ayuda.v-info {
+            color: #6b7280;
+        }
+        /* El contenedor de inputs usa space-y-2 para separarlos */
+        .split-box .flex-col > .relative {
+            margin-bottom: 0; /* space-y-2 ya maneja el espacio */
+        }
+    `;
+    document.head.appendChild(style);
+})();
+
 const selectDistancia = document.getElementById('distancia_m');
 const contenedorSplits = document.getElementById('contenedorSplits');
 const rejillaSplits = document.getElementById('rejillaSplits');
@@ -547,6 +569,86 @@ const contadorSplits = document.getElementById('contadorSplits');
 const selectPiscina = document.getElementById('tipo_piscina');
 
 function generarCajasSplits() {
+    const distanciaTotal = parseInt(selectDistancia.value);
+    const tipoPiscinaVal = selectPiscina.value;
+    const tamanoPiscina = tipoPiscinaVal === '25m' ? 25 : 50;
+    
+    if (isNaN(distanciaTotal)) {
+        contenedorSplits.classList.add('hidden');
+        rejillaSplits.innerHTML = '';
+        return;
+    }
+
+    const tamanoTramo = 25; 
+    const cantidadTramos = distanciaTotal / tamanoTramo;
+    
+    rejillaSplits.innerHTML = '';
+    
+    for (let i = 1; i <= cantidadTramos; i++) {
+        let distanciaActual = i * tamanoTramo;
+        const esPared = (distanciaActual % tamanoPiscina === 0) && (distanciaActual < distanciaTotal);
+        
+        let cajaHTML = `
+            <div class="bg-white dark:bg-[#161430] p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative split-box">
+                <label class="block text-[10px] text-gray-600 dark:text-gray-400 uppercase font-bold mb-2 text-center border-b border-gray-100 dark:border-gray-800 pb-1">
+                    Tramo ${distanciaActual}m
+                </label>
+                <div class="flex flex-col space-y-2">
+                    <!-- Input de Parcial (Siempre visible) -->
+                    <div class="relative">
+                        <!-- Etiqueta SPLIT fija: top fijo, no inset-y-0 -->
+                        <div class="absolute left-0 pl-2 pointer-events-none" style="top: 0.75rem; height: 1.5rem; display: flex; align-items: center;">
+                            <span class="text-[9px] text-indigo-400 font-bold">SPLIT</span>
+                        </div>
+                        <input type="text" 
+                               name="splits[${distanciaActual}]" 
+                               data-validar="requerido|decimal_tiempo" 
+                               required 
+                               data-nombre="Parcial de ${distanciaActual}m" 
+                               placeholder="00.00" 
+                               class="w-full bg-gray-50 dark:bg-[#0f0d23] border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-emerald-400 font-mono text-sm rounded-lg py-1.5 pr-5 pl-10 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-right split-input">
+                        <span class="absolute right-2 top-1.5 text-gray-400 dark:text-gray-500 text-[10px]">s</span>
+                    </div>
+        `;
+        
+        // Si hay pared en este tramo, inyectamos la cajita de Viraje
+        if (esPared) {
+            cajaHTML += `
+                    <!-- Input de Viraje (Dinámico) -->
+                    <div class="relative">
+                        <!-- Etiqueta VIRAJE fija: top fijo -->
+                        <div class="absolute left-0 pl-2 pointer-events-none" style="top: 0.75rem; height: 1.5rem; display: flex; align-items: center;">
+                            <span class="text-[9px] text-amber-500 font-bold">VIRAJE</span>
+                        </div>
+                        <input type="text" 
+                               name="virajes[${distanciaActual}]" 
+                               data-validar="decimal_tiempo" 
+                               data-nombre="Viraje en ${distanciaActual}m" 
+                               placeholder="00.00" 
+                               class="w-full bg-gray-50 dark:bg-[#0f0d23] border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-amber-400 font-mono text-sm rounded-lg py-1.5 pr-5 pl-10 focus:ring-2 focus:ring-amber-500 outline-none transition-all text-right">
+                        <span class="absolute right-2 top-1.5 text-gray-400 dark:text-gray-500 text-[10px]">s</span>
+                    </div>
+            `;
+        }
+        
+        cajaHTML += `
+                </div>
+            </div>
+        `;
+        
+        rejillaSplits.innerHTML += cajaHTML;
+    }
+
+    contadorSplits.innerText = `${cantidadTramos} Tramos (Cada 25m)`;
+    contenedorSplits.classList.remove('hidden');
+    
+    rejillaSplits.style.opacity = 0;
+    setTimeout(() => {
+        rejillaSplits.style.transition = "opacity 0.3s ease-in-out";
+        rejillaSplits.style.opacity = 1;
+    }, 50);
+}
+/* function generarCajasSplits() {
     const distanciaTotal = parseInt(selectDistancia.value);
     const tipoPiscinaVal = selectPiscina.value; // '25m' o '50m'
     const tamanoPiscina = tipoPiscinaVal === '25m' ? 25 : 50;
@@ -570,7 +672,7 @@ function generarCajasSplits() {
         const esPared = (distanciaActual % tamanoPiscina === 0) && (distanciaActual < distanciaTotal);
         
         let cajaHTML = `
-            <div class="bg-white dark:bg-[#161430] p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative">
+            <div class="bg-white dark:bg-[#161430] p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative split-box">
                 <label class="block text-[10px] text-gray-600 dark:text-gray-400 uppercase font-bold mb-2 text-center border-b border-gray-100 dark:border-gray-800 pb-1">
                     Tramo ${distanciaActual}m
                 </label>
@@ -626,7 +728,7 @@ function generarCajasSplits() {
         rejillaSplits.style.transition = "opacity 0.3s ease-in-out";
         rejillaSplits.style.opacity = 1;
     }, 50);
-}
+} */
 
 selectDistancia.addEventListener('change', generarCajasSplits);
 // IMPORTANTE: Agregar este listener para que re-calcule las paredes si cambian el tipo de piscina
@@ -755,73 +857,6 @@ document.getElementById('rejillaSplits').addEventListener('input', function(e) {
     }
 });
 
-// =====================================================================
-// ENVÍO DEL FORMULARIO (CREATE / UPDATE DINÁMICO)
-// =====================================================================
-/* formMarca.addEventListener('submit', async (e) => {
-    e.preventDefault(); 
-
-    const erroresFormulario = Validador.validarFormulario(formMarca);
-    
-    if (erroresFormulario && erroresFormulario.length > 0) {
-        
-        const listaErrores = Array.isArray(erroresFormulario) 
-                             ? erroresFormulario.join('<br>') 
-                             : erroresFormulario;
-
-        UI.error(
-            'Datos Incompletos', 
-            `<div class="text-left text-sm mt-2 text-gray-300">
-                <p class="mb-2 font-bold text-white">Por favor, corrige lo siguiente:</p>
-                ${listaErrores}
-             </div>`
-        );
-        
-        return; 
-    }
-
-    // 1. Filtro de Seguridad: Validamos la coherencia matemática de los Splits
-    if (typeof validarCoherenciaMatematica === 'function' && !validarCoherenciaMatematica()) {
-        UI.error('Incoherencia Matemática', 'La suma de los parciales no coincide con el tiempo final (Tolerancia: 0.015s).');
-        return;
-    }
-
-    let datosFormulario = new FormData(formMarca);
-    
-    const inputAccion = document.getElementById('accion_form');
-    const accionActual = inputAccion ? inputAccion.value : 'registrar';
-
-    datosFormulario.set('accion', accionActual);
-
-    const textoOriginal = btnGuardar.innerHTML;
-    btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> PROCESANDO...';
-    btnGuardar.disabled = true;
-
-    const resultado = await peticionAjax(accionActual, datosFormulario);
-
-    if (resultado) {
-        if (resultado.status === 'success') {
-            const msjExito = (accionActual === 'actualizar') 
-                             ? 'El registro ha sido actualizado correctamente.' 
-                             : 'El rendimiento ha sido registrado con éxito.';
-                             
-            UI.exito('¡Operación Exitosa!', msjExito);
-            
-            cerrarModalMarca();
-            cargarTablaMarcas(); 
-        } 
-        else if (resultado.status === 'warning') {
-            let mensajesError = Object.values(resultado.errores).join('<br>');
-            UI.error('Datos Incompletos', mensajesError);
-        } 
-        else {
-            UI.error('Error de Sistema', resultado.message || 'Ocurrió un error inesperado al procesar los datos.');
-        }
-    }
-
-    btnGuardar.innerHTML = textoOriginal;
-    btnGuardar.disabled = false;
-}); */
 
 
 // Función auxiliar para convertir milisegundos a Segundos puros (Ej: 75230ms -> "75.23")
@@ -1475,9 +1510,6 @@ function cerrarModalCronoLive() {
 }
 
 // ---------------------------------------------------------
-// Lógica de un Solo Botón (El entrenador solo pulsa un botón grande)
-// ---------------------------------------------------------
-// ---------------------------------------------------------
 // Lógica de Doble Clic (Split Continuo vs Viraje en Pared)
 // ---------------------------------------------------------
 function accionarCrono() {
@@ -1494,8 +1526,8 @@ function accionarCrono() {
         tiempoInicio = tiempoActual;
         animacionReloj = requestAnimationFrame(actualizarRelojUI);
 
-        btnCrono.className = "flex-1 bg-purple-500 hover:bg-purple-400 active:bg-purple-600 text-white rounded-2xl shadow-[0_0_40px_rgba(168,85,247,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-purple-300/50";
-        btnIcon.className = "fas fa-bolt text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
+        btnCrono.className = "w-full py-3 sm:py-4 bg-purple-500 hover:bg-purple-400 active:bg-purple-600 text-white rounded-2xl shadow-[0_0_40px_rgba(168,85,247,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-purple-300/50";
+        btnIcon.className = "fas fa-bolt text-2xl sm:text-3xl lg:text-4xl mb-0.5 sm:mb-1 group-active:scale-90 transition-transform";
         btnText.textContent = "Tomar Reacción (Salto)";
         document.getElementById('cronoEstadoTexto').textContent = "Prueba en Curso";
         document.getElementById('btnReiniciarCrono').classList.remove('hidden');
@@ -1531,8 +1563,8 @@ function accionarCrono() {
             cancelAnimationFrame(animacionReloj);
             agregarItemListaCrono(`Llegada Final (${confDistancia}m)`, "fa-flag-checkered", "bg-emerald-500", formatearMilisegundos(transcurrido));
 
-            btnCrono.className = "flex-1 bg-gray-700 text-gray-400 rounded-2xl transition-all flex flex-col items-center justify-center cursor-not-allowed border-2 border-gray-600";
-            btnIcon.className = "fas fa-flag-checkered text-4xl sm:text-5xl mb-2";
+            btnCrono.className = "w-full py-3 sm:py-4 bg-gray-700 text-gray-400 rounded-2xl transition-all flex flex-col items-center justify-center cursor-not-allowed border-2 border-gray-600";
+            btnIcon.className = "fas fa-flag-checkered text-3xl sm:text-4xl lg:text-5xl mb-1";
             btnText.textContent = "Prueba Finalizada";
             document.getElementById('cronoEstadoTexto').textContent = "Resultados Listos";
             document.getElementById('btnTransferirCrono').classList.remove('hidden');
@@ -1546,8 +1578,8 @@ function accionarCrono() {
             tiempoToquePared = tiempoActual; 
             agregarItemListaCrono(`Toca Pared (${distanciaActual}m)`, "fa-hand-paper", "bg-amber-500", formatearMilisegundos(transcurrido));
 
-            btnCrono.className = "flex-1 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white rounded-2xl shadow-[0_0_40px_rgba(245,158,11,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-amber-300/50";
-            btnIcon.className = "fas fa-sign-out-alt text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
+           btnCrono.className = "w-full py-3 sm:py-4 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white rounded-2xl shadow-[0_0_40px_rgba(245,158,11,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-amber-300/50";
+            btnIcon.className = "fas fa-sign-out-alt text-3xl sm:text-4xl lg:text-5xl mb-1 group-active:scale-90 transition-transform";
             btnText.textContent = "Suelta la Pared (Fin Viraje)";
 
             // <-- LATIDO TELEMETRÍA: Avisamos al público que está en viraje
@@ -1583,7 +1615,25 @@ function accionarCrono() {
 }
 
 // Helper: Configura visualmente el botón para la siguiente acción
+
 function prepararBotonSiguienteTramo(btnCrono, btnIcon, btnText) {
+    const esPared = (distanciaActual % confPiscina === 0) && (distanciaActual < confDistancia);
+    const esLlegada = (distanciaActual === confDistancia);
+
+    if (esLlegada) {
+        btnIcon.className = "fas fa-flag-checkered text-2xl sm:text-3xl lg:text-4xl mb-0.5 sm:mb-1 group-active:scale-90 transition-transform";
+        btnText.textContent = `Llegada Final (${distanciaActual}m)`;
+    } else if (esPared) {
+        btnIcon.className = "fas fa-hand-paper text-2xl sm:text-3xl lg:text-4xl mb-0.5 sm:mb-1 group-active:scale-90 transition-transform";
+        btnText.textContent = `Toca Pared (${distanciaActual}m)`;
+    } else {
+        btnIcon.className = "fas fa-ruler-horizontal text-2xl sm:text-3xl lg:text-4xl mb-0.5 sm:mb-1 group-active:scale-90 transition-transform";
+        btnText.textContent = `Marca Split (${distanciaActual}m)`;
+    }
+}
+
+
+/* function prepararBotonSiguienteTramo(btnCrono, btnIcon, btnText) {
     const esPared = (distanciaActual % confPiscina === 0) && (distanciaActual < confDistancia);
     const esLlegada = (distanciaActual === confDistancia);
 
@@ -1599,10 +1649,10 @@ function prepararBotonSiguienteTramo(btnCrono, btnIcon, btnText) {
         btnIcon.className = "fas fa-ruler-horizontal text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
         btnText.textContent = `Marca Split (${distanciaActual}m)`;
     }
-}
+} */
 
 // Helper: Pinta el elemento en la lista del cronómetro
-function agregarItemListaCrono(etiqueta, icono, colorBadge, formatoFinal) {
+/* function agregarItemListaCrono(etiqueta, icono, colorBadge, formatoFinal) {
     const listaHtml = document.getElementById('listaTiemposCrono');
     if (distanciaActual === 0 && estadoCrono !== 'EN_VIRAJE') listaHtml.innerHTML = ''; 
 
@@ -1616,60 +1666,23 @@ function agregarItemListaCrono(etiqueta, icono, colorBadge, formatoFinal) {
         </li>
     `;
     listaHtml.insertAdjacentHTML('afterbegin', itemHtml);
-}
+} */
 
-/* function registrarTramoMatematico() {
-    const tiempoActual = performance.now();
-    const transcurrido = (tiempoActual - tiempoInicio);
-    
-    const formato = formatearMilisegundos(transcurrido);
-    
-    let etiqueta = "";
-    let icono = "";
-    let colorBadge = "";
-
-    if (tramoActual === 1) {
-        etiqueta = "Tiempo de Reacción (Salida)";
-        icono = "fa-bolt";
-        colorBadge = "bg-purple-500";
-    } else if (tramoActual === totalTramosEsperados) {
-        etiqueta = `Llegada Final (${confDistancia}m)`;
-        icono = "fa-flag-checkered";
-        colorBadge = "bg-emerald-500";
-    } else {
-        const metrosRecorridos = (tramoActual - 1) * 25;
-        const esViraje = (metrosRecorridos % confPiscina) === 0;
-        
-        if (esViraje) {
-            etiqueta = `Viraje en Pared (${metrosRecorridos}m)`;
-            icono = "fa-undo";
-            colorBadge = "bg-amber-500";
-        } else {
-            etiqueta = `Split en Marca (${metrosRecorridos}m)`;
-            icono = "fa-ruler-horizontal";
-            colorBadge = "bg-indigo-500";
-        }
-    }
-
-    registrosSplits.push({ tramo: tramoActual, etiqueta, tiempoMilisegundos: transcurrido, formato });
-
-    document.getElementById('contadorVueltasCrono').textContent = `${tramoActual - 1} / ${totalTramosEsperados - 1} Tramos`;
-    
+    function agregarItemListaCrono(etiqueta, icono, colorBadge, formatoFinal) {
     const listaHtml = document.getElementById('listaTiemposCrono');
-    if (tramoActual === 1) listaHtml.innerHTML = ''; 
+    if (distanciaActual === 0 && estadoCrono !== 'EN_VIRAJE') listaHtml.innerHTML = ''; 
 
     const itemHtml = `
-        <li class="flex justify-between items-center bg-white/10 hover:bg-white/15 p-3 rounded-lg border border-white/5 transition animate-fade-in">
+        <li class="flex justify-between items-center bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/15 p-3 rounded-lg border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none transition-colors duration-300 animate-fade-in">
             <div class="flex items-center gap-3">
                 <span class="${colorBadge} text-white text-[10px] font-bold px-2 py-1 rounded w-8 text-center"><i class="fas ${icono}"></i></span>
-                <span class="text-white text-sm font-medium">${etiqueta}</span>
+                <span class="text-gray-800 dark:text-white text-sm font-medium">${etiqueta}</span>
             </div>
-            <span class="text-white font-mono font-bold text-sm tracking-wider">${formato}</span>
+            <span class="text-gray-900 dark:text-white font-mono font-bold text-sm tracking-wider">${formatoFinal}</span>
         </li>
     `;
-    
     listaHtml.insertAdjacentHTML('afterbegin', itemHtml);
-} */
+}
 
 
 
@@ -1800,11 +1813,6 @@ function transferirCronoAlFormulario() {
         }
     });
 
-    // 9. Bloquear TODOS los inputs de tiempo (por si acaso)
-    /* document.querySelectorAll('#contenedorTiemposManuales input, #rejillaSplits input').forEach(input => {
-        input.setAttribute('readonly', 'true');
-        input.classList.add('bg-slate-200', 'dark:bg-slate-700', 'cursor-not-allowed', 'opacity-80');
-    }); */
 
     // 9. Bloquear inputs de tiempo (excepto brazadas_por_largo)
 document.querySelectorAll('#contenedorTiemposManuales input, #rejillaSplits input').forEach(input => {
@@ -1816,71 +1824,21 @@ document.querySelectorAll('#contenedorTiemposManuales input, #rejillaSplits inpu
 
     // 10. Ejecutar validación de coherencia para actualizar colores
     validarCoherenciaMatematica();
+
+    // 11. Forzar validación de cada campo de tiempo
+const camposTiempo = document.querySelectorAll(
+    '#contenedorTiemposManuales input, #rejillaSplits input'
+);
+camposTiempo.forEach(input => {
+    if (input.hasAttribute('data-validar')) {
+        // Llamamos directamente al validador para que evalúe el campo y actualice su estado
+        Validador.validarCampo(input);
+    }
+});
+
+
 }
-/* function transferirCronoAlFormulario() {
-    cerrarModalCronoLive();
 
-    // Helper 1: Fuerza el formato estricto MM:SS.cc para el input Final visible
-    const formatoFinalEstricto = (ms) => {
-        const totalCent = Math.floor(ms / 10);
-        const cent = totalCent % 100;
-        const segTotales = Math.floor(totalCent / 100);
-        const seg = segTotales % 60;
-        const min = Math.floor(segTotales / 60);
-        return `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}.${cent.toString().padStart(2, '0')}`;
-    };
-
-    // Helper 2: Fuerza el formato estricto 00.00 para parciales, reacción y virajes
-    const formatoParcialEstricto = (centesimas) => {
-        const seg = Math.floor(centesimas / 100);
-        const cent = centesimas % 100;
-        return `${seg.toString().padStart(2, '0')}.${cent.toString().padStart(2, '0')}`;
-    };
-
-    // 1. Restaurar UI de Formulario Manual
-    document.getElementById('contenedorTiemposManuales').classList.remove('hidden');
-    document.getElementById('btnIrCrono').classList.add('hidden');
-    document.getElementById('btnGuardar').classList.remove('hidden');
-    document.getElementById('tiempo_final_humano').required = true;
-
-    // 2. Generar las Cajas dinámicas
-    generarCajasSplits();
-    
-    // 3. MATEMÁTICA DE PRECISIÓN (En Centésimas)
-    let centesimasAcumuladas = 0;
-    
-    registrosCrono.forEach(registro => {
-        // Truncamos las centésimas para coincidir con la pantalla del cronómetro
-        const centesimasActuales = Math.floor(registro.tiempoMs / 10);
-        // Formateamos usando nuestro nuevo Helper (Ej: pasa de "1.11" a "01.11")
-        const valorFormateado = formatoParcialEstricto(centesimasActuales);
-
-        if (registro.tipo === 'reaccion') {
-            document.getElementById('tiempo_reaccion_seg').value = valorFormateado;
-            
-        } else if (registro.tipo === 'viraje') {
-            const inputViraje = document.querySelector(`[name="virajes[${registro.distancia}]"]`);
-            if (inputViraje) inputViraje.value = valorFormateado;
-            
-        } else if (registro.tipo === 'split') {
-            // El tiempo de este tramo es la centésima actual menos la acumulada en el tramo anterior
-            const lapCentesimas = centesimasActuales - centesimasAcumuladas;
-            centesimasAcumuladas = centesimasActuales; // Actualizamos para el siguiente tramo
-            
-            const inputSplit = document.querySelector(`[name="splits[${registro.distancia}]"]`);
-            if (inputSplit) inputSplit.value = formatoParcialEstricto(lapCentesimas);
-            
-            // Si es el último split (La meta), llenamos el Tiempo Final
-            if (registro.distancia === confDistancia) {
-                document.getElementById('tiempo_final_humano').value = formatoFinalEstricto(registro.tiempoMs);
-                document.getElementById('tiempo_final_seg').value = valorFormateado; // Valor total en segundos (hidden)
-            }
-        }
-    });
-
-    // 4. Disparar la validación visual de colores
-    validarCoherenciaMatematica();
-} */
 
 function reiniciarCrono() {
     // 1. Apagar motores y animación
@@ -1906,18 +1864,17 @@ function reiniciarCrono() {
     document.querySelector('#btnAccionCrono i').className = "fas fa-play text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
     document.getElementById('txtBtnAccionCrono').textContent = "Iniciar Prueba";
     
-    // 5. Ocultar botones secundarios de control
     document.getElementById('btnReiniciarCrono').classList.add('hidden');
     document.getElementById('btnTransferirCrono').classList.add('hidden');
     
-    // 6. Limpiar la lista de tramos (splits) en el DOM
+    // Plantilla inicial dinámica
     document.getElementById('listaTiemposCrono').innerHTML = `
-        <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5 opacity-50">
+        <li class="flex justify-between items-center bg-gray-200 dark:bg-white/5 p-3 rounded-lg border border-gray-300 dark:border-white/5 opacity-60 transition-colors duration-300">
             <div class="flex items-center gap-3">
-                <span class="bg-gray-700 text-white text-[10px] font-bold px-2 py-1 rounded"><i class="fas fa-hourglass-start"></i></span>
-                <span class="text-gray-400 text-sm font-medium">Presione INICIAR cuando suene la bocina.</span>
+                <span class="bg-gray-500 dark:bg-gray-700 text-white text-[10px] font-bold px-2 py-1 rounded"><i class="fas fa-hourglass-start"></i></span>
+                <span class="text-gray-600 dark:text-gray-400 text-sm font-medium">Presione INICIAR cuando suene la bocina.</span>
             </div>
-            <span class="text-gray-500 font-mono font-bold text-sm">--:--.--</span>
+            <span class="text-gray-500 dark:text-gray-400 font-mono font-bold text-sm">--:--.--</span>
         </li>`;
 }
 

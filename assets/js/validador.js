@@ -285,7 +285,7 @@ class Validador {
         // ==============================================================
         // 0. REQUISITOS AL ENFOCAR / OCULTAR AL SALIR
         // ==============================================================
-        formulario.addEventListener('focus', function(e) {
+        /* formulario.addEventListener('focus', function(e) {
             const campo = e.target;
             if (!campo.hasAttribute('data-validar')) return;
             const reglas = campo.getAttribute('data-validar').split('|');
@@ -305,11 +305,67 @@ class Validador {
                     Validador.mostrarAyuda(campo, requisitos.join(' · '), 'info');
                 }
             }
+        }, true); */
+
+        formulario.addEventListener('focus', function(e) {
+            const campo = e.target;
+            if (!campo.hasAttribute('data-validar')) return;
+
+            // 🛡️ SEGURIDAD PARA READONLY: No mostrar requisitos ni borrar "Campo válido"
+            if (campo.readOnly && campo.value.trim() !== '') {
+                // Si no tiene mensaje de "ok", lo forzamos; si ya lo tiene, lo dejamos.
+                const ayuda = campo.nextElementSibling;
+                if (!ayuda || !ayuda.classList.contains('validador-ayuda') || !ayuda.classList.contains('v-ok')) {
+                    Validador.validarCampo(campo);
+                }
+                return;
+            }
+
+            const reglas = campo.getAttribute('data-validar').split('|');
+            const valor = campo.value.trim();
+
+            // Usamos la presencia del mensaje "ok" para determinar si ya es válido
+            const ayudaActual = campo.nextElementSibling;
+            const tieneOk = ayudaActual && ayudaActual.classList.contains('validador-ayuda') && ayudaActual.classList.contains('v-ok');
+
+            if (valor === '' || !tieneOk) {
+                let requisitos = reglas
+                    .map(r => Validador.REQUISITOS_INFO[r])
+                    .filter(Boolean);
+                if (campo.hasAttribute('data-min')) {
+                    requisitos.push(`Mínimo ${campo.getAttribute('data-min')} caracteres`);
+                }
+                if (campo.hasAttribute('data-max')) {
+                    requisitos.push(`Máximo ${campo.getAttribute('data-max')} caracteres`);
+                }
+                if (requisitos.length > 0) {
+                    Validador.mostrarAyuda(campo, requisitos.join(' · '), 'info');
+                }
+            }
         }, true);
+
+       /*  formulario.addEventListener('blur', function(e) {
+            const campo = e.target;
+            if (!campo.hasAttribute('data-validar')) return;
+            const valor = campo.value.trim();
+            if (valor === '') {
+                Validador.ocultarAyuda(campo);
+                if (campo.getAttribute('data-validar').split('|').includes('requerido')) {
+                    campo.style.borderColor = '';
+                }
+            }
+        }, true); */
 
         formulario.addEventListener('blur', function(e) {
             const campo = e.target;
             if (!campo.hasAttribute('data-validar')) return;
+
+            // 🛡️ SEGURIDAD PARA READONLY: Al salir, restauramos "Campo válido"
+            if (campo.readOnly && campo.value.trim() !== '') {
+                Validador.validarCampo(campo);
+                return;
+            }
+
             const valor = campo.value.trim();
             if (valor === '') {
                 Validador.ocultarAyuda(campo);
