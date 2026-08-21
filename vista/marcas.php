@@ -600,7 +600,7 @@ if (isset($_SESSION['id'])) {
             </button>
             
             <!-- Botones Secundarios -->
-            <button id="btnReiniciarCrono" onclick="reiniciarCrono()" class="hidden w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-500 border border-red-500/30 rounded-xl font-bold uppercase text-xs sm:text-sm tracking-wider cursor-pointer transition">
+            <button id="btnReiniciarCrono" onclick="reiniciarPruebaCompleta()" class="hidden w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-500 border border-red-500/30 rounded-xl font-bold uppercase text-xs sm:text-sm tracking-wider cursor-pointer transition">
                 <i class="fas fa-undo mr-2"></i> Reiniciar
             </button>
 

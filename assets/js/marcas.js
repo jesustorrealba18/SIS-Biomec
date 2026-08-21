@@ -1878,6 +1878,91 @@ function reiniciarCrono() {
         </li>`;
 }
 
+// =====================================================================
+// FUNCIÓN PARA EL BOTÓN "REINICIAR" (Sincroniza UI y Base de Datos)
+// =====================================================================
+window.reiniciarPruebaCompleta = function() {
+    const confirmacion = confirm("¿Estás seguro de reiniciar la prueba desde cero? El atleta volverá al taco de salida.");
+    
+    if (confirmacion) {
+        // 1. Limpiamos y detenemos el reloj localmente
+        reiniciarCrono();
+        
+        // 2. ¡LA CLAVE! Le decimos a la base de datos que volvemos al inicio.
+        // El estado 'iniciando' es el que el live.php detecta para poner al avatar en posición de 'Taco'
+        enviarLatidoTelemetria('iniciando', 0, 0);
+        
+        // 3. Limpiamos la memoria segura por si había guardado algún split anterior
+        CronometroSeguro.limpiar();
+    }
+}
+
+
+// =====================================================================
+// DETECCIÓN DE CIERRE DE PESTAÑA / NAVEGADOR (Cancelar carrera en curso o en sus marcas)
+// =====================================================================
+window.addEventListener('beforeunload', function(e) {
+    // Verificamos si el modal visualmente está abierto en la pantalla
+    const modalLive = document.getElementById('modalCronoEnVivo');
+    const cronoAbierto = modalLive && !modalLive.classList.contains('hidden');
+
+    // Ahora actuamos si el cronómetro está corriendo, O si el modal simplemente está abierto (ESPERANDO)
+    if (cronoAbierto || cronoActivo || estadoCrono === 'EN_CURSO' || estadoCrono === 'EN_VIRAJE') {
+        const id_atleta = document.getElementById('id_atleta')?.value;
+        
+        if (id_atleta) {
+            const datos = new FormData();
+            datos.append('accion', 'sync_telemetria');
+            datos.append('id_atleta', id_atleta);
+            datos.append('distancia_total', confDistancia);
+            datos.append('tipo_piscina', confPiscina + 'm');
+            datos.append('estilo', document.getElementById('estilo')?.value || 'Libre');
+            // Forzamos el estado cancelado para limpiar la BD
+            datos.append('estado_carrera', 'cancelado');
+            datos.append('ultima_distancia_recorrida_m', distanciaActual || 0);
+            datos.append('ultimo_tiempo_parcial_ms', (tiempoInicio > 0 ? performance.now() - tiempoInicio : 0));
+            
+            const url = `${API_URL}&accion=sync_telemetria`;
+            
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(url, datos);
+            } else {
+                fetch(url, { method: 'POST', body: datos, keepalive: true }).catch(() => {});
+            }
+            
+            CronometroSeguro.limpiar();
+        }
+    }
+});
+
+window.addEventListener('pagehide', function(e) {
+    const modalLive = document.getElementById('modalCronoEnVivo');
+    const cronoAbierto = modalLive && !modalLive.classList.contains('hidden');
+
+    if (cronoAbierto || cronoActivo || estadoCrono === 'EN_CURSO' || estadoCrono === 'EN_VIRAJE') {
+        const id_atleta = document.getElementById('id_atleta')?.value;
+        if (id_atleta) {
+            const datos = new FormData();
+            datos.append('accion', 'sync_telemetria');
+            datos.append('id_atleta', id_atleta);
+            datos.append('distancia_total', confDistancia);
+            datos.append('tipo_piscina', confPiscina + 'm');
+            datos.append('estilo', document.getElementById('estilo')?.value || 'Libre');
+            datos.append('estado_carrera', 'cancelado');
+            datos.append('ultima_distancia_recorrida_m', distanciaActual || 0);
+            datos.append('ultimo_tiempo_parcial_ms', (tiempoInicio > 0 ? performance.now() - tiempoInicio : 0));
+            
+            const url = `${API_URL}&accion=sync_telemetria`;
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(url, datos);
+            } else {
+                fetch(url, { method: 'POST', body: datos, keepalive: true }).catch(() => {});
+            }
+            CronometroSeguro.limpiar();
+        }
+    }
+});
+
 // ---------------------------------------------------------
 // Helpers de Pintado y Formato
 // ---------------------------------------------------------
