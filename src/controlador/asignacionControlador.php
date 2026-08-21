@@ -50,7 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($_POST['accion'] === 'completar') {
             Autorizacion::exigir('asignacion', 'gestionar');
             $id = isset($_POST['id_asignacion']) ? (int)$_POST['id_asignacion'] : 0;
-            if ($objAsignacion->completarAsignacion($id)) { 
+            
+            if ($objAsignacion->completarAsignacion($id)) {
+                $asignacionCompleta = $objAsignacion->obtenerAsignacionPorId($id);
+                if ($asignacionCompleta) {
+                    $objAsignacion->notificarFinAsignacion($asignacionCompleta);
+                }
+                
                 echo json_encode(['status' => 'success', 'message' => 'Asignación completada.']);
             } else {
                 echo json_encode(['status' => 'error', 'message' => 'No se pudo completar la asignación.']);
@@ -111,14 +117,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($idOriginal) {
             error_log("Ejecutando EDITAR asignación ID: $idOriginal");
             $resultado = $objAsignacion->editarAsignacion();
+            $idAsignacion = $idOriginal;
         } else {
             error_log("Ejecutando REGISTRAR nueva asignación");
             $resultado = $objAsignacion->registrarAsignacion();
+            $idAsignacion = $objAsignacion->obtenerUltimoIdAsignacion();
+            
+            // Si falla obtener el ID, intentamos obtenerlo de otra forma
+            if (!$idAsignacion) {
+                $conex = $objAsignacion->getConex1();
+                $sql = "SELECT MAX(id_asignacion) as id FROM asignacion_carril 
+                        WHERE id_grupo = :id_grupo AND id_carril = :id_carril";
+                $stmt = $conex->prepare($sql);
+                $stmt->execute([
+                    ':id_grupo' => $_POST['id_grupo'],
+                    ':id_carril' => $_POST['id_carril']
+                ]);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                $idAsignacion = $result['id'] ?? null;
+            }
         }
         
         error_log("Resultado de la operación: " . ($resultado ? 'TRUE' : 'FALSE'));
+        error_log("ID de asignación: " . ($idAsignacion ?? 'NULL'));
 
         if ($resultado) {
+            // Notificación: Si la asignación está activa, notificar al grupo y entrenador
+            if (isset($_POST['activa']) && $_POST['activa'] == 1 && $idAsignacion) {
+                $asignacionCompleta = $objAsignacion->obtenerAsignacionPorId($idAsignacion);
+                if ($asignacionCompleta) {
+                    error_log("Enviando notificación de asignación para ID: " . $idAsignacion);
+                    $objAsignacion->notificarAsignacionGrupo($asignacionCompleta);
+                } else {
+                    error_log("No se pudo obtener la asignación completa para ID: " . $idAsignacion);
+                }
+            }
+            
             echo json_encode(['status' => 'success', 'message' => 'Asignación guardada con éxito.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Error en base de datos al guardar.']);
@@ -193,14 +227,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (isset($_GET['accion']) && $_GET['accion'] === 'verificarVencidas') {
-    header('Content-Type: application/json');
-    $cantidad = $objAsignacion->verificarAsignacionesVencidas();
-    echo json_encode([
-        'status' => 'success', 
-        'message' => "Se completaron $cantidad asignaciones vencidas."
-    ]);
-    exit;
-}
+        header('Content-Type: application/json');
+        $cantidad = $objAsignacion->verificarAsignacionesVencidas();
+        echo json_encode([
+            'status' => 'success', 
+            'message' => "Se completaron $cantidad asignaciones vencidas."
+        ]);
+        exit;
+    }
 
     if (isset($_GET['accion']) && $_GET['accion'] === 'carrilesDisponibles') {
         header('Content-Type: application/json');
