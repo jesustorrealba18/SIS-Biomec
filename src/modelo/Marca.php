@@ -1258,7 +1258,7 @@ public function obtenerDetallePorId(int $id_marca): ?array {
     // =====================================================================
     // MÉTODOS PARA LA PANTALLA PÚBLICA (PIZARRA EN VIVO)
     // =====================================================================
-    public function obtenerTelemetriaActual(): ?array {
+/*     public function obtenerTelemetriaActual(): ?array {
         try {
             // Buscamos el registro activo. LIMIT 1 asume 1 nadador a la vez.
             $sql = "SELECT t.*, a.nombres, a.apellidos, a.cedula 
@@ -1274,5 +1274,54 @@ public function obtenerDetallePorId(int $id_marca): ?array {
             error_log("Error al consultar telemetría pública: " . $e->getMessage());
             return null;
         }
+    } */
+
+public function obtenerTelemetriaActual(int $id_atleta): ?array {
+    try {
+        // Ahora filtramos estrictamente por el ID de la sala/atleta
+        $sql = "SELECT t.*, a.nombres, a.apellidos, a.cedula 
+                FROM telemetria_live t 
+                INNER JOIN atletas a ON t.id_atleta = a.id_atleta 
+                WHERE t.id_atleta = :id_atleta
+                LIMIT 1";
+                
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_atleta', $id_atleta, \PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+    } catch (\PDOException $e) {
+        error_log("Error al consultar telemetría del atleta $id_atleta: " . $e->getMessage());
+        return null;
     }
 }
+
+public function obtenerLobbyActivo(): array {
+    try {
+        // 1. GARBAGE COLLECTOR: Eliminar carreras huérfanas (sin actualización en 15 mins)
+        $this->pdo->exec("DELETE FROM telemetria_live WHERE ultima_actualizacion < (NOW() - INTERVAL 15 MINUTE)");
+
+        // 2. OBTENER SALAS ACTIVAS
+        $sql = "SELECT t.id_atleta, t.distancia_total, t.tipo_piscina, t.estilo, t.estado_carrera, t.ultima_actualizacion,
+                       a.nombres, a.apellidos, a.cedula 
+                FROM telemetria_live t 
+                INNER JOIN atletas a ON t.id_atleta = a.id_atleta 
+                ORDER BY t.ultima_actualizacion DESC";
+                
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    } catch (\PDOException $e) {
+        error_log("Error al consultar el lobby en vivo: " . $e->getMessage());
+        return [];
+    }
+}
+
+
+
+
+
+}
+
+

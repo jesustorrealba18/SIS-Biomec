@@ -434,9 +434,20 @@ function moverAvatar3D(mesh, distanciaRecorrida, distanciaTotal, longitudPiscina
         let velocidadGhost = 0; 
         let reaccionGhostMs = 650; 
 
+        // 1. Capturamos el ID del atleta directamente de la URL del navegador
+        const urlParams = new URLSearchParams(window.location.search);
+        const idAtletaLive = urlParams.get('id_atleta');
+
         async function escucharTelemetria() {
             try {
-                const res = await fetch('index.php?p=live&accion=get_telemetria');
+                // Si alguien entra a la página sin un ID, lo dejamos en Standby
+                if (!idAtletaLive) {
+                    mostrarStandby();
+                    return;
+                }
+
+                // 2. Inyectamos el ID en la petición AJAX
+                const res = await fetch(`index.php?p=live&accion=get_telemetria&id_atleta=${idAtletaLive}`);
                 const json = await res.json();
 
                 if (json.status === 'success') {
@@ -444,8 +455,12 @@ function moverAvatar3D(mesh, distanciaRecorrida, distanciaTotal, longitudPiscina
                 } else {
                     mostrarStandby();
                 }
-            } catch (error) {}
+            } catch (error) {
+                console.error("Error de conexión:", error);
+            }
         }
+        
+        // El setInterval se mantiene igual
         setInterval(escucharTelemetria, 1000);
 
         function procesarDatos(data, serverTime) {

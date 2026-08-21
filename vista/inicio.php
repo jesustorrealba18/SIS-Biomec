@@ -119,6 +119,37 @@ if (isset($_SESSION['id'])) {
                     <?php endforeach; ?>
                 </div>
 
+                <!-- ======================================================= -->
+                <!-- LOBBY DE TRANSMISIONES EN VIVO (SGRD LIVE) -->
+                <!-- ======================================================= -->
+                <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-6 transition-colors duration-300 shadow-sm relative overflow-hidden">
+                    <!-- Efecto de fondo sutil -->
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                    
+                    <div class="flex justify-between items-center mb-6 relative z-10">
+                        <h3 class="text-lg font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-3">
+                            <span class="relative flex h-4 w-4">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]"></span>
+                            </span>
+                            Lobby SGRD Live
+                        </h3>
+                        <span class="text-xs font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#0f0d23] px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700">
+                            Actualización en tiempo real
+                        </span>
+                    </div>
+
+                    <!-- Contenedor dinámico de Tarjetas -->
+                    <div id="contenedorLobbyLive" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 relative z-10">
+                        <!-- Esqueleto de carga inicial -->
+                        <div class="col-span-full p-8 text-center text-gray-500 dark:text-gray-400 flex flex-col items-center justify-center">
+                            <i class="fas fa-satellite-dish fa-spin text-3xl mb-3 text-indigo-400"></i>
+                            <p class="text-sm font-mono tracking-widest uppercase">Buscando transmisiones activas...</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- ======================================================= -->
+
                 <!-- Últimas actividades y resumen rápido -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Últimas actividades -->
@@ -249,6 +280,7 @@ if (isset($_SESSION['id'])) {
             });
         })();
     </script>
+    <script src="assets/js/inicio.js"></script>
 
     <!-- Librería Driver.js y script principal del tour guiado -->
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
