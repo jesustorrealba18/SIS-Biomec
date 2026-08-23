@@ -51,12 +51,13 @@
     <!-- UI FLOTANTE SOBRE EL 3D -->
 <div id="ui-layer" class="absolute inset-0 w-full h-[100dvh] flex flex-col justify-between p-2 sm:p-4 md:p-6 pointer-events-none z-10 overflow-hidden">        
         <!-- Botón de Tema -->
+        <!--  Modo Claro/oscuro
         <div class="absolute top-2 right-2 sm:top-6 sm:right-6 pointer-events-auto z-50">
             <button id="btnTheme" class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-white/20 dark:bg-black/40 backdrop-blur-md border border-slate-300 dark:border-indigo-500/30 text-slate-700 dark:text-indigo-400 flex items-center justify-center hover:scale-110 transition-transform shadow-lg cursor-pointer">
                 <i class="fas fa-moon dark:hidden text-sm sm:text-lg md:text-xl"></i>
                 <i class="fas fa-sun hidden dark:block text-sm sm:text-lg md:text-xl"></i>
             </button>
-        </div>
+        </div> -->
 
         <div id="pantallaStandby" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-1000 bg-slate-50/90 dark:bg-[#060512]/90 backdrop-blur-md z-40">
             <i class="fas fa-swimmer text-6xl md:text-8xl text-indigo-500/50 mb-6 drop-shadow-lg"></i>
@@ -105,7 +106,7 @@
         // ==========================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x060512, 0.0025); 
+        scene.fog = new THREE.FogExp2(0xf8fafc, 0.0025);  // Cambia 0x060512 por 0xf8fafc
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -114,9 +115,9 @@
         renderer.shadowMap.enabled = true;
         container.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); // Cambia el 0.7 por 1.2 
         scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);// Cambia el 0.8 por 1.1
         dirLight.position.set(0, 100, 50);
         dirLight.castShadow = true;
         scene.add(dirLight);
@@ -126,7 +127,7 @@
         const poolWidth = 40;
 
         const waterGeo = new THREE.PlaneGeometry(poolLength, poolWidth, 32, 32);
-        const waterMat = new THREE.MeshStandardMaterial({ color: 0x0891b2, transparent: true, opacity: 0.7, roughness: 0.1 });
+        const waterMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.7, roughness: 0.1 });// Cambia el 0x0891b2 por 0x38bdf8
         const water = new THREE.Mesh(waterGeo, waterMat);
         water.rotation.x = -Math.PI / 2; 
         water.receiveShadow = true;
@@ -195,9 +196,13 @@
             modeloGhost.traverse((c) => {
                 if (c.isMesh) {
                     c.material = new THREE.MeshStandardMaterial({
-                        color: 0x9ca3af,
+                        color: 0xd4a373,          // Dorado arena (cálido, elegante)
+                        emissive: 0xb8860b,       // Dorado oscuro con emisión
+                        emissiveIntensity: 0.2,
                         transparent: true,
-                        opacity: 0.45
+                        opacity: 0.85,
+                        roughness: 0.3,
+                        metalness: 0.7
                     });
                 }
             });
@@ -239,6 +244,8 @@
         // 3. SISTEMA DE TEMAS (DARK/LIGHT)
         // ==========================================
         const htmlElement = document.documentElement;
+        htmlElement.classList.remove('dark'); /* Forzar modo claro */
+/*      Descomentar si quieres modo claro y oscuro y quitar solo la linea de arriba
         const btnTheme = document.getElementById('btnTheme');
 
         function actualizarColores3D() {
@@ -260,7 +267,8 @@
             htmlElement.classList.toggle('dark');
             actualizarColores3D();
         });
-        actualizarColores3D();
+        actualizarColores3D(); */
+
 
    function ajustarCamara() {
     const aspect = window.innerWidth / window.innerHeight;
@@ -475,7 +483,16 @@ function moverAvatar3D(mesh, distanciaRecorrida, distanciaTotal, longitudPiscina
             
             let tiempoObjetivoMs = parseInt(data.tiempo_objetivo_ms) || estimarTiempo(data.distancia_total, data.estilo);
             velocidadGhost = data.distancia_total / (tiempoObjetivoMs - reaccionGhostMs); 
-            lblGhost.textContent = data.tiempo_objetivo_ms ? "RECORD PERSONAL" : "RITMO ESTIMADO";
+            //lblGhost.textContent = data.tiempo_objetivo_ms ? "RECORD PERSONAL" : "RITMO ESTIMADO";
+            if (data.tiempo_objetivo_ms) {
+                lblGhost.textContent = "RECORD PERSONAL";
+                lblGhost.classList.remove('text-slate-800', 'dark:text-white');
+                lblGhost.classList.add('text-amber-500', 'dark:text-amber-300'); // un poco más intenso
+            } else {
+                lblGhost.textContent = "RITMO ESTIMADO";
+                lblGhost.classList.remove('text-amber-400', 'dark:text-amber-300');
+                lblGhost.classList.add('text-slate-800', 'dark:text-white');
+            }
 
             const estadoCarrera = data.estado_carrera;
 

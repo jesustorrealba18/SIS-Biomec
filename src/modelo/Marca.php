@@ -1276,7 +1276,7 @@ public function obtenerDetallePorId(int $id_marca): ?array {
         }
     } */
 
-public function obtenerTelemetriaActual(int $id_atleta): ?array {
+/* public function obtenerTelemetriaActual(int $id_atleta): ?array {
     try {
         // Ahora filtramos estrictamente por el ID de la sala/atleta
         $sql = "SELECT t.*, a.nombres, a.apellidos, a.cedula 
@@ -1294,6 +1294,64 @@ public function obtenerTelemetriaActual(int $id_atleta): ?array {
         error_log("Error al consultar telemetría del atleta $id_atleta: " . $e->getMessage());
         return null;
     }
+} */
+
+public function obtenerTelemetriaActual(int $id_atleta): ?array {
+    try {
+        $sql = "SELECT t.*, a.nombres, a.apellidos, a.cedula 
+                FROM telemetria_live t 
+                INNER JOIN atletas a ON t.id_atleta = a.id_atleta 
+                WHERE t.id_atleta = :id_atleta
+                LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
+        $stmt->execute();
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($data) {
+            // Obtener PB
+            $pb = $this->obtenerPB(
+                $id_atleta,
+                $data['estilo'],
+                (int)$data['distancia_total'],
+                $data['tipo_piscina']
+            );
+            if ($pb !== null) {
+                $data['tiempo_objetivo_ms'] = $pb * 1000; // convertir a milisegundos
+                $data['pb_seg'] = $pb;
+            } else {
+                $data['tiempo_objetivo_ms'] = null;
+                $data['pb_seg'] = null;
+            }
+            return $data;
+        }
+        return null;
+    } catch (\PDOException $e) {
+        error_log("Error al consultar telemetría del atleta $id_atleta: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Obtiene la mejor marca personal (PB) de un atleta para una prueba específica
+ */
+private function obtenerPB(int $idAtleta, string $estilo, int $distancia, string $tipoPiscina): ?float {
+    $sql = "SELECT tiempo_final_seg 
+            FROM marcas 
+            WHERE id_atleta = :id_atleta 
+              AND estilo = :estilo 
+              AND distancia_m = :distancia 
+              AND tipo_piscina = :tipo_piscina 
+              AND estado = 'Activo'
+              AND es_pb = 1
+            LIMIT 1";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':id_atleta', $idAtleta, PDO::PARAM_INT);
+    $stmt->bindValue(':estilo', $estilo, PDO::PARAM_STR);
+    $stmt->bindValue(':distancia', $distancia, PDO::PARAM_INT);
+    $stmt->bindValue(':tipo_piscina', $tipoPiscina, PDO::PARAM_STR);
+    $stmt->execute();
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result ? (float)$result['tiempo_final_seg'] : null;
 }
 
 public function obtenerLobbyActivo(): array {
