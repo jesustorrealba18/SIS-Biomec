@@ -1296,7 +1296,7 @@ public function obtenerDetallePorId(int $id_marca): ?array {
     }
 } */
 
-public function obtenerTelemetriaActual(int $id_atleta): ?array {
+/* public function obtenerTelemetriaActual(int $id_atleta): ?array {
     try {
         $sql = "SELECT t.*, a.nombres, a.apellidos, a.cedula 
                 FROM telemetria_live t 
@@ -1318,6 +1318,10 @@ public function obtenerTelemetriaActual(int $id_atleta): ?array {
             if ($pb !== null) {
                 $data['tiempo_objetivo_ms'] = $pb * 1000; // convertir a milisegundos
                 $data['pb_seg'] = $pb;
+                $splitsPB = $this->obtenerSplitsDeMarca($id_atleta, $data['estilo'], (int)$data['distancia_total'], $data['tipo_piscina']);
+                if ($splitsPB) {
+                    $data['splits_pb'] = $splitsPB; // array de objetos con distancia_parcial_m y tiempo_parcial_seg
+                }
             } else {
                 $data['tiempo_objetivo_ms'] = null;
                 $data['pb_seg'] = null;
@@ -1329,13 +1333,94 @@ public function obtenerTelemetriaActual(int $id_atleta): ?array {
         error_log("Error al consultar telemetría del atleta $id_atleta: " . $e->getMessage());
         return null;
     }
+} */
+
+
+public function obtenerTelemetriaActual(int $id_atleta): ?array {
+    try {
+        $sql = "SELECT t.*, a.nombres, a.apellidos, a.cedula 
+                FROM telemetria_live t 
+                INNER JOIN atletas a ON t.id_atleta = a.id_atleta 
+                WHERE t.id_atleta = :id_atleta
+                LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
+        $stmt->execute();
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($data) {
+            // Obtener el array completo del PB
+            $pbData = $this->obtenerPB(
+                $id_atleta,
+                $data['estilo'],
+                (int)$data['distancia_total'],
+                $data['tipo_piscina']
+            );
+            
+            if ($pbData !== null) {
+                // Extraer tiempo final y de reacción
+                $data['tiempo_objetivo_ms'] = (float)$pbData['tiempo_final_seg'] * 1000;
+                $data['pb_seg'] = (float)$pbData['tiempo_final_seg'];
+                
+                // Si el atleta no registró reacción en su PB, usamos 0.65s por defecto
+                $reaccion = isset($pbData['tiempo_reaccion_seg']) ? (float)$pbData['tiempo_reaccion_seg'] : 0.65;
+                $data['reaccion_ghost_ms'] = $reaccion * 1000;
+
+                $splitsPB = $this->obtenerSplitsDeMarca($id_atleta, $data['estilo'], (int)$data['distancia_total'], $data['tipo_piscina']);
+                if ($splitsPB) {
+                    $data['splits_pb'] = $splitsPB; 
+                }
+            } else {
+                $data['tiempo_objetivo_ms'] = null;
+                $data['pb_seg'] = null;
+                $data['reaccion_ghost_ms'] = 650; // Fallback default
+            }
+            return $data;
+        }
+        return null;
+    } catch (\PDOException $e) {
+        error_log("Error al consultar telemetría del atleta $id_atleta: " . $e->getMessage());
+        return null;
+    }
+}
+
+
+private function obtenerSplitsDeMarca(int $idAtleta, string $estilo, int $distancia, string $tipoPiscina): ?array {
+    try {
+        $sql = "SELECT ms.distancia_parcial_m, ms.tiempo_parcial_seg, ms.tiempo_viraje_seg 
+                FROM marcas_splits ms
+                INNER JOIN marcas m ON ms.id_marca = m.id_marca
+                WHERE m.id_atleta = :id_atleta 
+                  AND m.estilo = :estilo 
+                  AND m.distancia_m = :distancia 
+                  AND m.tipo_piscina = :tipo_piscina
+                  AND m.es_pb = 1
+                  AND m.estado = 'Activo'
+                ORDER BY ms.parcial_numero ASC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_atleta', $idAtleta, PDO::PARAM_INT);
+        $stmt->bindValue(':estilo', $estilo, PDO::PARAM_STR);
+        $stmt->bindValue(':distancia', $distancia, PDO::PARAM_INT);
+        $stmt->bindValue(':tipo_piscina', $tipoPiscina, PDO::PARAM_STR);
+        $stmt->execute();
+        
+        $splits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Si no hay splits, devolvemos null (o array vacío, según prefieras)
+        return !empty($splits) ? $splits : null;
+        
+    } catch (\PDOException $e) {
+        error_log("Error al obtener splits del PB para atleta $idAtleta: " . $e->getMessage());
+        return null;
+    }
 }
 
 /**
  * Obtiene la mejor marca personal (PB) de un atleta para una prueba específica
  */
-private function obtenerPB(int $idAtleta, string $estilo, int $distancia, string $tipoPiscina): ?float {
-    $sql = "SELECT tiempo_final_seg 
+private function obtenerPB(int $idAtleta, string $estilo, int $distancia, string $tipoPiscina): ?array {
+    $sql = "SELECT tiempo_final_seg, tiempo_reaccion_seg 
             FROM marcas 
             WHERE id_atleta = :id_atleta 
               AND estilo = :estilo 
@@ -1350,8 +1435,9 @@ private function obtenerPB(int $idAtleta, string $estilo, int $distancia, string
     $stmt->bindValue(':distancia', $distancia, PDO::PARAM_INT);
     $stmt->bindValue(':tipo_piscina', $tipoPiscina, PDO::PARAM_STR);
     $stmt->execute();
+    
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $result ? (float)$result['tiempo_final_seg'] : null;
+    return $result ?: null;
 }
 
 public function obtenerLobbyActivo(): array {

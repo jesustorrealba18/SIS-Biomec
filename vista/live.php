@@ -85,8 +85,8 @@
             <!-- FOOTER: leyenda (siempre visible) -->
             <div class="w-full flex justify-between items-end pb-1 sm:pb-2 flex-shrink-0">
                 <div class="flex gap-1.5 md:gap-4 bg-white/30 dark:bg-black/30 p-1 md:p-3 rounded-xl backdrop-blur-sm border border-slate-200 dark:border-white/10 shadow-lg">
-                    <div class="flex items-center gap-1 md:gap-2"><div class="w-2 h-2 md:w-4 md:h-4 bg-emerald-500 rounded-sm shadow-[0_0_15px_#10b981]"></div><span class="text-slate-800 dark:text-white text-[7px] md:text-xs font-bold tracking-widest">REAL</span></div>
-                    <div class="flex items-center gap-1 md:gap-2"><div class="w-2 h-2 md:w-4 md:h-4 bg-slate-400 rounded-sm"></div><span class="text-slate-800 dark:text-white text-[7px] md:text-xs font-bold tracking-widest" id="lblGhost">RECORD</span></div>
+                    <div class="flex items-center gap-1 md:gap-2"><div class="w-2 h-2 md:w-4 md:h-4 bg-slate-800 rounded-sm shadow-sm"></div><span class="text-slate-800 dark:text-white text-[7px] md:text-xs font-bold tracking-widest">REAL</span></div>
+                    <div class="flex items-center gap-1 md:gap-2"><div class="w-2 h-2 md:w-4 md:h-4 bg-amber-500 rounded-sm"></div><span class="text-slate-800 dark:text-white text-[7px] md:text-xs font-bold tracking-widest" id="lblGhost">RECORD</span></div>
                 </div>
                 <div class="bg-indigo-500/10 dark:bg-indigo-900/40 p-1 md:p-3 rounded-xl backdrop-blur-sm border border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-bold text-[7px] md:text-xs uppercase tracking-widest shadow-lg">
                     Piscina <span id="uiDistanciaPool">--</span>
@@ -304,6 +304,32 @@
         let distVisualReal = 0, distVisualGhost = 0;
         const clock = new THREE.Clock(); 
 
+        /* function animate3D() {
+            requestAnimationFrame(animate3D);
+            const delta = clock.getDelta();
+
+            if (mixerReal) mixerReal.update(delta);
+            if (mixerGhost) mixerGhost.update(delta);
+
+            const suavizado = 0.05; 
+            distVisualReal += (targetDistReal - distVisualReal) * suavizado;
+            distVisualGhost += (targetDistGhost - distVisualGhost) * suavizado;
+
+            if(Math.abs(targetDistReal - distVisualReal) < 0.01) distVisualReal = targetDistReal;
+            if(Math.abs(targetDistGhost - distVisualGhost) < 0.01) distVisualGhost = targetDistGhost;
+
+            if (datosCarrera) {
+                const longPiscina = parseInt(datosCarrera.tipo_piscina);
+                const distTotal = parseInt(datosCarrera.distancia_total);
+                
+                moverAvatar3D(meshReal, distVisualReal, distTotal, longPiscina, 10, 'Real');
+                moverAvatar3D(meshGhost, distVisualGhost, distTotal, longPiscina, -10, 'Ghost');
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate3D(); */
+
         function animate3D() {
             requestAnimationFrame(animate3D);
             const delta = clock.getDelta();
@@ -312,6 +338,14 @@
             if (mixerGhost) mixerGhost.update(delta);
 
             const suavizado = 0.05; 
+            
+            // ANTI-GLITCH (RUBBER-BANDING): 
+            // Si la distancia que llega del servidor es MENOR a la visual actual, y ya saltó del taco (> 4m),
+            // no lo retrocedemos, mantenemos su posición hasta que el tiempo real lo alcance.
+            if (targetDistReal < distVisualReal && distVisualReal > 4) {
+                targetDistReal = distVisualReal;
+            }
+
             distVisualReal += (targetDistReal - distVisualReal) * suavizado;
             distVisualGhost += (targetDistGhost - distVisualGhost) * suavizado;
 
@@ -481,8 +515,11 @@ function moverAvatar3D(mesh, distanciaRecorrida, distanciaTotal, longitudPiscina
             uiPrueba.textContent = `${data.distancia_total}m ${data.estilo}`;
             uiDistanciaPool.textContent = `${data.tipo_piscina}m`;
             
+            reaccionGhostMs = data.reaccion_ghost_ms ? parseFloat(data.reaccion_ghost_ms) : 650;
             let tiempoObjetivoMs = parseInt(data.tiempo_objetivo_ms) || estimarTiempo(data.distancia_total, data.estilo);
-            velocidadGhost = data.distancia_total / (tiempoObjetivoMs - reaccionGhostMs); 
+            velocidadGhost = data.distancia_total / (tiempoObjetivoMs - reaccionGhostMs);
+          /*   let tiempoObjetivoMs = parseInt(data.tiempo_objetivo_ms) || estimarTiempo(data.distancia_total, data.estilo);
+            velocidadGhost = data.distancia_total / (tiempoObjetivoMs - reaccionGhostMs);  */
             //lblGhost.textContent = data.tiempo_objetivo_ms ? "RECORD PERSONAL" : "RITMO ESTIMADO";
             if (data.tiempo_objetivo_ms) {
                 lblGhost.textContent = "RECORD PERSONAL";
@@ -536,9 +573,57 @@ function moverAvatar3D(mesh, distanciaRecorrida, distanciaTotal, longitudPiscina
                 if(datosCarrera && transcurrido > 0) {
                     const distTotal = parseInt(datosCarrera.distancia_total);
 
-                    let tiempoEfectivoGhost = transcurrido - reaccionGhostMs;
+                   /*  let tiempoEfectivoGhost = transcurrido - reaccionGhostMs;
                     targetDistGhost = tiempoEfectivoGhost > 0 ? (tiempoEfectivoGhost * velocidadGhost) : 0;
+                    if (targetDistGhost > distTotal) targetDistGhost = distTotal; */
+
+            // =============================================================
+            // NUEVO: Cálculo de targetDistGhost con FLUIDEZ BASADA EN SPLITS
+            // =============================================================
+            const splitsPB = datosCarrera.splits_pb;
+            if (splitsPB && Array.isArray(splitsPB) && splitsPB.length > 0) {
+                // Creamos arreglos acumulativos partiendo desde 0
+                let tiemposAcum = [0]; 
+                let distanciasAcum = [0];
+                
+                let acumTiempoMs = 0;
+                for (let s of splitsPB) {
+                    // Acumulamos el tiempo de cada segmento (ej: 28s + 32s = 60s)
+                    acumTiempoMs += parseFloat(s.tiempo_parcial_seg) * 1000;
+                    tiemposAcum.push(acumTiempoMs);
+                    distanciasAcum.push(parseFloat(s.distancia_parcial_m));
+                }
+                
+                // Descontamos el tiempo que tarda en el bloque de salida
+                const tiempoFantasma = transcurrido - reaccionGhostMs;
+                
+                if (tiempoFantasma <= 0) {
+                    targetDistGhost = 0; // Aún en el taco, esperando reaccionar
+                } else if (tiempoFantasma >= tiemposAcum[tiemposAcum.length - 1]) {
+                    targetDistGhost = distTotal; // Terminó la carrera
+                } else {
+                    // Encontrar en qué tramo de la carrera está nadando actualmente
+                    let i = 0;
+                    while (i < tiemposAcum.length - 1 && tiemposAcum[i + 1] < tiempoFantasma) i++;
+                    
+                    const t0 = tiemposAcum[i];           // Tiempo inicio del tramo
+                    const t1 = tiemposAcum[i + 1];       // Tiempo fin del tramo
+                    const d0 = distanciasAcum[i];        // Distancia inicio del tramo
+                    const d1 = distanciasAcum[i + 1];    // Distancia fin del tramo
+                    
+                    // Interpolar fluidamente: qué porcentaje del tramo ha nadado
+                    const progreso = (tiempoFantasma - t0) / (t1 - t0);
+                    targetDistGhost = d0 + progreso * (d1 - d0);
+                    
                     if (targetDistGhost > distTotal) targetDistGhost = distTotal;
+                }
+            } else {
+                // --- MODO VELOCIDAD CONSTANTE (fallback si no hay splits) ---
+                let tiempoEfectivoGhost = transcurrido - reaccionGhostMs;
+                targetDistGhost = tiempoEfectivoGhost > 0 ? (tiempoEfectivoGhost * velocidadGhost) : 0;
+                if (targetDistGhost > distTotal) targetDistGhost = distTotal;
+            }
+            // =============================================================
 
                     let reaccionRealMs = parseFloat(datosCarrera.tiempo_reaccion_ms) || (parseFloat(datosCarrera.tiempo_reaccion_seg) * 1000) || 0;
                     let reaccionEfectiva = reaccionRealMs > 0 ? reaccionRealMs : 700;
