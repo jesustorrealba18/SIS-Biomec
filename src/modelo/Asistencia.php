@@ -13,7 +13,7 @@ class Asistencia extends Conexion {
 
     // Lista blanca para evitar inyecciones masivas por POST
     private array $camposPermitidos = [
-        'id_sesion', 'id_atleta', 'estado_asistencia', 'justificacion','token_qr','tipo'
+        'id_sesion', 'id_atleta', 'estado_asistencia', 'justificacion','token_qr','tipo', 'id_usuario'
     ];
 
     
@@ -336,16 +336,18 @@ class Asistencia extends Conexion {
             $estado = $this->datos['estado_asistencia'] ?? null;
             $justif = $this->datos['justificacion'] ?? 'Sin justificación';
             $tipo = $this->datos['tipo'] ?? 'Manual';
+            $id_usuario = $this->datos['id_usuario'] ?? null;
 
             if (!$id_sesion || !$id_atleta || !$estado) return false;
 
             
-            $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, tipo, fecha) 
-                    VALUES (:id_sesion, :id_atleta, :estado, :justificacion, :tipo, NOW())
+            $sql = "INSERT INTO asistencia (id_sesion, id_atleta, estado, justificacion, tipo, id_usuario, fecha) 
+                    VALUES (:id_sesion, :id_atleta, :estado, :justificacion, :tipo, :id_usuario, NOW())
                     ON DUPLICATE KEY UPDATE 
                     estado = VALUES(estado), 
                     justificacion = VALUES(justificacion), 
-                    tipo = IF(asistencia.estado = 'Presente' AND VALUES(estado) = 'Presente' AND asistencia.tipo = 'QR', 'QR', VALUES(tipo)), 
+                    tipo = IF(asistencia.estado = 'Presente' AND VALUES(estado) = 'Presente' AND asistencia.tipo = 'QR', 'QR', VALUES(tipo)),
+                    id_usuario = VALUES(id_usuario), 
                     fecha = NOW()";
                     
             $stmt = $this->pdo->prepare($sql);
@@ -355,6 +357,7 @@ class Asistencia extends Conexion {
             $stmt->bindValue(':estado', $estado, PDO::PARAM_STR);
             $stmt->bindValue(':justificacion', $justif, PDO::PARAM_STR);
             $stmt->bindValue(':tipo', $tipo, PDO::PARAM_STR);
+             $stmt->bindValue(':id_usuario', $id_usuario, PDO::PARAM_INT);
 
             $stmt->execute();
 

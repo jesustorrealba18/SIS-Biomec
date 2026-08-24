@@ -70,7 +70,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Autorizacion::exigir('asistencia', 'registrar'); 
         header('Content-Type: application/json');
         
-        $objAsistencia->setDatos($_POST);
+        $data = $_POST;
+        $data['id_usuario'] = $id_usuario;
+        $objAsistencia->setDatos($data);
         $resultado = $objAsistencia->RegistrarPorQR();
 
         ob_clean(); 
@@ -98,7 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Autorizacion::exigir('asistencia', 'registrar');
         header('Content-Type: application/json');
 
-        $objAsistencia->setDatos($_POST);
+        $data = $_POST;
+        $data['id_usuario'] = $id_usuario;
+        $objAsistencia->setDatos($data);
         
         if ($objAsistencia->RegistrarManual()) {
             $estado = $_POST['estado_asistencia'] ?? 'Desconocido';
