@@ -300,27 +300,28 @@ if (isset($_SESSION['id'])) {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
                         <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Nombre del Macrociclo</label>
-                        <input type="text" id="nombre" name="nombre" class="w-full input-adapt p-3 rounded-xl text-sm" placeholder="Ej: Preparacion Nacional 2026">
+                        <input type="text" id="nombre" name="nombre" class="w-full input-adapt p-3 rounded-xl text-sm" placeholder="Ej: Preparacion Nacional 2026"
+                               data-validar="requerido|texto" data-nombre="Nombre del macrociclo" data-min="3" data-max="100" maxlength="100">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Temporada *</label>
-                        <select id="id_temporada" name="id_temporada" required class="w-full input-adapt p-3 rounded-xl text-sm">
+                        <select id="id_temporada" name="id_temporada" data-validar="requerido" data-nombre="Temporada" class="w-full input-adapt p-3 rounded-xl text-sm">
                             <option value="">Seleccione...</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Grupo *</label>
-                        <select id="id_grupo" name="id_grupo" required class="w-full input-adapt p-3 rounded-xl text-sm">
+                        <select id="id_grupo" name="id_grupo" data-validar="requerido" data-nombre="Grupo" class="w-full input-adapt p-3 rounded-xl text-sm">
                             <option value="">Seleccione...</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Fecha de Inicio *</label>
-                        <input type="date" id="fecha_inicio" name="fecha_inicio" required class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
+                        <input type="date" id="fecha_inicio" name="fecha_inicio" data-validar="requerido" data-nombre="Fecha de inicio" class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
                     </div>
                     <div>
                         <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Fecha de Fin *</label>
-                        <input type="date" id="fecha_fin" name="fecha_fin" required class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
+                        <input type="date" id="fecha_fin" name="fecha_fin" data-validar="requerido" data-nombre="Fecha de fin" class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Evento Objetivo (Competencia Principal)</label>

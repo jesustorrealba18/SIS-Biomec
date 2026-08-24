@@ -153,6 +153,7 @@ function filtrarTablaMacro() {
 // ============================================================
 function abrirModalMacro(id_macrociclo = null) {
     formMacro.reset();
+    try { Validador.limpiarEstilos(formMacro); } catch (e) {}
     document.getElementById('id_macrociclo').value = '';
 
     if (id_macrociclo) {
@@ -186,6 +187,35 @@ function cerrarModalMacro() {
 
 formMacro.addEventListener('submit', async function(e) {
     e.preventDefault();
+
+    const erroresJS = Validador.validarFormulario(formMacro);
+    if (erroresJS) {
+        UI.advertencia('Datos Incompletos o Inválidos', erroresJS);
+        return;
+    }
+
+    const fechaInicio = document.getElementById('fecha_inicio').value;
+    const fechaFin = document.getElementById('fecha_fin').value;
+    if (fechaInicio && fechaFin) {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const haceUnAnio = new Date(hoy);
+        haceUnAnio.setFullYear(haceUnAnio.getFullYear() - 1);
+
+        if (new Date(fechaInicio) < haceUnAnio) {
+            UI.advertencia('Fecha Inválida', 'La <b>fecha de inicio</b> no puede ser anterior a un año atrás.');
+            return;
+        }
+        if (fechaFin <= fechaInicio) {
+            UI.advertencia('Fechas Inválidas', 'La <b>fecha de fin</b> debe ser posterior a la <b>fecha de inicio</b>.');
+            return;
+        }
+        const diffDias = (new Date(fechaFin) - new Date(fechaInicio)) / 86400000;
+        if (diffDias < 21) {
+            UI.advertencia('Duración Insuficiente', 'El macrociclo debe tener al menos <b>3 semanas (21 días)</b> entre las fechas.');
+            return;
+        }
+    }
 
     const id_macrociclo = document.getElementById('id_macrociclo').value;
     const formData = new FormData(formMacro);
@@ -655,5 +685,66 @@ async function cargarRecursos() {
         });
     }
 }
+
+function validarFechasEnVivo() {
+    const campoInicio = document.getElementById('fecha_inicio');
+    const campoFin = document.getElementById('fecha_fin');
+    if (!campoInicio || !campoFin) return;
+
+    const inicio = campoInicio.value;
+    const fin = campoFin.value;
+
+    if (!inicio || !fin) {
+        campoInicio.style.borderColor = inicio ? '#34d399' : '';
+        campoFin.style.borderColor = fin ? '#34d399' : '';
+        Validador.ocultarAyuda(campoFin);
+        return;
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const haceUnAnio = new Date(hoy);
+    haceUnAnio.setFullYear(hoy.getFullYear() - 1);
+
+    let errorInicio = '';
+    let errorFin = '';
+
+    if (new Date(inicio) < haceUnAnio) {
+        errorInicio = 'No puede ser anterior a un año atrás';
+    }
+
+    if (fin <= inicio) {
+        errorFin = 'Debe ser posterior a la fecha de inicio';
+    } else {
+        const diffDias = (new Date(fin) - new Date(inicio)) / 86400000;
+        if (diffDias < 21) {
+            errorFin = 'Mínimo 3 semanas (21 días) de duración';
+        }
+    }
+
+    campoInicio.style.borderColor = errorInicio ? '#f87171' : '#34d399';
+    campoFin.style.borderColor = errorFin ? '#f87171' : '#34d399';
+
+    if (errorInicio) {
+        Validador.mostrarAyuda(campoInicio, errorInicio, 'error');
+    } else {
+        Validador.mostrarAyuda(campoInicio, 'Campo válido', 'ok');
+    }
+
+    if (errorFin) {
+        Validador.mostrarAyuda(campoFin, errorFin, 'error');
+    } else {
+        Validador.mostrarAyuda(campoFin, 'Campo válido', 'ok');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    try { Validador.vincularTiempoReal(formMacro); } catch (e) {}
+
+    const campoInicio = document.getElementById('fecha_inicio');
+    const campoFin = document.getElementById('fecha_fin');
+    if (campoInicio) campoInicio.addEventListener('change', validarFechasEnVivo);
+    if (campoFin) campoFin.addEventListener('change', validarFechasEnVivo);
+});
 
 cargarRecursos().then(() => cargarTablaMacro());
