@@ -466,9 +466,8 @@ class Evento extends Conexion {
         try {
             $sql = "SELECT id_evento, nombre, fecha_inicio, tipo, nivel
                     FROM eventos
-                    WHERE estado IN ('Planificado', 'Inscrito')
+                    WHERE estado = 'Planificado'
                       AND fecha_inicio IS NOT NULL
-                      AND fecha_inicio > CURDATE()
                     ORDER BY fecha_inicio ASC";
             $stmt = $conex->prepare($sql);
             $stmt->execute();

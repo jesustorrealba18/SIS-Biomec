@@ -234,11 +234,104 @@ if (inputBusqueda) {
     });
 }
 
+const PASOS = ['personal', 'medico', 'federativo'];
+const CAMPOS_PASO = {
+    1: ['cedula', 'nombres', 'apellidos', 'fecha_nacimiento', 'sexo', 'direccion', 'telefono', 'correo', 'fecha_registro_club'],
+    2: ['grupo_sanguineo', 'seguro_medico', 'alergias', 'condiciones_previas', 'contacto_emergencia_nombre', 'contacto_emergencia_telefono', 'contacto_emergencia_parentesco'],
+    3: ['numero_feveda', 'club_procedencia', 'id_categoria']
+};
+let pasoActual = 1;
+let pasosCompletados = new Set();
+
+function actualizarStepper() {
+    for (let i = 1; i <= 3; i++) {
+        const circle = document.querySelector(`.step-circle[data-step="${i}"]`);
+        const label = document.querySelector(`.step-label[data-step="${i}"]`);
+        circle.classList.remove('active', 'completed');
+        label.classList.remove('active', 'completed');
+        circle.innerHTML = i;
+
+        if (i === pasoActual) {
+            circle.classList.add('active');
+            label.classList.add('active');
+        } else if (pasosCompletados.has(i)) {
+            circle.classList.add('completed');
+            label.classList.add('completed');
+            circle.innerHTML = '<i class=\'fas fa-check text-xs\'></i>';
+        }
+    }
+
+    for (let i = 1; i <= 2; i++) {
+        const line = document.querySelector(`.step-line[data-line="${i}"]`);
+        if (pasosCompletados.has(i)) {
+            line.classList.add('completed');
+        } else {
+            line.classList.remove('completed');
+        }
+    }
+
+    const btnAtras = document.getElementById('btnAtras');
+    const btnSiguiente = document.getElementById('btnSiguiente');
+    const btnGuardar = document.getElementById('btnGuardar');
+
+    btnAtras.classList.toggle('visible', pasoActual > 1);
+    btnGuardar.classList.toggle('visible', pasoActual === 3);
+    btnSiguiente.classList.toggle('visible', pasoActual < 3);
+}
+
 function cambiarTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    const index = PASOS.indexOf(tab);
+    if (index === -1) return;
+    pasoActual = index + 1;
+
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
     document.getElementById(`tab-${tab}`).classList.add('active');
+
+    actualizarStepper();
+}
+
+function irAPaso(numPaso) {
+    if (numPaso < pasoActual || pasosCompletados.has(numPaso - 1) || numPaso === 1) {
+        cambiarTab(PASOS[numPaso - 1]);
+    }
+}
+
+function validarPaso(numPaso) {
+    const campos = CAMPOS_PASO[numPaso];
+    const errores = [];
+
+    campos.forEach(id => {
+        const campo = document.getElementById(id);
+        if (!campo) return;
+        const reglas = campo.getAttribute('data-validar');
+        if (!reglas) return;
+        const nombre = campo.getAttribute('data-nombre') || id;
+
+        if (reglas.includes('requerido') && !campo.value.trim()) {
+            errores.push(nombre);
+        }
+    });
+
+    return errores;
+}
+
+function avanzarPaso() {
+    const errores = validarPaso(pasoActual);
+    if (errores.length > 0) {
+        UI.advertencia('Datos Incompletos', 'Falta completar: <strong>' + errores.join(', ') + '</strong>');
+        return;
+    }
+
+    pasosCompletados.add(pasoActual);
+    if (pasoActual < 3) {
+        cambiarTab(PASOS[pasoActual]);
+    }
+}
+
+function retrocederPaso() {
+    if (pasoActual > 1) {
+        cambiarTab(PASOS[pasoActual - 2]);
+    }
 }
 
 async function cargarCategorias() {
@@ -306,6 +399,8 @@ async function abrirModal(id = null) {
         btnGuardar.innerHTML = 'GUARDAR DATOS <i class="fas fa-save ml-2"></i>';
     }
 
+    pasoActual = 1;
+    pasosCompletados.clear();
     cambiarTab('personal');
     modalAtleta.classList.remove('hidden');
     setTimeout(() => {

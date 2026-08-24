@@ -49,6 +49,10 @@ class Periodizacion extends Conexion {
 
         $this->requerido($datos['fecha_inicio'] ?? '', 'fecha_inicio');
         $this->fechaValida($datos['fecha_inicio'] ?? '', 'fecha_inicio');
+        $fechaInicioVal = $datos['fecha_inicio'] ?? '';
+        if (!empty($fechaInicioVal) && strtotime($fechaInicioVal) < strtotime('-1 year')) {
+            $this->agregarError('fecha_inicio', 'La fecha de inicio no puede ser anterior a un año.');
+        }
 
         $this->requerido($datos['fecha_fin'] ?? '', 'fecha_fin');
         $this->fechaValida($datos['fecha_fin'] ?? '', 'fecha_fin');
@@ -64,7 +68,8 @@ class Periodizacion extends Conexion {
             }
         }
 
-        $this->longitud($datos['nombre'] ?? '', 'nombre', 0, 100);
+        $this->requerido($datos['nombre'] ?? '', 'nombre');
+        $this->longitud($datos['nombre'] ?? '', 'nombre', 3, 100);
 
         if (!empty($datos['id_evento_objetivo'])) {
             $this->soloNumeros($datos['id_evento_objetivo'], 'id_evento_objetivo');
