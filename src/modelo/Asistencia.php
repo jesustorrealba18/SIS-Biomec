@@ -80,7 +80,7 @@ class Asistencia extends Conexion {
         return $this->guardar();
     }
     
-    public function RegistrarPorQR(): array {
+  /*   public function RegistrarPorQR(): array {
 
       $this->resetearErrores();
         
@@ -93,6 +93,104 @@ class Asistencia extends Conexion {
 
 
         return $this->TransaccionRegistrarQR();
+    } */
+
+    public function RegistrarPorQR(): array {
+        $this->resetearErrores();
+        
+        $id_sesion = $this->datos['id_sesion'] ?? '';
+        $token = $this->datos['token_qr'] ?? '';
+
+        if (empty($id_sesion) || empty($token)) {
+            return ['exito' => false, 'mensaje' => 'Falta el token o la sesión.'];
+        }
+
+        $tokenLimpio = preg_replace('/^token/', '', trim($token));
+
+        // Validación de Negocio Estricta: ¿El atleta existe Y pertenece a esta sesión?
+        $atleta = $this->verificarAtletaEnSesionPorToken($tokenLimpio, (int)$id_sesion);
+
+        if (!$atleta) {
+            return ['exito' => false, 'mensaje' => 'Acceso denegado: El atleta no pertenece al grupo de entrenamiento de esta sesión.'];
+        }
+
+        // Cargamos los datos limpios y validados al atributo $this->datos para las operaciones atómicas
+        $this->datos['id_atleta'] = $atleta['id_atleta'];
+        $this->datos['estado_asistencia'] = 'Presente';
+        $this->datos['justificacion'] = 'Validación Biométrica QR';
+        $this->datos['tipo'] = 'QR';
+
+        $nombreCompleto = $atleta['nombres'] . ' ' . $atleta['apellidos'];
+
+        // Llamamos al método privado que solo hace operaciones atómicas
+        return $this->procesarAsistenciaQR($nombreCompleto);
+    }
+
+
+    /**
+     * Operación Atómica de BD: Verifica que el token pertenezca a un atleta 
+     * que esté inscrito en el grupo de la sesión seleccionada (Regla JOIN).
+     */
+    private function verificarAtletaEnSesionPorToken(string $token, int $id_sesion): ?array {
+        $sql = "SELECT a.id_atleta, a.nombres, a.apellidos 
+                FROM atletas a
+                INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                INNER JOIN sesiones s ON ga.id_grupo = s.id_grupo
+                WHERE a.token_asistencia = :token 
+                  AND s.id_sesion = :id_sesion 
+                  AND a.estado = 'Activo'";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':token', $token, PDO::PARAM_STR);
+        $stmt->bindValue(':id_sesion', $id_sesion, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * Operación Atómica: Verifica duplicidad y guarda.
+     * Cumple con la regla de consumir estrictamente $this->datos.
+     */
+    private function procesarAsistenciaQR(string $nombreCompleto): array {
+        try {
+            $id_sesion = $this->datos['id_sesion'];
+            $id_atleta = $this->datos['id_atleta'];
+
+            // Verificamos si el atleta ya tenía un registro de asistencia en la BD
+            $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
+            $stmtCheck = $this->pdo->prepare($sqlCheck);
+            $stmtCheck->execute([':id_sesion' => $id_sesion, ':id_atleta' => $id_atleta]);
+            $registroPrevio = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+            if ($registroPrevio && $registroPrevio['estado'] === 'Presente') {
+                return [
+                    'exito' => false, 
+                    'status_http' => 'info', 
+                    'nombre_atleta' => $nombreCompleto,
+                    'mensaje' => "¡Ya estaba presente! Registrado vía {$registroPrevio['tipo']}."
+                ];
+            }
+
+            // Invocamos el método guardar (que ya tienes programado y usa $this->datos)
+            $exito = $this->guardar();
+
+            if ($exito) {
+                return [
+                    'exito' => true,
+                    'status_http' => 'success',
+                    'nombre_atleta' => $nombreCompleto,
+                    'mensaje' => 'Asistencia registrada exitosamente.'
+                ];
+            } else {
+                $errores = $this->obtenerErrores();
+                $mensajeFinal = !empty($errores) ? reset($errores) : 'Error de integridad al guardar.';
+                return ['exito' => false, 'mensaje' => $mensajeFinal];
+            }
+
+        } catch (PDOException $e) {
+            return ['exito' => false, 'mensaje' => 'Error BD: ' . $e->getMessage()];
+        }
     }
 
   
@@ -154,7 +252,7 @@ class Asistencia extends Conexion {
     }
 
 
-        private function TransaccionRegistrarQR(): array {
+ /*        private function TransaccionRegistrarQR(): array {
         $tokenLimpio = preg_replace('/^token/', '', trim($this->datos['token_qr']));
 
         try {
@@ -209,7 +307,7 @@ class Asistencia extends Conexion {
         } catch (PDOException $e) {
             return ['exito' => false, 'mensaje' => 'Error BD: ' . $e->getMessage()];
         }
-    }
+    } */
 
    
     private function guardar(): bool {

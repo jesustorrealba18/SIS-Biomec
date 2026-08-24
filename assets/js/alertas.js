@@ -48,7 +48,7 @@ const UI = {
             ...this.obtenerConfig(),
             icon: 'warning',
             title: titulo,
-            text: mensaje,
+            html: mensaje,
             showCancelButton: true,
             confirmButtonText: '<i class="fas fa-check mr-2"></i>Sí, confirmar',
             cancelButtonText: 'Cancelar'

@@ -22,15 +22,84 @@ const Asistencia = {
     init: () => {
         Asistencia.cargarSesionesDropdown();
 
-        document.getElementById('selectSesion').addEventListener('change', (e) => {
-            Asistencia.idSesionActual = e.target.value;
 
-            if (Asistencia.idSesionActual) {
-                Asistencia.cargarListaAtletas();
-            } else {
-                document.getElementById('tablaAtletas').innerHTML = '<tr><td colspan="4" class="py-8 text-center text-gray-600 italic">Seleccione una sesión para cargar la lista.</td></tr>';
+document.getElementById('selectSesion').addEventListener('change', async (e) => {
+    const select = e.target;
+    const idSesion = select.value;
+    const optionSeleccionada = select.options[select.selectedIndex];
+    const estado = optionSeleccionada?.dataset?.estado || '';
+
+    // Limpiar tabla si no hay sesión
+    if (!idSesion) {
+        //document.getElementById('tablaAtletas').innerHTML = '<tr><td colspan="4" class="py-8 text-center text-gray-600 italic">Seleccione una sesión para cargar la lista.</td></tr>';
+        Asistencia.limpiarTabla();
+        return;
+    }
+
+    // Si la sesión está Parcial, cargar lista directamente
+    if (estado === 'Parcial') {
+        Asistencia.idSesionActual = idSesion;
+        Asistencia.cargarListaAtletas();
+        return;
+    }
+
+    // Si la sesión está Planificada, preguntar si iniciar
+    if (estado === 'Planificada') {
+        const confirmar = await UI.confirmar(
+            'Iniciar Sesión',
+            'La sesión seleccionada está planificada. ¿Deseas iniciarla para tomar asistencia?'
+        );
+
+        if (confirmar.isConfirmed) {
+            // Llamar al endpoint de sesiones para cambiar el estado
+            const formData = new FormData();
+            formData.append('id_sesion', idSesion);
+            
+            try {
+                const respuesta = await fetch('index.php?p=sesiones&accion=iniciarSesion', {
+                    method: 'POST',
+                    body: formData
+                });
+                const resultado = await respuesta.json();
+
+                if (resultado && resultado.status === 'success') {
+                    // Actualizar el estado en el select (visual)
+                    optionSeleccionada.dataset.estado = 'Parcial';
+                    optionSeleccionada.textContent = optionSeleccionada.textContent.replace(/\(Planificada\)/, '(Parcial)');
+                    UI.exito('Iniciada', resultado.message);
+                    
+                    // Ahora cargar la lista (la sesión ya está Parcial)
+                    Asistencia.idSesionActual = idSesion;
+                    Asistencia.cargarListaAtletas();
+                } else {
+                    UI.error('Error', resultado?.message || 'No se pudo iniciar la sesión.');
+                    // No cargar lista, mostrar mensaje en tabla
+                   Asistencia.limpiarTabla('No se pudo iniciar la sesión. Intenta de nuevo.');
+                }
+            } catch (error) {
+                UI.error('Error de Conexión', 'No se pudo comunicar con el servidor.');
+                Asistencia.limpiarTabla('Error de conexión. Verifica tu red.');
             }
-        });
+        } else {
+            // Usuario canceló → NO cargar lista, mostrar mensaje
+           Asistencia.limpiarTabla('Debes iniciar la sesión de entrenamiento para registrar asistencia.');
+        }
+        return; // Salir, no cargar lista por defecto
+    }
+
+    // Si el estado es otro (Completada, Cancelada, etc.) no debería aparecer, pero por seguridad
+    if (estado) {
+        UI.advertencia('Estado no válido', 'Esta sesión no está disponible para tomar asistencia.');
+        document.getElementById('tablaAtletas').innerHTML = `<tr><td colspan="4" class="py-8 text-center text-gray-500 dark:text-gray-400">
+            La sesión está ${estado}. No se puede registrar asistencia.
+        </td></tr>`;
+    } else {
+        // Fallback (si no hay estado)
+        Asistencia.idSesionActual = idSesion;
+        Asistencia.cargarListaAtletas();
+    }
+});
+
 
        
         const btnCamara = document.getElementById('btnActivarCamara');
@@ -66,8 +135,8 @@ const Asistencia = {
         select.innerHTML = '<option value="">Seleccione una sesión activa...</option>';
         sesiones.forEach(sesion => {
             select.innerHTML += `
-                <option value="${sesion.id_sesion}">
-                    ${sesion.grupo_nombre} - ${sesion.fecha} (${sesion.estado})
+                <option value="${sesion.id_sesion}" data-estado="${sesion.estado}">
+                    ${sesion.grupo_nombre} - ${formatearFecha(sesion.fecha)} (${sesion.estado})
                 </option>
             `;
         });
@@ -122,27 +191,50 @@ const Asistencia = {
 
         const respuesta = await peticionAjax('registrar_por_qr', formData);
 
+        const config = UI.obtenerConfig();
+
         if (respuesta && respuesta.status === 'success') {
             document.getElementById('beepSuccess')?.play();
             Asistencia.cargarListaAtletas(); 
             
             Swal.fire({
-                toast: true, position: 'top-end', icon: 'success',
+                /* toast: true, position: 'top-end', icon: 'success',
                 title: `Asistencia: ${respuesta.nombre_atleta}`,
-                showConfirmButton: false, timer: 2000, background: '#10b981', color: '#fff'
+                showConfirmButton: false, timer: 2000, background: '#10b981', color: '#fff' */
+                 ...config,
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: `Asistencia: ${respuesta.nombre_atleta}`,
+            showConfirmButton: false,
+            timer: 2000
             });
         } else if (respuesta && respuesta.status === 'info') {
             Swal.fire({
-                toast: true, position: 'top-end', icon: 'info',
+                /* toast: true, position: 'top-end', icon: 'info',
                 title: respuesta.message,
-                showConfirmButton: false, timer: 3000, background: '#3b82f6', color: '#fff'
+                showConfirmButton: false, timer: 3000, background: '#3b82f6', color: '#fff' */
+                ...config,
+            toast: true,
+            position: 'top-end',
+            icon: 'info',
+            title: respuesta.message,
+            showConfirmButton: false,
+            timer: 3000
             });
         } else {
             document.getElementById('beepError')?.play();
             Swal.fire({
-                toast: true, position: 'top-end', icon: 'error',
+               /*  toast: true, position: 'top-end', icon: 'error',
                 title: respuesta?.message || 'Token inválido',
-                showConfirmButton: false, timer: 3000, background: '#ef4444', color: '#fff'
+                showConfirmButton: false, timer: 3000, background: '#ef4444', color: '#fff' */
+                  ...config,
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: respuesta?.message || 'Token inválido',
+            showConfirmButton: false,
+            timer: 3000
             });
         }
 
@@ -257,17 +349,10 @@ const Asistencia = {
         const colorConf = estado === 'Presente' ? '#10b981' : (estado === 'Ausente' ? '#ef4444' : '#f59e0b');
 
         // REGLA 3: Evitar el error de "dedo gordo"
-        const confirmacion = await Swal.fire({
-            title: `¿Registrar ${accionVisual}?`,
-            html: `Atleta seleccionado:<br><b class="text-lg text-indigo-400">${nombre_atleta}</b>`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: colorConf,
-            cancelButtonColor: '#374151',
-            confirmButtonText: `Sí, aplicar`,
-            cancelButtonText: 'Cancelar',
-            background: '#161430', color: '#fff'
-        });
+        const confirmacion = await UI.confirmar(
+        `¿Registrar ${accionVisual}?`,
+        `Atleta seleccionado: <b class="text-lg text-indigo-400">${nombre_atleta}</b>`
+        );
 
         if (!confirmacion.isConfirmed) return;
 
@@ -464,6 +549,50 @@ cargarListaAtletas: async () => {
     document.getElementById('statPresentes').textContent = contPresentes;
     document.getElementById('statAusentes').textContent = contAusentes;
     document.getElementById('statTotal').textContent = atletas.length;
+
+    // =================================================================
+    // NUEVO: ATAJO INTELIGENTE A MARCAS (Cuando se completa la lista)
+    // =================================================================
+    const totalEvaluados = contPresentes + contAusentes; // contAusentes ya incluye justificados
+    
+    if (atletas.length > 0 && totalEvaluados === atletas.length) {
+        // Usamos sessionStorage para no hostigar al usuario si recarga la página de una asistencia ya lista
+        const flagModal = 'sugerencia_marcas_' + Asistencia.idSesionActual;
+        
+        if (!sessionStorage.getItem(flagModal)) {
+            sessionStorage.setItem(flagModal, 'true'); // Marcamos que ya se le sugirió
+            
+            Swal.fire({
+                title: '¡Lista Completada!',
+                text: 'La asistencia de este entrenamiento ha sido registrada al 100%. ¿Deseas ir ahora a registrar los tiempos de los atletas?',
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#4b5563',
+                confirmButtonText: '<i class="fas fa-stopwatch mr-1"></i> Sí, registrar marcas',
+                cancelButtonText: 'No, más tarde'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Redirigimos a marcas con parámetros mágicos en la URL
+                    window.location.href = `?p=marcas&auto_open=true&id_sesion=${Asistencia.idSesionActual}`;
+                }
+            });
+        }
+    }
+},
+
+limpiarTabla: (mensaje = 'Seleccione una sesión para cargar la lista.') => {
+    // Destruir DataTable si existe
+    if ($.fn.DataTable.isDataTable('#tablaAsistenciaDT')) {
+        $('#tablaAsistenciaDT').DataTable().destroy();
+    }
+    // Limpiar tbody y mostrar mensaje
+    const tbody = document.getElementById('tablaAtletas');
+    tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-gray-600 italic">${mensaje}</td></tr>`;
+    // Resetear estadísticas
+    document.getElementById('statTotal').textContent = '0';
+    document.getElementById('statPresentes').textContent = '0';
+    document.getElementById('statAusentes').textContent = '0';
 }
 
 };

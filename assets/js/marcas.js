@@ -2090,7 +2090,7 @@ async function reactivarMarca(id_marca) {
 // =====================================================================
 // INICIALIZADOR
 // =====================================================================
-document.addEventListener('DOMContentLoaded', () => {
+/* document.addEventListener('DOMContentLoaded', () => {
 
    // 1. LEER LA URL AL ENTRAR A LA PÁGINA
     const urlParamsInicio = new URLSearchParams(window.location.search);
@@ -2109,4 +2109,61 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarExclusividadSelects();
     cargarSelectsContexto();
     cargarTablaMarcas();
+}); */
+
+// =====================================================================
+// INICIALIZADOR MODIFICADO CON RECEPCIÓN DE ATAJOS (DEEP LINKING)
+// =====================================================================
+document.addEventListener('DOMContentLoaded', async () => {
+
+    // 1. LEER LA URL AL ENTRAR A LA PÁGINA
+    const urlParamsInicio = new URLSearchParams(window.location.search);
+    const estadoDesdeUrl = urlParamsInicio.get('estado');
+
+    // 2. Si la URL exige 'Inactivo', forzamos el DOM
+    if (estadoDesdeUrl) {
+        const selectEstado = document.getElementById('filtroEstado');
+        if (selectEstado) {
+            selectEstado.value = estadoDesdeUrl;
+        }
+    }
+
+    Validador.vincularTiempoReal(document.getElementById('formMarca'));
+    cargarFiltroAtletas();
+    configurarExclusividadSelects();
+    
+    // AWAIT CRÍTICO: Esperamos que el servidor traiga las sesiones al select antes de continuar
+    await cargarSelectsContexto();
+    
+    cargarTablaMarcas();
+
+    // =======================================================
+    // NUEVO: INTERCEPTAR EL ATAJO DESDE EL MÓDULO ASISTENCIA
+    // =======================================================
+    const autoOpen = urlParamsInicio.get('auto_open');
+    const idSesionLlegada = urlParamsInicio.get('id_sesion');
+
+    if (autoOpen === 'true' && idSesionLlegada) {
+        
+        // 1. Limpiamos la URL para evitar bucles si el usuario le da "F5" luego
+        const urlLimpia = window.location.pathname + '?p=marcas';
+        window.history.replaceState(null, null, urlLimpia);
+
+        // 2. Abrimos el modal dinámico
+        iniciarRegistroMarca();
+
+        // 3. Autollenado inteligente
+        setTimeout(() => {
+            const selectSesion = document.getElementById('id_sesion');
+            if (selectSesion) {
+                selectSesion.value = idSesionLlegada;
+                
+                // Disparamos el evento 'change' artificialmente. 
+                // Esto ejecutará la lógica en cascada (bloquea evento, carga fecha y llama a cargarAtletasPorContexto)
+                selectSesion.dispatchEvent(new Event('change'));
+                
+                UI.exito('Sesión Cargada', 'El entrenamiento ha sido autoseleccionado. Puede comenzar a cargar las marcas.');
+            }
+        }, 300); // 300ms de gracia para que la interfaz se termine de pintar
+    }
 });

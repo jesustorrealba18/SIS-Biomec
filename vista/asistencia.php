@@ -292,7 +292,8 @@
             });
         }
     </script>
-    
+
+    <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
     <script src="assets/js/asistencia.js"></script>
     <script src="assets/js/tour.js"></script>
