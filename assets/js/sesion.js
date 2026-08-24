@@ -303,24 +303,27 @@ async function cargarTablaSesiones() {
                     <button onclick="verDetalleSesion(${s.id_sesion})" class="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition" title="Ver Detalles">
                         <i class="fas fa-eye text-sm"></i>
                     </button>
+
+                     ${s.estado === 'Planificada' && s.fecha === obtenerFechaLocal() ? `
+                        <button onclick="iniciarSesion(${s.id_sesion})" class="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition" title="Iniciar">
+                            <i class="fas fa-play text-sm"></i>
+                        </button>
+                    ` : ''}
                     
                     ${['Planificada', 'Parcial'].includes(s.estado) ? `
                         <button onclick="abrirModalCompletarSesion(${s.id_sesion})" class="p-2 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-500/10 rounded-lg transition" title="Completar">
                             <i class="fas fa-check-circle text-sm"></i>
                         </button>
-                        <button onclick="abrirModalSesion(${s.id_sesion})" class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition" title="Editar">
-                            <i class="fas fa-pen text-sm"></i>
-                        </button>
+                        
                         <button onclick="cancelarSesion(${s.id_sesion})" class="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition" title="Cancelar">
                             <i class="fas fa-ban text-sm"></i>
                         </button>
-                    ` : ''}
-                    
-                    ${s.estado === 'Planificada' && s.fecha === obtenerFechaLocal() ? `
-                        <button onclick="iniciarSesion(${s.id_sesion})" class="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition" title="Iniciar">
-                            <i class="fas fa-play text-sm"></i>
+                        <button onclick="abrirModalSesion(${s.id_sesion})" class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition" title="Editar">
+                            <i class="fas fa-pen text-sm"></i>
                         </button>
                     ` : ''}
+                    
+                   
                 </div>
             </td>
          </tr>
