@@ -221,6 +221,14 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
+function obtenerFechaLocal() {
+    const fecha = new Date();
+    const año = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    return `${año}-${mes}-${dia}`;
+}
+
 async function cargarTablaSesiones() {
     const inputFiltroGrupo = document.getElementById('filtroGrupo');
     const inputFiltroTipo = document.getElementById('filtroTipoSesion');
@@ -295,7 +303,8 @@ async function cargarTablaSesiones() {
                     <button onclick="verDetalleSesion(${s.id_sesion})" class="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition" title="Ver Detalles">
                         <i class="fas fa-eye text-sm"></i>
                     </button>
-                    ${s.estado === 'Planificada' ? `
+                    
+                    ${['Planificada', 'Parcial'].includes(s.estado) ? `
                         <button onclick="abrirModalCompletarSesion(${s.id_sesion})" class="p-2 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-500/10 rounded-lg transition" title="Completar">
                             <i class="fas fa-check-circle text-sm"></i>
                         </button>
@@ -306,8 +315,14 @@ async function cargarTablaSesiones() {
                             <i class="fas fa-ban text-sm"></i>
                         </button>
                     ` : ''}
+                    
+                    ${s.estado === 'Planificada' && s.fecha === obtenerFechaLocal() ? `
+                        <button onclick="iniciarSesion(${s.id_sesion})" class="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition" title="Iniciar">
+                            <i class="fas fa-play text-sm"></i>
+                        </button>
+                    ` : ''}
                 </div>
-             </td>
+            </td>
          </tr>
     `).join('');
 
@@ -414,6 +429,22 @@ function abrirModalSesion(id_sesion = null) {
             document.getElementById('vuelta_calma').value = det.vuelta_calma || '';
             document.getElementById('observaciones').value = det.observaciones || '';
             document.getElementById('duracion_minutos').value = det.duracion_minutos || '';
+
+            // ========== NUEVO: Bloquear campos si la sesión está en curso ==========
+            if (det.estado === 'Parcial') {
+                document.getElementById('id_grupo').disabled = true;
+                document.getElementById('fecha').disabled = true;
+                document.getElementById('id_entrenador').disabled = true;
+                document.getElementById('id_microciclo').disabled = true; // opcional
+                // También puedes deshabilitar el botón de agregar/remover series si quieres
+                document.querySelector('#tbodySeries .agregar-serie-btn')?.setAttribute('disabled', 'true');
+            } else {
+                document.getElementById('id_grupo').disabled = false;
+                document.getElementById('fecha').disabled = false;
+                document.getElementById('id_entrenador').disabled = false;
+                document.getElementById('id_microciclo').disabled = false;
+            }
+            // ======================================================================
 
             document.getElementById('tbodySeries').innerHTML = '';
 
@@ -904,6 +935,31 @@ async function cancelarSesion(id_sesion) {
         cargarTablaSesiones();
     } else {
         Swal.fire('Error', 'No se pudo anular la sesión.', 'error');
+    }
+}
+
+async function iniciarSesion(id_sesion) {
+    const result = await Swal.fire({
+        title: 'Iniciar Sesión',
+        text: '¿Estás seguro de comenzar esta sesión de entrenamiento? Los atletas podrán registrar asistencia.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5',
+        cancelButtonColor: '#374151',
+        confirmButtonText: 'Sí, iniciar'
+    });
+
+    if (!result.isConfirmed) return;
+
+    const formData = new FormData();
+    formData.append('id_sesion', id_sesion);
+
+    const resultado = await peticionAjax('iniciarSesion', formData);
+    if (resultado && resultado.status === 'success') {
+        Swal.fire('Iniciada', resultado.message, 'success');
+        cargarTablaSesiones();
+    } else {
+        Swal.fire('Error', resultado?.message || 'No se pudo iniciar la sesión.', 'error');
     }
 }
 

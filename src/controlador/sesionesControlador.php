@@ -96,6 +96,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             return ['status' => 'error', 'message' => 'Error al modificar la sesión.'];
         },
+        'iniciarSesion' => function() use ($objSesiones, $id_entrenador_sesion) {
+            Autorizacion::exigir('sesiones', 'editar');
+            
+            $objSesiones->setDatos($_POST);
+            if ($objSesiones->InicializarSesion()) {
+                $id_sesion = $objSesiones->getCampo('id_sesion');
+                Bitacora::registrar($id_entrenador_sesion, 'Modulo Sesiones', 'UPDATE', $id_sesion, 'estado', 'Planificada', 'Parcial');
+                return ['status' => 'success', 'message' => 'Sesión iniciada.'];
+            }
+            return ['status' => 'error', 'message' => 'Error al iniciar sesión.'];
+        },
         'completarSesion' => function() use ($objSesiones, $id_entrenador_sesion) {
             Autorizacion::exigir('sesiones', 'editar');
             

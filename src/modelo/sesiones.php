@@ -19,6 +19,10 @@ class Sesiones extends Conexion {
         $this->datos = $datos;
     }
 
+    public function getCampo(string $clave) {
+        return $this->datos[$clave] ?? null;
+    }
+
     public function validarDatos(array $datos, $excluirId = null): array {
         $this->resetearErrores();
 
@@ -213,6 +217,29 @@ class Sesiones extends Conexion {
         return $this->editarSesionP($id_sesion, $datosSesion, $series);
     }
 
+
+    public function InicializarSesion(): bool {
+
+         $id = (int)($this->datos['id_sesion'] ?? 0);
+        if ($id <= 0) {
+            $this->agregarError('id_sesion', 'No se proporcionó un identificador válido para actualizar el registro.');
+            return false;
+        }
+
+        return $this->iniciarSesion();
+    }
+
+
+    private function iniciarSesion(): bool {
+        try {
+            $sql = "UPDATE sesiones SET estado = 'Parcial', fecha_modificacion = NOW() WHERE id_sesion = :id_sesion AND estado = 'Planificada'";
+            $stmt = $this->pdo->prepare($sql);
+            return $stmt->execute([':id_sesion' => $this->datos['id_sesion']]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
     public function completarSesion(array $datosCierre): bool {
         $conex = $this->pdo;
         try {
@@ -346,6 +373,8 @@ class Sesiones extends Conexion {
             return [];
         }
     }
+
+
 
     public function validarDatosSesion(array $datos): array {
         return $this->validarDatos($datos);
