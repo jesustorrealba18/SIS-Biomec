@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($accion === 'listar_sesiones_activas') {
         header('Content-Type: application/json');
         
-        $sesiones = $objAsistencia->obtenerSesionesActivas();
+        $sesiones = $objAsistencia->obtenerSesionesActivas($id_usuario);
         echo json_encode(['status' => 'success', 'data' => $sesiones]);
         exit;
     }

@@ -232,7 +232,7 @@ class Asistencia extends Conexion {
     /**
      * Extrae las sesiones aptas para el registro de asistencia (Planificadas y Parciales)
      */
-    public function obtenerSesionesActivas(): array {
+  /*   public function obtenerSesionesActivas(): array {
         try {
             $sql = "SELECT s.id_sesion, g.nombre AS grupo_nombre,
              s.fecha, s.estado FROM sesiones s 
@@ -249,7 +249,37 @@ class Asistencia extends Conexion {
             error_log("Error Modelo Asistencia (Listar Sesiones Activas): " . $e->getMessage());
             return [];
         }
-    }
+    } */
+
+    /**
+     * Extrae las sesiones aptas para el registro de asistencia (Planificadas y Parciales)
+     * Filtradas exclusivamente para el entrenador logueado.
+     */
+     public function obtenerSesionesActivas(int $id_usuario): array {
+        try {
+            // Hacemos INNER JOIN con entrenadores para cruzar el id_entrenador de la sesión
+            // con el id_usuario proveniente de sis_seguridad
+            $sql = "SELECT s.id_sesion, g.nombre AS grupo_nombre, s.fecha, s.estado 
+                    FROM sesiones s 
+                    INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo 
+                    INNER JOIN entrenador e ON s.id_entrenador = e.id_entrenador
+                    WHERE s.estado IN ('Planificada', 'Parcial') 
+                      AND DATE(s.fecha) = CURDATE() 
+                      AND e.id_usuario = :id_usuario
+                    ORDER BY s.fecha ASC";
+
+            $stmt = $this->pdo->prepare($sql);
+            // Inyectamos el ID del usuario de forma segura
+            $stmt->bindValue(':id_usuario', $id_usuario, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch (PDOException $e) {
+            error_log("Error Modelo Asistencia (Listar Sesiones Activas): " . $e->getMessage());
+            return [];
+        }
+    } 
 
 
  /*        private function TransaccionRegistrarQR(): array {
