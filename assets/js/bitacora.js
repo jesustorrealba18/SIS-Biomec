@@ -30,7 +30,151 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
+
+let tablaDt; // Variable global para la instancia de DataTable
+
 async function cargarTablaBitacora() {
+    const tbody = $('#tablaBitacora tbody');
+    tbody.html('<tr><td colspan="5" class="p-4 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando registros...</td></tr>');
+    
+    const respuesta = await peticionAjax('listar');
+    
+    if (respuesta && respuesta.status === 'success') {
+        registrosBitacora = respuesta.data;
+        registrosActuales = registrosBitacora; // Inicializamos para el PDF
+        
+        extraerModulosDinamicamente(registrosBitacora);
+        extraerUsuariosDinamicamente(registrosBitacora);
+        
+        inicializarDataTable(registrosBitacora);
+    } else {
+        tbody.html('<tr><td colspan="5" class="p-4 text-center text-red-600">Error al cargar la bitácora.</td></tr>');
+    }
+}
+
+function inicializarDataTable(datos) {
+    // Si ya existe la instancia, la destruimos y la volvemos a llenar para evitar duplicados
+    if ($.fn.DataTable.isDataTable('#tablaBitacora')) {
+        $('#tablaBitacora').DataTable().clear().rows.add(datos).draw();
+        return;
+    }
+
+    tablaDt = $('#tablaBitacora').DataTable({
+        data: datos,
+        responsive: true,
+        pageLength: 15,
+        lengthChange: false, // Ocultamos el selector de "Mostrar X registros" para un diseño más limpio
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+        },
+        // dom controla los elementos de la tabla: quitamos la 'f' (buscador por defecto) porque usaremos tus filtros
+        dom: 'rt<"flex flex-col sm:flex-row justify-between items-center mt-4"ip>',
+        columns: [
+            { 
+                data: 'fecha_operacion',
+                render: function(data) {
+                    return `<span class="font-mono text-xs text-gray-600 dark:text-gray-400">${formatoFechaHora(data)}</span>`;
+                }
+            },
+            {
+                data: null, // null porque usamos múltiples propiedades en el render
+                render: function(data, type, row) {
+                    return `
+                    <div class="font-bold text-gray-900 dark:text-white text-xs">${row.nombres} ${row.apellidos}</div>
+                    <div class="text-[10px] text-gray-500 dark:text-gray-400">${row.rol_nombre || 'Sin Rol'}</div>
+                    `;
+                }
+            },
+            {
+                data: 'modulo_afectado',
+                render: function(data) {
+                    return `<span class="text-indigo-600 dark:text-indigo-400 font-semibold text-xs">${data}</span>`;
+                }
+            },
+            {
+                data: 'tipo_operacion',
+                render: function(data) {
+                    let colorBadge = 'bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-500/30';
+                    if (data === 'CREATE') colorBadge = 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 border-emerald-200';
+                    if (data === 'UPDATE') colorBadge = 'bg-blue-50 dark:bg-blue-500/20 text-blue-600 border-blue-200';
+                    if (data === 'DELETE') colorBadge = 'bg-red-50 dark:bg-red-500/20 text-red-600 border-red-200';
+                    if (data === 'LOGIN' || data === 'LOGOUT') colorBadge = 'bg-purple-50 dark:bg-purple-500/20 text-purple-600 border-purple-200';
+                    
+                    return `<span class="${colorBadge} px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase border">${data}</span>`;
+                }
+            },
+            {
+                data: null,
+                orderable: false,
+                className: 'text-right',
+                render: function() {
+                    return `<button class="btn-ver-detalle text-blue-600 dark:text-blue-400 hover:text-blue-700 transition" title="Ver detalle completo">
+                                <i class="fas fa-eye fa-lg"></i>
+                            </button>`;
+                }
+            }
+        ],
+        createdRow: function(row, data, dataIndex) {
+            // Le damos la clase de Tailwind a las filas generadas (reemplaza las del anterior tr.className)
+            $(row).addClass('hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200');
+            $(row).find('td').addClass('border-b border-gray-200 dark:border-[#252345] align-middle');
+        }
+    });
+
+    // Evento Click delegado: Maneja botones incluso cuando están ocultos en responsive (Child rows)
+    $('#tablaBitacora tbody').on('click', '.btn-ver-detalle', function () {
+        let tr = $(this).closest('tr');
+        if (tr.hasClass('child')) {
+            tr = tr.prev('.parent'); // Solución nativa para DataTables Responsive
+        }
+        let rowData = tablaDt.row(tr).data();
+        verDetalleBitacoraData(rowData);
+    });
+}
+
+// =====================================================================
+// CONEXIÓN DE FILTROS CUSTOM AL MOTOR DATATABLES
+// =====================================================================
+
+// Inyectamos nuestra lógica personalizada de filtrado en DataTables
+$.fn.dataTable.ext.search.push(
+    function(settings, data, dataIndex, rowData) {
+        const valUsuario = document.getElementById('filtroUsuario').value;
+        const valModulo = document.getElementById('filtroModulo').value.toLowerCase();
+        const valDesde = document.getElementById('filtroFechaInicio').value;
+        const valHasta = document.getElementById('filtroFechaFin').value;
+
+        let cumpleUsuario = true;
+        let cumpleModulo = true;
+        let cumpleDesde = true;
+        let cumpleHasta = true;
+
+        if (valUsuario !== "") {
+            cumpleUsuario = (rowData.id_usuario == valUsuario);
+        }
+        if (valModulo !== "") {
+            cumpleModulo = rowData.modulo_afectado.toLowerCase().includes(valModulo);
+        }
+        if (valDesde !== "") {
+            cumpleDesde = rowData.fecha_operacion >= valDesde + " 00:00:00";
+        }
+        if (valHasta !== "") {
+            cumpleHasta = rowData.fecha_operacion <= valHasta + " 23:59:59";
+        }
+
+        return cumpleUsuario && cumpleModulo && cumpleDesde && cumpleHasta;
+    }
+);
+
+function aplicarFiltros() {
+    if (tablaDt) {
+        tablaDt.draw(); // Ejecuta el plugin .search que acabamos de registrar arriba
+        // Actualizamos registrosActuales SOLO con lo que sobrevivió al filtro para la exportación de PDF
+        registrosActuales = tablaDt.rows({ filter: 'applied' }).data().toArray();
+    }
+}
+
+/* async function cargarTablaBitacora() {
     const tbody = document.getElementById('tbodyBitacora');
     tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando registros...</td></tr>';
     
@@ -86,15 +230,15 @@ function dibujarTabla(datos) {
         `;
         tbody.appendChild(tr);
     });
-}
+} */
 
 // =====================================================================
 // MANEJO DE LA INTERFAZ (MODAL Y FORMATO DE DETALLES)
 // =====================================================================
 
-function verDetalleBitacora(indiceArreglo) {
+function verDetalleBitacoraData(registro) {
     // Obtenemos el registro exacto del arreglo global usando su índice
-    const registro = registrosBitacora[indiceArreglo];
+    //const registro = registrosBitacora[indiceArreglo];
     
     // 1. Llenamos los datos fijos de la parte inferior del modal
     document.getElementById('detalleIP').textContent = registro.ip_origen || 'No registrada';
@@ -243,7 +387,7 @@ function validarFechasYFiltrar() {
 // FILTROS DE AUDITORÍA EN TIEMPO REAL
 // =====================================================================
 
-function aplicarFiltros() {
+/* function aplicarFiltros() {
     // 1. Capturamos lo que el usuario seleccionó
     const valUsuario = document.getElementById('filtroUsuario').value;
     const valModulo = document.getElementById('filtroModulo').value.toLowerCase();
@@ -284,7 +428,7 @@ function aplicarFiltros() {
     registrosActuales = datosFiltrados;
     // 3. Enviamos los datos filtrados a la función que ya pinta la tabla
     dibujarTabla(datosFiltrados);
-}
+} */
 
 function extraerUsuariosDinamicamente(datos) {
     const selectUsuario = document.getElementById('filtroUsuario');

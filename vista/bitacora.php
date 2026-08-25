@@ -16,6 +16,15 @@ $pagina = 'bitacora';
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.28/dist/jspdf.plugin.autotable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+
+    <!-- LIBRERÍAS DATATABLES RESPONSIVE -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    
     <style>
         /* ===== ESTILOS BASE ===== */
         body { font-family: 'Inter', sans-serif; }
@@ -47,12 +56,7 @@ $pagina = 'bitacora';
         .dark .input-adapt:focus {
             box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
         }
-        .input-adapt::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-        }
-        .dark .input-adapt::-webkit-calendar-picker-indicator {
-            filter: invert(0);
-        }
+       
 
         /* ===== TARJETAS ===== */
         .tarjeta {
@@ -69,6 +73,29 @@ $pagina = 'bitacora';
         .menu-transition {
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        /* Ajustes de DataTables para Tailwind y Dark Mode */
+        table.dataTable.no-footer { border-bottom: none !important; }
+        table.dataTable thead th { border-bottom: 1px solid #e5e7eb; }
+        .dark table.dataTable thead th { border-bottom: 1px solid #252345; }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            color: #6b7280 !important; border-radius: 0.5rem; border: 1px solid transparent; padding: 0.25em 0.75em;
+        }
+        .dark .dataTables_wrapper .dataTables_paginate .paginate_button { color: #9ca3af !important; }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current, 
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important;
+        }
+        .dataTables_wrapper .dataTables_info { padding-top: 1rem; color: #6b7280; font-size: 0.75rem; }
+        .dark .dataTables_wrapper .dataTables_info { color: #9ca3af; }
+
+ /* Para el calendario (date) en modo oscuro */
+        .dark .input-adapt::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
@@ -188,23 +215,22 @@ if (isset($_SESSION['id'])) {
                 </div>
 
                 <!-- Tabla -->
-                <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-2xl transition-colors duration-300">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-100 dark:bg-[#0f0d23] text-gray-600 dark:text-gray-400 uppercase text-[11px] font-bold tracking-wider border-b border-gray-200 dark:border-[#252345]">
-                                    <th class="p-4">Fecha y Hora</th>
-                                    <th class="p-4">Usuario</th>
-                                    <th class="p-4">Módulo</th>
-                                    <th class="p-4">Acción</th>
-                                    <th class="p-4 text-right">Detalles</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbodyBitacora" class="divide-y divide-gray-200 dark:divide-[#252345] text-sm text-gray-800 dark:text-gray-300">
-                                <tr><td colspan="5" class="p-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando registros...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <!-- Tabla -->
+                <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-4 shadow-2xl transition-colors duration-300">
+                    <table id="tablaBitacora" class="display responsive nowrap w-full text-left border-collapse" style="width:100%">
+                        <thead>
+                            <tr class="bg-gray-100 dark:bg-[#0f0d23] text-gray-600 dark:text-gray-400 uppercase text-[11px] font-bold tracking-wider">
+                                <th class="p-4 rounded-tl-xl">Fecha y Hora</th>
+                                <th class="p-4">Usuario</th>
+                                <th class="p-4">Módulo</th>
+                                <th class="p-4">Acción</th>
+                                <th class="p-4 rounded-tr-xl text-right">Detalles</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-[#252345] text-sm text-gray-800 dark:text-gray-300">
+                            <!-- DataTables inyectará las filas aquí -->
+                        </tbody>
+                    </table>
                 </div>
 
             </main>
