@@ -3,17 +3,20 @@
 // CONTROLADOR PIVOTE: SEGUIMIENTO ANTROPOMÉTRICO (RF-05)
 // =====================================================================
 
-// 1. Filtro de Seguridad estricto
+// 1. Importamos los Modelos y Clases de Seguridad (PSR-4)
+use GrupoProyecto\SisBiomec\seguridad\Bitacora;
+use GrupoProyecto\SisBiomec\modelo\MedicionAntropometrica;
+use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+
+
+// 2. Filtro de Seguridad estricto
 if (empty($_SESSION['id'])) { 
     header('Location: ?p=login'); 
     exit; 
 }
 
-// 2. Importamos los Modelos y Clases de Seguridad (PSR-4)
-use GrupoProyecto\SisBiomec\seguridad\Bitacora;
-use GrupoProyecto\SisBiomec\modelo\MedicionAntropometrica;
-use GrupoProyecto\SisBiomec\modelo\Atleta;
-use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+
 
 $objAntropometria = new MedicionAntropometrica();
 
@@ -42,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Ruta C: Listar mediciones con filtros (similar a marcas)
     if ($accion === 'listarMediciones') {
         header('Content-Type: application/json');
-        $id_atleta   = isset($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
+        $id_atleta    = isset($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
         $fecha_inicio = $_GET['fecha_inicio'] ?? '';
         $fecha_fin    = $_GET['fecha_fin'] ?? '';
         
@@ -51,12 +54,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    // Ruta D: Obtener detalle completo de una medición + historial evolutivo
-    if ($accion === 'obtenerDetalleMedicion') {
+    // Ruta D: Modal de Gráficas e Historial
+    if ($accion === 'verHistorial') {
         header('Content-Type: application/json');
-        $id_medicion = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        $detalle = $objAntropometria->obtenerDetallePorId($id_medicion);
-        echo json_encode($detalle);
+        $id_atleta = isset($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
+        
+        // Obtenemos las mediciones (por defecto el modelo las trae DESC)
+        $mediciones = $objAntropometria->listarMediciones($id_atleta);
+        
+        // Invertimos el arreglo para que Chart.js dibuje la línea de tiempo de más antigua a más reciente (ASC)
+        $mediciones = array_reverse($mediciones);
+        
+        // Mapeamos las llaves para que coincidan EXACTAMENTE con lo que espera antropometria.js
+        $data = [];
+        foreach ($mediciones as $m) {
+            $data[] = [
+                'id_medicion'         => $m['id_medicion'],
+                'id_atleta'           => $id_atleta, // Lo inyectamos para que el botón "Editar" del JS funcione
+                'fecha'               => $m['fecha'],
+                'peso'                => $m['peso_kg'],
+                'talla'               => $m['talla_cm'],
+                'envergadura'         => $m['envergadura_cm'],
+                'perimetro_abdominal' => $m['perimetro_abdominal_cm'],
+                'grasa_corporal'      => $m['porcentaje_grasa'],
+                'imc'                 => $m['imc'],
+                'responsable'         => $m['responsable']
+            ];
+        }
+        
+        echo json_encode(['status' => 'success', 'data' => $data]);
         exit;
     }
 
@@ -72,35 +98,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $accionPost = $_POST['accion'] ?? '';
 
+    // Mapeo unificado de Payload: 
+    // Extraemos los datos una sola vez para mantener el código DRY.
+    // Las llaves coinciden exactamente con la Lista Blanca del Modelo.
+    $payload = [
+        'id_atleta'              => $_POST['id_atleta'] ?? null,
+        'fecha'                  => $_POST['fecha'] ?? null,
+        'peso_kg'                => $_POST['peso'] ?? null,
+        'talla_cm'               => $_POST['talla'] ?? null,
+        'envergadura_cm'         => $_POST['envergadura'] ?? null,
+        'perimetro_abdominal_cm' => $_POST['perimetro_abdominal'] ?? null,
+        'porcentaje_grasa'       => $_POST['grasa_corporal'] ?? null,
+        'responsable'            => $_SESSION['nombre'] ?? $_SESSION['id'] ?? 'Sistema'
+    ];
+
     // -----------------------------------------------------------------
     // Ruta E: Guardar Nueva Medición (RF-05.1)
     // -----------------------------------------------------------------
     if ($accionPost === 'guardar') {
         Autorizacion::exigir('antropometria', 'registrar');
-        // Mapeo de campos del formulario a los nombres esperados por el modelo
-        $datos = [
-            'id_atleta'              => $_POST['id_atleta'] ?? null,
-            'fecha'                  => $_POST['fecha'] ?? null,
-            'peso_kg'                => $_POST['peso'] ?? null,
-            'talla_cm'               => $_POST['talla'] ?? null,
-            'envergadura_cm'         => $_POST['envergadura'] ?? null,
-            'perimetro_abdominal_cm' => $_POST['perimetro_abdominal'] ?? null,
-            'porcentaje_grasa'       => $_POST['porcentaje_grasa'] ?? null,
-            'responsable'            => $_SESSION['nombre'] ?? $_SESSION['id'] ?? 'Sistema'
-        ];
 
-        if ($objAntropometria->registrarMedicion($datos)) {
+        // Pasamos el payload unificado al modelo
+        if ($objAntropometria->registrarMedicion($payload)) {
             // Auditoría: operación INSERT
-           /* Bitacora::registrar(
+            Bitacora::registrar(
                 $_SESSION['id'],
-     
                 'Módulo Antropometría',
-                'INSERT',
-                0, // El ID de la medición aún no se conoce, se puede obtener con lastInsertId si se modifica el modelo
+                'CREATE',
+                0, // ID no disponible directamente tras el insert booleano, pero la acción queda registrada
                 'N/A',
                 'N/A',
-                "Nueva medición. Atleta ID: {$datos['id_atleta']}, Peso: {$datos['peso_kg']} kg, Talla: {$datos['talla_cm']} cm"
-            );*/
+                "Nueva medición. Atleta ID: {$payload['id_atleta']}, Peso: {$payload['peso_kg']} kg, Talla: {$payload['talla_cm']} cm"
+            );
             echo json_encode(['status' => 'success', 'message' => 'Evaluación registrada correctamente.']);
         } else {
             $errores = $objAntropometria->obtenerErroresValidacion();
@@ -121,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id_medicion = (int)($_POST['id_medicion'] ?? 0);
         $justificacion = trim($_POST['justificacion'] ?? '');
 
-        // Regla de negocio: toda modificación requiere justificación
+        // Regla de negocio y auditoría (es válido dejarla en el controlador porque corresponde a la acción del usuario)
         if (empty($justificacion)) {
             echo json_encode([
                 'status' => 'error',
@@ -130,19 +159,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Mapeo de campos igual que en guardar
-        $datos = [
-            'id_atleta'              => $_POST['id_atleta'] ?? null,
-            'fecha'                  => $_POST['fecha'] ?? null,
-            'peso_kg'                => $_POST['peso'] ?? null,
-            'talla_cm'               => $_POST['talla'] ?? null,
-            'envergadura_cm'         => $_POST['envergadura'] ?? null,
-            'perimetro_abdominal_cm' => $_POST['perimetro_abdominal'] ?? null,
-            'porcentaje_grasa'       => $_POST['porcentaje_grasa'] ?? null,
-            'responsable'            => $_SESSION['nombre'] ?? $_SESSION['id'] ?? 'Sistema'
-        ];
-
-        if ($objAntropometria->actualizarMedicion($datos, $id_medicion)) {
+        // Le enviamos al modelo el payload unificado y el parámetro adicional requerido
+        if ($objAntropometria->actualizarMedicion($payload, $id_medicion)) {
             Bitacora::registrar(
                 $_SESSION['id'],
                 'Módulo Antropometría',
@@ -150,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id_medicion,
                 'peso_kg, talla_cm, envergadura_cm, perimetro_abdominal_cm, porcentaje_grasa',
                 'Ver valores previos en auditoría',
-                "Medición actualizada. Justificación: $justificacion. Nuevos datos: Peso {$datos['peso_kg']} kg, Talla {$datos['talla_cm']} cm"
+                "Medición actualizada. Justificación: $justificacion. Nuevos datos: Peso {$payload['peso_kg']} kg, Talla {$payload['talla_cm']} cm"
             );
             echo json_encode(['status' => 'success', 'message' => 'El registro ha sido corregido exitosamente.']);
         } else {
@@ -172,7 +190,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id_medicion = (int)($_POST['id_medicion'] ?? 0);
         $motivo = trim($_POST['motivo'] ?? 'Sin justificación');
 
-        if ($id_medicion > 0 && $objAntropometria->eliminarMedicion($id_medicion)) {
+        // El modelo valida internamente el $id_medicion
+        if ($objAntropometria->eliminarMedicion($id_medicion)) {
             Bitacora::registrar(
                 $_SESSION['id'],
                 'Módulo Antropometría',

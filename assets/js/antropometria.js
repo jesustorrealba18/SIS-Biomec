@@ -166,7 +166,7 @@ async function cargarDashboard() {
                 <tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition duration-200 border-b border-gray-200 dark:border-[#252345]">
                     <td class="p-4 font-medium text-gray-900 dark:text-white">${fila.nombres} ${fila.apellidos}</td>
                     <td class="p-4 text-gray-500 dark:text-gray-400">${fila.categoria}</td>
-                    <td class="p-4 text-center text-gray-700 dark:text-gray-300">${fechaEval}<br>${alertaDias}</td>
+                    <td class="p-4 text-center text-gray-700 dark:text-gray-300">${formatearFecha(fechaEval)}<br>${alertaDias}</td>
                     <td class="p-4 text-center text-gray-700 dark:text-gray-300">${pesoTalla}</td>
                     <td class="p-4 text-center">${imc}</td>
                     <td class="p-4 text-center">
@@ -237,6 +237,7 @@ formMedicion.addEventListener('submit', async (e) => {
 
 async function verHistorial(id_atleta, nombreCompleto) {
     document.getElementById('graficaAtletaNombre').textContent = nombreCompleto;
+    document.getElementById('graficaAtletaNombre').dataset.id = id_atleta;
     
     const respuesta = await peticionAjax(`verHistorial&id_atleta=${id_atleta}`);
     
@@ -257,25 +258,30 @@ async function verHistorial(id_atleta, nombreCompleto) {
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-gray-200 dark:border-[#252345]';
                 tr.innerHTML = `
-                    <td class="p-3 text-gray-700 dark:text-gray-300">${r.fecha}</td>
+                    <td class="p-3 text-gray-700 dark:text-gray-300">${formatearFecha(r.fecha)}</td>
                     <td class="p-3 text-gray-700 dark:text-gray-300">${r.peso} kg</td>
                     <td class="p-3 text-gray-700 dark:text-gray-300">${r.talla} cm</td>
                     <td class="p-3 text-gray-700 dark:text-gray-300">${r.envergadura} cm</td>
                     <td class="p-3 font-bold text-indigo-600 dark:text-indigo-400">${r.imc}</td>
                     <td class="p-3 text-gray-500 dark:text-gray-400 text-xs">${r.responsable}</td>
-                    <td class="p-3 text-center">
+                    <td class="p-3 text-center flex justify-center gap-2">
                         ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar ? `
                         <button onclick="prepararEdicion('${encodeURIComponent(JSON.stringify(r))}')" 
-                                class="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors" 
+                                class="text-orange-600 dark:text-orange-400 hover:text-orange-700 transition-colors" 
                                 title="Corregir Registro">
                             <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="eliminarMedicion(${r.id_medicion})" 
+                                class="text-red-600 dark:text-red-400 hover:text-red-700 transition-colors" 
+                                title="Eliminar Registro">
+                            <i class="fas fa-trash"></i>
                         </button>
                         ` : ''}
                     </td>
                 `;
                 tbody.appendChild(tr);
 
-                labels.push(r.fecha);
+                labels.push(formatearFecha(r.fecha));
                 dataPeso.push(r.peso);
                 dataTalla.push(r.talla);
                 dataIMC.push(r.imc);
@@ -415,6 +421,51 @@ function prepararEdicion(registroStr) {
     setTimeout(() => {
         modalMedicion.firstElementChild.classList.remove('scale-95', 'opacity-0');
     }, 10);
+}
+
+
+async function eliminarMedicion(id_medicion) {
+    const { value: motivo } = await Swal.fire({
+        title: '¿Eliminar Medición?',
+        text: "Esta acción no se puede deshacer. Escriba un motivo para la auditoría (Bitácora):",
+        input: 'text',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="fas fa-trash"></i> Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        background: document.documentElement.classList.contains('dark') ? '#161430' : '#fff',
+        color: document.documentElement.classList.contains('dark') ? '#fff' : '#374151',
+        inputValidator: (value) => {
+            if (!value) return '¡El motivo es obligatorio para la auditoría!';
+        }
+    });
+
+    if (motivo) {
+        const formData = new FormData();
+        formData.append('accion', 'eliminar');
+        formData.append('id_medicion', id_medicion);
+        formData.append('motivo', motivo);
+
+        const resultado = await peticionAjax('eliminar', formData);
+        
+        if (resultado && resultado.status === 'success') {
+            UI.exito('Eliminado', resultado.message);
+            
+            // Recargamos el dashboard de fondo
+            cargarDashboard();
+            
+            // Refrescamos la gráfica y tabla si el modal está abierto
+            const idAtleta = document.getElementById('graficaAtletaNombre').dataset.id;
+            const nombreAtleta = document.getElementById('graficaAtletaNombre').innerText;
+            if (idAtleta) {
+                verHistorial(idAtleta, nombreAtleta);
+            }
+        } else {
+            UI.error('Error', resultado?.message || 'No se pudo eliminar el registro.');
+        }
+    }
 }
 
 // =====================================================================
