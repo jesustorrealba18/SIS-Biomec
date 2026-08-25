@@ -34,13 +34,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    // Ruta B: Cargar el Dashboard Principal (RF-05)
+    /* // Ruta B: Cargar el Dashboard Principal (RF-05)
     if ($accion === 'cargarDashboard') {
         header('Content-Type: application/json');
         $datos = $objAntropometria->obtenerDashboardPrincipal();
         echo json_encode(['data' => $datos]);
         exit;
+    } */
+
+        // Ruta B: Cargar el Dashboard Principal (RF-05)
+if ($accion === 'cargarDashboard') {
+    header('Content-Type: application/json');
+    $modo = $_GET['modo'] ?? 'activos';
+    $id_atleta = isset($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
+    
+    if ($modo === 'papelera') {
+        // Mostrar todas las mediciones anuladas (detalle)
+        $datos = $objAntropometria->listarMediciones($id_atleta, '', '', $modo);
+    } else {
+        // Mostrar resumen por atleta (última medición activa)
+        $datos = $objAntropometria->obtenerDashboardPrincipal($id_atleta);
     }
+    echo json_encode(['data' => $datos]);
+    exit;
+}
 
     // Ruta C: Listar mediciones con filtros (similar a marcas)
     if ($accion === 'listarMediciones') {
@@ -85,6 +102,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode(['status' => 'success', 'data' => $data]);
         exit;
     }
+
+    // Ruta E: Obtener una medición específica para edición
+if ($accion === 'obtenerMedicion') {
+    header('Content-Type: application/json');
+    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if ($id <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'ID inválido']);
+        exit;
+    }
+    $medicion = $objAntropometria->obtenerDetallePorId($id);
+    if ($medicion) {
+        // Renombramos algunos campos para que coincidan con el JS
+        $medicion['peso'] = $medicion['peso_kg'];
+        $medicion['talla'] = $medicion['talla_cm'];
+        $medicion['envergadura'] = $medicion['envergadura_cm'];
+        $medicion['perimetro_abdominal'] = $medicion['perimetro_abdominal_cm'];
+        $medicion['grasa_corporal'] = $medicion['porcentaje_grasa'];
+        echo json_encode($medicion);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Medición no encontrada']);
+    }
+    exit;
+}
+
+// Ruta F: Obtener KPIs
+if ($accion === 'obtenerKPIs') {
+    header('Content-Type: application/json');
+    $kpis = $objAntropometria->obtenerKPIs();
+    echo json_encode($kpis);
+    exit;
+}
+
+// Ruta G: Listar alertas (atletas con medición vencida)
+if ($accion === 'listarAlertas') {
+    header('Content-Type: application/json');
+    $alertas = $objAntropometria->listarAlertas();
+    echo json_encode($alertas);
+    exit;
+}
 
     // Por defecto: cargar la pantalla HTML
     require_once 'vista/antropometria.php';
@@ -207,4 +263,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+    // -----------------------------------------------------------------
+// Ruta H: Anular medición (soft delete)
+// -----------------------------------------------------------------
+if ($accionPost === 'anular') {
+    Autorizacion::exigir('antropometria', 'eliminar');
+    $id_medicion = (int)($_POST['id_medicion'] ?? 0);
+    $motivo = trim($_POST['motivo'] ?? 'Sin motivo');
+    if ($id_medicion <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'ID inválido']);
+        exit;
+    }
+    // Llama al método anular del modelo (lo implementaremos luego)
+    if ($objAntropometria->anularMedicion($id_medicion, $motivo)) {
+        Bitacora::registrar(
+            $_SESSION['id'],
+            'Módulo Antropometría',
+            'UPDATE',
+            $id_medicion,
+            'deleted_at',
+            'NULL',
+            "Medición anulada. Motivo: $motivo"
+        );
+        echo json_encode(['status' => 'success', 'message' => 'Medición anulada correctamente']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'No se pudo anular la medición']);
+    }
+    exit;
+}
+
+// -----------------------------------------------------------------
+// Ruta I: Reactivar medición
+// -----------------------------------------------------------------
+if ($accionPost === 'reactivar') {
+    Autorizacion::exigir('antropometria', 'reactivar');
+    $id_medicion = (int)($_POST['id_medicion'] ?? 0);
+    if ($id_medicion <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'ID inválido']);
+        exit;
+    }
+    if ($objAntropometria->reactivarMedicion($id_medicion)) {
+        Bitacora::registrar(
+            $_SESSION['id'],
+            'Módulo Antropometría',
+            'UPDATE',
+            $id_medicion,
+            'deleted_at',
+            'fecha anterior',
+            "Medición reactivada"
+        );
+        echo json_encode(['status' => 'success', 'message' => 'Medición reactivada correctamente']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'No se pudo reactivar la medición']);
+    }
+    exit;
+}
+
+// -----------------------------------------------------------------
+// Ruta J: Eliminar físicamente (hard delete)
+// -----------------------------------------------------------------
+if ($accionPost === 'eliminarFisico') {
+    Autorizacion::exigir('antropometria', 'eliminardb');
+    $id_medicion = (int)($_POST['id_medicion'] ?? 0);
+    if ($id_medicion <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'ID inválido']);
+        exit;
+    }
+    // Usamos el método eliminarMedicion existente (hard delete)
+    if ($objAntropometria->eliminarMedicion($id_medicion)) {
+        Bitacora::registrar(
+            $_SESSION['id'],
+            'Módulo Antropometría',
+            'DELETE',
+            $id_medicion,
+            'registro completo',
+            'Datos eliminados permanentemente',
+            "Medición eliminada físicamente"
+        );
+        echo json_encode(['status' => 'success', 'message' => 'Medición eliminada permanentemente']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'No se pudo eliminar la medición']);
+    }
+    exit;
+}
+
+
 }

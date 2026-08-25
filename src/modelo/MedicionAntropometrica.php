@@ -88,14 +88,14 @@ class MedicionAntropometrica extends Conexion {
         return $this->eliminarMedicionBD();
     }
 
-    public function listarMediciones(int $id_atleta = 0, string $fecha_inicio = '', string $fecha_fin = ''): array {
+  /*   public function listarMediciones(int $id_atleta = 0, string $fecha_inicio = '', string $fecha_fin = ''): array {
         // Almacenamos parámetros adicionales en el atributo de clase
         $this->datos['filtro_id_atleta'] = $id_atleta > 0 ? $id_atleta : 0;
         $this->datos['filtro_fecha_inicio'] = $fecha_inicio;
         $this->datos['filtro_fecha_fin'] = $fecha_fin;
 
         return $this->ejecutarConsultaListado();
-    }
+    } */
 
     public function obtenerDetallePorId(int $id_medicion): ?array {
         if ($id_medicion <= 0) return null;
@@ -325,7 +325,7 @@ class MedicionAntropometrica extends Conexion {
     /**
      * Operación SQL atómica para el DASHBOARD
      */
-private function ejecutarConsultaDashboard(): array {
+/* private function ejecutarConsultaDashboard(): array {
         try {
             // Agregamos el JOIN de categorías y los ALIAS 'peso' y 'talla'
             $sql = "SELECT a.id_atleta, a.nombres, a.apellidos, a.cedula,
@@ -334,7 +334,7 @@ private function ejecutarConsultaDashboard(): array {
                            m.fecha AS ultima_fecha,
                            m.peso_kg AS peso, 
                            m.talla_cm AS talla, 
-                           m.imc, m.porcentaje_grasa,
+                           m.imc, m.porcentaje_grasa, m.responsable,
                            DATEDIFF(CURRENT_DATE, m.fecha) AS dias_sin_evaluacion
                     FROM atletas a
                     LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
@@ -355,5 +355,255 @@ private function ejecutarConsultaDashboard(): array {
             error_log("Error en ejecutarConsultaDashboard: " . $e->getMessage());
             return [];
         }
+    } */
+
+
+   private function ejecutarConsultaDashboard(int $id_atleta = 0): array {
+    try {
+        $sql = "SELECT a.id_atleta, a.nombres, a.apellidos, a.cedula,
+                       c.nombre AS categoria,
+                       m.id_medicion,
+                       m.fecha AS ultima_fecha,
+                       m.peso_kg AS peso, 
+                       m.talla_cm AS talla, 
+                       m.imc, m.porcentaje_grasa, m.responsable,
+                       m.deleted_at,
+                       DATEDIFF(CURRENT_DATE, m.fecha) AS dias_sin_evaluacion
+                FROM atletas a
+                LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
+                LEFT JOIN mediciones_antropometricas m
+                    ON m.id_atleta = a.id_atleta
+                    AND m.fecha = (
+                        SELECT MAX(fecha)
+                        FROM mediciones_antropometricas
+                        WHERE id_atleta = a.id_atleta
+                        AND deleted_at IS NULL
+                    )
+                    AND m.deleted_at IS NULL
+                WHERE a.estado = 'Activo'";
+        if ($id_atleta > 0) {
+            $sql .= " AND a.id_atleta = :id_atleta";
+        }
+        $sql .= " ORDER BY dias_sin_evaluacion DESC, a.nombres ASC";
+
+        $stmt = $this->pdo->prepare($sql);
+        if ($id_atleta > 0) {
+            $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en ejecutarConsultaDashboard: " . $e->getMessage());
+        return [];
     }
 }
+
+
+ /**
+ * Anular medición (soft delete)
+ */
+public function anularMedicion(int $id_medicion, string $motivo): bool {
+    try {
+        $sql = "UPDATE mediciones_antropometricas 
+                SET deleted_at = NOW(), motivo_eliminacion = :motivo 
+                WHERE id_medicion = :id_medicion";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_medicion', $id_medicion, PDO::PARAM_INT);
+        $stmt->bindValue(':motivo', $motivo, PDO::PARAM_STR);
+        return $stmt->execute();
+    } catch (PDOException $e) {
+        error_log("Error en anularMedicion: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Reactivar medición
+ */
+public function reactivarMedicion(int $id_medicion): bool {
+    try {
+        $sql = "UPDATE mediciones_antropometricas 
+                SET deleted_at = NULL, motivo_eliminacion = NULL 
+                WHERE id_medicion = :id_medicion";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_medicion', $id_medicion, PDO::PARAM_INT);
+        return $stmt->execute();
+    } catch (PDOException $e) {
+        error_log("Error en reactivarMedicion: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Eliminar físicamente (hard delete) - ya existe el método eliminarMedicion
+ * pero lo dejamos por claridad
+ */
+public function eliminarFisicoMedicion(int $id_medicion): bool {
+    return $this->eliminarMedicion($id_medicion);
+}
+/**
+ * Listar mediciones con filtros y soporte para papelera
+ */
+public function listarMediciones(int $id_atleta = 0, string $fecha_inicio = '', string $fecha_fin = '', string $modo = 'activos'): array {
+    $this->datos['filtro_id_atleta'] = $id_atleta > 0 ? $id_atleta : 0;
+    $this->datos['filtro_fecha_inicio'] = $fecha_inicio;
+    $this->datos['filtro_fecha_fin'] = $fecha_fin;
+    $this->datos['filtro_modo'] = $modo; // 'activos' o 'papelera'
+    return $this->ejecutarConsultaListadoConPapelera();
+}
+
+/**
+ * Consulta SQL con soporte para papelera
+ */
+private function ejecutarConsultaListadoConPapelera(): array {
+    try {
+        $sql = "SELECT m.id_medicion, m.fecha, m.peso_kg, m.talla_cm,
+                       m.envergadura_cm, m.perimetro_abdominal_cm, 
+                       m.imc, m.porcentaje_grasa, m.responsable,
+                       m.deleted_at, m.motivo_eliminacion,
+                       CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta, 
+                       a.cedula, a.id_atleta
+                FROM mediciones_antropometricas m
+                INNER JOIN atletas a ON m.id_atleta = a.id_atleta
+                WHERE 1=1";
+
+        if ($this->datos['filtro_modo'] === 'activos') {
+            $sql .= " AND m.deleted_at IS NULL";
+        } else {
+            $sql .= " AND m.deleted_at IS NOT NULL";
+        }
+
+        if ($this->datos['filtro_id_atleta'] > 0) {
+            $sql .= " AND m.id_atleta = :id_atleta";
+        }
+        if ($this->datos['filtro_fecha_inicio'] !== '') {
+            $sql .= " AND m.fecha >= :fecha_inicio";
+        }
+        if ($this->datos['filtro_fecha_fin'] !== '') {
+            $sql .= " AND m.fecha <= :fecha_fin";
+        }
+        $sql .= " ORDER BY m.fecha DESC";
+
+        $stmt = $this->pdo->prepare($sql);
+
+        if ($this->datos['filtro_id_atleta'] > 0) {
+            $stmt->bindValue(':id_atleta', $this->datos['filtro_id_atleta'], PDO::PARAM_INT);
+        }
+        if ($this->datos['filtro_fecha_inicio'] !== '') {
+            $stmt->bindValue(':fecha_inicio', $this->datos['filtro_fecha_inicio'], PDO::PARAM_STR);
+        }
+        if ($this->datos['filtro_fecha_fin'] !== '') {
+            $stmt->bindValue(':fecha_fin', $this->datos['filtro_fecha_fin'], PDO::PARAM_STR);
+        }
+
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en ejecutarConsultaListadoConPapelera: " . $e->getMessage());
+        return [];
+    }
+}
+
+
+/**
+ * Obtener indicadores KPIs para el dashboard
+ */
+public function obtenerKPIs(): array {
+    try {
+        // 1. Pendientes (última medición > 85 días o nula)
+        $sqlPendientes = "SELECT COUNT(*) as total 
+                          FROM atletas a
+                          LEFT JOIN (
+                              SELECT id_atleta, MAX(fecha) as ultima_fecha
+                              FROM mediciones_antropometricas
+                              WHERE deleted_at IS NULL
+                              GROUP BY id_atleta
+                          ) m ON a.id_atleta = m.id_atleta
+                          WHERE a.estado = 'Activo'
+                          AND (m.ultima_fecha IS NULL OR DATEDIFF(CURDATE(), m.ultima_fecha) > 84)";
+        $stmt = $this->pdo->prepare($sqlPendientes);
+        $stmt->execute();
+        $pendientes = (int)$stmt->fetchColumn();
+
+        // 2. IMC promedio de atletas activos (última medición)
+        $sqlImc = "SELECT AVG(m.imc) as promedio
+                   FROM atletas a
+                   LEFT JOIN (
+                       SELECT id_atleta, imc, fecha
+                       FROM mediciones_antropometricas
+                       WHERE deleted_at IS NULL
+                       ORDER BY fecha DESC
+                   ) m ON a.id_atleta = m.id_atleta
+                   WHERE a.estado = 'Activo'";
+        $stmt = $this->pdo->prepare($sqlImc);
+        $stmt->execute();
+        $imc_promedio = (float)$stmt->fetchColumn() ?? null;
+
+        // 3. Mediciones en el último mes (todas, no solo últimas)
+        $sqlMes = "SELECT COUNT(*) as total 
+                   FROM mediciones_antropometricas
+                   WHERE deleted_at IS NULL
+                   AND fecha >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+        $stmt = $this->pdo->prepare($sqlMes);
+        $stmt->execute();
+        $mediciones_mes = (int)$stmt->fetchColumn();
+
+        // 4. Cobertura: % de atletas activos con medición en últimos 90 días
+        $sqlCobertura = "SELECT 
+                            COUNT(*) as total_activos,
+                            SUM(CASE WHEN m.ultima_fecha IS NOT NULL AND DATEDIFF(CURDATE(), m.ultima_fecha) <= 90 THEN 1 ELSE 0 END) as medidos
+                         FROM atletas a
+                         LEFT JOIN (
+                             SELECT id_atleta, MAX(fecha) as ultima_fecha
+                             FROM mediciones_antropometricas
+                             WHERE deleted_at IS NULL
+                             GROUP BY id_atleta
+                         ) m ON a.id_atleta = m.id_atleta
+                         WHERE a.estado = 'Activo'";
+        $stmt = $this->pdo->prepare($sqlCobertura);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $total = (int)$row['total_activos'];
+        $medidos = (int)$row['medidos'];
+        $cobertura = $total > 0 ? round(($medidos / $total) * 100, 1) : 0;
+
+        return [
+            'pendientes' => $pendientes,
+            'imc_promedio' => $imc_promedio,
+            'mediciones_mes' => $mediciones_mes,
+            'cobertura' => $cobertura
+        ];
+    } catch (PDOException $e) {
+        error_log("Error en obtenerKPIs: " . $e->getMessage());
+        return ['pendientes' => 0, 'imc_promedio' => null, 'mediciones_mes' => 0, 'cobertura' => 0];
+    }
+}
+
+/**
+ * Listar atletas con medición vencida (alerta)
+ */
+public function listarAlertas(): array {
+    try {
+        $sql = "SELECT a.id_atleta, a.nombres, a.apellidos, c.nombre AS categoria,
+                       MAX(m.fecha) AS ultima_fecha,
+                       DATEDIFF(CURDATE(), MAX(m.fecha)) AS dias_sin_evaluacion
+                FROM atletas a
+                LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
+                LEFT JOIN mediciones_antropometricas m ON a.id_atleta = m.id_atleta AND m.deleted_at IS NULL
+                WHERE a.estado = 'Activo'
+                GROUP BY a.id_atleta
+                HAVING dias_sin_evaluacion > 84 OR MAX(m.fecha) IS NULL
+                ORDER BY dias_sin_evaluacion DESC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en listarAlertas: " . $e->getMessage());
+        return [];
+    }
+}
+
+
+
+}
+
