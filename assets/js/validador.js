@@ -143,6 +143,16 @@ class Validador {
                         errores.push(`- <b>${nombreCampo}</b> tiene un formato de fecha corrupto.`);
                     }
                 }
+
+                // Regla biológica/magnitud
+                if (input.hasAttribute('data-min-num')) {
+                    let minNum = parseFloat(input.getAttribute('data-min-num'));
+                    if (parseFloat(valor) < minNum) errores.push(`- <b>${nombreCampo}</b> debe ser mayor o igual a ${minNum}.`);
+                }
+                if (input.hasAttribute('data-max-num')) {
+                    let maxNum = parseFloat(input.getAttribute('data-max-num'));
+                    if (parseFloat(valor) > maxNum) errores.push(`- <b>${nombreCampo}</b> no debe superar un valor lógico de ${maxNum}.`);
+                }
             }
         });
 
@@ -262,6 +272,22 @@ class Validador {
         if (campo.hasAttribute('data-max')) {
             const max = parseInt(campo.getAttribute('data-max'));
             if (valor.length > max) { valido = false; if (!errorEspecifico) errorEspecifico = `Has superado el máximo de ${max} caracteres`; }
+        }
+
+        // 7. Regla biológica/magnitud (data-min-num y data-max-num)
+        if (campo.hasAttribute('data-min-num') && valor !== '') {
+            const minNum = parseFloat(campo.getAttribute('data-min-num'));
+            if (parseFloat(valor) < minNum) { 
+                valido = false; 
+                if (!errorEspecifico) errorEspecifico = `El valor mínimo lógico es ${minNum}`; 
+            }
+        }
+        if (campo.hasAttribute('data-max-num') && valor !== '') {
+            const maxNum = parseFloat(campo.getAttribute('data-max-num'));
+            if (parseFloat(valor) > maxNum) { 
+                valido = false; 
+                if (!errorEspecifico) errorEspecifico = `El valor máximo lógico es ${maxNum}`; 
+            }
         }
 
         campo.style.borderColor = valido ? '#34d399' : '#f87171';

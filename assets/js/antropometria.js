@@ -412,7 +412,8 @@ function prepararEdicion(registroStr) {
     
     document.getElementById('contenedorJustificacion').classList.remove('hidden');
     document.getElementById('justificacion').value = '';
-    document.getElementById('justificacion').setAttribute('data-validar', 'requerido');
+    // Añadimos la regla "texto" para evitar caracteres raros
+    document.getElementById('justificacion').setAttribute('data-validar', 'requerido|texto');
     
     calcularIMCEnVivo();
     
@@ -488,4 +489,9 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('DOMContentLoaded', () => {
     cargarAtletas();
     cargarDashboard();
+
+    // Conectamos el Validador en tiempo real al formulario
+    if (typeof Validador !== 'undefined') {
+        Validador.vincularTiempoReal(formMedicion);
+    }
 });

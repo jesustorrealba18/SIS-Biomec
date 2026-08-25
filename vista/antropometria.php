@@ -193,6 +193,65 @@ if (isset($_SESSION['id'])) {
                         <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
                             <i class="fas fa-calendar-alt text-indigo-500 w-5"></i> Fecha de Evaluación *
                         </label>
+                        <!-- Agregamos fecha_logica -->
+                        <input type="date" id="fecha" name="fecha" data-validar="requerido|fecha_logica" data-nombre="Fecha" class="w-full p-3.5 rounded-xl input-adapt text-sm" max="<?= date('Y-m-d') ?>">
+                    </div>
+
+                   <div class="space-y-2">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                            <i class="fas fa-weight-hanging text-indigo-500 w-5"></i> Peso (kg) *
+                        </label>
+                        <!-- Peso realista: de 20 kg a 200 kg -->
+                        <input type="text" inputmode="decimal" maxlength="6" id="peso" name="peso" data-validar="requerido|decimal" data-min-num="20" data-max-num="200" data-nombre="Peso" class="w-full p-3.5 rounded-xl input-adapt text-sm" placeholder="Ej: 75.50">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                            <i class="fas fa-ruler-vertical text-indigo-500 w-5"></i> Talla (cm) *
+                        </label>
+                        <!-- Talla realista: de 100 cm a 250 cm -->
+                        <input type="text" inputmode="decimal" maxlength="6" id="talla" name="talla" data-validar="requerido|decimal" data-min-num="100" data-max-num="250" data-nombre="Talla" class="w-full p-3.5 rounded-xl input-adapt text-sm" placeholder="Ej: 180.5">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                            <i class="fas fa-ruler-horizontal text-indigo-500 w-5"></i> Envergadura (cm) *
+                        </label>
+                        <!-- Envergadura realista: de 100 cm a 250 cm -->
+                        <input type="text" inputmode="decimal" maxlength="6" id="envergadura" name="envergadura" data-validar="requerido|decimal" data-min-num="100" data-max-num="250" data-nombre="Envergadura" class="w-full p-3.5 rounded-xl input-adapt text-sm" placeholder="Ej: 185">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                            <i class="fas fa-circle-notch text-indigo-500 w-5"></i> Perím. Abdominal (cm) *
+                        </label>
+                        <!-- Perímetro realista: de 40 cm a 150 cm -->
+                        <input type="text" inputmode="decimal" maxlength="6" id="perimetro_abdominal" name="perimetro_abdominal" data-validar="requerido|decimal" data-min-num="40" data-max-num="150" data-nombre="Perímetro Abdominal" class="w-full p-3.5 rounded-xl input-adapt text-sm" placeholder="Ej: 80.0">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                            <i class="fas fa-percent text-indigo-500 w-5"></i> % Grasa Corporal
+                        </label>
+                        <!-- Grasa biológica: de 3% a 50% -->
+                        <input type="text" inputmode="decimal" maxlength="5" id="grasa_corporal" name="grasa_corporal" data-validar="decimal" data-min-num="3" data-max-num="50" data-nombre="Grasa Corporal" class="w-full p-3.5 rounded-xl input-adapt text-sm" placeholder="Opcional">
+                    </div>
+                </div>
+
+                <!-- <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2 md:col-span-2">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                            <i class="fas fa-user text-indigo-500 w-5"></i> Atleta *
+                        </label>
+                        <select id="id_atleta" name="id_atleta" data-validar="requerido" data-nombre="Atleta" class="w-full p-3.5 rounded-xl input-adapt cursor-pointer text-sm font-medium">
+                            <option value="">Seleccione un atleta...</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                            <i class="fas fa-calendar-alt text-indigo-500 w-5"></i> Fecha de Evaluación *
+                        </label>
                         <input type="date" id="fecha" name="fecha" data-validar="requerido" data-nombre="Fecha" class="w-full p-3.5 rounded-xl input-adapt text-sm" max="<?= date('Y-m-d') ?>">
                     </div>
 
@@ -230,7 +289,7 @@ if (isset($_SESSION['id'])) {
                         </label>
                         <input type="number" step="0.1" id="grasa_corporal" name="grasa_corporal" class="w-full p-3.5 rounded-xl input-adapt text-sm" placeholder="Opcional">
                     </div>
-                </div>
+                </div> -->
 
                 <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-500/30 rounded-xl flex justify-between items-center mt-4 transition-colors duration-300">
                     <span class="text-sm text-indigo-600 dark:text-indigo-300"><i class="fas fa-calculator mr-2"></i>IMC Proyectado:</span>
