@@ -296,5 +296,94 @@ class UsuarioModelo extends Conexion {
         }
     }
 
+    public function obtenerPerfilModular(int $id_usuario): ?array {
+        try {
+            $perfil = [
+                'usuario' => null,
+                'roles' => [],
+                'atleta' => null,
+                'representante' => null,
+                'entrenador' => null
+            ];
+
+            // 1. Datos Base de Identidad (Para TODOS)
+            $sqlBase = "SELECT id_usuario, cedula, nombres, apellidos, correo, fecha_creacion, activo 
+                        FROM sis_seguridad.usuarios WHERE id_usuario = :id LIMIT 1";
+            $stmt = $this->pdo->prepare($sqlBase);
+            $stmt->bindValue(':id', $id_usuario, PDO::PARAM_INT);
+            $stmt->execute();
+            $perfil['usuario'] = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$perfil['usuario']) return null;
+
+            // 2. ¿Qué roles tiene en el sistema? (Puede tener varios)
+            $sqlRoles = "SELECT r.nombre FROM sis_seguridad.usuario_roles ur
+                         INNER JOIN sis_seguridad.roles r ON ur.id_rol = r.id_rol
+                         WHERE ur.id_usuario = :id";
+            $stmt = $this->pdo->prepare($sqlRoles);
+            $stmt->bindValue(':id', $id_usuario, PDO::PARAM_INT);
+            $stmt->execute();
+            $perfil['roles'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            // 3. Faceta: ¿Es Atleta?
+            $sqlAtleta = "SELECT a.foto, a.sexo, a.telefono, a.token_asistencia, a.estado,
+                                 TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) AS edad,
+                                 c.nombre AS categoria, dm.grupo_sanguineo, dm.alergias, dm.numero_feveda, dm.club_procedencia
+                          FROM sis_natacion.atletas a
+                          LEFT JOIN sis_natacion.categorias_feveda c ON a.id_categoria = c.id_categoria
+                          LEFT JOIN sis_natacion.atleta_datos_medicos dm ON a.id_atleta = dm.id_atleta
+                          WHERE a.id_usuario = :id LIMIT 1";
+            $stmt = $this->pdo->prepare($sqlAtleta);
+            $stmt->bindValue(':id', $id_usuario, PDO::PARAM_INT);
+            $stmt->execute();
+            $perfil['atleta'] = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+            // 4. Faceta: ¿Es Representante?
+            $sqlRep = "SELECT r.id_representante, r.telefono_principal AS telefono
+                       FROM sis_natacion.representantes r WHERE r.id_usuario = :id LIMIT 1";
+            $stmt = $this->pdo->prepare($sqlRep);
+            $stmt->bindValue(':id', $id_usuario, PDO::PARAM_INT);
+            $stmt->execute();
+            $rep = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($rep) {
+                // Buscamos a sus hijos asignados
+                $sqlHijos = "SELECT a.nombres, a.apellidos, a.cedula, c.nombre as categoria
+                             FROM sis_natacion.atleta_representante ar
+                             INNER JOIN sis_natacion.atletas a ON ar.id_atleta = a.id_atleta
+                             LEFT JOIN sis_natacion.categorias_feveda c ON a.id_categoria = c.id_categoria
+                             WHERE ar.id_representante = :id_rep";
+                $stmtH = $this->pdo->prepare($sqlHijos);
+                $stmtH->bindValue(':id_rep', $rep['id_representante'], PDO::PARAM_INT);
+                $stmtH->execute();
+                $rep['hijos'] = $stmtH->fetchAll(PDO::FETCH_ASSOC);
+                $perfil['representante'] = $rep;
+            }
+
+            // 5. Faceta: ¿Es Entrenador?
+            $sqlEnt = "SELECT e.id_entrenador, e.telefono, e.foto
+                       FROM sis_natacion.entrenador e WHERE e.id_usuario = :id LIMIT 1";
+            $stmt = $this->pdo->prepare($sqlEnt);
+            $stmt->bindValue(':id', $id_usuario, PDO::PARAM_INT);
+            $stmt->execute();
+            $ent = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($ent) {
+                // Buscamos sus grupos asignados
+                $sqlGrupos = "SELECT nombre, descripcion FROM sis_natacion.grupos_entrenamiento WHERE id_entrenador = :id_ent AND activo = 1";
+                $stmtG = $this->pdo->prepare($sqlGrupos);
+                $stmtG->bindValue(':id_ent', $ent['id_entrenador'], PDO::PARAM_INT);
+                $stmtG->execute();
+                $ent['grupos'] = $stmtG->fetchAll(PDO::FETCH_ASSOC);
+                $perfil['entrenador'] = $ent;
+            }
+
+            return $perfil;
+        } catch (PDOException $e) {
+            error_log("Error Perfil Modular: " . $e->getMessage());
+            return null;
+        }
+    }
+
 
 }

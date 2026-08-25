@@ -26,9 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // El Buscador Predictivo pide los atletas
     if ($accion === 'obtener_mi_ficha') {
         header('Content-Type: application/json');
-        $objAtleta = new Atleta();
+        /* $objAtleta = new Atleta();
         
-        echo json_encode($objAtleta->obtenerDetallePorIdUSER($_SESSION['id']));
+        echo json_encode($objAtleta->obtenerDetallePorIdUSER($_SESSION['id'])); */
+
+        $objUsuario = new UsuarioModelo();
+        
+        echo json_encode($objUsuario->obtenerPerfilModular($_SESSION['id']));
         exit;
     }
 
