@@ -33,15 +33,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     // Cargar la tabla principal de registros de normalización
     if ($accion === 'listarNormalizaciones') {
-        header('Content-Type: application/json');
-        $estado = $_GET['estado'] ?? 'Activo';
-        $id_atleta = isset($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : null;
-        
-        // Llamada segura al modelo extractor
-        $resultados = $objNormalizacion->listar($estado, $id_atleta);
-        echo json_encode($resultados);
-        exit;
-    }
+    header('Content-Type: application/json');
+    $modo = $_GET['modo'] ?? 'activos';
+    $id_atleta = isset($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
+    $estilo = $_GET['estilo'] ?? '';
+    $distancia = $_GET['distancia'] ?? '';
+    $piscina = $_GET['piscina'] ?? '';
+    
+    $resultados = $objNormalizacion->listar($modo, $id_atleta, $estilo, $distancia, $piscina);
+    echo json_encode($resultados);
+    exit;
+}
+
+require_once 'vista/normalizacion.php';
+    exit;
 }
 
 // =====================================================================

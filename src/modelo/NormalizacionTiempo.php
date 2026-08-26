@@ -133,17 +133,47 @@ class NormalizacionTiempo extends Conexion {
 
     // En src/modelo/NormalizacionTiempo.php
 
-    public function listar() {
+public function listar(string $modo = 'activos', int $id_atleta = 0, string $estilo = '', string $distancia = '', string $piscina = ''): array {
     try {
-        // Asegúrate de usar consultas preparadas para seguridad (evitar inyección SQL)
-        $sql = "SELECT * FROM normalizacion_tiempos WHERE estatus = 1"; // Ajusta según tu BD
+        $sql = "SELECT n.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta
+                FROM normalizacion_tiempos n
+                INNER JOIN atletas a ON n.id_atleta = a.id_atleta
+                WHERE 1=1";
+        $params = [];
+
+        if ($modo === 'activos') {
+            $sql .= " AND n.estado = 'Activo'";
+        } else {
+            $sql .= " AND n.estado = 'Inactivo'";
+        }
+
+        if ($id_atleta > 0) {
+            $sql .= " AND n.id_atleta = :id_atleta";
+            $params[':id_atleta'] = $id_atleta;
+        }
+        if (!empty($estilo)) {
+            $sql .= " AND n.estilo = :estilo";
+            $params[':estilo'] = $estilo;
+        }
+        if (!empty($distancia)) {
+            $sql .= " AND n.distancia_m = :distancia";
+            $params[':distancia'] = (int)$distancia;
+        }
+        if (!empty($piscina)) {
+            $sql .= " AND n.tipo_piscina_origen = :piscina";
+            $params[':piscina'] = $piscina;
+        }
+
+        $sql .= " ORDER BY n.fecha_registro DESC";
         $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => &$val) {
+            $stmt->bindValue($key, $val);
+        }
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        // Log de error para depuración en pruebas de caja blanca
-        error_log("Error en listar(): " . $e->getMessage());
-        return []; // Retorna vacío en caso de fallo
+        error_log("Error en listar Normalizacion: " . $e->getMessage());
+        return [];
     }
 }
 }
