@@ -60,7 +60,7 @@ if ($accion === 'cargarDashboard') {
 }
 
     // Ruta C: Listar mediciones con filtros (similar a marcas)
-    if ($accion === 'listarMediciones') {
+   /*  if ($accion === 'listarMediciones') {
         header('Content-Type: application/json');
         $id_atleta    = isset($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
         $fecha_inicio = $_GET['fecha_inicio'] ?? '';
@@ -69,7 +69,7 @@ if ($accion === 'cargarDashboard') {
         $mediciones = $objAntropometria->listarMediciones($id_atleta, $fecha_inicio, $fecha_fin);
         echo json_encode($mediciones);
         exit;
-    }
+    } */
 
     // Ruta D: Modal de Gráficas e Historial
     if ($accion === 'verHistorial') {

@@ -322,40 +322,6 @@ class MedicionAntropometrica extends Conexion {
         }
     }
 
-    /**
-     * Operación SQL atómica para el DASHBOARD
-     */
-/* private function ejecutarConsultaDashboard(): array {
-        try {
-            // Agregamos el JOIN de categorías y los ALIAS 'peso' y 'talla'
-            $sql = "SELECT a.id_atleta, a.nombres, a.apellidos, a.cedula,
-                           c.nombre AS categoria,
-                           m.id_medicion,
-                           m.fecha AS ultima_fecha,
-                           m.peso_kg AS peso, 
-                           m.talla_cm AS talla, 
-                           m.imc, m.porcentaje_grasa, m.responsable,
-                           DATEDIFF(CURRENT_DATE, m.fecha) AS dias_sin_evaluacion
-                    FROM atletas a
-                    LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
-                    LEFT JOIN mediciones_antropometricas m
-                        ON m.id_atleta = a.id_atleta
-                        AND m.fecha = (
-                            SELECT MAX(fecha)
-                            FROM mediciones_antropometricas
-                            WHERE id_atleta = a.id_atleta
-                        )
-                    WHERE a.estado = 'Activo'
-                    ORDER BY dias_sin_evaluacion DESC, a.nombres ASC";
-
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error en ejecutarConsultaDashboard: " . $e->getMessage());
-            return [];
-        }
-    } */
 
 
    private function ejecutarConsultaDashboard(int $id_atleta = 0): array {

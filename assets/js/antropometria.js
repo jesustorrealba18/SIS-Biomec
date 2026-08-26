@@ -15,10 +15,7 @@ let dataTableAlertasAntropometria = null;
 let dataTableHistorialAntropometria = null;
 let modoPapeleraAntropometria = false;
 
-// Elementos de filtros
-/* const filtroAtleta = document.getElementById('filtroAtletaAntropometria');
-const filtroFechaInicio = document.getElementById('filtroFechaInicioAntro');
-const filtroFechaFin = document.getElementById('filtroFechaFinAntro'); */
+
 const toggleBtn = document.getElementById('toggleEstadoAntropometriaBtn');
 
 // ================== PETICIONES AJAX ==================
@@ -86,93 +83,18 @@ async function cargarKPIsAntropometria() {
 }
 
 // ================== TABLA PRINCIPAL (DataTables) ==================
-/* async function cargarTablaAntropometria() {
-    const params = {
-        modo: modoPapeleraAntropometria ? 'papelera' : 'activos',
-        fechaInicio: filtroFechaInicio?.value || '',
-        fechaFin: filtroFechaFin?.value || '',
-        id_atleta: filtroAtleta?.value || '0'
-    };
-    const respuesta = await peticionAjaxAntropometria('cargarDashboard', null, 'GET', params);
-   const registros = respuesta?.data || []; 
-    if (!Array.isArray(registros) || registros.length === 0) return;
 
-    let html = '';
-    registros.forEach(r => {
-        // Mapeamos las variables correctas según el JSON que devuelve cargarDashboard
-        const nombreCompleto = `${r.nombres} ${r.apellidos}`;
-        const fechaEval = r.ultima_fecha ? formatearFecha(r.ultima_fecha) : 'Sin registro';
-        const peso = r.peso ? `${r.peso} kg` : '--';
-        const talla = r.talla ? `${r.talla} cm` : '--';
-        const imc = r.imc || '--';
-        const responsable = r.responsable || '--'; // El dashboard no trae esto por defecto
-
-        const estadoBadge = r.deleted_at
-            ? '<span class="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded text-xs border border-red-200 dark:border-red-500/30"><i class="fas fa-trash-alt"></i> Anulado</span>'
-            : '<span class="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded text-xs border border-emerald-200 dark:border-emerald-500/30"><i class="fas fa-check"></i> Activo</span>';
-
-        let botones = `<button onclick="verHistorial(${r.id_atleta}, '${nombreCompleto}')" class="bg-gray-200 dark:bg-[#252345] hover:bg-indigo-600 text-gray-700 dark:text-white w-8 h-8 rounded-lg transition-colors" title="Ver Historial"><i class="fas fa-chart-line text-xs"></i></button>`;
-        
-        // Solo mostramos botones de edición si realmente hay una medición registrada
-        if (r.id_medicion) {
-            if (!r.deleted_at) {
-                if (PERMISOS_ANTROPOMETRIA.editar) botones += `<button onclick="prepararEdicion(${r.id_medicion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-amber-600 text-amber-600 dark:text-amber-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Editar"><i class="fas fa-edit text-xs"></i></button>`;
-                if (PERMISOS_ANTROPOMETRIA.eliminar) botones += `<button onclick="anularMedicion(${r.id_medicion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Anular"><i class="fas fa-trash-alt text-xs"></i></button>`;
-            } else {
-                if (PERMISOS_ANTROPOMETRIA.reactivar) botones += `<button onclick="reactivarMedicion(${r.id_medicion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Restaurar"><i class="fas fa-undo-alt text-xs"></i></button>`;
-                if (PERMISOS_ANTROPOMETRIA.eliminardb) botones += `<button onclick="eliminarFisicoMedicion(${r.id_medicion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Eliminar permanentemente"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
-            }
-        }
-
-        html += `<tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors border-b border-gray-200 dark:border-[#252345]">
-            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${fechaEval}</td>
-            <td class="px-6 py-4 text-indigo-600 dark:text-indigo-300 font-semibold">${nombreCompleto}</td>
-            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${peso}</td>
-            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${talla}</td>
-            <td class="px-6 py-4 font-bold text-indigo-600 dark:text-indigo-400">${imc}</td>
-            <td class="px-6 py-4 text-gray-500 dark:text-gray-400 text-xs">${responsable}</td>
-            <td class="px-6 py-4 text-center">${estadoBadge}</td>
-            <td class="px-6 py-4 text-right flex justify-end gap-1">${botones}</td>
-        </tr>`;
-    });
-
-    const tbody = document.getElementById('tablaCuerpoAntropometria');
-    if (dataTableAntropometria) {
-        dataTableAntropometria.destroy();
-        tbody.innerHTML = html;
-        dataTableAntropometria = $('#tablaAntropometria').DataTable({
-            responsive: true,
-            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
-            columnDefs: [
-                { responsivePriority: 1, targets: 1 },
-                { responsivePriority: 2, targets: 4 },
-                { responsivePriority: 3, targets: 7 }
-            ]
-        });
-    } else {
-        tbody.innerHTML = html;
-        dataTableAntropometria = $('#tablaAntropometria').DataTable({
-            responsive: true,
-            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
-            columnDefs: [
-                { responsivePriority: 1, targets: 1 },
-                { responsivePriority: 2, targets: 4 },
-                { responsivePriority: 3, targets: 7 }
-            ]
-        });
-    }
-} */
 async function cargarTablaAntropometria() {
     const params = {
         modo: modoPapeleraAntropometria ? 'papelera' : 'activos',
-        id_atleta: 0 // Ya no dependemos del filtro
+        id_atleta: 0 
     };
     const respuesta = await peticionAjaxAntropometria('cargarDashboard', null, 'GET', params);
     const registros = respuesta?.data || [];
 
     let html = '';
     
-    // Solo armamos los TR si hay registros, sino quedará vacío ('')
+   
     registros.forEach(r => {
         let fecha = modoPapeleraAntropometria ? formatearFecha(r.fecha) : (r.ultima_fecha ? formatearFecha(r.ultima_fecha) : 'Sin registro');
         let nombre = modoPapeleraAntropometria ? r.nombre_atleta : `${r.nombres} ${r.apellidos}`;
@@ -213,12 +135,12 @@ async function cargarTablaAntropometria() {
 
     const tbody = document.getElementById('tablaCuerpoAntropometria');
     
-    // Destruimos la instancia anterior si existe
+    
     if (dataTableAntropometria) {
         dataTableAntropometria.destroy();
     }
     
-    // Insertamos el HTML (estará vacío si no hay registros)
+    
     tbody.innerHTML = html;
     
     // Inicializamos DataTables SIEMPRE
@@ -238,6 +160,7 @@ async function cargarTablaAntropometria() {
 
 // ================== TOGGLE PAPELERA ==================
 function actualizarUIAntropometria() {
+    if (!toggleBtn) return;
     const isActive = !modoPapeleraAntropometria;
     if (toggleBtn) {
         if (isActive) {
@@ -452,6 +375,7 @@ async function anularMedicion(id_medicion) {
     );
     if (!justificacion.isConfirmed) return;
     const formData = new FormData();
+    formData.append('accion', 'anular');
     formData.append('id_medicion', id_medicion);
     formData.append('motivo', justificacion.value);
     const resultado = await peticionAjaxAntropometria('anular', formData, 'POST');
@@ -480,6 +404,7 @@ async function reactivarMedicion(id_medicion) {
     );
     if (!confirm.isConfirmed) return;
     const formData = new FormData();
+    formData.append('accion', 'reactivar');
     formData.append('id_medicion', id_medicion);
     const resultado = await peticionAjaxAntropometria('reactivar', formData, 'POST');
     if (resultado?.status === 'success') {
@@ -520,40 +445,6 @@ async function eliminarFisicoMedicion(id_medicion) {
 }
 
 // ================== ALERTAS: ATLETAS CON MEDICIÓN VENCIDA ==================
-/* async function cargarAlertasAntropometria() {
-    const tbody = document.getElementById('listaAlertasAntropometria');
-    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl"></i><br>Cargando alertas...</td></tr>`;
-
-    const alertas = await peticionAjaxAntropometria('listarAlertas');
-    if (!alertas || alertas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-emerald-600 dark:text-emerald-400"><i class="fas fa-check-circle mr-2"></i> No hay atletas con medición vencida.</td></tr>`;
-        return;
-    }
-
-    let html = '';
-    alertas.forEach(a => {
-        const dias = a.dias_sin_evaluacion !== null ? a.dias_sin_evaluacion : 'Nunca';
-        html += `<tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors border-b border-gray-200 dark:border-[#252345]">
-            <td class="px-6 py-4 text-gray-900 dark:text-white font-medium">${a.nombres} ${a.apellidos}</td>
-            <td class="px-6 py-4 text-gray-500 dark:text-gray-400">${a.categoria}</td>
-            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${a.ultima_fecha ? formatearFecha(a.ultima_fecha) : 'Sin registro'}</td>
-            <td class="px-6 py-4">
-                <span class="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 px-2 py-1 rounded font-bold text-xs border border-red-200 dark:border-red-500/30">
-                    ${dias === 'Nunca' ? 'Sin evaluar' : dias + ' días'}
-                </span>
-            </td>
-            <td class="px-6 py-4">
-                <button onclick="abrirModalMedicionConAtleta(${a.id_atleta})" class="btn-blink bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition">
-                    <i class="fas fa-ruler-combined"></i> Medir ahora
-                </button>
-            </td>
-        </tr>`;
-    });
-    tbody.innerHTML = html;
-}
- */
-
-// ================== ALERTAS: ATLETAS CON MEDICIÓN VENCIDA ==================
 async function cargarAlertasAntropometria() {
     const tbody = document.getElementById('listaAlertasAntropometria');
     tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl"></i><br>Cargando alertas...</td></tr>`;
@@ -572,6 +463,17 @@ async function cargarAlertasAntropometria() {
     let html = '';
     alertas.forEach(a => {
         const dias = a.dias_sin_evaluacion !== null ? a.dias_sin_evaluacion : 'Nunca';
+
+        let botonMedir = '';
+        if (PERMISOS_ANTROPOMETRIA.registrar) {
+            botonMedir = `<button onclick="abrirModalMedicionConAtleta(${a.id_atleta})" class="btn-blink bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition">
+                            <i class="fas fa-ruler-combined"></i> Medir ahora
+                        </button>`;
+        } else {
+            botonMedir = `<span class="text-gray-400 text-xs">Sin permiso</span>`;
+        }
+
+
         html += `<tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors border-b border-gray-200 dark:border-[#252345]">
             <td class="px-6 py-4 text-gray-900 dark:text-white font-medium">${a.nombres} ${a.apellidos}</td>
             <td class="px-6 py-4 text-gray-500 dark:text-gray-400">${a.categoria}</td>
@@ -582,9 +484,7 @@ async function cargarAlertasAntropometria() {
                 </span>
             </td>
             <td class="px-6 py-4">
-                <button onclick="abrirModalMedicionConAtleta(${a.id_atleta})" class="btn-blink bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition">
-                    <i class="fas fa-ruler-combined"></i> Medir ahora
-                </button>
+                ${botonMedir}
             </td>
         </tr>`;
     });
@@ -618,21 +518,16 @@ async function cargarAlertasAntropometria() {
 // Función para abrir modal con atleta preseleccionado
 function abrirModalMedicionConAtleta(id_atleta) {
     abrirModalMedicion();
-    // Esperar a que el select esté poblado
+   
     setTimeout(() => {
         const select = document.getElementById('id_atleta');
         if (select) {
             select.value = id_atleta;
-            // Disparar evento change para que el validador se actualice
+           
             select.dispatchEvent(new Event('change'));
         }
     }, 200);
 }
-
-// ================== HISTORIAL, GRÁFICAS (se mantiene igual) ==================
-// ... (las funciones verHistorial, renderizarGraficos, prepararEdicion, eliminarMedicion se mantienen)
-// Pero eliminamos la función eliminarMedicion antigua y la reemplazamos por anularMedicion.
-// También ajustamos prepararEdicion para que use abrirModalMedicion con id.
 
 
 // =====================================================================
@@ -679,7 +574,8 @@ async function verHistorial(id_atleta, nombreCompleto) {
                                 class="text-orange-600 dark:text-orange-400 hover:text-orange-700 transition-colors" 
                                 title="Corregir Registro">
                             <i class="fas fa-edit"></i>
-                        </button>
+                        </button>` : ''}
+                        ${typeof PERMISOS_ANTROPOMETRIA !== 'undefined' && PERMISOS_ANTROPOMETRIA.eliminar ? `
                         <button onclick="anularMedicion(${r.id_medicion})" 
                                 class="text-red-600 dark:text-red-400 hover:text-red-700 transition-colors" 
                                 title="Eliminar Registro">
@@ -723,68 +619,7 @@ async function verHistorial(id_atleta, nombreCompleto) {
         }, 10);
     }
 }
-/* 
-async function verHistorial(id_atleta, nombreCompleto) {
-    document.getElementById('graficaAtletaNombre').textContent = nombreCompleto;
-    document.getElementById('graficaAtletaNombre').dataset.id = id_atleta;
-    
-   const respuesta = await peticionAjaxAntropometria('verHistorial', null, 'GET', { id_atleta: id_atleta });
-    
-    if (respuesta && respuesta.status === 'success') {
-        const registros = respuesta.data;
-        const tbody = document.getElementById('tablaHistorialBody');
-        tbody.innerHTML = '';
 
-        let labels = [];
-        let dataPeso = [];
-        let dataTalla = [];
-        let dataIMC = [];
-
-        if (registros.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500 dark:text-gray-400">No hay mediciones previas.</td></tr>`;
-        } else {
-            registros.forEach(r => {
-                const tr = document.createElement('tr');
-                tr.className = 'border-b border-gray-200 dark:border-[#252345]';
-                tr.innerHTML = `
-                    <td class="p-3 text-gray-700 dark:text-gray-300">${formatearFecha(r.fecha)}</td>
-                    <td class="p-3 text-gray-700 dark:text-gray-300">${r.peso} kg</td>
-                    <td class="p-3 text-gray-700 dark:text-gray-300">${r.talla} cm</td>
-                    <td class="p-3 text-gray-700 dark:text-gray-300">${r.envergadura} cm</td>
-                    <td class="p-3 font-bold text-indigo-600 dark:text-indigo-400">${r.imc}</td>
-                    <td class="p-3 text-gray-500 dark:text-gray-400 text-xs">${r.responsable}</td>
-                    <td class="p-3 text-center flex justify-center gap-2">
-                        ${typeof PERMISOS_ANTROPOMETRIA !== 'undefined' && PERMISOS_ANTROPOMETRIA.registrar ? `
-                        <button onclick="prepararEdicion(${r.id_medicion})" 
-                                class="text-orange-600 dark:text-orange-400 hover:text-orange-700 transition-colors" 
-                                title="Corregir Registro">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="anularMedicion(${r.id_medicion})" 
-                                class="text-red-600 dark:text-red-400 hover:text-red-700 transition-colors" 
-                                title="Eliminar Registro">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        ` : ''}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-
-                labels.push(formatearFecha(r.fecha));
-                dataPeso.push(r.peso);
-                dataTalla.push(r.talla);
-                dataIMC.push(r.imc);
-            });
-        }
-
-        renderizarGraficos(labels, dataPeso, dataTalla, dataIMC);
-        
-        modalGraficas.classList.remove('hidden');
-        setTimeout(() => {
-            modalGraficas.firstElementChild.classList.remove('scale-95', 'opacity-0');
-        }, 10);
-    }
-} */
 
 function renderizarGraficos(labels, dataPeso, dataTalla, dataIMC) {
     if (chartPesoTallaInstancia) {
@@ -880,45 +715,12 @@ function renderizarGraficos(labels, dataPeso, dataTalla, dataIMC) {
     });
 }
 
-/* function prepararEdicion(registroStr) {
-    const r = JSON.parse(decodeURIComponent(registroStr));
-    
-    document.getElementById('id_medicion').value = r.id_medicion;
-    document.getElementById('id_atleta').value = r.id_atleta;
-    document.getElementById('fecha').value = r.fecha;
-    document.getElementById('peso').value = r.peso;
-    document.getElementById('talla').value = r.talla;
-    document.getElementById('envergadura').value = r.envergadura;
-    document.getElementById('perimetro_abdominal').value = r.perimetro_abdominal;
-    document.getElementById('grasa_corporal').value = r.grasa_corporal || '';
-    
-    document.getElementById('accion').value = 'editar';
-    document.getElementById('modalMedicionTitulo').innerHTML = `
-        <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-500/20 flex items-center justify-center mr-4">
-            <i class="fas fa-edit text-orange-600 dark:text-orange-400"></i>
-        </div> Corregir Medición
-    `;
-    
-    document.getElementById('contenedorJustificacion').classList.remove('hidden');
-    document.getElementById('justificacion').value = '';
-    // Añadimos la regla "texto" para evitar caracteres raros
-    document.getElementById('justificacion').setAttribute('data-validar', 'requerido|texto');
-    
-    calcularIMCEnVivo();
-    
-    modalGraficas.classList.add('hidden');
-    modalMedicion.classList.remove('hidden');
-    setTimeout(() => {
-        modalMedicion.firstElementChild.classList.remove('scale-95', 'opacity-0');
-    }, 10);
-} */
 
-// Reescribimos prepararEdicion para usar el modal de edición
 function prepararEdicion(id_medicion) {
     abrirModalMedicion(id_medicion);
 }
 
-// Eliminamos la función eliminarMedicion anterior, ya que ahora usamos anularMedicion.
+
 
 // ================== UTILIDAD ==================
 function formatearFecha(fechaISO) {
@@ -942,6 +744,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     actualizarUIAntropometria();
 });
 
-// Nota: El código de cálculo de IMC en vivo, apertura/cierre de modales, etc., se mantiene tal cual.
-// Solo he eliminado la función eliminarMedicion antigua y la he reemplazado por anularMedicion.
-// También he ajustado prepararEdicion para usar el modal de edición con carga de datos.

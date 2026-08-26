@@ -324,6 +324,7 @@ if (isset($_SESSION['id'])) {
                     </div>
                     <div class="flex flex-wrap gap-3">
                         <!-- Toggle papelera -->
+                         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'eliminar') || \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'reactivar')): ?>
                         <button id="toggleEstadoAntropometriaBtn" class="group relative flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] hover:border-red-500/50 transition-all duration-200">
                             <i id="toggleIconoAntropometria" class="fas fa-trash-alt text-gray-500 dark:text-gray-400 group-hover:text-red-400 transition-colors"></i>
                             <span id="toggleTextoAntropometria" class="text-xs font-medium text-gray-700 dark:text-gray-300">Activos</span>
@@ -331,6 +332,7 @@ if (isset($_SESSION['id'])) {
                                 <span id="estadoBadgeAntropometria" class="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500 text-[10px] font-bold text-white">A</span>
                             </div>
                         </button>
+                        <?php endif; ?>
                         <!-- Botón nuevo registro -->
                         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'registrar')): ?>
                         <button onclick="abrirModalMedicion()" class="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
@@ -395,33 +397,6 @@ if (isset($_SESSION['id'])) {
                     </div>
                 </div>
 
-                <!-- Tabla de mediciones (con DataTables) -->
-<!--                 <div class="mt-2">
-                    <h2 id="tituloTablaAntropometria" class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-3 ml-2 flex items-center gap-2">
-                        <i class="fas fa-check-circle"></i> Mostrando Mediciones Activas
-                    </h2>
-                    <div id="tablaAntropometriaContainer" class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg border-t-2 border-t-indigo-500 transition-colors duration-300">
-                        <div class="overflow-x-auto">
-                            <table id="tablaAntropometria" class="w-full text-left text-sm whitespace-nowrap">
-                                <thead class="bg-gray-100 dark:bg-[#0f0d23] text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-[#252345] uppercase text-[10px] tracking-wider">
-                                    <tr>
-                                        <th class="px-6 py-4 font-bold">Fecha</th>
-                                        <th class="px-6 py-4 font-bold">Atleta</th>
-                                        <th class="px-6 py-4 font-bold">Peso (kg)</th>
-                                        <th class="px-6 py-4 font-bold">Talla (cm)</th>
-                                        <th class="px-6 py-4 font-bold">IMC</th>
-                                        <th class="px-6 py-4 font-bold">Responsable</th>
-                                        <th class="px-6 py-4 font-bold">Estado</th>
-                                        <th class="px-6 py-4 font-bold text-right">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tablaCuerpoAntropometria" class="divide-y divide-gray-200 dark:divide-[#252345] text-gray-700 dark:text-gray-300">
-                                    <tr><td colspan="8" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando datos...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div> -->
 
                 <!-- Tabla de mediciones (con DataTables) -->
 <div class="mt-2">
@@ -451,37 +426,6 @@ if (isset($_SESSION['id'])) {
     </div>
 </div>
 
-                <!-- Sección de Alertas: Atletas con medición vencida -->
-<!--                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg transition-colors duration-300">
-                    <div class="p-5 border-b border-gray-200 dark:border-[#252345] flex justify-between items-center flex-wrap gap-3">
-                        <div>
-                            <h3 class="text-md font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <i class="fas fa-exclamation-circle text-amber-500 dark:text-amber-400"></i>
-                                Atletas con Medición Vencida
-                            </h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Atletas activos que superan los 85 días sin evaluación o nunca han sido medidos</p>
-                        </div>
-                        <button onclick="cargarAlertasAntropometria()" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm">
-                            <i class="fas fa-sync-alt"></i> Refrescar
-                        </button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table id="tablaAlertasAntropometria" class="w-full text-left text-sm">
-                            <thead class="bg-gray-100 dark:bg-[#0f0d23] text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-[#252345] uppercase text-[10px] tracking-wider">
-                                <tr>
-                                    <th class="px-6 py-4 font-bold">Atleta</th>
-                                    <th class="px-6 py-4 font-bold">Categoría</th>
-                                    <th class="px-6 py-4 font-bold">Última Medición</th>
-                                    <th class="px-6 py-4 font-bold">Días sin medir</th>
-                                    <th class="px-6 py-4 font-bold">Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="listaAlertasAntropometria" class="divide-y divide-gray-200 dark:divide-[#252345] text-gray-700 dark:text-gray-300">
-                                <tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin"></i> Cargando alertas...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div> -->
 
                 <!-- Sección de Alertas: Atletas con medición vencida -->
 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg transition-colors duration-300 p-4 sm:p-6">
@@ -656,28 +600,7 @@ if (isset($_SESSION['id'])) {
                     </div>
                 </div>
 
-                <!-- <div>
-                    <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">Registros Históricos</h4>
-                    <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-[#252345]">
-                        <table class="w-full text-left text-sm border-collapse">
-                            <thead class="bg-gray-100 dark:bg-[#252345] text-gray-700 dark:text-indigo-200">
-                                <tr>
-                                    <th class="p-3">Fecha</th>
-                                    <th class="p-3">Peso</th>
-                                    <th class="p-3">Talla</th>
-                                    <th class="p-3">Envergadura</th>
-                                    <th class="p-3">IMC</th>
-                                    <th class="p-3">Responsable</th>
-                                    <th class="p-3 text-center">Edición</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaHistorialBody" class="divide-y divide-gray-200 dark:divide-[#252345] bg-white dark:bg-[#161430] text-gray-800 dark:text-gray-300">
-                            </tbody>
-                        </table>
-                    </div>
-                </div> -->
-                <!-- Dentro del modal de gráficas, en la sección de historial -->
-                <!-- Dentro del modal de gráficas, en la sección de historial -->
+              
 <div>
     <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">Registros Históricos</h4>
     <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-[#252345] p-4 sm:p-6 bg-white dark:bg-[#161430]">
