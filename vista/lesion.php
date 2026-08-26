@@ -15,6 +15,14 @@ $pagina = 'lesion';
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- DataTables CSS + Responsive -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
+    
     <style>
         /* ===== ESTILOS BASE ===== */
         body { font-family: 'Inter', sans-serif; }
@@ -46,11 +54,9 @@ $pagina = 'lesion';
         .dark .input-adapt:focus {
             box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
         }
-        .input-adapt::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-        }
+        /* Para el calendario (date) en modo oscuro */
         .dark .input-adapt::-webkit-calendar-picker-indicator {
-            filter: invert(0);
+            filter: invert(1);
         }
 
         /* ===== TARJETAS ===== */
@@ -72,6 +78,94 @@ $pagina = 'lesion';
         /* ===== MODALES ===== */
         .modal-scroll { max-height: 90vh; overflow-y: auto; }
         .modal-header-sticky { position: sticky; top: 0; z-index: 20; }
+
+        /* ===== DATATABLES ADAPTATIVO (copiado de antropometria) ===== */
+table.dataTable {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    margin: 1rem 0 !important;
+}
+
+table.dataTable thead th,
+table.dataTable.no-footer {
+    border-bottom: 1px solid #e5e7eb !important;
+}
+.dark table.dataTable thead th,
+.dark table.dataTable.no-footer {
+    border-bottom-color: #252345 !important;
+}
+
+table.dataTable thead th {
+    background-color: #f3f4f6 !important;
+    background-image: none !important;
+    color: #374151 !important;
+    padding: 12px 16px !important;
+}
+.dark table.dataTable thead th {
+    background-color: #0f0d23 !important;
+    color: #94a3b8 !important;
+}
+
+table.dataTable tbody tr {
+    background-color: transparent !important;
+}
+table.dataTable tbody td {
+    border-bottom: 1px solid #e5e7eb !important;
+}
+.dark table.dataTable tbody td {
+    border-bottom-color: #252345 !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    background: #f3f4f6 !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 0.5rem !important;
+    color: #374151 !important;
+    padding: 0.4rem 0.8rem !important;
+    margin: 0 0.2rem !important;
+}
+.dark .dataTables_wrapper .dataTables_paginate .paginate_button {
+    background: #161430 !important;
+    border-color: #252345 !important;
+    color: #a0a0c0 !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #4f46e5 !important;
+    color: white !important;
+    border-color: #4f46e5 !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #e5e7eb !important;
+    color: #1f2937 !important;
+}
+.dark .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #252345 !important;
+    color: white !important;
+}
+
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    color: #1f2937 !important;
+    border-radius: 0.75rem !important;
+    padding: 0.6rem 1rem !important;
+    outline: none !important;
+}
+.dark .dataTables_wrapper .dataTables_length select,
+.dark .dataTables_wrapper .dataTables_filter input {
+    background-color: #0f0d23 !important;
+    border-color: #252345 !important;
+    color: white !important;
+}
+.dataTables_wrapper .dataTables_filter input {
+    padding-left: 2.5rem !important;
+}
+.dataTables_wrapper .dataTables_length label,
+.dataTables_wrapper .dataTables_filter label {
+    gap: 0.75rem;
+    align-items: center;
+}
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
@@ -229,7 +323,34 @@ if (isset($_SESSION['id'])) {
                 </div>
 
                 <!-- Tabla de lesiones -->
-                <div class="mt-2">
+
+                <!-- Tabla de lesiones -->
+<div class="mt-2">
+    <h2 id="tituloTablaState" class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-3 ml-2 flex items-center gap-2">
+        <i class="fas fa-check-circle"></i> Mostrando Registros Activos
+    </h2>
+    <div id="tablaLesionesContainer" class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg border-t-2 border-t-indigo-500 transition-colors duration-300 p-4 sm:p-6">
+        <div class="overflow-x-auto">
+            <table id="tablaLesiones" class="w-full text-left text-sm whitespace-nowrap">
+                <thead>
+                    <tr>
+                        <th>Fecha Inicio</th>
+                        <th>Atleta</th>
+                        <th>Zona / Lado</th>
+                        <th>Molestia</th>
+                        <th>Estado Clínico</th>
+                        <th>Status DB</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaCuerpo" class="divide-y divide-gray-200 dark:divide-[#252345] text-gray-700 dark:text-gray-300">
+                    <!-- Se llena desde JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+                <!-- <div class="mt-2">
                     <h2 id="tituloTablaState" class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-3 ml-2 flex items-center gap-2">
                         <i class="fas fa-check-circle"></i> Mostrando Registros Activos
                     </h2>
@@ -257,7 +378,7 @@ if (isset($_SESSION['id'])) {
                             </table>
                         </div>
                     </div>
-                </div>
+                </div> -->
             </main>
         </div>
     </div>
@@ -452,6 +573,7 @@ if (isset($_SESSION['id'])) {
             reactivar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('lesiones', 'reactivar') ? 'true' : 'false'; ?>
         };
     </script>
+    
     <script src="assets/js/lesion.js"></script>
 </body>
 </html>

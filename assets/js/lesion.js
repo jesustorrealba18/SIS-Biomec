@@ -16,6 +16,7 @@ const filtroEstadoClinico = document.getElementById('filtroEstadoClinico');
 const btnPapelera = document.getElementById('btnMostrarPapelera');
 
 const API_URL = 'index.php?p=lesion';
+let dataTableLesiones = null;
 let instanciaGrafica = null;
 let modoPapelera = false; // Estado: false = Activos, true = Inactivos (Papelera)
 
@@ -204,7 +205,7 @@ async function cargarAtletas() {
     if (filtroAtleta) filtroAtleta.innerHTML = opcFiltro;
 }
 
-async function cargarTabla() {
+/* async function cargarTabla() {
     const params = new URLSearchParams();
     if (filtroAtleta?.value) params.append('id_atleta', filtroAtleta.value);
     if (filtroTipo?.value) params.append('tipo', filtroTipo.value);
@@ -262,6 +263,92 @@ async function cargarTabla() {
     });
     
     tablaCuerpo.innerHTML = filas;
+    actualizarKPIs(registros.filter(r => r.activo == 1));
+} */
+
+    async function cargarTabla() {
+    const params = new URLSearchParams();
+    if (filtroAtleta?.value) params.append('id_atleta', filtroAtleta.value);
+    if (filtroTipo?.value) params.append('tipo', filtroTipo.value);
+    if (filtroZona?.value) params.append('zona', filtroZona.value);
+    if (filtroEstadoClinico?.value) params.append('estado', filtroEstadoClinico.value);
+    
+    params.append('modo', modoPapelera ? 'papelera' : 'activos');
+    
+    tablaCuerpo.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl"></i><br>Cargando registros...</td></tr>`;
+    
+    const registros = await peticionAjax(`listarLesiones&${params.toString()}`);
+    
+    // Destruir instancia anterior si existe
+    if (dataTableLesiones) {
+        dataTableLesiones.destroy();
+        dataTableLesiones = null;
+    }
+    
+    if (!registros || registros.length === 0) {
+        tablaCuerpo.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-folder-open mb-2 text-2xl"></i><br>No hay registros que coincidan con los filtros en este apartado.</td></tr>`;
+        actualizarKPIs([]);
+        return;
+    }
+    
+    let filas = '';
+    registros.forEach(reg => {
+        let colorMolestia = reg.nivel_molestia >= 8 ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10' : 
+                           (reg.nivel_molestia >= 5 ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10');
+        
+        const iconos = { 'Activa':'🟢', 'EnRehabilitacion':'🟡', 'Recuperada':'✅', 'Cronica':'⚠️' };
+        const lblEstado = iconos[reg.estado] ? `${iconos[reg.estado]} ${reg.estado.replace('EnRehabilitacion', 'En Rehab.')}` : reg.estado;
+
+        const visibleBadge = reg.activo == 1 
+            ? '<span class="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded text-xs border border-emerald-200 dark:border-emerald-500/30"><i class="fas fa-check"></i> Activo</span>'
+            : '<span class="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded text-xs border border-red-200 dark:border-red-500/30" title="'+(reg.motivo_eliminacion||'')+'"><i class="fas fa-trash-alt"></i> Papelera</span>';
+        
+        let botones = `<button onclick="verDetalle(${reg.id_lesion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-indigo-600 dark:hover:bg-indigo-600 text-gray-700 dark:text-white w-8 h-8 rounded-lg transition-colors" title="Ficha Médica"><i class="fas fa-eye text-xs"></i></button>`;
+        
+        if (reg.activo == 1) { 
+            if (PERMISOS_MODULO.editar && reg.estado !== 'Recuperada') {
+                botones += `<button onclick="abrirModal(${reg.id_lesion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-amber-600 text-amber-600 dark:text-amber-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Editar"><i class="fas fa-edit text-xs"></i></button>`;
+            }
+            if (PERMISOS_MODULO.eliminar) {
+                botones += `<button onclick="softDelete(${reg.id_lesion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Eliminado Lógico (Papelera)"><i class="fas fa-trash-alt text-xs"></i></button>`;
+            }
+        } else { 
+            if (PERMISOS_MODULO.reactivar) botones += `<button onclick="reactivar(${reg.id_lesion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Restaurar de la papelera"><i class="fas fa-undo-alt text-xs"></i></button>`;
+            if (PERMISOS_MODULO.eliminardb) botones += `<button onclick="eliminarFisico(${reg.id_lesion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Destrucción total"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
+        }
+        
+        filas += `
+            <tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors border-b border-gray-200 dark:border-[#252345]">
+                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${formatearFecha(reg.fecha_inicio)}</td>
+                <td class="px-6 py-4 text-indigo-600 dark:text-indigo-300 font-semibold">${reg.nombre_atleta}</td>
+                <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${reg.zona_anatomica} ${reg.lado ? '('+reg.lado+')' : ''}<br><span class="text-xs text-gray-500 dark:text-gray-400">${reg.tipo}</span></td>
+                <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold border border-current ${colorMolestia}">${reg.nivel_molestia}/10</span></td>
+                <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${lblEstado}</td>
+                <td class="px-6 py-4 text-center">${visibleBadge}</td>
+                <td class="px-6 py-4 text-right flex justify-end gap-1">${botones}</td>
+            </tr>`;
+    });
+    
+    tablaCuerpo.innerHTML = filas;
+    
+    // Inicializar DataTables
+    dataTableLesiones = $('#tablaLesiones').DataTable({
+        responsive: true,
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json',
+            emptyTable: modoPapelera ? 'La papelera está vacía.' : 'No hay lesiones registradas.'
+        },
+        columnDefs: [
+            { responsivePriority: 1, targets: 1 }, // Atleta
+            { responsivePriority: 2, targets: 4 }, // Estado clínico
+            { responsivePriority: 3, targets: 6 }  // Acciones (no ordenable)
+        ],
+        order: [[0, 'desc']], // Ordenar por fecha de inicio
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todas"]],
+        dom: '<"flex flex-col sm:flex-row justify-between items-center gap-4 mb-2"lf>rt<"flex flex-col sm:flex-row justify-between items-center mt-6 gap-4"ip>'
+    });
+    
     actualizarKPIs(registros.filter(r => r.activo == 1));
 }
 
