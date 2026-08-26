@@ -54,11 +54,16 @@ $pagina = 'cargaBienestar';
         .dark .input-adapt:focus {
             box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
         }
-        .input-adapt::-webkit-calendar-picker-indicator {
+        /* .input-adapt::-webkit-calendar-picker-indicator {
             filter: invert(1);
         }
         .dark .input-adapt::-webkit-calendar-picker-indicator {
             filter: invert(0);
+        } */
+
+         /* Para el calendario (date) en modo oscuro */
+        .dark .input-adapt::-webkit-calendar-picker-indicator {
+            filter: invert(1);
         }
 
         /* ===== TARJETAS ===== */
@@ -190,6 +195,110 @@ $pagina = 'cargaBienestar';
         .dark table.dataTable thead th {
             border-bottom-color: #252345 !important;
             color: #9ca3af !important;
+        }
+
+         /* ===== DATATABLES ADAPTATIVO (copiado de antropometria) ===== */
+        table.dataTable {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            margin: 1rem 0 !important;
+        }
+
+        table.dataTable thead th,
+        table.dataTable.no-footer {
+            border-bottom: 1px solid #e5e7eb !important;
+        }
+        .dark table.dataTable thead th,
+        .dark table.dataTable.no-footer {
+            border-bottom-color: #252345 !important;
+        }
+
+        table.dataTable thead th {
+            background-color: #f3f4f6 !important;
+            background-image: none !important;
+            color: #374151 !important;
+            padding: 12px 16px !important;
+        }
+        .dark table.dataTable thead th {
+            background-color: #0f0d23 !important;
+            color: #94a3b8 !important;
+        }
+
+        table.dataTable tbody tr {
+            background-color: transparent !important;
+        }
+        table.dataTable tbody td {
+            border-bottom: 1px solid #e5e7eb !important;
+        }
+        .dark table.dataTable tbody td {
+            border-bottom-color: #252345 !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            background: #f3f4f6 !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
+            color: #374151 !important;
+            padding: 0.4rem 0.8rem !important;
+            margin: 0 0.2rem !important;
+        }
+        .dark .dataTables_wrapper .dataTables_paginate .paginate_button {
+            background: #161430 !important;
+            border-color: #252345 !important;
+            color: #a0a0c0 !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #4f46e5 !important;
+            color: white !important;
+            border-color: #4f46e5 !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #e5e7eb !important;
+            color: #1f2937 !important;
+        }
+        .dark .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #252345 !important;
+            color: white !important;
+        }
+
+        .dataTables_wrapper .dataTables_length select,
+        .dataTables_wrapper .dataTables_filter input {
+            background-color: #ffffff !important;
+            border: 1px solid #d1d5db !important;
+            color: #1f2937 !important;
+            border-radius: 0.75rem !important;
+            padding: 0.6rem 1rem !important;
+            outline: none !important;
+        }
+        .dark .dataTables_wrapper .dataTables_length select,
+        .dark .dataTables_wrapper .dataTables_filter input {
+            background-color: #0f0d23 !important;
+            border-color: #252345 !important;
+            color: white !important;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            padding-left: 2.5rem !important;
+        }
+        .dataTables_wrapper .dataTables_length label,
+        .dataTables_wrapper .dataTables_filter label {
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        /* Para el resto de tablas (inconsistencias) - opcional */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_processing,
+        .dataTables_wrapper .dataTables_paginate {
+            color: #374151 !important;
+        }
+        .dark .dataTables_wrapper .dataTables_length,
+        .dark .dataTables_wrapper .dataTables_filter,
+        .dark .dataTables_wrapper .dataTables_info,
+        .dark .dataTables_wrapper .dataTables_processing,
+        .dark .dataTables_wrapper .dataTables_paginate {
+            color: #a0a0c0 !important;
         }
     </style>
      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
@@ -330,7 +439,69 @@ if (isset($_SESSION['id'])) {
                 </div>
 
                 <!-- Tabla de registros RPE -->
+                  <!-- ===== TABLA PRINCIPAL (con el nuevo diseño) ===== -->
                 <div class="mt-2">
+                    <h2 id="tituloTablaRPE" class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-3 ml-2 flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i> Mostrando Registros Activos
+                    </h2>
+                    <div id="tablaRPEContainer" class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg border-t-2 border-t-indigo-500 transition-colors duration-300 p-4 sm:p-6">
+                        <div class="overflow-x-auto">
+                            <table id="tablaRPE" class="w-full text-left text-sm whitespace-nowrap">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Atleta</th>
+                                        <th>RPE (0-10)</th>
+                                        <th>sRPE</th>
+                                        <th>Sueño (h)</th>
+                                        <th>Estado DB</th>
+                                        <th class="text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaCuerpoRPE" class="divide-y divide-gray-200 dark:divide-[#252345] text-gray-700 dark:text-gray-300">
+                                    <tr><td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando datos...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección de Inconsistencias Biológicas -->
+                <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg transition-colors duration-300 p-4 sm:p-6">
+                    <div class="flex justify-between items-center flex-wrap gap-3 mb-4">
+                        <div>
+                            <h3 class="text-md font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-exclamation-triangle text-amber-500 dark:text-amber-400"></i>
+                                Alertas de Inconsistencia Biológica
+                            </h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Registros RPE = 1 (reposo total) con récord personal el mismo día</p>
+                        </div>
+                        <button onclick="cargarTablaInconsistenciasRPE()" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm">
+                            <i class="fas fa-sync-alt"></i> Refrescar
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-100 dark:bg-[#0f0d23] text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-[#252345] uppercase text-[10px] tracking-wider">
+                                <tr>
+                                    <th class="px-6 py-4 font-bold">Fecha</th>
+                                    <th class="px-6 py-4 font-bold">Atleta</th>
+                                    <th class="px-6 py-4 font-bold">RPE</th>
+                                    <th class="px-6 py-4 font-bold">Récord Personal</th>
+                                    <th class="px-6 py-4 font-bold">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaInconsistenciasRPE" class="divide-y divide-gray-200 dark:divide-[#252345] text-gray-700 dark:text-gray-300">
+                                <tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin"></i> Cargando alertas...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+ <!--                <div class="mt-2">
                     <h2 id="tituloTablaRPE" class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-3 ml-2 flex items-center gap-2">
                         <i class="fas fa-check-circle"></i> Mostrando Registros Activos
                     </h2>
@@ -354,10 +525,10 @@ if (isset($_SESSION['id'])) {
                             </table>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Sección de Inconsistencias Biológicas -->
-                <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg transition-colors duration-300">
+    <!--             <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg transition-colors duration-300">
                     <div class="p-5 border-b border-gray-200 dark:border-[#252345] flex justify-between items-center flex-wrap gap-3">
                         <div>
                             <h3 class="text-md font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -389,7 +560,7 @@ if (isset($_SESSION['id'])) {
                 </div>
             </main>
         </div>
-    </div>
+    </div> -->
 
     <!-- ===== MODAL REGISTRO/EDICIÓN RPE ===== -->
     <div id="modalRPE" class="fixed inset-0 z-50 hidden bg-black/20 dark:bg-[#060512]/90 backdrop-blur-md flex items-center justify-center p-4">

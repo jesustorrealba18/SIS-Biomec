@@ -337,6 +337,8 @@ class CargaBienestar extends Conexion {
                 $srpe = (int)$this->datos['rpe'] * (int)$this->datos['duracion_minutos'];
             }
 
+            $this->datos['srpe'] = $srpe;
+
             $sql = "UPDATE registro_rpe SET
                         id_atleta = :id_atleta,
                         fecha = :fecha,

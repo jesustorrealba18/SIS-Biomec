@@ -207,7 +207,7 @@ function cerrarModalRPE() {
     if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formRPE);
 }
 
-function abrirModalRPE(id_rpe = null) {
+/* function abrirModalRPE(id_rpe = null) {
     formRPE.reset();
     document.getElementById('id_rpe').value = '';
     document.getElementById('accionRPE').value = 'registrar';
@@ -218,24 +218,57 @@ function abrirModalRPE(id_rpe = null) {
     if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formRPE);
     if (id_rpe) cargarDatosParaEdicionRPE(id_rpe);
     modalRPE.classList.remove('hidden');
+} */
+
+function abrirModalRPE(id_rpe = null) {
+    formRPE.reset();
+    document.getElementById('id_rpe').value = '';
+    document.getElementById('accionRPE').value = 'registrar';
+    document.getElementById('modalTituloRPE').innerHTML = 'Registrar Carga Interna (RPE)';
+    document.getElementById('btnGuardarRPE').innerHTML = 'Guardar Registro <i class="fas fa-save ml-2"></i>';
+    document.getElementById('btnGuardarRPE').classList.replace('bg-emerald-600', 'bg-indigo-600');
+    document.getElementById('btnGuardarRPE').classList.replace('hover:bg-emerald-500', 'hover:bg-indigo-500');
+    if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formRPE);
+    
+    // Si hay ID, cargar datos para edición
+    if (id_rpe) {
+        cargarDatosParaEdicionRPE(id_rpe);
+    }
+    
+    modalRPE.classList.remove('hidden');
 }
 
 async function cargarDatosParaEdicionRPE(id_rpe) {
     const btn = document.getElementById('btnGuardarRPE');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
     btn.disabled = true;
+    
     const data = await peticionAjaxRPE('obtenerRPE', null, 'GET', { id: id_rpe });
+    
     if (!data || data.status === 'error') {
         if (typeof UI !== 'undefined') UI.error('Error', data?.message || 'No se pudo cargar el registro.');
         cerrarModalRPE();
         return;
     }
-    for (let key in data) {
-        const campo = document.getElementById(key === 'id_rpe' ? 'id_rpe' : key);
-        if (campo) campo.value = data[key];
-    }
+    
+    // Asignar valores a los campos correctos del formulario
+    document.getElementById('id_rpe').value = data.id_rpe;
+    document.getElementById('id_atleta_rpe').value = data.id_atleta;
+    document.getElementById('fecha_rpe').value = data.fecha;
+    document.getElementById('rpe_valor').value = data.rpe;
+    document.getElementById('duracion_minutos').value = data.duracion_minutos || '';
+    document.getElementById('metros_nadados').value = data.metros_nadados || '';
+    document.getElementById('horas_sueno').value = data.horas_sueno || '';
+    document.getElementById('calidad_sueno').value = data.calidad_sueno || '';
+    document.getElementById('sensacion_muscular').value = data.sensacion_muscular || '';
+    document.getElementById('estres_percibido').value = data.estres_percibido || '';
+    document.getElementById('observaciones_rpe').value = data.observaciones || '';
+    
+    // Cambiar el modo del formulario a "actualizar"
     document.getElementById('accionRPE').value = 'actualizar';
     document.getElementById('modalTituloRPE').innerHTML = 'Editar Registro RPE';
+    
+    // Actualizar el botón
     btn.innerHTML = 'Actualizar Registro <i class="fas fa-sync-alt ml-2"></i>';
     btn.classList.replace('bg-indigo-600', 'bg-emerald-600');
     btn.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-500');
@@ -319,6 +352,7 @@ async function reactivarRPE(id_rpe) {
     if (resultado?.status === 'success') {
         if (typeof UI !== 'undefined') UI.exito('Restaurado', resultado.message);
         cargarTablaRPE();
+        cargarTablaInconsistenciasRPE(); 
     } else {
         if (typeof UI !== 'undefined') UI.error('Error', resultado?.message);
     }
@@ -432,7 +466,7 @@ async function anularPorInconsistencia(id_registro) {
 
     if (confirmacion.isConfirmed) {
         let datos = new FormData();
-        datos.append('id_registro', id_registro);
+        datos.append('id_rpe', id_registro);
         datos.append('motivo', motivoAutomatico);
         
         const res = await peticionAjaxRPE('anularRPE', datos, 'POST');
