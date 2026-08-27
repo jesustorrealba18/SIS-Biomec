@@ -282,9 +282,9 @@
                   text-gray-700 dark:text-gray-300 
                   hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
                   <?php echo ($pagina == 'reportes') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-eye w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'reportes') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
-            <span class="font-medium">Reportes</span>
+            <i class="fas fa-chart-bar w-5 text-center text-indigo-500 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                       <?php echo ($pagina == 'reportes') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+             <span class="font-medium">Reportes</span>
         </a>
         <?php endif; ?>
 

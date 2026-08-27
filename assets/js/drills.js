@@ -95,6 +95,10 @@ async function abrirModalDrills(id_drill = null) {
         btnGuardar.innerHTML = 'GUARDAR <i class="fas fa-save ml-2"></i>';
     }
 
+    pasoActualDrill = 1;
+    pasosCompletadosDrill.clear();
+    cambiarTabDrill('basica');
+
     modalDrills.classList.remove('hidden');
     setTimeout(() => {
         modalDrills.firstElementChild.classList.remove('scale-95', 'opacity-0');
@@ -199,8 +203,8 @@ function renderTabla() {
                     <td class="p-4 text-gray-700 dark:text-gray-300 text-xs">${escapeHtml(ent.estilo)}</td>
                     <td class="p-4 text-gray-600 dark:text-gray-400 text-xs">${escapeHtml(ent.categoria)}</td>
                     <td class="p-4">${badgeDificultad}</td>
-                    <td class="p-4 text-gray-600 dark:text-gray-400 text-xs">${escapeHtml(ent.material_requerido)}</td>
-                    <td class="p-4 text-center">${badgePersonalizado}</td>
+<td class="p-4 text-gray-600 dark:text-gray-400 text-xs">${escapeHtml(ent.material_requerido)}</td>
+                                            <td class="p-4 text-center">${badgePersonalizado}</td>
                     <td class="p-4 text-center">${badgeActivo}</td>
                     <td class="p-4 text-right">
                         <div class="flex justify-end gap-2">
@@ -381,13 +385,115 @@ function cerrarModalVerDrill() {
     }, 200);
 }
 
+const PASOS_DRILL = ['basica', 'detalles', 'configuracion'];
+const CAMPOS_PASO_DRILL = {
+    1: ['nombre', 'enfoque_tecnico', 'descripcion'],
+    2: ['instrucciones', 'metraje_sugerido'],
+    3: []
+};
+let pasoActualDrill = 1;
+let pasosCompletadosDrill = new Set();
+
+function actualizarStepperDrill() {
+    const stepper = document.getElementById('stepperDrill');
+    if (!stepper) return;
+
+    for (let i = 1; i <= 3; i++) {
+        const circle = stepper.querySelector(`.step-circle[data-step="${i}"]`);
+        const label = stepper.querySelector(`.step-label[data-step="${i}"]`);
+        if (!circle || !label) continue;
+        circle.classList.remove('active', 'completed');
+        label.classList.remove('active', 'completed');
+        circle.innerHTML = i;
+
+        if (i === pasoActualDrill) {
+            circle.classList.add('active');
+            label.classList.add('active');
+        } else if (pasosCompletadosDrill.has(i)) {
+            circle.classList.add('completed');
+            label.classList.add('completed');
+            circle.innerHTML = '<i class=\'fas fa-check text-xs\'></i>';
+        }
+    }
+
+    for (let i = 1; i <= 2; i++) {
+        const line = stepper.querySelector(`.step-line[data-line="${i}"]`);
+        if (!line) continue;
+        if (pasosCompletadosDrill.has(i)) {
+            line.classList.add('completed');
+        } else {
+            line.classList.remove('completed');
+        }
+    }
+
+    const btnAtras = document.getElementById('btnAtrasDrill');
+    const btnSiguiente = document.getElementById('btnSiguienteDrill');
+    const btnGuardar = document.getElementById('btnGuardar');
+
+    btnAtras.classList.toggle('visible', pasoActualDrill > 1);
+    btnGuardar.classList.toggle('visible', pasoActualDrill === 3);
+    btnSiguiente.classList.toggle('visible', pasoActualDrill < 3);
+}
+
 function cambiarTabDrill(tab) {
-    document.querySelectorAll('#formDrills .tab-btn').forEach(b => b.classList.remove('active'));
+    const index = PASOS_DRILL.indexOf(tab);
+    if (index === -1) return;
+    pasoActualDrill = index + 1;
+
     document.querySelectorAll('#formDrills .tab-content').forEach(c => c.classList.remove('active'));
-    const btn = document.querySelector(`#formDrills .tab-btn[data-tab="${tab}"]`);
     const content = document.getElementById(`tab-${tab}`);
-    if (btn) btn.classList.add('active');
     if (content) content.classList.add('active');
+
+    actualizarStepperDrill();
+}
+
+function irAPasoDrill(numPaso) {
+    if (numPaso < pasoActualDrill || pasosCompletadosDrill.has(numPaso - 1) || numPaso === 1) {
+        cambiarTabDrill(PASOS_DRILL[numPaso - 1]);
+    }
+}
+
+function validarPasoDrill(numPaso) {
+    const campos = CAMPOS_PASO_DRILL[numPaso];
+    const errores = [];
+
+    campos.forEach(id => {
+        const campo = document.getElementById(id);
+        if (!campo) return;
+        const reglas = campo.getAttribute('data-validar');
+        if (!reglas) return;
+        const nombre = campo.getAttribute('data-nombre') || id;
+
+        if (reglas.includes('requerido') && !campo.value.trim()) {
+            errores.push(nombre);
+        }
+    });
+
+    return errores;
+}
+
+function avanzarPasoDrill() {
+    const errores = validarPasoDrill(pasoActualDrill);
+    if (errores.length > 0) {
+        const msg = 'Falta completar: <strong>' + errores.join(', ') + '</strong>';
+        if (typeof UI !== 'undefined') {
+            UI.advertencia('Datos Incompletos', msg);
+        } else {
+            alert('Datos Incompletos: ' + errores.join(', '));
+        }
+        return;
+    }
+
+    pasosCompletadosDrill.add(pasoActualDrill);
+    if (pasoActualDrill < 3) {
+        cambiarTabDrill(PASOS_DRILL[pasoActualDrill]);
+    }
+}
+
+function retrocederPasoDrill() {
+    if (pasoActualDrill > 1) {
+        cambiarTabDrill(PASOS_DRILL[pasoActualDrill - 2]);
+    }
 }
 
 const inputBusquedaID = document.getElementById('busquedaID');
