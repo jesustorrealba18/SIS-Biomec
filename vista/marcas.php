@@ -324,6 +324,18 @@ if (isset($_SESSION['id'])) {
                                 <option value="50m">Piscina Olímpica (50m)</option>
                             </select>
                         </div>
+
+                        <!-- Añadir como una columna más en el grid de filtros de marcas.php -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1">
+                                <i class="fas fa-magic text-indigo-500"></i> Normalización FINA
+                            </label>
+                            <select id="filtroNormalizacion" onchange="NormalizadorPiscina.cambiarModo(this.value)" class="w-full input-adapt rounded-xl p-3 text-sm cursor-pointer font-bold text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-900/10 focus:ring-2 focus:ring-indigo-500">
+                                <option value="reales">Tiempos Reales</option>
+                                <option value="a_50m">Convertir todo a 50m</option>
+                                <option value="a_25m">Convertir todo a 25m</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -467,31 +479,7 @@ if (isset($_SESSION['id'])) {
         <input type="hidden" id="tiempo_final_seg" name="tiempo_final_seg">
     </div>
 </div>
-                <!-- <div id="contenedorTiemposManuales" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 p-4 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/5">
-                    <div>
-                        <label class="block text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Reacción (s)</label>
-                        <input type="text" inputmode="decimal" data-validar="decimal_tiempo" data-nombre="Reacción" maxlength="5"
-                               id="tiempo_reaccion_seg" name="tiempo_reaccion_seg" placeholder="00.00" 
-                               class="w-full input-adapt p-2 rounded-lg text-sm text-center font-mono">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Viraje (s)</label>
-                        <input type="text" inputmode="decimal" data-validar="decimal_tiempo" data-nombre="Viraje" maxlength="5"
-                               id="tiempo_viraje_seg" name="tiempo_viraje_seg" placeholder="00.00" 
-                               class="w-full input-adapt p-2 rounded-lg text-sm text-center font-mono">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-amber-600 dark:text-amber-400 uppercase font-bold mb-1" title="Para calcular SWOLF">Brazadas/Largo</label>
-                        <input type="number" id="brazadas_por_largo" name="brazadas_por_largo" min="1" max="999" oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);" data-validar="numeros" data-max="4" data-nombre="Brazadas" placeholder="Ej: 16" 
-                               class="w-full bg-white dark:bg-[#161430] border border-amber-500/50 dark:border-amber-500/50 text-gray-800 dark:text-white p-2 rounded-lg text-sm text-center font-mono focus:ring-2 focus:ring-amber-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold mb-1">Tiempo Final *</label>
-                        <input type="text" id="tiempo_final_humano" placeholder="MM:SS.cc" data-validar="requerido|tiempo" data-nombre="Tiempo Final" maxlength="8" 
-                               class="w-full bg-white dark:bg-[#161430] border border-indigo-500 text-gray-800 dark:text-white font-mono text-sm rounded-lg p-2 text-center focus:ring-2 focus:ring-indigo-500 font-bold">
-                        <input type="hidden" id="tiempo_final_seg" name="tiempo_final_seg">
-                    </div>
-                </div> -->
+            
 
                 <!-- Splits -->
                 <div id="contenedorSplits" class="hidden mt-6 bg-gray-50 dark:bg-black/30 p-4 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 transition-all">
@@ -675,6 +663,7 @@ if (isset($_SESSION['id'])) {
             restaurar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'restaurar') ? 'true' : 'false'; ?>
         };
     </script>
+    <script src="assets/js/normalizador.js"></script>
     <script src="assets/js/marcas.js"></script>
 </body>
 </html>

@@ -1019,7 +1019,15 @@ async function cargarTablaMarcas() {
 
     let html = '';
     marcas.forEach(marca => {
-        const tiempoReloj = formatearTiempoDesdeSegundos(marca.tiempo_final_seg);
+        /* const tiempoReloj = formatearTiempoDesdeSegundos(marca.tiempo_final_seg); */
+        // Procesamiento inteligente a través del módulo aislado
+const infoTiempo = NormalizadorPiscina.procesarTiempo(marca.tiempo_final_seg, marca.factor_conversion, marca.tipo_piscina);
+    const tiempoReloj = infoTiempo.tiempoStr;
+
+    // Badge dinámico (Muestra 50m o 25m según el objetivo)
+    const badgeNormalizado = infoTiempo.esConvertido 
+        ? `<span class="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded text-[9px] font-bold ml-1 uppercase shadow-sm" title="Normalizado a ${infoTiempo.piscinaDestino} (Factor: ${infoTiempo.factorUsado})"><i class="fas fa-magic"></i> ${infoTiempo.piscinaDestino}</span>` 
+        : '';
         const fechaLatina = formatearFecha(marca.fecha);
 
         const badgePB = (marca.es_pb == 1) 
@@ -1059,6 +1067,7 @@ async function cargarTablaMarcas() {
                 <td class="p-4 align-middle">
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="font-mono text-emerald-600 dark:text-emerald-400 font-bold text-lg">${tiempoReloj}</span>
+                        ${badgeNormalizado} 
                         ${badgePB}
                     </div>
                 </td>

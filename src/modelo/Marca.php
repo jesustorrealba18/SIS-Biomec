@@ -1028,14 +1028,31 @@ private function actualizarMarca(): bool
         }
 
         try {
-            $sql = "SELECT m.id_marca, m.estilo, m.distancia_m, m.tipo_piscina, 
+           /*  $sql = "SELECT m.id_marca, m.estilo, m.distancia_m, m.tipo_piscina, 
                         m.tiempo_final_seg, m.fecha, m.es_pb, 
                         IF(m.id_evento IS NOT NULL, e.tipo, 'Control') AS nivel_evento,
                         CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta, a.cedula 
                     FROM marcas m 
                     LEFT JOIN eventos e ON m.id_evento = e.id_evento
                     INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
-                    WHERE m.estado = :estado";
+                    WHERE m.estado = :estado"; */
+
+            $sql = "SELECT m.id_marca, m.estilo, m.distancia_m, m.tipo_piscina, 
+            m.tiempo_final_seg, m.fecha, m.es_pb, 
+            IF(m.id_evento IS NOT NULL, e.tipo, 'Control') AS nivel_evento,
+            CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta, a.cedula,
+            fc.factor AS factor_conversion 
+        FROM marcas m 
+        LEFT JOIN eventos e ON m.id_evento = e.id_evento
+        INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
+        LEFT JOIN factores_conversion fc 
+            ON m.estilo = fc.estilo 
+            AND m.distancia_m = fc.distancia_m 
+            AND (
+                (m.tipo_piscina = '25m' AND fc.direccion = '25_a_50') OR 
+                (m.tipo_piscina = '50m' AND fc.direccion = '50_a_25')
+            )
+        WHERE m.estado = :estado";        
 
         
            
@@ -1116,10 +1133,23 @@ public function obtenerDetallePorId(int $id_marca): ?array {
     // =========================================================================
 
     private function obtenerMarcaBase(int $id_marca): ?array {
-        $sql = "SELECT m.*, a.nombres as atleta_nombres, a.apellidos as atleta_apellidos, a.cedula 
+        /* $sql = "SELECT m.*, a.nombres as atleta_nombres, a.apellidos as atleta_apellidos, a.cedula 
                 FROM marcas m 
                 INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
-                WHERE m.id_marca = :id_marca";
+                WHERE m.id_marca = :id_marca"; */
+
+        $sql = "SELECT m.*, a.nombres as atleta_nombres, a.apellidos as atleta_apellidos, a.cedula,
+               fc.factor AS factor_conversion
+        FROM marcas m 
+        INNER JOIN atletas a ON m.id_atleta = a.id_atleta 
+        LEFT JOIN factores_conversion fc 
+            ON m.estilo = fc.estilo 
+            AND m.distancia_m = fc.distancia_m 
+            AND (
+                (m.tipo_piscina = '25m' AND fc.direccion = '25_a_50') OR 
+                (m.tipo_piscina = '50m' AND fc.direccion = '50_a_25')
+            )
+        WHERE m.id_marca = :id_marca";        
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':id_marca', $id_marca, PDO::PARAM_INT);
