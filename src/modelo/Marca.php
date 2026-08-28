@@ -822,11 +822,16 @@ public function obtenerDetallePorId(int $id_marca): ?array {
             // 2. Orquestar el resto de las consultas usando métodos privados
             $marca['splits']              = $this->obtenerSplits($id_marca);
             $marca['swolf_data']          = $this->obtenerSwolf($id_marca);
-            $marca['historial_evolucion'] = $this->obtenerHistorialEvolucion(
+           /*  $marca['historial_evolucion'] = $this->obtenerHistorialEvolucion(
                 (int)$marca['id_atleta'], 
                 $marca['estilo'], 
                 (int)$marca['distancia_m'], 
                 $marca['tipo_piscina']
+            ); */
+            $marca['historial_evolucion'] = $this->obtenerHistorialEvolucion(
+                (int)$marca['id_atleta'], 
+                $marca['estilo'], 
+                (int)$marca['distancia_m']
             );
 
             return $marca;
@@ -890,7 +895,7 @@ public function obtenerDetallePorId(int $id_marca): ?array {
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    private function obtenerHistorialEvolucion(int $idAtleta, string $estilo, int $distancia, string $piscina): array {
+/*     private function obtenerHistorialEvolucion(int $idAtleta, string $estilo, int $distancia, string $piscina): array {
         $sql = "SELECT fecha, tiempo_final_seg 
                 FROM marcas 
                 WHERE id_atleta = :id_atleta 
@@ -908,7 +913,33 @@ public function obtenerDetallePorId(int $id_marca): ?array {
         $stmt->execute();
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+    } */
+
+        private function obtenerHistorialEvolucion(int $idAtleta, string $estilo, int $distancia): array {
+    $sql = "SELECT m.fecha, m.tiempo_final_seg, m.tipo_piscina, 
+                   fc.factor AS factor_conversion 
+            FROM marcas m 
+            LEFT JOIN factores_conversion fc 
+                ON m.estilo = fc.estilo 
+                AND m.distancia_m = fc.distancia_m 
+                AND (
+                    (m.tipo_piscina = '25m' AND fc.direccion = '25_a_50') OR 
+                    (m.tipo_piscina = '50m' AND fc.direccion = '50_a_25')
+                )
+            WHERE m.id_atleta = :id_atleta 
+            AND m.estilo = :estilo 
+            AND m.distancia_m = :distancia_m 
+            AND m.estado = 'Activo' 
+            ORDER BY m.fecha ASC";
+    
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->bindValue(':id_atleta', $idAtleta, PDO::PARAM_INT);
+    $stmt->bindValue(':estilo', $estilo, PDO::PARAM_STR);
+    $stmt->bindValue(':distancia_m', $distancia, PDO::PARAM_INT);
+    $stmt->execute();
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
 
 

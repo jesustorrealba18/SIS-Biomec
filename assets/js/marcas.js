@@ -1322,7 +1322,7 @@ async function verDetallesMarca(id_marca) {
     `;
 
     // 3. RENDERIZADO DE LAS GRÁFICAS
-    const esDark = document.documentElement.classList.contains('dark');
+/*     const esDark = document.documentElement.classList.contains('dark');
     const colorTexto = esDark ? '#6b7280' : '#4b5563';
     const colorGrid = esDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.05)';
 
@@ -1409,7 +1409,166 @@ async function verDetallesMarca(id_marca) {
                 }
             }
         });
+    } */
+   // 3. RENDERIZADO DE LAS GRÁFICAS
+    const esDark = document.documentElement.classList.contains('dark');
+    const colorTexto = esDark ? '#6b7280' : '#4b5563';
+    const colorGrid = esDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.05)';
+    
+    // Consultamos si el switch de normalización está encendido
+    const modoNormalizacion = typeof NormalizadorPiscina !== 'undefined' ? NormalizadorPiscina.getModo() : 'reales';
+
+    // ---------------------------------------------------------
+    // GRÁFICA 1: HISTORIAL DE EVOLUCIÓN (MULTILÍNEA)
+    // ---------------------------------------------------------
+    if (data.historial_evolucion && data.historial_evolucion.length > 0) {
+        const ejeFechas = data.historial_evolucion.map(h => formatearFecha(h.fecha));
+        const ejeTiemposReales = data.historial_evolucion.map(h => parseFloat(h.tiempo_final_seg));
+
+        // Dataset Base: Tiempos Reales (Línea Sólida)
+        let datasetsHistorial = [{
+            label: 'Tiempo Real',
+            data: ejeTiemposReales,
+            borderColor: '#6366f1', // Indigo
+            backgroundColor: 'rgba(99, 102, 241, 0.05)',
+            borderWidth: 2.5,
+            pointBackgroundColor: '#10b981',
+            pointBorderColor: '#fff',
+            pointRadius: 3.5,
+            tension: 0.25
+        }];
+
+        // Dataset Extra: Tiempos Normalizados (Línea Punteada Ámbar)
+        if (modoNormalizacion !== 'reales') {
+            const ejeTiemposNorm = data.historial_evolucion.map(h => {
+                const info = NormalizadorPiscina.procesarTiempo(h.tiempo_final_seg, h.factor_conversion, h.tipo_piscina);
+                return info.tiempoRaw || parseFloat(h.tiempo_final_seg);
+            });
+            
+            const targetPiscina = modoNormalizacion === 'a_50m' ? '50m' : '25m';
+            datasetsHistorial.push({
+                label: `Normalizado a ${targetPiscina}`,
+                data: ejeTiemposNorm,
+                borderColor: '#f59e0b', // Color ambar para resaltar
+                borderDash: [5, 5],     // Efecto punteado FINA
+                backgroundColor: 'transparent',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#f59e0b',
+                pointBorderColor: '#fff',
+                pointRadius: 3.5,
+                tension: 0.25
+            });
+        }
+
+        if (instanciaGrafica) instanciaGrafica.destroy();
+        const contextoLienzo = document.getElementById('canvasEvolucion').getContext('2d');
+        instanciaGrafica = new Chart(contextoLienzo, {
+            type: 'line',
+            data: {
+                labels: ejeFechas,
+                datasets: datasetsHistorial
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    // Mostramos la leyenda SOLO si hay más de una línea
+                    legend: { 
+                        display: (modoNormalizacion !== 'reales'),
+                        labels: { color: colorTexto, font: { family: 'Inter', size: 11 } }
+                    },
+                    // Tooltip combinado para comparar al pasar el ratón
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) { return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + 's'; }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { color: colorGrid }, ticks: { color: colorTexto, font: { size: 9, family: 'monospace' } } },
+                    y: { grid: { color: colorGrid }, ticks: { color: colorTexto, font: { size: 9, family: 'monospace' }, callback: function(val) { return val + 's'; } } }
+                }
+            }
+        });
     }
+
+    // ---------------------------------------------------------
+    // GRÁFICA 2: CAÍDA DE VELOCIDAD POR TRAMOS (MULTILÍNEA)
+    // ---------------------------------------------------------
+    if (data.splits && data.splits.length > 0) {
+        const ejeDistancias = data.splits.map(s => s.distancia_parcial_m + 'm');
+        const ejeTiemposSplits = data.splits.map(s => parseFloat(s.tiempo_parcial_seg));
+
+        let datasetsSplits = [{
+            label: 'Ritmo Real',
+            data: ejeTiemposSplits,
+            borderColor: '#06b6d4',
+            backgroundColor: 'rgba(6, 182, 212, 0.05)',
+            borderWidth: 2.5,
+            pointBackgroundColor: '#06b6d4',
+            pointBorderColor: '#fff',
+            pointRadius: 3.5,
+            tension: 0.3,
+            fill: true
+        }];
+
+        // Convertimos también el pacing/splits si la normalización está activa
+        if (modoNormalizacion !== 'reales' && data.factor_conversion) {
+            const ejeTiemposSplitsNorm = data.splits.map(s => {
+                const info = NormalizadorPiscina.procesarTiempo(s.tiempo_parcial_seg, data.factor_conversion, data.tipo_piscina);
+                return info.tiempoRaw || parseFloat(s.tiempo_parcial_seg);
+            });
+            const targetPiscina = modoNormalizacion === 'a_50m' ? '50m' : '25m';
+
+            datasetsSplits.push({
+                label: `Ritmo en ${targetPiscina}`,
+                data: ejeTiemposSplitsNorm,
+                borderColor: '#ec4899', // Color Rosa para contrastar con el Cyan
+                borderDash: [4, 4],
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                pointBackgroundColor: '#ec4899',
+                pointBorderColor: '#fff',
+                pointRadius: 3,
+                tension: 0.3,
+                fill: false
+            });
+        }
+
+        if (instanciaGraficaSplits) instanciaGraficaSplits.destroy();
+        const ctxSplits = document.getElementById('graficaSplits').getContext('2d');
+        instanciaGraficaSplits = new Chart(ctxSplits, {
+            type: 'line',
+            data: {
+                labels: ejeDistancias,
+                datasets: datasetsSplits
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { 
+                        display: (modoNormalizacion !== 'reales'),
+                        labels: { color: colorTexto, font: { family: 'Inter', size: 11 } }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) { return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + 's'; }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: colorTexto, font: { size: 9, family: 'monospace' } } },
+                    y: { grid: { color: colorGrid }, ticks: { color: colorTexto, font: { size: 9, family: 'monospace' }, callback: function(val) { return val + 's'; } } }
+                }
+            }
+        });
+    }
+
 }
 
 // =====================================================================
