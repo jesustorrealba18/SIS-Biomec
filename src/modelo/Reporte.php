@@ -207,4 +207,83 @@ class Reporte extends Conexion
             return [];
         }
     }
+
+    public function obtenerCategoriasSelect(): array
+    {
+        try {
+            $sql = "SELECT id_categoria, nombre FROM categorias_feveda
+                    WHERE activa = 1 ORDER BY edad_minima";
+            $stmt = $this->pdo->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Reporte::obtenerCategoriasSelect - " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function listaAtletas(int $idGrupo, int $idCategoria, string $estado): array
+    {
+        try {
+            $sql = "SELECT a.cedula, a.nombres, a.apellidos,
+                           a.telefono, a.correo, a.estado,
+                           a.fecha_registro_club,
+                           c.nombre AS categoria_nombre,
+                           g.nombre AS grupo_nombre
+                    FROM atletas a
+                    LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
+                    LEFT JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                    LEFT JOIN grupos_entrenamiento g ON ga.id_grupo = g.id_grupo
+                    WHERE 1=1";
+
+            $params = [];
+
+            if ($idGrupo > 0) {
+                $sql .= " AND ga.id_grupo = :grupo";
+                $params[':grupo'] = $idGrupo;
+            }
+            if ($idCategoria > 0) {
+                $sql .= " AND a.id_categoria = :categoria";
+                $params[':categoria'] = $idCategoria;
+            }
+            if ($estado !== '') {
+                $sql .= " AND a.estado = :estado";
+                $params[':estado'] = $estado;
+            }
+
+            $sql .= " GROUP BY a.id_atleta ORDER BY a.apellidos, a.nombres ASC";
+
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $val) {
+                $stmt->bindValue($key, $val);
+            }
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Reporte::listaAtletas - " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function listaRepresentantes(string $estado): array
+    {
+        try {
+            $sql = "SELECT r.cedula, r.nombres, r.apellidos,
+                           r.telefono_principal, r.parentesco, r.estado,
+                           GROUP_CONCAT(CONCAT(a.nombres, ' ', a.apellidos) SEPARATOR ', ') AS atletas_vinculados
+                    FROM representantes r
+                    LEFT JOIN atleta_representante ar ON r.id_representante = ar.id_representante
+                    LEFT JOIN atletas a ON ar.id_atleta = a.id_atleta
+                    WHERE r.estado = :estado
+                    GROUP BY r.id_representante
+                    ORDER BY r.apellidos, r.nombres ASC";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':estado', $estado, PDO::PARAM_STR);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Reporte::listaRepresentantes - " . $e->getMessage());
+            return [];
+        }
+    }
 }

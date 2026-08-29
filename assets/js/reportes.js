@@ -5,6 +5,7 @@ let graficaActual = null;
 let datosGlobales = [];
 let atletasCache = [];
 let gruposCache = [];
+let categoriasCache = [];
 
 const ESTILOS = ['Libre', 'Espalda', 'Braza', 'Mariposa', 'Combinado'];
 const DISTANCIAS = [50, 100, 200, 400, 800, 1500];
@@ -15,7 +16,9 @@ const TITULOS = {
     asistencia_grupo: { titulo: 'Asistencia por Grupo', sub: 'Resumen de asistencia por atleta' },
     volumen_semanal: { titulo: 'Volumen Semanal', sub: 'Metros planificados vs ejecutados por semana' },
     carga_srpe: { titulo: 'Monitoreo de Carga (sRPE)', sub: 'Carga subjetiva, sueno y bienestar diario' },
-    ficha_atleta: { titulo: 'Ficha del Atleta', sub: 'Hoja de vida completa - Descarga directa en PDF' }
+    ficha_atleta: { titulo: 'Ficha del Atleta', sub: 'Hoja de vida completa - Descarga directa en PDF' },
+    lista_atletas: { titulo: 'Lista de Atletas', sub: 'Directorio completo - Descarga directa en PDF' },
+    lista_representantes: { titulo: 'Lista de Representantes', sub: 'Directorio de representantes - Descarga directa en PDF' }
 };
 
 async function peticionAjax(accion, params = {}) {
@@ -33,12 +36,14 @@ async function peticionAjax(accion, params = {}) {
 }
 
 async function cargarSelects() {
-    const [atletas, grupos] = await Promise.all([
+    const [atletas, grupos, categorias] = await Promise.all([
         peticionAjax('select_atletas'),
-        peticionAjax('select_grupos')
+        peticionAjax('select_grupos'),
+        peticionAjax('select_categorias')
     ]);
     if (atletas) atletasCache = atletas;
     if (grupos) gruposCache = grupos;
+    if (categorias) categoriasCache = categorias;
 }
 
 function opcionesAtletas(selected) {
@@ -53,6 +58,12 @@ function opcionesGrupos(selected) {
         gruposCache.map(g => '<option value="' + g.id_grupo + '" ' + (g.id_grupo == selected ? 'selected' : '') + '>' + g.nombre + '</option>').join('');
 }
 
+function opcionesCategorias(selected) {
+    selected = selected || '';
+    return '<option value="">Todas</option>' +
+        categoriasCache.map(c => '<option value="' + c.id_categoria + '" ' + (c.id_categoria == selected ? 'selected' : '') + '>' + c.nombre + '</option>').join('');
+}
+
 function opcionesEstilos() {
     return ESTILOS.map(e => '<option value="' + e + '">' + e + '</option>').join('');
 }
@@ -63,6 +74,19 @@ function opcionesDistancias() {
 
 function opcionesPiscinas() {
     return PISCINAS.map(p => '<option value="' + p + '">Piscina ' + p + '</option>').join('');
+}
+
+function opcionesEstados(selected) {
+    selected = selected || '';
+    var estados = ['Activo', 'Inactivo', 'Retirado', 'Transferido'];
+    return '<option value="">Todos</option>' +
+        estados.map(e => '<option value="' + e + '" ' + (e === selected ? 'selected' : '') + '>' + e + '</option>').join('');
+}
+
+function opcionesEstadosRep(selected) {
+    selected = selected || 'Activo';
+    return '<option value="Activo" ' + (selected === 'Activo' ? 'selected' : '') + '>Activo</option>' +
+        '<option value="Inactivo" ' + (selected === 'Inactivo' ? 'selected' : '') + '>Inactivo</option>';
 }
 
 function fechaHoy() { return new Date().toISOString().split('T')[0]; }
@@ -100,6 +124,24 @@ function mostrarReporte(tipo) {
 
     if (tipo === 'ficha_atleta') {
         renderFiltrosFichaAtleta();
+        document.getElementById('contenedorGrafica').classList.add('hidden');
+        document.getElementById('contenedorTabla').classList.add('hidden');
+        document.getElementById('estadoVacio').classList.add('hidden');
+        document.getElementById('btnDescargarPDF').classList.remove('hidden');
+        return;
+    }
+
+    if (tipo === 'lista_atletas') {
+        renderFiltrosListaAtletas();
+        document.getElementById('contenedorGrafica').classList.add('hidden');
+        document.getElementById('contenedorTabla').classList.add('hidden');
+        document.getElementById('estadoVacio').classList.add('hidden');
+        document.getElementById('btnDescargarPDF').classList.remove('hidden');
+        return;
+    }
+
+    if (tipo === 'lista_representantes') {
+        renderFiltrosListaRepresentantes();
         document.getElementById('contenedorGrafica').classList.add('hidden');
         document.getElementById('contenedorTabla').classList.add('hidden');
         document.getElementById('estadoVacio').classList.add('hidden');
@@ -158,8 +200,22 @@ function renderFiltrosFichaAtleta() {
         + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarFichaDirecta()" class="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-purple-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
 }
 
+function renderFiltrosListaAtletas() {
+    document.getElementById('contenedorFiltros').innerHTML =
+        labelFiltro('Grupo', 'fGrupo', selectHtml('fGrupo', opcionesGrupos()))
+        + labelFiltro('Categoria', 'fCategoria', selectHtml('fCategoria', opcionesCategorias()))
+        + labelFiltro('Estado', 'fEstado', selectHtml('fEstado', opcionesEstados()))
+        + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarListaAtletasDirecta()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
+}
+
+function renderFiltrosListaRepresentantes() {
+    document.getElementById('contenedorFiltros').innerHTML =
+        labelFiltro('Estado', 'fEstado', selectHtml('fEstado', opcionesEstadosRep()))
+        + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarListaRepresentantesDirecta()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
+}
+
 async function aplicarFiltros() {
-    if (!reporteActivo || reporteActivo === 'ficha_atleta') return;
+    if (!reporteActivo || reporteActivo === 'ficha_atleta' || reporteActivo === 'lista_atletas' || reporteActivo === 'lista_representantes') return;
     var tipo = reporteActivo;
     var params = {};
     var fi = document.getElementById('fFechaIni') ? document.getElementById('fFechaIni').value : '';
@@ -322,6 +378,8 @@ function renderCargaSRPE(datos) {
 async function descargarPDF() {
     if (!reporteActivo) return;
     if (reporteActivo === 'ficha_atleta') { await descargarFichaDirecta(); return; }
+    if (reporteActivo === 'lista_atletas') { await descargarListaAtletasDirecta(); return; }
+    if (reporteActivo === 'lista_representantes') { await descargarListaRepresentantesDirecta(); return; }
 
     var canvas = document.getElementById('graficaReporte');
     var img = (canvas && graficaActual) ? canvas.toDataURL('image/png') : '';
@@ -380,5 +438,52 @@ async function descargarFichaDirecta() {
     } catch (e) { console.error('Error Ficha:', e); UI.error('Error', 'No se pudo generar la ficha.'); }
 }
 
-document.addEventListener('DOMContentLoaded', cargarSelects);
+async function descargarListaAtletasDirecta() {
+    var selGrupo = document.getElementById('fGrupo');
+    var selCat = document.getElementById('fCategoria');
+    var selEstado = document.getElementById('fEstado');
+    if (!selGrupo || !selCat || !selEstado) return;
+    var grupoNombre = selGrupo.options[selGrupo.selectedIndex] ? selGrupo.options[selGrupo.selectedIndex].text : '';
+    var catNombre = selCat.options[selCat.selectedIndex] ? selCat.options[selCat.selectedIndex].text : '';
+    var form = new FormData();
+    form.append('accion', 'generar_pdf');
+    form.append('tipo_reporte', 'lista_atletas');
+    form.append('id_grupo', selGrupo.value);
+    form.append('id_categoria', selCat.value);
+    form.append('estado', selEstado.value);
+    form.append('grupo_nombre', grupoNombre);
+    form.append('categoria_nombre', catNombre);
+    UI.exito('Generando PDF', 'El reporte se descargara automaticamente.');
+    try {
+        var res = await fetch(API_URL, { method: 'POST', body: form });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var ct = res.headers.get('content-type');
+        if (ct && ct.includes('application/json')) { var err = await res.json(); UI.error('Error', err.message || 'No se pudo generar la lista.'); return; }
+        var blob = await res.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); a.href = url; a.download = 'lista_atletas_' + new Date().toISOString().slice(0,10) + '.pdf';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    } catch (e) { console.error('Error Lista Atletas:', e); UI.error('Error', 'No se pudo generar el PDF.'); }
+}
 
+async function descargarListaRepresentantesDirecta() {
+    var selEstado = document.getElementById('fEstado');
+    if (!selEstado) return;
+    var form = new FormData();
+    form.append('accion', 'generar_pdf');
+    form.append('tipo_reporte', 'lista_representantes');
+    form.append('estado', selEstado.value);
+    UI.exito('Generando PDF', 'El reporte se descargara automaticamente.');
+    try {
+        var res = await fetch(API_URL, { method: 'POST', body: form });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var ct = res.headers.get('content-type');
+        if (ct && ct.includes('application/json')) { var err = await res.json(); UI.error('Error', err.message || 'No se pudo generar la lista.'); return; }
+        var blob = await res.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); a.href = url; a.download = 'lista_representantes_' + new Date().toISOString().slice(0,10) + '.pdf';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    } catch (e) { console.error('Error Lista Representantes:', e); UI.error('Error', 'No se pudo generar el PDF.'); }
+}
+
+document.addEventListener('DOMContentLoaded', cargarSelects);

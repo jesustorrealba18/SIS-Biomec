@@ -83,6 +83,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         jsonSalida($objReporte->obtenerGruposSelect());
     }
 
+    if ($accion === 'select_categorias') {
+        jsonSalida($objReporte->obtenerCategoriasSelect());
+    }
+
     require_once 'vista/reportes.php';
 }
 
@@ -344,6 +348,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         . campo('Parentesco', $atleta['rep_parentesco'])
                         . campo('Correo', $atleta['rep_correo'])
                         . '</table></section>'
+                        . '<footer>Generado el ' . $fechaGeneracion . ' por ' . htmlspecialchars($generadoPor) . '</footer>'
+                        . '</body></html>';
+                    break;
+
+                case 'lista_atletas':
+                    $idGrupo = (int)($_POST['id_grupo'] ?? 0);
+                    $idCategoria = (int)($_POST['id_categoria'] ?? 0);
+                    $estado = $_POST['estado'] ?? '';
+                    $datos = $objReporte->listaAtletas($idGrupo, $idCategoria, $estado);
+                    $titulo = 'Lista de Atletas';
+
+                    $filtroGrupo = $idGrupo > 0 ? ' - Grupo: ' . htmlspecialchars($_POST['grupo_nombre'] ?? '') : '';
+                    $filtroCat = $idCategoria > 0 ? ' - Categoria: ' . htmlspecialchars($_POST['categoria_nombre'] ?? '') : '';
+                    $filtroEstado = $estado !== '' ? ' - Estado: ' . htmlspecialchars($estado) : '';
+                    $subtitulo = 'Filtros:' . $filtroGrupo . $filtroCat . $filtroEstado;
+
+                    $filas = '';
+                    $num = 0;
+                    foreach ($datos as $d) {
+                        $num++;
+                        $filas .= '<tr>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . $num . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['cedula']) . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;font-weight:500;">' . htmlspecialchars($d['nombres'] . ' ' . $d['apellidos']) . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['categoria_nombre'] ?: '-') . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['grupo_nombre'] ?: '-') . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['fecha_registro_club']) . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['telefono']) . '</td>'
+                            . '</tr>';
+                    }
+
+                    $total = count($datos);
+                    $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+                        . 'body{font-family:Helvetica,Arial,sans-serif;margin:30px;color:#1f2937;} '
+                        . 'h1{color:#4f46e5;font-size:18px;margin-bottom:4px;} '
+                        . 'h2{color:#374151;font-size:12px;font-weight:normal;margin-bottom:4px;} '
+                        . 'h2 span{font-weight:bold;color:#4f46e5;} '
+                        . 'table{width:100%;border-collapse:collapse;font-size:10px;margin-top:15px;} '
+                        . 'th{background:#4f46e5;color:#fff;padding:6px 8px;text-align:left;font-size:10px;} '
+                        . 'td{padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;} '
+                        . 'tr:nth-child(even) td{background:#f9fafb;} '
+                        . 'footer{margin-top:30px;font-size:9px;color:#9ca3af;text-align:center;} '
+                        . '</style></head><body>'
+                        . '<h1>' . $titulo . '</h1>'
+                        . '<h2>' . $subtitulo . '</h2>'
+                        . '<p style="font-size:11px;color:#6b7280;margin-bottom:10px;">Total: <span>' . $total . '</span> atletas</p>'
+                        . '<table><thead><tr><th>#</th><th>Cedula</th><th>Nombre Completo</th><th>Categoria</th><th>Grupo</th><th>Fecha Registro</th><th>Telefono</th></tr></thead><tbody>' . $filas . '</tbody></table>'
+                        . '<footer>Generado el ' . $fechaGeneracion . ' por ' . htmlspecialchars($generadoPor) . '</footer>'
+                        . '</body></html>';
+                    break;
+
+                case 'lista_representantes':
+                    $estado = $_POST['estado'] ?? 'Activo';
+                    $datos = $objReporte->listaRepresentantes($estado);
+                    $titulo = 'Lista de Representantes';
+                    $subtitulo = 'Estado: ' . htmlspecialchars($estado);
+
+                    $filas = '';
+                    $num = 0;
+                    foreach ($datos as $d) {
+                        $num++;
+                        $filas .= '<tr>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . $num . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['cedula']) . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;font-weight:500;">' . htmlspecialchars($d['nombres'] . ' ' . $d['apellidos']) . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['telefono_principal']) . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['parentesco']) . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['atletas_vinculados'] ?: 'Sin atletas vinculados') . '</td>'
+                            . '</tr>';
+                    }
+
+                    $total = count($datos);
+                    $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+                        . 'body{font-family:Helvetica,Arial,sans-serif;margin:30px;color:#1f2937;} '
+                        . 'h1{color:#4f46e5;font-size:18px;margin-bottom:4px;} '
+                        . 'h2{color:#374151;font-size:12px;font-weight:normal;margin-bottom:4px;} '
+                        . 'h2 span{font-weight:bold;color:#4f46e5;} '
+                        . 'table{width:100%;border-collapse:collapse;font-size:10px;margin-top:15px;} '
+                        . 'th{background:#4f46e5;color:#fff;padding:6px 8px;text-align:left;font-size:10px;} '
+                        . 'td{padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;} '
+                        . 'tr:nth-child(even) td{background:#f9fafb;} '
+                        . 'footer{margin-top:30px;font-size:9px;color:#9ca3af;text-align:center;} '
+                        . '</style></head><body>'
+                        . '<h1>' . $titulo . '</h1>'
+                        . '<h2>' . $subtitulo . '</h2>'
+                        . '<p style="font-size:11px;color:#6b7280;margin-bottom:10px;">Total: <span>' . $total . '</span> representantes</p>'
+                        . '<table><thead><tr><th>#</th><th>Cedula</th><th>Nombre Completo</th><th>Telefono</th><th>Parentesco</th><th>Atletas Vinculados</th></tr></thead><tbody>' . $filas . '</tbody></table>'
                         . '<footer>Generado el ' . $fechaGeneracion . ' por ' . htmlspecialchars($generadoPor) . '</footer>'
                         . '</body></html>';
                     break;

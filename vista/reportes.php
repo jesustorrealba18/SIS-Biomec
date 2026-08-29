@@ -182,6 +182,28 @@ if (isset($_SESSION['id'])) {
                         <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Ficha del Atleta (PDF)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Hoja de vida completa descargable.</p>
                     </div>
+
+                    <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('lista_atletas')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center text-blue-600 dark:text-blue-400 text-xl">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 dark:text-gray-600 mt-1"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Lista de Atletas (PDF)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Directorio completo con filtros por grupo, categoria y estado.</p>
+                    </div>
+
+                    <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('lista_representantes')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-teal-100 dark:bg-teal-500/15 flex items-center justify-center text-teal-600 dark:text-teal-400 text-xl">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 dark:text-gray-600 mt-1"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Lista de Representantes (PDF)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Directorio de representantes con filtro por estado.</p>
+                    </div>
                 </div>
 
                 <!-- SECCION DINAMICA -->
