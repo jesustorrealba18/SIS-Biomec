@@ -7,6 +7,53 @@ const btnGuardar = document.getElementById('btnGuardar');
 
 const API_URL = 'index.php?p=marcas'; 
 
+// =====================================================================
+// TOGGLE PAPELERA (Activos/Inactivos)
+// =====================================================================
+let modoPapeleraMarcas = false;
+const toggleBtnMarcas = document.getElementById('toggleEstadoMarcasBtn');
+
+function actualizarUIMarcas() {
+    if (!toggleBtnMarcas) return;
+    const isActive = !modoPapeleraMarcas;
+    if (isActive) {
+        toggleBtnMarcas.classList.remove('active');
+        document.getElementById('toggleTextoMarcas').innerText = 'Activos';
+        document.getElementById('toggleIconoMarcas').className = 'fas fa-trash-alt text-gray-500 dark:text-gray-400';
+        document.getElementById('estadoBadgeMarcas').innerHTML = 'A';
+        document.getElementById('estadoBadgeMarcas').classList.remove('bg-red-500');
+        document.getElementById('estadoBadgeMarcas').classList.add('bg-indigo-500');
+    } else {
+        toggleBtnMarcas.classList.add('active');
+        document.getElementById('toggleTextoMarcas').innerText = 'Inactivos';
+        document.getElementById('toggleIconoMarcas').className = 'fas fa-trash-restore text-red-400';
+        document.getElementById('estadoBadgeMarcas').innerHTML = 'I';
+        document.getElementById('estadoBadgeMarcas').classList.remove('bg-indigo-500');
+        document.getElementById('estadoBadgeMarcas').classList.add('bg-red-500');
+    }
+
+ const titulo = document.getElementById('tituloTablaMarcas');
+    if (modoPapeleraMarcas) {
+        titulo.innerHTML = '<i class="fas fa-trash-alt"></i> Mostrando Registros Inactivos (Papelera)';
+        titulo.className = 'text-lg font-bold text-red-600 dark:text-red-400 mb-3 ml-2 flex items-center gap-2';
+    } else {
+        titulo.innerHTML = '<i class="fas fa-check-circle"></i> Mostrando Registros Activos';
+        titulo.className = 'text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-3 ml-2 flex items-center gap-2';
+    }
+
+    document.dispatchEvent(new CustomEvent('modoPapeleraMarcasChanged'));
+    window.modoPapeleraMarcas = modoPapeleraMarcas;
+}
+
+// Evento del toggle
+if (toggleBtnMarcas) {
+    toggleBtnMarcas.addEventListener('click', () => {
+        modoPapeleraMarcas = !modoPapeleraMarcas;
+        actualizarUIMarcas();
+        cargarTablaMarcas();
+    });
+}
+
 async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
     if (datos) opciones.body = datos; 
@@ -978,16 +1025,16 @@ let dataTableMarcasInstance = null;
 let deepLinkPendiente = null; // Guardamos el ID a resaltar
 let deepLinkProcesado = false; // Bandera para evitar bucles
 async function cargarTablaMarcas() {
-    const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
+    const estadoFiltro = modoPapeleraMarcas ? 'Inactivo' : 'Activo';
     const id_atleta = document.getElementById('filtroAtleta')?.value || '';
     const distancia = document.getElementById('filtroDistancia')?.value || '';
     const estilo = document.getElementById('filtroEstilo')?.value || '';
     const piscina = document.getElementById('filtroPiscina')?.value || '';
 
     // Permisos...
-    const puedeEditar = PERMISOS_MODULO.editar && filtroEstado === 'Activo';
-    const puedeEliminar = PERMISOS_MODULO.eliminar && filtroEstado === 'Activo';
-    const puedeRestaurar = PERMISOS_MODULO.restaurar && filtroEstado === 'Inactivo';
+    const puedeEditar = PERMISOS_MODULO.editar && estadoFiltro === 'Activo';
+    const puedeEliminar = PERMISOS_MODULO.eliminar && estadoFiltro === 'Activo';
+    const puedeRestaurar = PERMISOS_MODULO.restaurar && estadoFiltro === 'Inactivo';
 
     // Capturar deep link desde URL
     const parametrosURL = new URLSearchParams(window.location.search);
@@ -996,7 +1043,7 @@ async function cargarTablaMarcas() {
         deepLinkPendiente = idResaltar;
     }
 
-    let params = new URLSearchParams({ estado: filtroEstado });
+    let params = new URLSearchParams({ estado: estadoFiltro });
     if (id_atleta) params.append('id_atleta', id_atleta);
     if (estilo) params.append('estilo', estilo);
     if (distancia) params.append('distancia', distancia);
@@ -1034,18 +1081,18 @@ const infoTiempo = NormalizadorPiscina.procesarTiempo(marca.tiempo_final_seg, ma
             ? `<span class="bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="¡Mejor Marca Personal!"><i class="fas fa-star mr-1"></i>PB</span>` 
             : '';
 
-        const botonAccion = (filtroEstado === 'Activo' && puedeEliminar)
+        const botonAccion = (estadoFiltro === 'Activo' && puedeEliminar)
             ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
-            : (filtroEstado === 'Inactivo' && puedeRestaurar)
+            : (estadoFiltro === 'Inactivo' && puedeRestaurar)
             ? `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`
             : '';
 
-        const botonEditar = (filtroEstado === 'Activo' && puedeEditar)
+        const botonEditar = (estadoFiltro === 'Activo' && puedeEditar)
             ? `<button onclick="abrirModalMarca(${marca.id_marca})" class="text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar Registro de Tiempo"><i class="fas fa-edit text-base"></i></button>`
             : '';
 
         const accionesHTML = (botonEditar || botonAccion) ? `${botonEditar}${botonAccion}` : '';
-        const justificacionHTML = (filtroEstado === 'Inactivo' && marca.motivo_eliminacion)
+        const justificacionHTML = (estadoFiltro === 'Inactivo' && marca.motivo_eliminacion)
             ? `<div class="text-[9px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1 w-48 leading-tight">
                 <i class="fas fa-exclamation-circle"></i> Anulado: ${marca.motivo_eliminacion}
                </div>`
@@ -1432,7 +1479,7 @@ async function verDetallesMarca(id_marca) {
             borderColor: '#6366f1', // Indigo
             backgroundColor: 'rgba(99, 102, 241, 0.05)',
             borderWidth: 2.5,
-            pointBackgroundColor: '#10b981',
+            pointBackgroundColor: '#6366f1',
             pointBorderColor: '#fff',
             pointRadius: 3.5,
             tension: 0.25
@@ -2304,6 +2351,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await cargarSelectsContexto();
     
     cargarTablaMarcas();
+    actualizarUIMarcas();
 
     // =======================================================
     // NUEVO: INTERCEPTAR EL ATAJO DESDE EL MÓDULO ASISTENCIA

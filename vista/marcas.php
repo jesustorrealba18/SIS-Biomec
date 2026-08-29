@@ -249,6 +249,7 @@ if (isset($_SESSION['id'])) {
             <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
                 
                 <!-- Encabezado -->
+                <!-- Encabezado -->
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#161430] p-6 rounded-2xl border border-gray-200 dark:border-[#252345] transition-colors duration-300">
                     <div>
                         <h2 class="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -256,15 +257,28 @@ if (isset($_SESSION['id'])) {
                         </h2>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Gestión avanzada de tiempos de carrera, ritmos de caída y progresión biométrica.</p>
                     </div>
-                    <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'registrar')): ?>
-                    <button onclick="iniciarRegistroMarca()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
-                        <i class="fas fa-plus-circle text-sm"></i> Registrar Nueva Marca
-                    </button>
-                    <?php endif; ?>
+                    <div class="flex flex-wrap gap-3">
+                        <!-- Toggle papelera -->
+                        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'eliminar') || \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'restaurar')): ?>
+                        <button id="toggleEstadoMarcasBtn" class="group relative flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] hover:border-red-500/50 transition-all duration-200">
+                            <i id="toggleIconoMarcas" class="fas fa-trash-alt text-gray-500 dark:text-gray-400 group-hover:text-red-400 transition-colors"></i>
+                            <span id="toggleTextoMarcas" class="text-xs font-medium text-gray-700 dark:text-gray-300">Activos</span>
+                            <div class="absolute -top-2 -right-2">
+                                <span id="estadoBadgeMarcas" class="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500 text-[10px] font-bold text-white">A</span>
+                            </div>
+                        </button>
+                        <?php endif; ?>
+                        <!-- Botón nuevo registro -->
+                        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'registrar')): ?>
+                        <button onclick="iniciarRegistroMarca()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fas fa-plus-circle text-sm"></i> Registrar Nueva Marca
+                        </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <!-- Filtros -->
-                <div class="tarjeta p-5 transition-colors duration-300">
+               <!--  <div class="tarjeta p-5 transition-colors duration-300">
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[10px] uppercase tracking-wider text-gray-600 dark:text-gray-400 font-bold flex items-center gap-1">
@@ -325,7 +339,7 @@ if (isset($_SESSION['id'])) {
                             </select>
                         </div>
 
-                        <!-- Añadir como una columna más en el grid de filtros de marcas.php -->
+                        
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[10px] uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1">
                                 <i class="fas fa-magic text-indigo-500"></i> Normalización FINA
@@ -337,10 +351,82 @@ if (isset($_SESSION['id'])) {
                             </select>
                         </div>
                     </div>
+                </div> -->
+
+                <!-- Filtros -->
+                <div class="tarjeta p-5 transition-colors duration-300">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] uppercase tracking-wider text-gray-600 dark:text-gray-400 font-bold flex items-center gap-1">
+                                <i class="fas fa-user text-indigo-500"></i> Filtrar Nadador
+                            </label>
+                            <select id="filtroAtleta" onchange="cargarTablaMarcas()" class="w-full input-adapt rounded-xl p-3 text-sm cursor-pointer">
+                                <option value="">Todos los Atletas</option>
+                            </select>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] uppercase tracking-wider text-gray-600 dark:text-gray-400 font-bold flex items-center gap-1">
+                                <i class="fas fa-water text-indigo-500"></i> Estilo Técnico
+                            </label>
+                            <select id="filtroEstilo" onchange="cargarTablaMarcas()" class="w-full input-adapt rounded-xl p-3 text-sm cursor-pointer">
+                                <option value="">Todos los Estilos</option>
+                                <option value="Libre">Libre (Crawl)</option>
+                                <option value="Espalda">Espalda</option>
+                                <option value="Pecho">Pecho (Braza)</option>
+                                <option value="Mariposa">Mariposa</option>
+                                <option value="Combinado">Combinado (Medley)</option>
+                            </select>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] uppercase tracking-wider text-gray-600 dark:text-gray-400 font-bold flex items-center gap-1">
+                                <i class="fas fa-ruler-horizontal text-indigo-500"></i> Distancia (Metros)
+                            </label>
+                            <select id="filtroDistancia" onchange="cargarTablaMarcas()" class="w-full input-adapt rounded-xl p-3 text-sm cursor-pointer">
+                                <option value="">Todas las Distancias</option>
+                                <option value="50">50 metros</option>
+                                <option value="100">100 metros</option>
+                                <option value="200">200 metros</option>
+                                <option value="400">400 metros</option>
+                                <option value="800">800 metros</option>
+                                <option value="1500">1500 metros</option>
+                            </select>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] uppercase tracking-wider text-gray-600 dark:text-gray-400 font-bold flex items-center gap-1">
+                                <i class="fas fa-swimming-pool text-indigo-500"></i> Tipo de Alberca
+                            </label>
+                            <select id="filtroPiscina" onchange="cargarTablaMarcas()" class="w-full input-adapt rounded-xl p-3 text-sm cursor-pointer">
+                                <option value="">Cualquier Longitud</option>
+                                <option value="25m">Piscina Corta (25m)</option>
+                                <option value="50m">Piscina Olímpica (50m)</option>
+                            </select>
+                        </div>
+
+                        <!-- Normalización FINA (estilo unificado) -->
+                        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('normalizacion', 'ver')): ?>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] uppercase tracking-wider text-gray-600 dark:text-gray-400 font-bold flex items-center gap-1">
+                                <i class="fas fa-magic text-indigo-500 dark:text-indigo-400"></i> Normalización FINA
+                            </label>
+                            <select id="filtroNormalizacion" onchange="NormalizadorPiscina.cambiarModo(this.value)" class="w-full input-adapt rounded-xl p-3 text-sm cursor-pointer">
+                                <option value="reales">Tiempos Reales</option>
+                                <option value="a_50m">Convertir todo a 50m</option>
+                                <option value="a_25m">Convertir todo a 25m</option>
+                            </select>
+                        </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <!-- Tabla -->
-                <div class="tarjeta p-4 sm:p-6 overflow-hidden transition-colors duration-300">
+            <div class="mt-2">
+                    <h2 id="tituloTablaMarcas" class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-3 ml-2 flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i> Mostrando Registros Activos
+                    </h2>     
+                <div id="tablaMarcasContainer" class="tarjeta p-4 sm:p-6 overflow-hidden transition-colors duration-300">
                     <table id="tablaMarcas" class="display" style="width:100%">
                         <thead>
                             <tr>
@@ -356,7 +442,34 @@ if (isset($_SESSION['id'])) {
                         <tbody id="tbodyMarcas">
                         </tbody>
                     </table>
-                </div>
+                </div> 
+            </div> 
+                <!-- Tabla de marcas (con DataTables) -->
+                <!-- <div class="mt-2">
+                    <h2 id="tituloTablaMarcas" class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-3 ml-2 flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i> Mostrando Registros Activos
+                    </h2>
+                    <div id="tablaMarcasContainer" class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg border-t-2 border-t-indigo-500 transition-colors duration-300 p-4 sm:p-6">
+                        <div class="overflow-x-auto">
+                            <table id="tablaMarcas" class="w-full text-left text-sm whitespace-nowrap display">
+                                <thead>
+                                    <tr>
+                                        <th>Atleta / Cédula</th>
+                                        <th>Prueba Especialidad</th>
+                                        <th>Dimensión Piscina</th>
+                                        <th>Tiempo Oficial</th>
+                                        <th>Origen / Nivel</th>
+                                        <th>Fecha</th>
+                                        <th class="text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyMarcas" class="divide-y divide-gray-200 dark:divide-[#252345] text-gray-700 dark:text-gray-300">
+                                   
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> -->
             </main>
         </div>
     </div>
