@@ -47,6 +47,14 @@ class UsuarioModelo extends Conexion {
     }
 
 
+    private function soloLetrasLatinas(string $valor, string $campo): bool {
+        if (!preg_match('/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/', trim($valor))) {
+            $this->agregarError($campo, "{$campo} solo puede contener letras y espacios.");
+            return false;
+        }
+        return true;
+    }
+
     public function validarDatos(array $datos, ?string $excluirCorreo = null): array {
         $this->resetearErrores();
 
@@ -56,12 +64,12 @@ class UsuarioModelo extends Conexion {
         $correo    = $datos['correo'] ?? '';
 
         $this->requerido($nombres, 'nombres');
-        $this->soloLetras($nombres, 'nombres');
-        $this->longitud($nombres, 'nombres', 2, 100);
+        $this->soloLetrasLatinas($nombres, 'nombres');
+        $this->longitud($nombres, 'nombres', 2, 30);
 
         $this->requerido($apellidos, 'apellidos');
-        $this->soloLetras($apellidos, 'apellidos');
-        $this->longitud($apellidos, 'apellidos', 2, 100);
+        $this->soloLetrasLatinas($apellidos, 'apellidos');
+        $this->longitud($apellidos, 'apellidos', 2, 30);
 
         if (!empty($cedula)) {
             $this->cedula($cedula, 'cedula');
@@ -71,6 +79,7 @@ class UsuarioModelo extends Conexion {
 
         $this->requerido($correo, 'correo');
         $this->correoValido($correo, 'correo');
+        $this->longitud($correo, 'correo', 5, 60);
 
         if ($excluirCorreo === null) {
             $this->unico($this->getConex1(), $correo, 'usuarios', 'correo');
@@ -83,20 +92,53 @@ class UsuarioModelo extends Conexion {
 
     public function validarContrasena(string $contrasena): array {
         $this->resetearErrores();
-        if (strlen(trim($contrasena)) < 6) {
+        $pass = trim($contrasena);
+        if (strlen($pass) < 6) {
             $this->agregarError('contrasena', 'La contrasena debe tener al menos 6 caracteres.');
         }
-        if (strlen(trim($contrasena)) > 128) {
+        if (strlen($pass) > 128) {
             $this->agregarError('contrasena', 'La contrasena no puede superar 128 caracteres.');
+        }
+        if (strlen($pass) >= 6 && !preg_match('/[a-zA-Z]/', $pass)) {
+            $this->agregarError('contrasena', 'La contrasena debe contener al menos una letra.');
+        }
+        if (strlen($pass) >= 6 && !preg_match('/[0-9]/', $pass)) {
+            $this->agregarError('contrasena', 'La contrasena debe contener al menos un numero.');
         }
         return $this->obtenerErrores();
     }
 
-    public function listarUsuarios(): array {
+    public function listarUsuarios(int $pagina = 1, int $porPagina = 20, string $busqueda = '', string $ordenar = 'id_usuario', string $direccion = 'DESC'): array {
         $conex = $this->getConex1();
-        $sql = "SELECT * FROM v_usuario_completo ORDER BY id_usuario DESC";
-        $stmt = $conex->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $pagina = max(1, $pagina);
+        $porPagina = max(1, min(100, $porPagina));
+        $offset = ($pagina - 1) * $porPagina;
+
+        $columnasOrden = ['id_usuario', 'nombres', 'apellidos', 'correo', 'cedula', 'activo'];
+        if (!in_array($ordenar, $columnasOrden, true)) $ordenar = 'id_usuario';
+        $direccion = strtoupper($direccion) === 'ASC' ? 'ASC' : 'DESC';
+
+        $where = '';
+        $params = [];
+        if ($busqueda !== '') {
+            $where = "WHERE u.nombres LIKE :b1 OR u.apellidos LIKE :b2 OR u.correo LIKE :b3 OR u.cedula LIKE :b4";
+            $like = '%' . $busqueda . '%';
+            $params = [':b1' => $like, ':b2' => $like, ':b3' => $like, ':b4' => $like];
+        }
+
+        $sqlCount = "SELECT COUNT(*) FROM v_usuario_completo u {$where}";
+        $stmtCount = $conex->prepare($sqlCount);
+        $stmtCount->execute($params);
+        $total = (int)$stmtCount->fetchColumn();
+
+        $sql = "SELECT * FROM v_usuario_completo u {$where} ORDER BY {$ordenar} {$direccion} LIMIT :limit OFFSET :offset";
+        $stmt = $conex->prepare($sql);
+        foreach ($params as $k => $v) $stmt->bindValue($k, $v, PDO::PARAM_STR);
+        $stmt->bindValue(':limit', $porPagina, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return ['datos' => $stmt->fetchAll(PDO::FETCH_ASSOC), 'total' => $total];
     }
 
     public function obtenerPorId(int $id): ?array {
@@ -117,7 +159,25 @@ class UsuarioModelo extends Conexion {
         return $row ?: null;
     }
 
-    public function crearUsuario(array $datos): bool {
+    public function validarRoles(array $rolesIds): array {
+        $this->resetearErrores();
+        if (empty($rolesIds)) {
+            return [];
+        }
+        $conex = $this->getConex1();
+        $placeholders = implode(',', array_fill(0, count($rolesIds), '?'));
+        $stmt = $conex->prepare("SELECT id_rol FROM roles WHERE id_rol IN ({$placeholders}) AND activo = 1");
+        $stmt->execute(array_values($rolesIds));
+        $validos = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $invalidos = array_diff(array_map('intval', $rolesIds), array_map('intval', $validos));
+        if (!empty($invalidos)) {
+            $this->agregarError('roles', 'Uno o mas roles seleccionados no son validos o estan inactivos.');
+        }
+        return $this->obtenerErrores();
+    }
+
+    public function crearUsuario(array $datos): int|false {
+        $this->resetearErrores();
         $conex = $this->getConex1();
         try {
             $conex->beginTransaction();
@@ -146,15 +206,17 @@ class UsuarioModelo extends Conexion {
             }
 
             $conex->commit();
-            return true;
+            return $idUsuario;
         } catch (PDOException $e) {
             $conex->rollBack();
             error_log("ERROR crearUsuario: " . $e->getMessage());
+            $this->agregarError('crear', 'Error al crear el usuario. Intente nuevamente.');
             return false;
         }
     }
 
     public function actualizarUsuario(array $datos): bool {
+        $this->resetearErrores();
         $conex = $this->getConex1();
         try {
             $conex->beginTransaction();
@@ -178,6 +240,7 @@ class UsuarioModelo extends Conexion {
         } catch (PDOException $e) {
             $conex->rollBack();
             error_log("ERROR actualizarUsuario: " . $e->getMessage());
+            $this->agregarError('actualizar', 'Error al actualizar el usuario. Intente nuevamente.');
             return false;
         }
     }
@@ -211,7 +274,6 @@ class UsuarioModelo extends Conexion {
     }
 
     public function eliminarUsuario(int $id): bool {
-        $conex = $this->getConex1();
         $this->resetearErrores();
 
         if ($id <= 0) {
@@ -219,22 +281,27 @@ class UsuarioModelo extends Conexion {
             return false;
         }
 
-        $stmt = $conex->prepare("SELECT COUNT(*) FROM metas_competitivas WHERE id_usuario_creador = :id");
-        $stmt->execute([':id' => $id]);
-        if ($stmt->fetchColumn() > 0) {
-            $this->agregarError('id_usuario', 'No se puede eliminar un usuario que ha creado registros de metas competitivas.');
-            return false;
-        }
-
         try {
+            $conex = $this->getConex1();
+
+            $stmt = $conex->prepare("SELECT COUNT(*) FROM sis_natacion.metas_competitivas WHERE id_usuario_creador = :id");
+            $stmt->execute([':id' => $id]);
+            if ($stmt->fetchColumn() > 0) {
+                $this->agregarError('id_usuario', 'No se puede eliminar un usuario que ha creado registros de metas competitivas.');
+                return false;
+            }
+
             $conex->beginTransaction();
             $conex->prepare("DELETE FROM usuario_roles WHERE id_usuario = :id")->execute([':id' => $id]);
             $conex->prepare("DELETE FROM usuarios WHERE id_usuario = :id")->execute([':id' => $id]);
             $conex->commit();
             return true;
         } catch (PDOException $e) {
-            $conex->rollBack();
+            if (isset($conex) && $conex->inTransaction()) {
+                $conex->rollBack();
+            }
             error_log("ERROR eliminarUsuario: " . $e->getMessage());
+            $this->agregarError('eliminar', 'Error al eliminar el usuario. Puede tener registros asociados en el sistema.');
             return false;
         }
     }
@@ -309,7 +376,7 @@ class UsuarioModelo extends Conexion {
             // 1. Datos Base de Identidad (Para TODOS)
             $sqlBase = "SELECT id_usuario, cedula, nombres, apellidos, correo, fecha_creacion, activo 
                         FROM sis_seguridad.usuarios WHERE id_usuario = :id LIMIT 1";
-            $stmt = $this->pdo->prepare($sqlBase);
+            $stmt = $this->getConex1()->prepare($sqlBase);
             $stmt->bindValue(':id', $id_usuario, PDO::PARAM_INT);
             $stmt->execute();
             $perfil['usuario'] = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -320,7 +387,7 @@ class UsuarioModelo extends Conexion {
             $sqlRoles = "SELECT r.nombre FROM sis_seguridad.usuario_roles ur
                          INNER JOIN sis_seguridad.roles r ON ur.id_rol = r.id_rol
                          WHERE ur.id_usuario = :id";
-            $stmt = $this->pdo->prepare($sqlRoles);
+            $stmt = $this->getConex1()->prepare($sqlRoles);
             $stmt->bindValue(':id', $id_usuario, PDO::PARAM_INT);
             $stmt->execute();
             $perfil['roles'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -333,7 +400,7 @@ class UsuarioModelo extends Conexion {
                           LEFT JOIN sis_natacion.categorias_feveda c ON a.id_categoria = c.id_categoria
                           LEFT JOIN sis_natacion.atleta_datos_medicos dm ON a.id_atleta = dm.id_atleta
                           WHERE a.id_usuario = :id LIMIT 1";
-            $stmt = $this->pdo->prepare($sqlAtleta);
+            $stmt = $this->getConex1()->prepare($sqlAtleta);
             $stmt->bindValue(':id', $id_usuario, PDO::PARAM_INT);
             $stmt->execute();
             $perfil['atleta'] = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
@@ -341,7 +408,7 @@ class UsuarioModelo extends Conexion {
             // 4. Faceta: ¿Es Representante?
             $sqlRep = "SELECT r.id_representante, r.telefono_principal AS telefono
                        FROM sis_natacion.representantes r WHERE r.id_usuario = :id LIMIT 1";
-            $stmt = $this->pdo->prepare($sqlRep);
+            $stmt = $this->getConex1()->prepare($sqlRep);
             $stmt->bindValue(':id', $id_usuario, PDO::PARAM_INT);
             $stmt->execute();
             $rep = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -353,7 +420,7 @@ class UsuarioModelo extends Conexion {
                              INNER JOIN sis_natacion.atletas a ON ar.id_atleta = a.id_atleta
                              LEFT JOIN sis_natacion.categorias_feveda c ON a.id_categoria = c.id_categoria
                              WHERE ar.id_representante = :id_rep";
-                $stmtH = $this->pdo->prepare($sqlHijos);
+                $stmtH = $this->getConex1()->prepare($sqlHijos);
                 $stmtH->bindValue(':id_rep', $rep['id_representante'], PDO::PARAM_INT);
                 $stmtH->execute();
                 $rep['hijos'] = $stmtH->fetchAll(PDO::FETCH_ASSOC);
@@ -363,7 +430,7 @@ class UsuarioModelo extends Conexion {
             // 5. Faceta: ¿Es Entrenador?
             $sqlEnt = "SELECT e.id_entrenador, e.telefono, e.foto
                        FROM sis_natacion.entrenador e WHERE e.id_usuario = :id LIMIT 1";
-            $stmt = $this->pdo->prepare($sqlEnt);
+            $stmt = $this->getConex1()->prepare($sqlEnt);
             $stmt->bindValue(':id', $id_usuario, PDO::PARAM_INT);
             $stmt->execute();
             $ent = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -371,7 +438,7 @@ class UsuarioModelo extends Conexion {
             if ($ent) {
                 // Buscamos sus grupos asignados
                 $sqlGrupos = "SELECT nombre, descripcion FROM sis_natacion.grupos_entrenamiento WHERE id_entrenador = :id_ent AND activo = 1";
-                $stmtG = $this->pdo->prepare($sqlGrupos);
+                $stmtG = $this->getConex1()->prepare($sqlGrupos);
                 $stmtG->bindValue(':id_ent', $ent['id_entrenador'], PDO::PARAM_INT);
                 $stmtG->execute();
                 $ent['grupos'] = $stmtG->fetchAll(PDO::FETCH_ASSOC);
