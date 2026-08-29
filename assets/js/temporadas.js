@@ -95,6 +95,7 @@ function filtrarTabla() {
 
 function abrirModalTemporada(id_temporada = null) {
     formTemporada.reset();
+    try { Validador.limpiarEstilos(formTemporada); } catch (e) {}
     document.getElementById('id_temporada').value = '';
     document.getElementById('activa').checked = false;
 
@@ -126,8 +127,63 @@ function cerrarModalTemporada() {
     document.getElementById('id_temporada').value = '';
 }
 
+function validarFechasEnVivo() {
+    const campoInicio = document.getElementById('fecha_inicio');
+    const campoFin = document.getElementById('fecha_fin');
+    if (!campoInicio || !campoFin) return;
+
+    const inicio = campoInicio.value;
+    const fin = campoFin.value;
+
+    if (!inicio || !fin) {
+        campoInicio.style.borderColor = inicio ? '#34d399' : '';
+        campoFin.style.borderColor = fin ? '#34d399' : '';
+        Validador.ocultarAyuda(campoFin);
+        return;
+    }
+
+    const TRES_MESES = 90 * 86400000;
+    let errorFin = '';
+
+    if (fin <= inicio) {
+        errorFin = 'Debe ser posterior a la fecha de inicio';
+    } else if ((new Date(fin) - new Date(inicio)) < TRES_MESES) {
+        errorFin = 'Debe haber al menos 3 meses de duración';
+    }
+
+    campoInicio.style.borderColor = '#34d399';
+    Validador.mostrarAyuda(campoInicio, 'Campo válido', 'ok');
+    campoFin.style.borderColor = errorFin ? '#f87171' : '#34d399';
+
+    if (errorFin) {
+        Validador.mostrarAyuda(campoFin, errorFin, 'error');
+    } else {
+        Validador.mostrarAyuda(campoFin, 'Campo válido', 'ok');
+    }
+}
+
 formTemporada.addEventListener('submit', async function(e) {
     e.preventDefault();
+
+    const erroresJS = Validador.validarFormulario(formTemporada);
+    if (erroresJS) {
+        UI.advertencia('Datos Incompletos o Inválidos', erroresJS);
+        return;
+    }
+
+    const fechaInicio = document.getElementById('fecha_inicio').value;
+    const fechaFin = document.getElementById('fecha_fin').value;
+    if (fechaInicio && fechaFin) {
+        const TRES_MESES = 90 * 86400000;
+        if (fechaFin <= fechaInicio) {
+            UI.advertencia('Fechas Inválidas', 'La <b>fecha de fin</b> debe ser posterior a la <b>fecha de inicio</b>.');
+            return;
+        }
+        if ((new Date(fechaFin) - new Date(fechaInicio)) < TRES_MESES) {
+            UI.advertencia('Duración Insuficiente', 'La temporada debe tener al menos <b>3 meses</b> de duración.');
+            return;
+        }
+    }
 
     const id_temporada = document.getElementById('id_temporada').value;
     const formData = new FormData(formTemporada);
@@ -229,6 +285,14 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         if (!modalTemporada.classList.contains('hidden')) cerrarModalTemporada();
     }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    try { Validador.vincularTiempoReal(formTemporada); } catch (e) {}
+    const campoInicio = document.getElementById('fecha_inicio');
+    const campoFin = document.getElementById('fecha_fin');
+    if (campoInicio) campoInicio.addEventListener('change', validarFechasEnVivo);
+    if (campoFin) campoFin.addEventListener('change', validarFechasEnVivo);
 });
 
 cargarTabla();
