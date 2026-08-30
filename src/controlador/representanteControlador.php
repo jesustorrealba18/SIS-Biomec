@@ -3,6 +3,7 @@
 use GrupoProyecto\SisBiomec\modelo\Representante;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 
 
 if (empty($_SESSION['id'])) { 
@@ -26,6 +27,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
        $objRepresentante->setAtributos($_POST);
 
         if ($objRepresentante->Eliminar()) {
+            
+            Bitacora::registrar(
+                $_SESSION['id'], 
+                'Representantes', 
+                'DELETE', 
+                $_POST['id_representante'], 
+                'Estado', 
+                'Activo', 
+                'Inactivo'
+            );
             echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'No se pudo desactivar el registro.']);
@@ -41,6 +52,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
            $objRepresentante->setAtributos($_POST);
 
         if ($objRepresentante->Reactivar()) {
+            Bitacora::registrar(
+                $_SESSION['id'], 
+                'Representantes', 
+                'RESTORE', 
+                $_POST['id_representante'], 
+                'Estado', 
+                'Inactivo', 
+                'Activo'
+            );
                 echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'No se pudo reactivar el registro.']);
@@ -71,6 +91,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
 
     if ($resultado) {
+        if ($excluirCedula) {
+                // Fue una actualización. (Nota: cedula_original viaja con el id del representante)
+                Bitacora::registrar(
+                    $_SESSION['id'], 
+                    'Representantes', 
+                    'UPDATE', 
+                    $excluirCedula, 
+                    'Datos de Perfil', 
+                    'Ver historial previo', 
+                    'Actualización de datos y/o representados'
+                );
+            } else {
+                // Fue un registro nuevo. Guardamos la cédula y nombre en valor nuevo para saber quién fue.
+                $nombreCompleto = ($_POST['nombres'] ?? '') . ' ' . ($_POST['apellidos'] ?? '');
+                Bitacora::registrar(
+                    $_SESSION['id'], 
+                    'Representantes', 
+                    'INSERT', 
+                    null, 
+                    'Nuevo Representante', 
+                    null, 
+                    ($_POST['cedula'] ?? '') . ' - ' . $nombreCompleto
+                );
+            }
         echo json_encode(['status' => 'success', 'message' => 'Operación exitosa.']);
     } else {
 

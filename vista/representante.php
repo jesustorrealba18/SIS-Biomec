@@ -316,7 +316,7 @@
                         <!-- Botón nuevo representante -->
                         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
                         <button onclick="abrirModalRepresentante()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 w-full sm:w-auto cursor-pointer">
-                            <i class="fas fa-plus"></i> Nuevo
+                            <i class="fas fa-plus"></i> Nuevo Representante
                         </button>
                         <?php endif; ?>
                     </div>
@@ -632,11 +632,11 @@
                     botonAccion = `<button onclick="eliminarRepresentante(${rep.id_representante})" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition" title="Archivar"><i class="fas fa-trash-alt text-base"></i></button>`;
                     mostrarEditar = true;
                 } else {
-                    botonAccion = `<button onclick="reactivarRepresentante(${rep.id_representante})" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition" title="Reactivar"><i class="fas fa-undo-alt text-base"></i></button>`;
+                    botonAccion = `<button onclick="reactivarRepresentante(${rep.id_representante})" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition" title="Restaurar"><i class="fas fa-undo-alt text-base"></i></button>`;
                     mostrarEditar = false;
                 }
 
-                let acciones = '';
+                /* let acciones = '';
                 if (PERMISOS_MODULO.gestionar) {
                     if (mostrarEditar) {
                         acciones = `<button onclick="abrirModalRepresentante(${rep.id_representante})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition" title="Editar"><i class="fas fa-edit text-base"></i></button> ${botonAccion}`;
@@ -645,7 +645,26 @@
                     }
                 } else {
                     acciones = '<span class="text-gray-500 dark:text-gray-500 text-xs">Solo lectura</span>';
-                }
+                } */
+
+                // Botón azul para ver detalles (Visible siempre, incluso si es solo lectura)
+let botonVer = `<button onclick="verPerfilRepresentante(${rep.id_representante})" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10 transition" title="Ver Perfil Completo"><i class="fas fa-eye text-base"></i></button>`;
+
+let acciones = '';
+if (PERMISOS_MODULO.gestionar) {
+    if (mostrarEditar) {
+        // Agregamos botonVer antes de editar
+        acciones = `${botonVer} 
+                    <button onclick="abrirModalRepresentante(${rep.id_representante})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition" title="Editar"><i class="fas fa-edit text-base"></i></button> 
+                    ${botonAccion}`;
+    } else {
+        // Para registros inactivos, pueden ver el perfil y reactivar
+        acciones = `${botonVer} ${botonAccion}`;
+    }
+} else {
+    // Si no tiene permiso de gestionar, al menos puede ver el perfil
+    acciones = botonVer;
+}
                 
                 htmlFilas += `
                     <tr class="representante-row" data-busqueda="${rep.cedula} ${rep.nombres} ${rep.apellidos} ${textoBusquedaAtletas}".toLowerCase()>

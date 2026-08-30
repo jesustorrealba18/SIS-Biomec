@@ -423,6 +423,175 @@ async function reactivarRepresentante(id_representante) {
 
 
 // =====================================================================
+// FUNCIONALIDAD: PERFIL DEL REPRESENTANTE (Nativo Tailwind / Dark Mode)
+// =====================================================================
+/* async function verPerfilRepresentante(idRepresentante) {
+    Swal.fire({
+        title: 'Cargando perfil...',
+        background: document.documentElement.classList.contains('dark') ? '#161430' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#fff' : '#1f2937',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading() }
+    });
+
+    // Reciclamos la misma petición que usas para editar
+    const rep = await peticionAjax(`obtenerRepresentante&id=${idRepresentante}`);
+    Swal.close();
+
+    if (rep) {
+        // Colores según el estado
+        const estadoClases = rep.estado === 'Inactivo' 
+            ? 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-500/10'
+            : 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10';
+
+        const html = `
+            <div class="text-center mb-6 sm:mb-8">
+                <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full mx-auto mb-4 bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-4xl text-indigo-600 dark:text-indigo-400 border-4 border-indigo-200 dark:border-indigo-500/20 shadow-xl">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">${rep.nombres} ${rep.apellidos}</h2>
+                <p class="text-indigo-600 dark:text-indigo-400 mb-2 font-mono tracking-widest text-xs sm:text-sm">${rep.cedula}</p>
+                <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase ${estadoClases}">${rep.estado || 'Activo'}</span>
+            </div>
+
+            <div class="mb-5 sm:mb-6">
+                <p class="text-[10px] uppercase text-indigo-600 dark:text-indigo-400 font-bold tracking-widest mb-2 sm:mb-3"><i class="fas fa-address-card mr-2"></i>Datos de Contacto</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-left bg-gray-100 dark:bg-black/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/5">
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Teléfono Principal</p><p class="text-gray-900 dark:text-white text-sm sm:text-base">${rep.telefono_principal || '—'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Tel. Emergencia</p><p class="text-gray-900 dark:text-white text-sm sm:text-base">${rep.telefono_secundario || '—'}</p></div>
+                    <div class="sm:col-span-2"><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Correo Electrónico</p><p class="text-gray-900 dark:text-white text-xs sm:text-sm break-all">${rep.correo || '—'}</p></div>
+                </div>
+            </div>
+
+            <div>
+                <p class="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-widest mb-2 sm:mb-3"><i class="fas fa-map-marker-alt mr-2"></i>Ubicación y Parentesco</p>
+                <div class="grid grid-cols-1 gap-2 sm:gap-3 text-left bg-gray-100 dark:bg-black/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/5">
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Vínculo Familiar</p><p class="text-gray-900 dark:text-white font-bold text-sm sm:text-base">${rep.parentesco || '—'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Dirección de Residencia</p><p class="text-gray-900 dark:text-white text-sm sm:text-base leading-relaxed">${rep.direccion || '—'}</p></div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('detalleContenido').innerHTML = html;
+        document.getElementById('modalVer').classList.remove('hidden');
+    } else {
+        UI.error('Error', 'No se pudieron cargar los datos del representante.');
+    }
+} */
+
+    // =====================================================================
+// FUNCIONALIDAD: PERFIL DEL REPRESENTANTE (Nativo Tailwind / Dark Mode)
+// =====================================================================
+async function verPerfilRepresentante(idRepresentante) {
+    Swal.fire({
+        title: 'Cargando perfil...',
+        background: document.documentElement.classList.contains('dark') ? '#161430' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#fff' : '#1f2937',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading() }
+    });
+
+    // 1. Ejecutamos ambas peticiones en paralelo para que sea súper rápido
+    const [rep, todosLosAtletas] = await Promise.all([
+        peticionAjax(`obtenerRepresentante&id=${idRepresentante}`),
+        peticionAjax(`listarAtletas&id_representante=${idRepresentante}`)
+    ]);
+    
+    Swal.close();
+
+    if (rep) {
+        // Colores según el estado
+        const estadoClases = rep.estado === 'Inactivo' 
+            ? 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-500/10'
+            : 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10';
+
+        // 2. Filtramos los atletas que realmente le pertenecen (seleccionado == 1)
+        const vinculados = (todosLosAtletas || []).filter(a => a.seleccionado == 1);
+        
+        // 3. Armamos el HTML de los atletas
+        let htmlAtletas = '';
+        if (vinculados.length > 0) {
+            htmlAtletas = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">`;
+            vinculados.forEach(atleta => {
+                // Verificamos permisos para mostrar insignias
+                const badgeMed = atleta.aut_medica == 1 
+                    ? '<span class="text-emerald-500" title="Autorización Médica Concedida"><i class="fas fa-check-circle"></i> Médica</span>' 
+                    : '<span class="text-gray-400" title="Sin Autorización Médica"><i class="fas fa-times-circle"></i> Médica</span>';
+                    
+                const badgeImg = atleta.aut_imagen == 1 
+                    ? '<span class="text-emerald-500" title="Uso de Imagen Concedido"><i class="fas fa-check-circle"></i> Imagen</span>' 
+                    : '<span class="text-gray-400" title="Sin Autorización de Imagen"><i class="fas fa-times-circle"></i> Imagen</span>';
+
+                htmlAtletas += `
+                    <div class="flex items-center gap-3 p-3 bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex flex-shrink-0 items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg">
+                            ${atleta.nombres.charAt(0)}${atleta.apellidos.charAt(0)}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-gray-900 dark:text-white truncate">${atleta.nombres} ${atleta.apellidos}</p>
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">${atleta.cedula}</p>
+                            <div class="flex gap-2 mt-1 text-[9px] uppercase font-bold tracking-wider">
+                                ${badgeMed}
+                                ${badgeImg}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            htmlAtletas += `</div>`;
+        } else {
+            htmlAtletas = `<p class="text-sm text-gray-500 dark:text-gray-400 italic bg-gray-100 dark:bg-black/20 p-4 rounded-xl border border-gray-200 dark:border-white/5 text-center">No hay atletas vinculados actualmente.</p>`;
+        }
+
+        // 4. Inyectamos todo en el HTML principal del modal
+        const html = `
+            <div class="text-center mb-6 sm:mb-8">
+                <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full mx-auto mb-4 bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-4xl text-indigo-600 dark:text-indigo-400 border-4 border-indigo-200 dark:border-indigo-500/20 shadow-xl">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">${rep.nombres} ${rep.apellidos}</h2>
+                <p class="text-indigo-600 dark:text-indigo-400 mb-2 font-mono tracking-widest text-xs sm:text-sm">${rep.cedula}</p>
+                <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase ${estadoClases}">${rep.estado || 'Activo'}</span>
+            </div>
+
+            <div class="mb-5 sm:mb-6">
+                <p class="text-[10px] uppercase text-indigo-600 dark:text-indigo-400 font-bold tracking-widest mb-2 sm:mb-3"><i class="fas fa-address-card mr-2"></i>Datos de Contacto</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-left bg-gray-100 dark:bg-black/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/5">
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Teléfono Principal</p><p class="text-gray-900 dark:text-white text-sm sm:text-base">${rep.telefono_principal || '—'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Tel. Emergencia</p><p class="text-gray-900 dark:text-white text-sm sm:text-base">${rep.telefono_secundario || '—'}</p></div>
+                    <div class="sm:col-span-2"><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Correo Electrónico</p><p class="text-gray-900 dark:text-white text-xs sm:text-sm break-all">${rep.correo || '—'}</p></div>
+                </div>
+            </div>
+
+            <div class="mb-5 sm:mb-6">
+                <p class="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-widest mb-2 sm:mb-3"><i class="fas fa-map-marker-alt mr-2"></i>Ubicación y Parentesco</p>
+                <div class="grid grid-cols-1 gap-2 sm:gap-3 text-left bg-gray-100 dark:bg-black/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/5">
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Vínculo Familiar</p><p class="text-gray-900 dark:text-white font-bold text-sm sm:text-base">${rep.parentesco || '—'}</p></div>
+                    <div><p class="text-[10px] uppercase text-gray-500 dark:text-gray-400">Dirección de Residencia</p><p class="text-gray-900 dark:text-white text-sm sm:text-base leading-relaxed">${rep.direccion || '—'}</p></div>
+                </div>
+            </div>
+
+            <!-- NUEVA SECCIÓN DE ATLETAS VINCULADOS -->
+            <div>
+                <p class="text-[10px] uppercase text-purple-600 dark:text-purple-400 font-bold tracking-widest mb-2 sm:mb-3 flex items-center justify-between">
+                    <span><i class="fas fa-swimmer mr-2"></i>Atletas a Cargo</span>
+                    <span class="bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">${vinculados.length}</span>
+                </p>
+                <div class="bg-gray-100 dark:bg-black/20 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/5">
+                    ${htmlAtletas}
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('detalleContenido').innerHTML = html;
+        document.getElementById('modalVer').classList.remove('hidden');
+    } else {
+        UI.error('Error', 'No se pudieron cargar los datos del representante.');
+    }
+}
+
+
+// =====================================================================
 // FUNCIONALIDAD EXTRA: MINI-PERFIL DEL ATLETA (Nativo Tailwind)
 // =====================================================================
 

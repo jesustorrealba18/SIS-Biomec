@@ -256,11 +256,20 @@ private function validarDatos(): bool {
 
     public function Eliminar(): bool {
        
+    if (empty($this->datos['id_representante'])) {
+            $this->agregarError('id_representante', 'El ID del representante es requerido para eliminar.');
+            return false;
+        }
          
         return $this->eliminarRepresentante();
     }    
 
     public function Reactivar(): bool {
+
+    if (empty($this->datos['id_representante'])) {
+            $this->agregarError('id_representante', 'El ID del representante es requerido para reactivar.');
+            return false;
+        }
        
          
         return $this->reactivarRepresentante();
@@ -407,10 +416,11 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
             $stmt->execute();
 
             
-            $sqlDelete = "DELETE FROM atleta_representante WHERE id_representante = :id_rep";
+           /*  $sqlDelete = "DELETE FROM atleta_representante WHERE id_representante = :id_rep";
             $stmtDel = $conex->prepare($sqlDelete);
             $stmtDel->bindValue(':id_rep', $id_representante, \PDO::PARAM_INT);
-            $stmtDel->execute();
+            $stmtDel->execute(); */
+            $this->limpiarRelacionesAtletas($conex, $id_representante);
 
             
             if (!empty($this->datos['atletas_ids']) && is_array($this->datos['atletas_ids'])) {
@@ -426,23 +436,32 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
         }
     }
 
+    private function limpiarRelacionesAtletas(\PDO $conex, int $id_representante): void {
+        $sqlDelete = "DELETE FROM atleta_representante WHERE id_representante = :id_rep";
+        $stmtDel = $conex->prepare($sqlDelete);
+        $stmtDel->bindValue(':id_rep', $id_representante, \PDO::PARAM_INT);
+        $stmtDel->execute();
+    }
+
 
     private function eliminarRepresentante(): bool {
         $conex = $this->pdo;
         try {
             $conex->beginTransaction();
 
+            $id_representante = (int)$this->datos['id_representante'];
             
             $sqlLogico = "UPDATE representantes SET estado = 'Inactivo' WHERE id_representante = :id";
             $stmtLogico = $conex->prepare($sqlLogico);
-            $stmtLogico->bindValue(':id', (int)$this->datos['id_representante'], \PDO::PARAM_INT);
+            $stmtLogico->bindValue(':id', $id_representante, \PDO::PARAM_INT);
             $stmtLogico->execute();
 
             
-            $sqlFisico = "DELETE FROM atleta_representante WHERE id_representante = :id";
+            /* $sqlFisico = "DELETE FROM atleta_representante WHERE id_representante = :id";
             $stmtFisico = $conex->prepare($sqlFisico);
             $stmtFisico->bindValue(':id',(int)$this->datos['id_representante'], \PDO::PARAM_INT);
-            $stmtFisico->execute();
+            $stmtFisico->execute(); */
+             $this->limpiarRelacionesAtletas($conex, $id_representante);
 
             $conex->commit();
             return true;
@@ -472,7 +491,7 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
     public function listarRepresentantes(string $estado = 'Activo'): array {
         $conex = $this->pdo;
         try {
-            $sql = "SELECT 
+            /* $sql = "SELECT 
                         r.id_representante, r.cedula, r.nombres, r.apellidos, 
                         r.telefono_principal, r.parentesco, r.estado,
                         GROUP_CONCAT(CONCAT(a.id_atleta, ':', a.nombres, ' ', a.apellidos) SEPARATOR '|') as atletas_vinculados
@@ -481,7 +500,11 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
                     LEFT JOIN atletas a ON ar.id_atleta = a.id_atleta
                     WHERE r.estado = :estado 
                     GROUP BY r.id_representante
-                    ORDER BY r.id_representante DESC";
+                    ORDER BY r.id_representante DESC"; */
+                    
+                    $sql ="SELECT * FROM vista_representantes_atletas
+                    WHERE estado = :estado
+                    ORDER BY id_representante DESC;";
                     
             $stmt = $conex->prepare($sql);
             $stmt->bindValue(':estado', $estado, \PDO::PARAM_STR);
