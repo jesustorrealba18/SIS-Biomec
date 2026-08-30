@@ -308,7 +308,7 @@ private function validarDatos(): bool {
 
             
             $locales = [
-                'id_usuario_local' => $_SESSION['id'] ?? 1
+                'id_usuario_local' => null
             ];
 
            

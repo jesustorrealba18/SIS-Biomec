@@ -230,6 +230,10 @@ if (isset($_SESSION['id'])) {
                     <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Roles</label>
                     <div id="rolesCheckboxes" class="mt-2 space-y-2"></div>
                 </div>
+                <div id="vinculacionSeccion" class="hidden border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                    <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Vinculacion</label>
+                    <div id="vinculacionContenido" class="mt-2 space-y-4"></div>
+                </div>
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition">
                     Guardar
                 </button>
@@ -449,6 +453,7 @@ if (isset($_SESSION['id'])) {
             document.getElementById('id_usuario').value = '';
             document.getElementById('campoContrasena').classList.remove('hidden');
             document.getElementById('contrasena').required = true;
+            document.getElementById('contrasena').setAttribute('data-validar', 'requerido');
             evaluarFortaleza('');
             try { Validador.limpiarEstilos(document.getElementById('formUsuario')); } catch(e) {}
             await cargarRoles();
@@ -456,28 +461,9 @@ if (isset($_SESSION['id'])) {
             document.getElementById('modalUsuario').classList.remove('hidden');
         }
 
-        async function abrirModalEditar(id) {
-            const res = await fetch(`?p=usuarios&accion=obtenerUsuario&id=${id}`);
-            const u = await res.json();
-            if (!u) return;
-
-            document.getElementById('modalTitulo').textContent = 'Editar Usuario';
-            document.getElementById('id_usuario').value = u.id_usuario;
-            document.getElementById('nombres').value = u.nombres;
-            document.getElementById('apellidos').value = u.apellidos;
-            document.getElementById('cedula').value = u.cedula || '';
-            document.getElementById('correo').value = u.correo;
-            document.getElementById('campoContrasena').classList.add('hidden');
-            document.getElementById('contrasena').required = false;
-
-            await cargarRoles();
-            const seleccionados = (u.roles_ids || '').split(',').filter(Boolean);
-            renderRolesCheckboxes(seleccionados);
-            document.getElementById('modalUsuario').classList.remove('hidden');
-        }
-
         function cerrarModal() {
             try { Validador.limpiarEstilos(document.getElementById('formUsuario')); } catch(e) {}
+            document.getElementById('vinculacionSeccion').classList.add('hidden');
             document.getElementById('modalUsuario').classList.add('hidden');
         }
 
@@ -576,6 +562,156 @@ if (isset($_SESSION['id'])) {
             const res = await fetch('?p=usuarios', { method: 'POST', body: fd });
             const data = await res.json();
             Swal.fire({ ...UI.config, icon: data.status === 'success' ? 'success' : 'error', title: data.message, timer: 1500, showConfirmButton: false });
+        }
+
+        const vinculacionTipos = {
+            atleta: { label: 'Atleta', icon: 'fa-person-running' },
+            representante: { label: 'Representante', icon: 'fa-user-tie' },
+            entrenador: { label: 'Entrenador', icon: 'fa-whistle' }
+        };
+        let vinculacionDebounce = {};
+
+        async function abrirModalEditar(id) {
+            const res = await fetch(`?p=usuarios&accion=obtenerUsuario&id=${id}`);
+            const u = await res.json();
+            if (!u) return;
+
+            document.getElementById('modalTitulo').textContent = 'Editar Usuario';
+            document.getElementById('id_usuario').value = u.id_usuario;
+            document.getElementById('nombres').value = u.nombres;
+            document.getElementById('apellidos').value = u.apellidos;
+            document.getElementById('cedula').value = u.cedula || '';
+            document.getElementById('correo').value = u.correo;
+            document.getElementById('campoContrasena').classList.add('hidden');
+            document.getElementById('contrasena').required = false;
+            document.getElementById('contrasena').removeAttribute('data-validar');
+
+            await cargarRoles();
+            const seleccionados = (u.roles_ids || '').split(',').filter(Boolean);
+            renderRolesCheckboxes(seleccionados);
+
+            renderVinculacion(u.id_usuario, u.roles_ids || '');
+            document.getElementById('modalUsuario').classList.remove('hidden');
+        }
+
+        async function renderVinculacion(idUsuario, rolesIds) {
+            const seccion = document.getElementById('vinculacionSeccion');
+            const contenido = document.getElementById('vinculacionContenido');
+            const roles = rolesIds.split(',').filter(Boolean).map(Number);
+            const rolesData = rolesCache.find ? rolesCache : await cargarRoles();
+
+            const rolATipo = {'atleta': 'atleta', 'representante': 'representante', 'entrenador': 'entrenador', 'medico': null, 'administrador': null};
+            const tiposVisibles = [];
+            for (const rid of roles) {
+                const r = rolesData.find(x => x.id_rol === rid);
+                if (r) {
+                    const tipo = rolATipo[r.nombre.toLowerCase()];
+                    if (tipo && !tiposVisibles.includes(tipo)) tiposVisibles.push(tipo);
+                }
+            }
+            if (tiposVisibles.length === 0) {
+                seccion.classList.add('hidden');
+                return;
+            }
+            seccion.classList.remove('hidden');
+
+            let html = '';
+            for (const tipo of tiposVisibles) {
+                const info = vinculacionTipos[tipo];
+                html += `<div class="border border-gray-200 dark:border-gray-700 rounded-xl p-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fas ${info.icon} text-indigo-500"></i>
+                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">${info.label}</span>
+                    </div>
+                    <div id="vinculacion_${tipo}_chips" class="mb-2 flex flex-wrap gap-1"></div>
+                    <div class="relative">
+                        <input type="text" id="vinculacion_${tipo}_input" placeholder="Buscar ${info.label.toLowerCase()}..." class="input-adapt w-full rounded-lg px-3 py-2 text-sm pr-8" autocomplete="off">
+                        <i class="fas fa-search absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    </div>
+                    <div id="vinculacion_${tipo}_resultados" class="mt-1 hidden border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg max-h-40 overflow-y-auto"></div>
+                </div>`;
+            }
+            contenido.innerHTML = html;
+
+            for (const tipo of tiposVisibles) {
+                cargarVinculaciones(idUsuario, tipo);
+                const input = document.getElementById(`vinculacion_${tipo}_input`);
+                if (input) {
+                    input.addEventListener('input', function() {
+                        const t = tipo;
+                        clearTimeout(vinculacionDebounce[t]);
+                        vinculacionDebounce[t] = setTimeout(() => buscarEntidadParaVincular(t, idUsuario), 350);
+                    });
+                }
+            }
+        }
+
+        async function cargarVinculaciones(idUsuario, tipo) {
+            const chips = document.getElementById(`vinculacion_${tipo}_chips`);
+            if (!chips) return;
+            try {
+                const res = await fetch(`?p=usuarios&accion=obtenerVinculaciones&id_usuario=${idUsuario}&tipo=${tipo}`);
+                const data = await res.json();
+                if (!data || data.length === 0) { chips.innerHTML = '<span class="text-xs text-gray-400">Sin vinculacion</span>'; return; }
+                chips.innerHTML = data.map(v => `
+                    <span class="inline-flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-500/30">
+                        ${esc(v.nombres)} ${esc(v.apellidos)}
+                        <button type="button" onclick="desvincularEntidad(${idUsuario}, '${tipo}')" class="ml-1 text-red-400 hover:text-red-600 dark:hover:text-red-300" aria-label="Desvincular"><i class="fas fa-times text-[10px]"></i></button>
+                    </span>`).join('');
+            } catch(e) { chips.innerHTML = '<span class="text-xs text-red-400">Error cargando</span>'; }
+        }
+
+        async function buscarEntidadParaVincular(tipo, idUsuario) {
+            const input = document.getElementById(`vinculacion_${tipo}_input`);
+            const resultados = document.getElementById(`vinculacion_${tipo}_resultados`);
+            if (!input || !resultados) return;
+            const texto = input.value.trim();
+            if (texto.length < 2) { resultados.classList.add('hidden'); return; }
+            try {
+                const res = await fetch(`?p=usuarios&accion=buscarEntidad&texto=${encodeURIComponent(texto)}&tipo=${tipo}`);
+                const data = await res.json();
+                if (!data || data.length === 0) { resultados.innerHTML = '<div class="px-3 py-2 text-xs text-gray-400">Sin resultados</div>'; resultados.classList.remove('hidden'); return; }
+                resultados.innerHTML = data.map(e => `
+                    <button type="button" onclick="vincularEntidad(${idUsuario}, '${tipo}', ${e.id})" class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition">${esc(e.nombres)} ${esc(e.apellidos)}</button>`).join('');
+                resultados.classList.remove('hidden');
+            } catch(e) { resultados.classList.add('hidden'); }
+        }
+
+        async function vincularEntidad(idUsuario, tipo, idEntidad) {
+            const fd = new FormData();
+            fd.append('accion', 'vincularEntidad');
+            fd.append('id_usuario', idUsuario);
+            fd.append('tipo', tipo);
+            fd.append('id_entidad', idEntidad);
+            try {
+                const res = await fetch('?p=usuarios', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    const input = document.getElementById(`vinculacion_${tipo}_input`);
+                    if (input) input.value = '';
+                    const resultados = document.getElementById(`vinculacion_${tipo}_resultados`);
+                    if (resultados) resultados.classList.add('hidden');
+                    cargarVinculaciones(idUsuario, tipo);
+                } else {
+                    Swal.fire({ ...UI.config, icon: 'warning', title: data.message });
+                }
+            } catch(e) {}
+        }
+
+        async function desvincularEntidad(idUsuario, tipo) {
+            const fd = new FormData();
+            fd.append('accion', 'desvincularEntidad');
+            fd.append('id_usuario', idUsuario);
+            fd.append('tipo', tipo);
+            try {
+                const res = await fetch('?p=usuarios', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    cargarVinculaciones(idUsuario, tipo);
+                } else {
+                    Swal.fire({ ...UI.config, icon: 'warning', title: data.message });
+                }
+            } catch(e) {}
         }
 
         try { Validador.vincularTiempoReal(document.getElementById('formUsuario')); } catch(e) {}

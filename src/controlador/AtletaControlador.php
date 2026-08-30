@@ -28,12 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         Autorizacion::exigir('atletas', 'crear');
         try {
             $datos = $_POST;
-            $datos['id_usuario'] = $_SESSION['id'] ?? null;
+ $objAtleta->setDatos($datos);
 
-            $objAtleta->setDatos($datos);
-
-            if (isset($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
-                $fotoRuta = $objAtleta->procesarFoto($_FILES['foto'], null);
+ if (isset($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
+ $fotoRuta = $objAtleta->procesarFoto($_FILES['foto'], null);
                 $objAtleta->setCampo('foto', $fotoRuta);
             }
 
@@ -68,8 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         Autorizacion::exigir('atletas', 'editar');
         try {
             $datos = $_POST;
-            $datos['id_usuario'] = $_SESSION['id'] ?? null;
-            $idAtleta = (int)($datos['id_atleta'] ?? 0);
+ $idAtleta = (int)($datos['id_atleta'] ?? 0);
 
             $objAtleta->setDatos($datos);
 

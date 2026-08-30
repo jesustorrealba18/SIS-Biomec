@@ -27,6 +27,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
+    if ($accion === 'buscarEntidad') {
+        Autorizacion::exigir('seguridad', 'usuarios');
+        header('Content-Type: application/json');
+        $texto = substr(trim($_GET['texto'] ?? ''), 0, 100);
+        $tipo = preg_replace('/[^a-zA-Z]/', '', $_GET['tipo'] ?? '');
+        $permitidos = ['atleta', 'representante', 'entrenador'];
+        if (!in_array($tipo, $permitidos, true)) {
+            echo json_encode([]);
+            exit;
+        }
+        echo json_encode($objUsuario->buscarEntidad($texto, $tipo));
+        exit;
+    }
+
+    if ($accion === 'obtenerVinculaciones' && isset($_GET['id_usuario'])) {
+        Autorizacion::exigir('seguridad', 'usuarios');
+        header('Content-Type: application/json');
+        $tipo = preg_replace('/[^a-zA-Z]/', '', $_GET['tipo'] ?? '');
+        $todas = $objUsuario->obtenerVinculaciones((int)$_GET['id_usuario']);
+        if ($tipo) {
+            $todas = array_filter($todas, function($v) use ($tipo) { return ($v['tipo'] ?? '') === $tipo; });
+            $todas = array_values($todas);
+        }
+        echo json_encode($todas);
+        exit;
+    }
+
     if ($accion === 'listarRoles') {
         Autorizacion::exigir('seguridad', 'usuarios');
         header('Content-Type: application/json');
@@ -158,6 +185,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['status' => 'success', 'message' => 'Contrasena actualizada.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Error al resetear contrasena.']);
+        }
+        exit;
+    }
+
+    if ($accionPost === 'vincularEntidad') {
+        $idUsuario = (int)($_POST['id_usuario'] ?? 0);
+        $tipo = preg_replace('/[^a-zA-Z]/', '', $_POST['tipo'] ?? '');
+        $idEntidad = (int)($_POST['id_entidad'] ?? 0);
+        if ($idUsuario <= 0 || $idEntidad <= 0 || !in_array($tipo, ['atleta', 'representante', 'entrenador'], true)) {
+            echo json_encode(['status' => 'error', 'message' => 'Datos invalidos.']);
+            exit;
+        }
+        if ($objUsuario->vincularEntidad($idUsuario, $tipo, $idEntidad)) {
+            echo json_encode(['status' => 'success', 'message' => 'Entidad vinculada correctamente.']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Error al vincular entidad.']);
+        }
+        exit;
+    }
+
+    if ($accionPost === 'desvincularEntidad') {
+        $idUsuario = (int)($_POST['id_usuario'] ?? 0);
+        $tipo = preg_replace('/[^a-zA-Z]/', '', $_POST['tipo'] ?? '');
+        if ($idUsuario <= 0 || !in_array($tipo, ['atleta', 'representante', 'entrenador'], true)) {
+            echo json_encode(['status' => 'error', 'message' => 'Datos invalidos.']);
+            exit;
+        }
+        if ($objUsuario->desvincularEntidad($idUsuario, $tipo)) {
+            echo json_encode(['status' => 'success', 'message' => 'Entidad desvinculada.']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Error al desvincular entidad.']);
         }
         exit;
     }
