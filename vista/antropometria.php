@@ -343,6 +343,7 @@ if (isset($_SESSION['id'])) {
                 </div>
 
                 <!-- KPIs (4 tarjetas) -->
+                 <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'registrar')): ?>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden group transition-colors duration-300">
                         <div class="absolute -right-6 -top-6 text-red-500/10 group-hover:text-red-500/20 transition-colors">
@@ -396,6 +397,7 @@ if (isset($_SESSION['id'])) {
                         </div>
                     </div>
                 </div>
+                <?php endif; ?>
 
 
                 <!-- Tabla de mediciones (con DataTables) -->
@@ -428,6 +430,7 @@ if (isset($_SESSION['id'])) {
 
 
                 <!-- Sección de Alertas: Atletas con medición vencida -->
+<?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'registrar')): ?>
 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg transition-colors duration-300 p-4 sm:p-6">
     <div class="flex justify-between items-center flex-wrap gap-3 mb-4">
         <div>
@@ -458,6 +461,7 @@ if (isset($_SESSION['id'])) {
         </table>
     </div>
 </div>
+<?php endif; ?>
 
             </main>
         </div>

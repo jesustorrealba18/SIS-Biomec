@@ -34,16 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    /* // Ruta B: Cargar el Dashboard Principal (RF-05)
-    if ($accion === 'cargarDashboard') {
-        header('Content-Type: application/json');
-        $datos = $objAntropometria->obtenerDashboardPrincipal();
-        echo json_encode(['data' => $datos]);
-        exit;
-    } */
 
         // Ruta B: Cargar el Dashboard Principal (RF-05)
-if ($accion === 'cargarDashboard') {
+/* if ($accion === 'cargarDashboard') {
     header('Content-Type: application/json');
     $modo = $_GET['modo'] ?? 'activos';
     $id_atleta = isset($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
@@ -57,19 +50,28 @@ if ($accion === 'cargarDashboard') {
     }
     echo json_encode(['data' => $datos]);
     exit;
+} */
+
+    if ($accion === 'cargarDashboard') {
+    header('Content-Type: application/json');
+    $modo = $_GET['modo'] ?? 'activos';
+    $id_atleta = isset($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
+    
+    // Capturamos la sesión actual (vienen del login)
+    $id_usuario = $_SESSION['id'] ?? 0;
+    $rol = $_SESSION['rol'] ?? '';
+
+    if ($modo === 'papelera') {
+        // (Aplica la misma lógica a listarMediciones si lo deseas)
+        $datos = $objAntropometria->listarMediciones($id_atleta, '', '', $modo, $id_usuario, $rol);
+    } else {
+        // Pasamos la sesión al dashboard
+        $datos = $objAntropometria->obtenerDashboardPrincipal($id_atleta, $id_usuario, $rol);
+    }
+    echo json_encode(['data' => $datos]);
+    exit;
 }
 
-    // Ruta C: Listar mediciones con filtros (similar a marcas)
-   /*  if ($accion === 'listarMediciones') {
-        header('Content-Type: application/json');
-        $id_atleta    = isset($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
-        $fecha_inicio = $_GET['fecha_inicio'] ?? '';
-        $fecha_fin    = $_GET['fecha_fin'] ?? '';
-        
-        $mediciones = $objAntropometria->listarMediciones($id_atleta, $fecha_inicio, $fecha_fin);
-        echo json_encode($mediciones);
-        exit;
-    } */
 
     // Ruta D: Modal de Gráficas e Historial
     if ($accion === 'verHistorial') {

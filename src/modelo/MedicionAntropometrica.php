@@ -88,14 +88,7 @@ class MedicionAntropometrica extends Conexion {
         return $this->eliminarMedicionBD();
     }
 
-  /*   public function listarMediciones(int $id_atleta = 0, string $fecha_inicio = '', string $fecha_fin = ''): array {
-        // Almacenamos parámetros adicionales en el atributo de clase
-        $this->datos['filtro_id_atleta'] = $id_atleta > 0 ? $id_atleta : 0;
-        $this->datos['filtro_fecha_inicio'] = $fecha_inicio;
-        $this->datos['filtro_fecha_fin'] = $fecha_fin;
-
-        return $this->ejecutarConsultaListado();
-    } */
+  
 
     public function obtenerDetallePorId(int $id_medicion): ?array {
         if ($id_medicion <= 0) return null;
@@ -104,9 +97,13 @@ class MedicionAntropometrica extends Conexion {
         return $this->ejecutarConsultaDetalle();
     }
 
-    public function obtenerDashboardPrincipal(): array {
+   /*  public function obtenerDashboardPrincipal(): array {
         return $this->ejecutarConsultaDashboard();
-    }
+    } */
+   public function obtenerDashboardPrincipal(int $id_atleta = 0, int $id_usuario = 0, string $rol = ''): array {
+    // Ahora pasamos correctamente todos los parámetros
+    return $this->ejecutarConsultaDashboard($id_atleta, $id_usuario, $rol);
+}
 
     public function obtenerErroresValidacion(): array {
         return $this->obtenerErrores();
@@ -324,7 +321,7 @@ class MedicionAntropometrica extends Conexion {
 
 
 
-   private function ejecutarConsultaDashboard(int $id_atleta = 0): array {
+/*    private function ejecutarConsultaDashboard(int $id_atleta = 0): array {
     try {
         $sql = "SELECT a.id_atleta, a.nombres, a.apellidos, a.cedula,
                        c.nombre AS categoria,
@@ -356,6 +353,71 @@ class MedicionAntropometrica extends Conexion {
         if ($id_atleta > 0) {
             $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
         }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en ejecutarConsultaDashboard: " . $e->getMessage());
+        return [];
+    }
+} */
+
+
+    private function ejecutarConsultaDashboard(int $id_atleta = 0, int $id_usuario = 0, string $rol = ''): array {
+    try {
+        $sql = "SELECT a.id_atleta, a.nombres, a.apellidos, a.cedula,
+                       c.nombre AS categoria,
+                       m.id_medicion,
+                       m.fecha AS ultima_fecha,
+                       m.peso_kg AS peso, 
+                       m.talla_cm AS talla, 
+                       m.imc, m.porcentaje_grasa, m.responsable,
+                       m.deleted_at,
+                       DATEDIFF(CURRENT_DATE, m.fecha) AS dias_sin_evaluacion
+                FROM atletas a
+                LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
+                LEFT JOIN mediciones_antropometricas m
+                    ON m.id_atleta = a.id_atleta
+                    AND m.fecha = (
+                        SELECT MAX(fecha)
+                        FROM mediciones_antropometricas
+                        WHERE id_atleta = a.id_atleta
+                        AND deleted_at IS NULL
+                    )
+                    AND m.deleted_at IS NULL
+                WHERE a.estado = 'Activo'";
+
+        // 1. Filtro explícito de la Vista (si aplica)
+        if ($id_atleta > 0) {
+            $sql .= " AND a.id_atleta = :id_atleta";
+        }
+
+        // 2. MAGIA DE SEGURIDAD: Restricciones por Rol
+        if (strpos($rol, 'Atleta') !== false) {
+            // El atleta solo ve el registro asociado a su usuario
+            $sql .= " AND a.id_usuario = :id_usuario_seguridad";
+        } elseif (strpos($rol, 'Representante') !== false) {
+            // El representante ve los atletas donde él sea el representante asignado
+            $sql .= " AND a.id_atleta IN (
+                          SELECT ar.id_atleta 
+                          FROM atleta_representante ar 
+                          JOIN representantes r ON ar.id_representante = r.id_representante 
+                          WHERE r.id_usuario = :id_usuario_seguridad
+                      )";
+        }
+        // Médicos y Administradores no entran en los IF anteriores, por lo que ven a todos.
+
+        $sql .= " ORDER BY dias_sin_evaluacion DESC, a.nombres ASC";
+
+        $stmt = $this->pdo->prepare($sql);
+        
+        // Bindeamos los parámetros dinámicamente
+        if ($id_atleta > 0) {
+            $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
+        }
+        if (strpos($rol, 'Atleta') !== false || strpos($rol, 'Representante') !== false) {
+            $stmt->bindValue(':id_usuario_seguridad', $id_usuario, PDO::PARAM_INT);
+        }
+        
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
