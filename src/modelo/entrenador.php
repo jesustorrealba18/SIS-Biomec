@@ -117,7 +117,7 @@ class entrenador extends Conexion {
                 ':correo'           => $datos['correo'] ?? '',
                 ':telefono'         => $datos['telefono'] ?? '',
                 ':direccion'        => $datos['direccion'] ?? '',
-                ':id_usuario'       => $_SESSION['id'] ?? 1 
+                ':id_usuario'       => null 
             ]);
 
             $conex->commit();

@@ -308,6 +308,115 @@ class UsuarioModelo extends Conexion {
 
 
     // =====================================================================
+    // VINCULACIÓN USUARIO -> ATLETA / REPRESENTANTE / ENTRENADOR
+    // =====================================================================
+
+    public function buscarEntidad(string $texto, string $tipo): array {
+        $texto = trim($texto);
+        if (strlen($texto) < 2) return [];
+        $like = '%' . $texto . '%';
+        $conex = $this->getConex1();
+
+        $mapa = [
+            'atleta' => "SELECT a.id_atleta AS id, a.cedula, a.nombres, a.apellidos
+                            FROM sis_natacion.atletas a
+                            WHERE (a.nombres LIKE :b1 OR a.apellidos LIKE :b2 OR a.cedula LIKE :b3)
+                            AND a.estado = 'Activo'
+                            AND a.id_usuario IS NULL
+                            ORDER BY a.nombres LIMIT 10",
+            'representante' => "SELECT r.id_representante AS id, r.cedula, r.nombres, r.apellidos
+                            FROM sis_natacion.representantes r
+                            WHERE (r.nombres LIKE :b1 OR r.apellidos LIKE :b2 OR r.cedula LIKE :b3)
+                            AND r.id_usuario IS NULL
+                            ORDER BY r.nombres LIMIT 10",
+            'entrenador' => "SELECT e.id_entrenador AS id, e.cedula, e.nombres, e.apellidos
+                            FROM sis_natacion.entrenador e
+                            WHERE (e.nombres LIKE :b1 OR e.apellidos LIKE :b2 OR e.cedula LIKE :b3)
+                            AND e.id_usuario IS NULL
+                            ORDER BY e.nombres LIMIT 10"
+        ];
+
+        if (!isset($mapa[$tipo])) return [];
+
+        $stmt = $conex->prepare($mapa[$tipo]);
+        $stmt->execute([':b1' => $like, ':b2' => $like, ':b3' => $like]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function vincularEntidad(int $idUsuario, string $tipo, int $idEntidad): bool {
+        $mapa = [
+            'atleta' => ['tabla' => 'sis_natacion.atletas', 'pk' => 'id_atleta'],
+            'representante' => ['tabla' => 'sis_natacion.representantes', 'pk' => 'id_representante'],
+            'entrenador' => ['tabla' => 'sis_natacion.entrenador', 'pk' => 'id_entrenador']
+        ];
+
+        if (!isset($mapa[$tipo])) return false;
+        $cfg = $mapa[$tipo];
+
+        try {
+            $conex = $this->getConex1();
+            $sql = "UPDATE {$cfg['tabla']} SET id_usuario = :id_usuario WHERE {$cfg['pk']} = :id_entidad";
+            $stmt = $conex->prepare($sql);
+            $stmt->execute([':id_usuario' => $idUsuario, ':id_entidad' => $idEntidad]);
+            return true;
+        } catch (PDOException $e) {
+            error_log("ERROR vincularEntidad: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function desvincularEntidad(int $idUsuario, string $tipo): bool {
+        $mapa = [
+            'atleta' => ['tabla' => 'sis_natacion.atletas', 'pk' => 'id_usuario'],
+            'representante' => ['tabla' => 'sis_natacion.representantes', 'pk' => 'id_usuario'],
+            'entrenador' => ['tabla' => 'sis_natacion.entrenador', 'pk' => 'id_usuario']
+        ];
+
+        if (!isset($mapa[$tipo])) return false;
+        $cfg = $mapa[$tipo];
+
+        try {
+            $conex = $this->getConex1();
+            $sql = "UPDATE {$cfg['tabla']} SET id_usuario = NULL WHERE {$cfg['pk']} = :id_usuario";
+            $stmt = $conex->prepare($sql);
+            $stmt->execute([':id_usuario' => $idUsuario]);
+            return true;
+        } catch (PDOException $e) {
+            error_log("ERROR desvincularEntidad: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function obtenerVinculaciones(int $idUsuario): array {
+        $conex = $this->getConex1();
+        $resultado = [];
+
+        $sqlAtleta = "SELECT a.id_atleta AS id, a.nombres, a.apellidos, a.cedula, 'atleta' AS tipo
+                       FROM sis_natacion.atletas a WHERE a.id_usuario = :id LIMIT 1";
+        $stmt = $conex->prepare($sqlAtleta);
+        $stmt->execute([':id' => $idUsuario]);
+        $at = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($at) $resultado[] = $at;
+
+        $sqlRep = "SELECT r.id_representante AS id, r.nombres, r.apellidos, r.cedula, 'representante' AS tipo
+                    FROM sis_natacion.representantes r WHERE r.id_usuario = :id LIMIT 1";
+        $stmt = $conex->prepare($sqlRep);
+        $stmt->execute([':id' => $idUsuario]);
+        $rep = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($rep) $resultado[] = $rep;
+
+        $sqlEnt = "SELECT e.id_entrenador AS id, e.nombres, e.apellidos, e.cedula, 'entrenador' AS tipo
+                    FROM sis_natacion.entrenador e WHERE e.id_usuario = :id LIMIT 1";
+        $stmt = $conex->prepare($sqlEnt);
+        $stmt->execute([':id' => $idUsuario]);
+        $ent = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($ent) $resultado[] = $ent;
+
+        return $resultado;
+    }
+
+
+    // =====================================================================
     // INYECCIÓN SGRD: MANEJO DE PREFERENCIAS (JSON)
     // =====================================================================
     
