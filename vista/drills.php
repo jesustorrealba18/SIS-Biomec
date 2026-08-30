@@ -59,40 +59,118 @@
             border-color: #252345;
         }
 
-        /* ===== TABS ===== */
-        .tab-btn {
-            padding: 10px 20px;
+        /* ===== STEPPER ===== */
+        .stepper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 1.5rem;
+            padding: 0 1rem;
+        }
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+        .step-item + .step-item {
+            margin-left: 0;
+        }
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 800;
+            border: 2px solid #d1d5db;
+            background: #f3f4f6;
+            color: #9ca3af;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .dark .step-circle {
+            border-color: #252345;
+            background: #0f0d23;
+            color: #4b5563;
+        }
+        .step-circle.active {
+            border-color: #6366f1;
+            background: #6366f1;
+            color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+        .dark .step-circle.active {
+            border-color: #818cf8;
+            background: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+        .step-circle.completed {
+            border-color: #10b981;
+            background: #10b981;
+            color: #ffffff;
+        }
+        .dark .step-circle.completed {
+            border-color: #34d399;
+            background: #10b981;
+        }
+        .step-label {
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #6b7280;
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+            margin-left: 8px;
+            white-space: nowrap;
+            transition: color 0.3s ease;
             cursor: pointer;
         }
-        .dark .tab-btn {
-            color: #6b7280;
+        .dark .step-label {
+            color: #4b5563;
         }
-        .tab-btn:hover {
+        .step-label.active {
             color: #4f46e5;
         }
-        .dark .tab-btn:hover {
-            color: #818cf8;
+        .dark .step-label.active {
+            color: #a5b4fc;
         }
-        .tab-btn.active {
-            color: #4f46e5;
-            border-bottom-color: #4f46e5;
+        .step-label.completed {
+            color: #10b981;
         }
-        .dark .tab-btn.active {
-            color: #818cf8;
-            border-bottom-color: #6366f1;
+        .dark .step-label.completed {
+            color: #34d399;
+        }
+        .step-line {
+            width: 40px;
+            height: 2px;
+            background: #d1d5db;
+            margin: 0 12px;
+            flex-shrink: 0;
+            transition: background 0.3s ease;
+        }
+        .dark .step-line {
+            background: #252345;
+        }
+        .step-line.completed {
+            background: #10b981;
+        }
+        .dark .step-line.completed {
+            background: #34d399;
         }
         .tab-content {
             display: none;
         }
         .tab-content.active {
             display: block;
+        }
+        .stepper-btn {
+            display: none;
+        }
+        .stepper-btn.visible {
+            display: flex;
         }
 
         /* ===== BADGES ===== */
@@ -236,11 +314,11 @@ if (isset($_SESSION['id'])) {
                         <table class="w-full text-left">
                             <thead class="bg-gray-100 dark:bg-[#1c1a3a] text-gray-600 dark:text-gray-400 text-xs uppercase tracking-widest">
                                 <tr>
-                                    <th class="p-4">Entrenamiento</th>
-                                    <th class="p-4">Estilo</th>
-                                    <th class="p-4">Categoría</th>
-                                    <th class="p-4">Dificultad</th>
-                                    <th class="p-4">Material</th>
+                                    <th class="p-4 cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors" data-sort="nombre">Entrenamiento <i class="fas fa-sort ml-1 text-gray-400 dark:text-gray-600 text-[10px]"></i></th>
+                                    <th class="p-4 cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors" data-sort="estilo">Estilo <i class="fas fa-sort ml-1 text-gray-400 dark:text-gray-600 text-[10px]"></i></th>
+                                    <th class="p-4 cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors" data-sort="categoria">Categoría <i class="fas fa-sort ml-1 text-gray-400 dark:text-gray-600 text-[10px]"></i></th>
+                                    <th class="p-4 cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors" data-sort="dificultad">Dificultad <i class="fas fa-sort ml-1 text-gray-400 dark:text-gray-600 text-[10px]"></i></th>
+                                    <th class="p-4 cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors" data-sort="material_requerido">Material <i class="fas fa-sort ml-1 text-gray-400 dark:text-gray-600 text-[10px]"></i></th>
                                     <th class="p-4">Personalizado</th>
                                     <th class="p-4">Estado</th>
                                     <th class="p-4 text-right">Acciones</th>
@@ -280,17 +358,22 @@ if (isset($_SESSION['id'])) {
                 <input type="hidden" id="id_drill" name="id_drill" value="">
                 <input type="hidden" id="id_usuario_creador" name="id_usuario_creador" value="<?php echo $_SESSION['id'] ?? '1'; ?>">
 
-                <!-- Tabs -->
-                <div class="flex border-b border-gray-200 dark:border-gray-800 mb-6">
-                    <button type="button" onclick="cambiarTabDrill('basica')" class="tab-btn active" data-tab="basica">
-                        <i class="fas fa-info-circle mr-2"></i>Información Básica
-                    </button>
-                    <button type="button" onclick="cambiarTabDrill('detalles')" class="tab-btn" data-tab="detalles">
-                        <i class="fas fa-clipboard-list mr-2"></i>Detalles y Ejecución
-                    </button>
-                    <button type="button" onclick="cambiarTabDrill('configuracion')" class="tab-btn" data-tab="configuracion">
-                        <i class="fas fa-cog mr-2"></i>Configuración
-                    </button>
+                <!-- Stepper -->
+                <div class="stepper" id="stepperDrill">
+                    <div class="step-item">
+                        <div class="step-circle active" data-step="1" onclick="irAPasoDrill(1)">1</div>
+                        <span class="step-label active" data-step="1" onclick="irAPasoDrill(1)">Información Básica</span>
+                    </div>
+                    <div class="step-line" data-line="1"></div>
+                    <div class="step-item">
+                        <div class="step-circle" data-step="2" onclick="irAPasoDrill(2)">2</div>
+                        <span class="step-label" data-step="2" onclick="irAPasoDrill(2)">Detalles y Ejecución</span>
+                    </div>
+                    <div class="step-line" data-line="2"></div>
+                    <div class="step-item">
+                        <div class="step-circle" data-step="3" onclick="irAPasoDrill(3)">3</div>
+                        <span class="step-label" data-step="3" onclick="irAPasoDrill(3)">Configuración</span>
+                    </div>
                 </div>
 
                 <!-- Tab: Información Básica -->
@@ -416,7 +499,9 @@ if (isset($_SESSION['id'])) {
 
                 <div class="mt-8 flex gap-3">
                     <button type="button" onclick="cerrarModalDrills()" class="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-4 rounded-xl font-bold transition-all cursor-pointer uppercase text-xs tracking-wider">CANCELAR</button>
-                    <button type="submit" id="btnGuardar" class="flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all cursor-pointer uppercase text-xs tracking-wider">GUARDAR DATOS</button>
+                    <button type="button" id="btnAtrasDrill" onclick="retrocederPasoDrill()" class="stepper-btn items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-4 px-6 rounded-xl font-bold transition-all cursor-pointer uppercase text-xs tracking-wider"><i class="fas fa-arrow-left"></i> ATRÁS</button>
+                    <button type="button" id="btnSiguienteDrill" onclick="avanzarPasoDrill()" class="stepper-btn visible flex-[2] items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all cursor-pointer uppercase text-xs tracking-wider">SIGUIENTE <i class="fas fa-arrow-right"></i></button>
+                    <button type="submit" id="btnGuardar" class="stepper-btn flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all cursor-pointer uppercase text-xs tracking-wider">GUARDAR DATOS</button>
                 </div>
             </form>
         </div>

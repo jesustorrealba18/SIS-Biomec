@@ -181,16 +181,17 @@ if (isset($_SESSION['id'])) {
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Nombre de la Temporada *</label>
-                        <input type="text" id="nombre" name="nombre" class="w-full input-adapt p-3 rounded-xl text-sm" placeholder="Ej: Temporada 2026-2027">
+                        <input type="text" id="nombre" name="nombre" class="w-full input-adapt p-3 rounded-xl text-sm" placeholder="Ej: Temporada 2026-2027"
+                               data-validar="requerido|texto" data-nombre="Nombre de la temporada" data-min="2" data-max="100" maxlength="100">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Fecha Inicio *</label>
-                            <input type="date" id="fecha_inicio" name="fecha_inicio" required class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
+                            <input type="date" id="fecha_inicio" name="fecha_inicio" data-validar="requerido" data-nombre="Fecha de inicio" class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
                         </div>
                         <div>
                             <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Fecha Fin *</label>
-                            <input type="date" id="fecha_fin" name="fecha_fin" required class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
+                            <input type="date" id="fecha_fin" name="fecha_fin" data-validar="requerido" data-nombre="Fecha de fin" class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
                         </div>
                     </div>
                     <div class="flex items-center gap-3 bg-gray-100 dark:bg-[#0f0d23] p-3 rounded-xl border border-gray-200 dark:border-[#252345] transition-colors duration-300">
@@ -260,7 +261,7 @@ if (isset($_SESSION['id'])) {
         })();
     </script>
 
-    <script src="assets/js/utilidades.js"></script>
+    <script src="assets/js/validador.js"></script>\n    <script src="assets/js/utilidades.js"></script>
     <script src="assets/js/alertas.js"></script>
     <script src="assets/js/tour.js"></script>
     <script>

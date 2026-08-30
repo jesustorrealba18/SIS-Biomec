@@ -160,20 +160,28 @@ if (isset($_SESSION['id'])) {
 
                 <!-- Tabla -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-6 overflow-x-auto shadow-2xl transition-colors duration-300">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                        <div class="relative w-full sm:w-72">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                            <input type="text" id="buscarUsuario" placeholder="Buscar por nombre, correo o cédula..." class="input-adapt w-full rounded-xl pl-9 pr-4 py-2.5 text-sm">
+                        </div>
+                        <span id="totalUsuarios" class="text-xs text-gray-500 dark:text-gray-400"></span>
+                    </div>
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-800">
                             <tr>
-                                <th class="pb-4 pr-4">#</th>
-                                <th class="pb-4 pr-4">Nombre</th>
-                                <th class="pb-4 pr-4">Correo</th>
-                                <th class="pb-4 pr-4">Cédula</th>
-                                <th class="pb-4 pr-4">Roles</th>
-                                <th class="pb-4 pr-4 text-center">Estado</th>
-                                <th class="pb-4 text-center">Acciones</th>
+                                <th scope="col" class="pb-4 pr-4 cursor-pointer select-none hover:text-indigo-500 transition" data-orden="id_usuario" onclick="ordenarPor('id_usuario')"># <i class="fas fa-sort ml-1 opacity-40"></i></th>
+                                <th scope="col" class="pb-4 pr-4 cursor-pointer select-none hover:text-indigo-500 transition" data-orden="nombres" onclick="ordenarPor('nombres')">Nombre <i class="fas fa-sort ml-1 opacity-40"></i></th>
+                                <th scope="col" class="pb-4 pr-4 cursor-pointer select-none hover:text-indigo-500 transition" data-orden="correo" onclick="ordenarPor('correo')">Correo <i class="fas fa-sort ml-1 opacity-40"></i></th>
+                                <th scope="col" class="pb-4 pr-4 cursor-pointer select-none hover:text-indigo-500 transition" data-orden="cedula" onclick="ordenarPor('cedula')">Cédula <i class="fas fa-sort ml-1 opacity-40"></i></th>
+                                <th scope="col" class="pb-4 pr-4">Roles</th>
+                                <th scope="col" class="pb-4 pr-4 cursor-pointer select-none hover:text-indigo-500 transition text-center" data-orden="activo" onclick="ordenarPor('activo')">Estado <i class="fas fa-sort ml-1 opacity-40"></i></th>
+                                <th scope="col" class="pb-4 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="tablaUsuarios" class="text-gray-700 dark:text-gray-300"></tbody>
                     </table>
+                    <div id="paginacion" class="flex justify-center items-center gap-1 mt-4"></div>
                 </div>
 
             </main>
@@ -193,11 +201,11 @@ if (isset($_SESSION['id'])) {
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Nombres</label>
-                        <input type="text" name="nombres" id="nombres" data-validar="requerido|letras" data-nombre="Nombres" data-min="2" data-max="100" maxlength="100" required class="input-adapt w-full rounded-xl px-4 py-3 mt-2">
+                        <input type="text" name="nombres" id="nombres" data-validar="requerido|letras" data-nombre="Nombres" data-min="2" data-max="30" maxlength="30" required class="input-adapt w-full rounded-xl px-4 py-3 mt-2">
                     </div>
                     <div>
                         <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Apellidos</label>
-                        <input type="text" name="apellidos" id="apellidos" data-validar="requerido|letras" data-nombre="Apellidos" data-min="2" data-max="100" maxlength="100" required class="input-adapt w-full rounded-xl px-4 py-3 mt-2">
+                        <input type="text" name="apellidos" id="apellidos" data-validar="requerido|letras" data-nombre="Apellidos" data-min="2" data-max="30" maxlength="30" required class="input-adapt w-full rounded-xl px-4 py-3 mt-2">
                     </div>
                 </div>
                 <div>
@@ -206,11 +214,17 @@ if (isset($_SESSION['id'])) {
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Correo</label>
-                    <input type="email" name="correo" id="correo" data-validar="requerido|correo" data-nombre="Correo" data-max="100" maxlength="100" required class="input-adapt w-full rounded-xl px-4 py-3 mt-2">
+                    <input type="email" name="correo" id="correo" data-validar="requerido|correo" data-nombre="Correo" data-max="60" maxlength="60" required class="input-adapt w-full rounded-xl px-4 py-3 mt-2">
                 </div>
                 <div id="campoContrasena">
                     <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Contraseña</label>
-                    <input type="password" name="contrasena" id="contrasena" data-validar="requerido" data-nombre="Contraseña" data-min="6" data-max="128" maxlength="128" class="input-adapt w-full rounded-xl px-4 py-3 mt-2">
+                    <input type="password" name="contrasena" id="contrasena" data-validar="requerido" data-nombre="Contraseña" data-min="6" data-max="128" maxlength="128" class="input-adapt w-full rounded-xl px-4 py-3 mt-2" oninput="evaluarFortaleza(this.value)">
+                    <div id="fortaleza" class="mt-1 h-1.5 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700"><div id="fortalezaBarra" class="h-full rounded-full transition-all duration-300" style="width:0"></div></div>
+                    <small id="fortalezaTexto" class="text-xs mt-1 block"></small>
+                    <div class="mt-3">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Confirmar Contraseña</label>
+                        <input type="password" id="confirmarContrasena" class="input-adapt w-full rounded-xl px-4 py-3 mt-2">
+                    </div>
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Roles</label>
@@ -277,37 +291,139 @@ if (isset($_SESSION['id'])) {
     <script src="assets/js/validador.js"></script>
     <script src="assets/js/tour.js"></script>
     <script>
-        // =================================================================
-        // CONFIGURACIÓN DE UI PARA SWEETALERT (se usa UI.config de alertas.js)
-        // =================================================================
-
         const tabla = document.getElementById('tablaUsuarios');
         const rolesCache = [];
+        let paginaActual = 1;
+        let totalRegistros = 0;
+        const porPagina = 20;
+        let sortCol = 'id_usuario';
+        let sortDir = 'DESC';
 
-        async function cargarUsuarios() {
-            const res = await fetch('?p=usuarios&accion=listarUsuarios');
+        function esc(str) {
+            if (str == null) return '';
+            const d = document.createElement('div');
+            d.textContent = String(str);
+            return d.innerHTML;
+        }
+
+        function mostrarLoading() {
+            tabla.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mr-2"></i>Cargando...</td></tr>';
+        }
+
+        function evaluarFortaleza(pass) {
+            const barra = document.getElementById('fortalezaBarra');
+            const texto = document.getElementById('fortalezaTexto');
+            if (!barra || !texto) return;
+            let puntos = 0;
+            if (pass.length >= 6) puntos++;
+            if (pass.length >= 10) puntos++;
+            if (/[a-z]/.test(pass) && /[A-Z]/.test(pass)) puntos++;
+            if (/[0-9]/.test(pass)) puntos++;
+            if (/[^a-zA-Z0-9]/.test(pass)) puntos++;
+            const niveles = [
+                { w: '0%', bg: '#d1d5db', label: '', color: '' },
+                { w: '20%', bg: '#ef4444', label: 'Muy debil', color: '#ef4444' },
+                { w: '40%', bg: '#f97316', label: 'Debil', color: '#f97316' },
+                { w: '60%', bg: '#eab308', label: 'Media', color: '#eab308' },
+                { w: '80%', bg: '#22c55e', label: 'Fuerte', color: '#22c55e' },
+                { w: '100%', bg: '#10b981', label: 'Muy fuerte', color: '#10b981' }
+            ];
+            const n = niveles[puntos];
+            barra.style.width = n.w;
+            barra.style.backgroundColor = n.bg;
+            texto.textContent = n.label;
+            texto.style.color = n.color;
+        }
+
+        async function cargarUsuarios(pagina) {
+            if (pagina !== undefined) paginaActual = pagina;
+            mostrarLoading();
+            const busqueda = (document.getElementById('buscarUsuario').value || '').trim();
+            const params = new URLSearchParams({
+                accion: 'listarUsuarios',
+                pagina: paginaActual,
+                busqueda: busqueda,
+                ordenar: sortCol,
+                direccion: sortDir
+            });
+            const res = await fetch('?p=usuarios&' + params);
             const data = await res.json();
-            tabla.innerHTML = data.map((u, i) => `
+            const usuarios = data.datos || [];
+            totalRegistros = data.total || 0;
+
+            document.getElementById('totalUsuarios').textContent = totalRegistros + ' usuario' + (totalRegistros !== 1 ? 's' : '');
+
+            tabla.innerHTML = usuarios.length ? usuarios.map(u => `
                 <tr class="border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
                     <td class="py-3 pr-4 text-gray-600 dark:text-gray-400">${u.id_usuario}</td>
-                    <td class="py-3 pr-4 text-gray-900 dark:text-white font-medium">${u.nombres} ${u.apellidos}</td>
-                    <td class="py-3 pr-4 text-gray-600 dark:text-gray-400">${u.correo}</td>
-                    <td class="py-3 pr-4 text-gray-600 dark:text-gray-400">${u.cedula || '-'}</td>
-                    <td class="py-3 pr-4">${(u.roles || '').split(', ').map(r => `<span class="inline-block bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs px-2 py-1 rounded-lg mr-1 border border-indigo-200 dark:border-indigo-500/30">${r}</span>`).join('')}</td>
+                    <td class="py-3 pr-4 text-gray-900 dark:text-white font-medium">${esc(u.nombres)} ${esc(u.apellidos)}</td>
+                    <td class="py-3 pr-4 text-gray-600 dark:text-gray-400">${esc(u.correo)}</td>
+                    <td class="py-3 pr-4 text-gray-600 dark:text-gray-400">${esc(u.cedula) || '-'}</td>
+                    <td class="py-3 pr-4">${(u.roles || '').split(', ').map(r => `<span class="inline-block bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs px-2 py-1 rounded-lg mr-1 border border-indigo-200 dark:border-indigo-500/30">${esc(r)}</span>`).join('')}</td>
                     <td class="py-3 text-center">
                         <label class="toggle-switch inline-block">
-                            <input type="checkbox" ${u.activo == 1 ? 'checked' : ''} onchange="toggleEstado(${u.id_usuario}, this.checked)">
+                            <input type="checkbox" role="switch" aria-checked="${u.activo == 1}" ${u.activo == 1 ? 'checked' : ''} onchange="toggleEstado(${u.id_usuario}, this.checked)">
                             <span class="toggle-slider"></span>
                         </label>
                     </td>
-                    <td class="py-3 text-center">
-                        <button onclick="abrirModalEditar(${u.id_usuario})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 mx-1 transition" title="Editar"><i class="fas fa-edit"></i></button>
-                        <button onclick="resetPassword(${u.id_usuario}, '${u.nombres}')" class="text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 mx-1 transition" title="Resetear contraseña"><i class="fas fa-key"></i></button>
-                        <button onclick="eliminarUsuario(${u.id_usuario}, '${u.nombres} ${u.apellidos}')" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 mx-1 transition" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
+                    <td class="py-3 text-center whitespace-nowrap">
+                        <button onclick="abrirModalEditar(${u.id_usuario})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 mx-1 transition" aria-label="Editar usuario"><i class="fas fa-edit"></i></button>
+                        <button onclick="resetPassword(${u.id_usuario}, '${esc(u.nombres)}')" class="text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 mx-1 transition" aria-label="Resetear contrasena"><i class="fas fa-key"></i></button>
                     </td>
                 </tr>
-            `).join('');
+            `).join('') : '<tr><td colspan="7" class="py-8 text-center text-gray-400">No se encontraron usuarios.</td></tr>';
+
+            renderPaginacion();
+            actualizarIconosOrden();
         }
+
+        function renderPaginacion() {
+            const container = document.getElementById('paginacion');
+            const totalPag = Math.ceil(totalRegistros / porPagina);
+            if (totalPag <= 1) { container.innerHTML = ''; return; }
+            let html = '';
+            const btnClass = 'px-3 py-1.5 rounded-lg text-xs font-medium transition';
+            for (let p = 1; p <= totalPag; p++) {
+                if (totalPag > 7) {
+                    if (p > 2 && p < totalPag - 1 && Math.abs(p - paginaActual) > 1) {
+                        if (p === 3 || p === totalPag - 2) html += `<span class="px-1 text-gray-400">...</span>`;
+                        continue;
+                    }
+                }
+                const activa = p === paginaActual;
+                html += `<button onclick="cargarUsuarios(${p})" class="${btnClass} ${activa ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-indigo-100 dark:hover:bg-gray-700'}">${p}</button>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function ordenarPor(col) {
+            if (sortCol === col) {
+                sortDir = sortDir === 'DESC' ? 'ASC' : 'DESC';
+            } else {
+                sortCol = col;
+                sortDir = 'ASC';
+            }
+            cargarUsuarios(1);
+        }
+
+        function actualizarIconosOrden() {
+            document.querySelectorAll('th[data-orden]').forEach(th => {
+                const icon = th.querySelector('i');
+                if (!icon) return;
+                const col = th.dataset.orden;
+                if (col === sortCol) {
+                    icon.className = sortDir === 'ASC' ? 'fas fa-sort-up ml-1 opacity-100' : 'fas fa-sort-down ml-1 opacity-100';
+                } else {
+                    icon.className = 'fas fa-sort ml-1 opacity-40';
+                }
+            });
+        }
+
+        let debounceTimer;
+        document.getElementById('buscarUsuario').addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => cargarUsuarios(1), 300);
+        });
 
         async function cargarRoles() {
             if (rolesCache.length) return rolesCache;
@@ -322,7 +438,7 @@ if (isset($_SESSION['id'])) {
             container.innerHTML = rolesCache.map(r => `
                 <label class="flex items-center gap-2 text-gray-700 dark:text-gray-300 text-sm cursor-pointer hover:text-gray-900 dark:hover:text-white">
                     <input type="checkbox" name="roles[]" value="${r.id_rol}" ${seleccionados.includes(String(r.id_rol)) ? 'checked' : ''} class="w-4 h-4 accent-indigo-500">
-                    ${r.nombre}
+                    ${esc(r.nombre)}
                 </label>
             `).join('');
         }
@@ -333,6 +449,7 @@ if (isset($_SESSION['id'])) {
             document.getElementById('id_usuario').value = '';
             document.getElementById('campoContrasena').classList.remove('hidden');
             document.getElementById('contrasena').required = true;
+            evaluarFortaleza('');
             try { Validador.limpiarEstilos(document.getElementById('formUsuario')); } catch(e) {}
             await cargarRoles();
             renderRolesCheckboxes();
@@ -375,6 +492,15 @@ if (isset($_SESSION['id'])) {
                 return;
             }
 
+            if (!id) {
+                const pass = document.getElementById('contrasena').value;
+                const confirmar = document.getElementById('confirmarContrasena').value;
+                if (pass !== confirmar) {
+                    Swal.fire({ ...UI.config, icon: 'warning', title: 'Las contrasenas no coinciden.' });
+                    return;
+                }
+            }
+
             const fd = new FormData(form);
             fd.append('accion', id ? 'editar' : 'guardar');
 
@@ -394,6 +520,21 @@ if (isset($_SESSION['id'])) {
         });
 
         async function toggleEstado(id, estado) {
+            const label = estado ? 'activar' : 'desactivar';
+            const { isConfirmed } = await Swal.fire({
+                ...UI.config,
+                title: `${estado ? 'Activar' : 'Desactivar'} usuario`,
+                text: `¿Estas seguro de que deseas ${label} este usuario?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Si, ' + label,
+                cancelButtonText: 'Cancelar'
+            });
+            if (!isConfirmed) {
+                cargarUsuarios();
+                return;
+            }
+
             const fd = new FormData();
             fd.append('accion', 'toggleEstado');
             fd.append('id_usuario', id);
@@ -404,21 +545,26 @@ if (isset($_SESSION['id'])) {
 
             if (data.status !== 'success') {
                 Swal.fire({ ...UI.config, icon: 'error', title: data.message });
-                cargarUsuarios();
             }
+            cargarUsuarios();
         }
 
         async function resetPassword(id, nombre) {
             const { value: nuevaPass } = await Swal.fire({
                 ...UI.config,
-                title: `Resetear contraseña de ${nombre}`,
+                title: `Resetear contrasena de ${nombre}`,
                 input: 'password',
-                inputLabel: 'Nueva contraseña (mínimo 6 caracteres)',
+                inputLabel: 'Minimo 6 caracteres, al menos una letra y un numero',
                 inputAttributes: { minlength: 6 },
                 showCancelButton: true,
                 confirmButtonText: 'Guardar',
                 cancelButtonText: 'Cancelar',
-                inputValidator: (v) => v.length < 6 ? 'Mínimo 6 caracteres' : null
+                inputValidator: (v) => {
+                    if (v.length < 6) return 'Minimo 6 caracteres';
+                    if (!/[a-zA-Z]/.test(v)) return 'Debe contener al menos una letra';
+                    if (!/[0-9]/.test(v)) return 'Debe contener al menos un numero';
+                    return null;
+                }
             });
             if (!nuevaPass) return;
 
@@ -430,33 +576,6 @@ if (isset($_SESSION['id'])) {
             const res = await fetch('?p=usuarios', { method: 'POST', body: fd });
             const data = await res.json();
             Swal.fire({ ...UI.config, icon: data.status === 'success' ? 'success' : 'error', title: data.message, timer: 1500, showConfirmButton: false });
-        }
-
-        async function eliminarUsuario(id, nombre) {
-            const { isConfirmed } = await Swal.fire({
-                ...UI.config,
-                title: `Eliminar a ${nombre}`,
-                text: 'Esta acción eliminará permanentemente el usuario y sus asignaciones de roles. No se puede deshacer.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Eliminar',
-                confirmButtonColor: '#ef4444',
-                cancelButtonText: 'Cancelar'
-            });
-            if (!isConfirmed) return;
-
-            const fd = new FormData();
-            fd.append('accion', 'eliminar');
-            fd.append('id_usuario', id);
-
-            const res = await fetch('?p=usuarios', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data.status === 'success') {
-                Swal.fire({ ...UI.config, icon: 'success', title: data.message, timer: 1500, showConfirmButton: false });
-                cargarUsuarios();
-            } else {
-                Swal.fire({ ...UI.config, icon: 'error', title: data.message });
-            }
         }
 
         try { Validador.vincularTiempoReal(document.getElementById('formUsuario')); } catch(e) {}

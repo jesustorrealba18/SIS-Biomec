@@ -29,6 +29,11 @@ class Temporada extends Conexion {
             if ($datos['fecha_fin'] <= $datos['fecha_inicio']) {
                 $this->agregarError('fecha_fin', 'La fecha de fin debe ser posterior a la fecha de inicio.');
             }
+
+            $diffDias = (strtotime($datos['fecha_fin']) - strtotime($datos['fecha_inicio'])) / 86400;
+            if ($diffDias < 90) {
+                $this->agregarError('fecha_fin', 'La temporada debe tener al menos 3 meses (90 dias) de duracion.');
+            }
         }
 
         return $this->obtenerErrores();

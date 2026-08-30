@@ -578,7 +578,9 @@ async function accionEstado(id_macrociclo, estadoActual) {
         </button>`;
     }).join('');
 
-    const { isConfirmed, value } = await Swal.fire({
+    let estadoSeleccionado = null;
+
+    const { isConfirmed } = await Swal.fire({
         ...UI.obtenerConfig(), // <-- CAMBIADO
         title: 'Cambiar Estado',
         html: `<p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Estado actual: <span class="font-bold text-gray-900 dark:text-white">${estadoActual}</span></p><div class="grid grid-cols-${opciones.length} gap-3">${botones}</div>`,
@@ -587,18 +589,19 @@ async function accionEstado(id_macrociclo, estadoActual) {
         didOpen: () => {
             document.querySelectorAll('[data-estado]').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    Swal.close(this.dataset.estado);
+                    estadoSeleccionado = this.dataset.estado;
+                    Swal.clickConfirm();
                 });
             });
         }
     });
 
-    if (!isConfirmed || !value) return;
+    if (!isConfirmed || !estadoSeleccionado) return;
 
     const datos = new URLSearchParams({
         accion: 'actualizarEstado',
         id_macrociclo: id_macrociclo,
-        nuevo_estado: value
+        nuevo_estado: estadoSeleccionado
     });
 
     const resultado = await peticionAjax('actualizarEstado', datos);
