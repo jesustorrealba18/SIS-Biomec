@@ -74,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data['id_usuario'] = $id_usuario;
         $objAsistencia->setDatos($data);
         $resultado = $objAsistencia->RegistrarPorQR();
+        
 
         ob_clean(); 
 
@@ -83,7 +84,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if ($resultado['exito']) {
-            Bitacora::registrar($id_usuario, 'Asistencia', 'INSERT', 0, 'asistencia_qr', '', "Escaneo QR exitoso: {$resultado['nombre_atleta']}");
+        $id_atleta = $objAsistencia->getCampo('id_atleta');
+        Bitacora::registrar($id_usuario, 'Asistencia', 'INSERT', 0, 'asistencia_qr', '', "Escaneo QR exitoso: {$resultado['nombre_atleta']}");
+        Notificacion::notificarAtletaYRepresentante(
+            $id_atleta,
+            "Asistencia Registrada", 
+            "Se ha confirmado la entrada a la sesión de entrenamiento.", 
+            "fa-check-circle", 
+            "emerald" // Usamos verde (emerald)
+            );
             echo json_encode(['status' => 'success', 'nombre_atleta' => $resultado['nombre_atleta']]);
         } else {
             echo json_encode(['status' => 'error', 'message' => $resultado['mensaje']]);

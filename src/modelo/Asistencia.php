@@ -345,7 +345,7 @@ class Asistencia extends Conexion {
 
         $this->pdo->beginTransaction();
 
-            $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
+           /*  $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
             $stmtCheck = $this->pdo->prepare($sqlCheck);
             $stmtCheck->execute([
                 ':id_sesion' => $this->datos['id_sesion'],
@@ -357,9 +357,9 @@ class Asistencia extends Conexion {
                 $this->agregarError('estado_asistencia', 'Acción denegada: Este atleta ya validó su presencia mediante el Escáner QR de forma inmutable.');
                 $this->pdo->rollBack();
                 return false;
-            }
+            } */
 
-
+            $this->validarInmutabilidadQR($this->datos['id_sesion'], $this->datos['id_atleta']);
 
             $id_sesion = $this->datos['id_sesion'] ?? null;
             $id_atleta = $this->datos['id_atleta'] ?? null;
@@ -410,6 +410,21 @@ class Asistencia extends Conexion {
             error_log("Error de Transacción en Asistencia (Guardar): " . $e->getMessage());
             $this->agregarError('bd', 'Error interno al procesar la asistencia.');
             return false;
+        }catch (\RuntimeException $e) {
+            $this->pdo->rollBack();     
+            $this->agregarError('estado_asistencia', $e->getMessage());
+            return false;               
         }
+    }
+
+    private function validarInmutabilidadQR(int $id_sesion, int $id_atleta): void {
+    $sql = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([':id_sesion' => $id_sesion, ':id_atleta' => $id_atleta]);
+    $previo = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($previo && $previo['tipo'] === 'QR' && $previo['estado'] === 'Presente') {
+        throw new \RuntimeException('Acción denegada: Este atleta ya validó su presencia mediante el Escáner QR de forma inmutable.');
+    }
     }
 }
