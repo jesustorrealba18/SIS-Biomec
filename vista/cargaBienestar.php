@@ -411,6 +411,39 @@ if (isset($_SESSION['id'])) {
                     </div>
                 </div>
 
+<!-- ===== RECOMENDACIONES DE CARGA (IA) ===== -->
+<div id="recomendacionesPanel" class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg transition-colors duration-300 p-4 sm:p-6 hidden">
+    <div class="flex justify-between items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h3 class="text-md font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <i class="fas fa-robot text-indigo-500"></i>
+                Recomendaciones de Carga (IA)
+                <span id="contadorRecomendaciones" class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">0</span>
+            </h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Alertas generadas automáticamente al registrar RPE</p>
+        </div>
+        <button onclick="cargarRecomendacionesEntrenador()" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm">
+            <i class="fas fa-sync-alt"></i> Refrescar
+        </button>
+    </div>
+    <div class="overflow-x-auto">
+        <table id="tablaRecomendaciones" class="w-full text-left text-sm">
+            <thead class="bg-gray-100 dark:bg-[#0f0d23] text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-[#252345] uppercase text-[10px] tracking-wider">
+                <tr>
+                    <th class="px-6 py-4 font-bold">Atleta</th>
+                    <th class="px-6 py-4 font-bold">Fecha</th>
+                    <th class="px-6 py-4 font-bold">Tipo</th>
+                    <th class="px-6 py-4 font-bold">Mensaje</th>
+                    <th class="px-6 py-4 font-bold text-center">Acción</th>
+                </tr>
+            </thead>
+            <tbody id="listaRecomendaciones" class="divide-y divide-gray-200 dark:divide-[#252345] text-gray-700 dark:text-gray-300">
+                <tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin"></i> Cargando recomendaciones...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
                 <!-- Filtros -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-5 transition-colors duration-300">
                     <div class="flex items-center justify-between gap-2 border-b border-gray-200 dark:border-[#252345] pb-2">

@@ -297,6 +297,7 @@ formRPE.addEventListener('submit', async (e) => {
         cerrarModalRPE();
         cargarTablaRPE();
         cargarTablaInconsistenciasRPE();
+        cargarRecomendacionesEntrenador();
     } else {
         if (typeof UI !== 'undefined') UI.error('Error', resultado?.message || 'No se pudo guardar.');
     }
@@ -327,6 +328,7 @@ async function softDeleteRPE(id_rpe) {
         if (typeof UI !== 'undefined') UI.exito('Anulado', resultado.message);
         cargarTablaRPE();
         cargarTablaInconsistenciasRPE();
+        cargarRecomendacionesEntrenador();
     } else {
         if (typeof UI !== 'undefined') UI.error('Error', resultado?.message);
     }
@@ -353,6 +355,7 @@ async function reactivarRPE(id_rpe) {
         if (typeof UI !== 'undefined') UI.exito('Restaurado', resultado.message);
         cargarTablaRPE();
         cargarTablaInconsistenciasRPE(); 
+        cargarRecomendacionesEntrenador();
     } else {
         if (typeof UI !== 'undefined') UI.error('Error', resultado?.message);
     }
@@ -499,3 +502,117 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     actualizarUIRPE();
 });
+
+// ================== RECOMENDACIONES DE CARGA (DATATABLE) ==================
+let dataTableRecomendaciones = null;
+
+async function cargarRecomendacionesEntrenador() {
+    const panel = document.getElementById('recomendacionesPanel');
+    const tbody = document.getElementById('listaRecomendaciones');
+    const contador = document.getElementById('contadorRecomendaciones');
+
+    if (!panel || !tbody) return;
+
+    try {
+        const response = await fetch('index.php?p=cargaBienestar&accion=listarRecomendacionesEntrenador');
+        const data = await response.json();
+
+        if (data.status === 'error' || data.length === 0) {
+            panel.classList.add('hidden');
+            return;
+        }
+
+        // Mostrar el panel
+        panel.classList.remove('hidden');
+        contador.textContent = data.length;
+
+        // Construir HTML para el tbody
+        let html = '';
+        data.forEach(rec => {
+            const tipoColor = rec.tipo === 'SOBRECARGA' 
+                ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30' 
+                : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30';
+            
+            html += `
+                <tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors border-b border-gray-200 dark:border-[#252345]">
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${rec.nombre_atleta}</td>
+                    <td class="px-6 py-4 text-gray-600 dark:text-gray-400">${new Date(rec.fecha).toLocaleString()}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded-full text-xs font-bold border ${tipoColor}">${rec.tipo}</span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-700 dark:text-gray-300 max-w-xs truncate">${rec.mensaje}</td>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="marcarRecomendacionLeida(${rec.id_recomendacion})" 
+                                class="bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-600 text-indigo-600 dark:text-indigo-400 hover:text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-colors border border-indigo-200 dark:border-indigo-500/30">
+                            <i class="fas fa-check"></i> Marcar Leída
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+
+        // Destruir DataTable existente si existe
+        if (dataTableRecomendaciones) {
+            dataTableRecomendaciones.destroy();
+            dataTableRecomendaciones = null;
+        }
+
+        // Inicializar DataTable
+        dataTableRecomendaciones = $('#tablaRecomendaciones').DataTable({
+            responsive: true,
+            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
+            columnDefs: [
+                { responsivePriority: 1, targets: 0 },
+                { responsivePriority: 2, targets: 1 },
+                { responsivePriority: 3, targets: 4 }
+            ],
+            order: [[1, 'desc']], // Ordenar por fecha descendente
+            pageLength: 5,
+            lengthMenu: [[5, 10, 25, -1], [5, 10, 25, 'Todos']]
+        });
+
+    } catch (error) {
+        console.error(error);
+        panel.classList.add('hidden');
+    }
+}
+
+async function marcarRecomendacionLeida(id_recomendacion) {
+    const formData = new FormData();
+    formData.append('id_recomendacion', id_recomendacion);
+    
+    try {
+        const response = await fetch('index.php?p=cargaBienestar&accion=marcarRecomendacionLeida', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            // Recargar la tabla de recomendaciones
+            await cargarRecomendacionesEntrenador();
+            // Opcional: recargar la tabla de RPE
+            cargarTablaRPE();
+        } else {
+            if (typeof UI !== 'undefined') UI.error('Error', 'No se pudo marcar como leída.');
+        }
+    } catch (error) {
+        console.error(error);
+        if (typeof UI !== 'undefined') UI.error('Error', 'Error de comunicación.');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await cargarAtletasRPE();
+    cargarTablaRPE();
+    cargarTablaInconsistenciasRPE();
+    cargarRecomendacionesEntrenador(); // <-- nuevo
+
+    if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
+        Validador.vincularTiempoReal(formRPE);
+    }
+
+    actualizarUIRPE();
+});
+

@@ -98,6 +98,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     exit;
 }
 
+    if ($accion === 'listarRecomendacionesEntrenador') {
+        header('Content-Type: application/json');
+        $id_usuario = $_SESSION['id'] ?? 0;
+        if ($id_usuario <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Usuario no autenticado']);
+            exit;
+        }
+        $recomendaciones = $objCarga->obtenerRecomendacionesPorEntrenador($id_usuario);
+        echo json_encode($recomendaciones);
+        exit;
+    }
+
     // Cargar la vista HTML por defecto
     require_once 'vista/cargaBienestar.php';
     exit;
@@ -216,6 +228,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+    // 6. MARCAR RECOMENDACIÓN COMO LEÍDA
+if ($accion === 'marcarRecomendacionLeida') {
+    $id_recomendacion = (int)($_POST['id_recomendacion'] ?? 0);
+    if ($id_recomendacion <= 0) {
+        ob_end_clean();
+        echo json_encode(['status' => 'error', 'message' => 'ID de recomendación inválido']);
+        exit;
+    }
+    
+    $res = $objCarga->marcarRecomendacionLeida($id_recomendacion);
+    ob_end_clean();
+    
+    if ($res) {
+        echo json_encode(['status' => 'success', 'message' => 'Recomendación marcada como leída']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'No se pudo actualizar']);
+    }
+    exit;
+}
 
     ob_end_clean();
     echo json_encode(['status' => 'error', 'message' => 'Acción POST no soportada.']);

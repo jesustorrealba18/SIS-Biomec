@@ -283,7 +283,9 @@ class CargaBienestar extends Conexion {
             $this->autoBind($stmt, $mapa, $this->datos);
             $stmt->execute();
             $id_insertado = $this->pdo->lastInsertId();
+            $this->generarRecomendacionCarga($this->datos['id_atleta']);
             $this->pdo->commit();
+            
             return ['exito' => true, 'id_rpe' => $id_insertado, 'mensaje' => 'Registro RPE guardado correctamente.'];
         } catch (PDOException $e) {
             $this->pdo->rollBack();
@@ -374,7 +376,10 @@ class CargaBienestar extends Conexion {
                 $this->agregarError('actualizacion', 'No se realizaron cambios o el registro no existe.');
                 return false;
             }
+
+            $this->generarRecomendacionCarga($this->datos['id_atleta']);
             $this->pdo->commit();
+            
             return true;
         } catch (PDOException $e) {
             $this->pdo->rollBack();
@@ -484,5 +489,136 @@ public function listarInconsistencias(): array {
         return [];
     }
 }
+
+
+/**
+ * Calcula el sRPE total de los últimos N días (solo activos)
+ */
+public function calcularSRPEUltimosDias(int $id_atleta, int $dias = 7): ?int {
+    $sql = "SELECT SUM(srpe) AS total
+            FROM registro_rpe
+            WHERE id_atleta = :id_atleta
+              AND deleted_at IS NULL
+              AND fecha >= DATE_SUB(CURDATE(), INTERVAL :dias DAY)";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([':id_atleta' => $id_atleta, ':dias' => $dias]);
+    $res = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $res && $res['total'] !== null ? (int)$res['total'] : null;
+}
+
+/**
+ * Promedio RPE últimos 3 días (ya lo tenías como obtenerRpePromedioUltimosDias)
+ * Puedes reutilizarlo.
+ */
+
+/**
+ * Promedio de horas de sueño últimos 3 días
+ */
+public function calcularSuenoPromedioUltimosDias(int $id_atleta, int $dias = 3): ?float {
+    $sql = "SELECT AVG(horas_sueno) AS promedio
+            FROM registro_rpe
+            WHERE id_atleta = :id_atleta
+              AND deleted_at IS NULL
+              AND fecha >= DATE_SUB(CURDATE(), INTERVAL :dias DAY)
+              AND horas_sueno IS NOT NULL";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([':id_atleta' => $id_atleta, ':dias' => $dias]);
+    $res = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $res && $res['promedio'] !== null ? (float)$res['promedio'] : null;
+}
+
+/**
+ * Evalúa la carga del atleta y genera una recomendación si es necesario
+ * (escribiendo en la tabla recomendaciones_carga)
+ */
+public function generarRecomendacionCarga(int $id_atleta): void {
+    // 1. Extraer métricas
+    $srpeSemanal = $this->calcularSRPEUltimosDias($id_atleta, 7);
+    $rpePromedio = $this->obtenerRpePromedioUltimosDias($id_atleta, 3);
+    $suenoPromedio = $this->calcularSuenoPromedioUltimosDias($id_atleta, 3);
+
+    $tipo = null;
+    $mensaje = null;
+
+    // 2. Procesar (reglas de negocio)
+    if ($srpeSemanal !== null && $srpeSemanal > 600) {
+        $tipo = 'SOBRECARGA';
+        $mensaje = "Carga subjetiva semanal muy alta ({$srpeSemanal} sRPE). Se recomienda reducir volumen en un 20% y priorizar sesiones regenerativas.";
+    } elseif ($rpePromedio !== null && $suenoPromedio !== null && $rpePromedio > 7 && $suenoPromedio < 6) {
+        $tipo = 'RECUPERACION';
+        $mensaje = "RPE elevado (promedio {$rpePromedio}) con sueño insuficiente (promedio {$suenoPromedio}h). Evaluar fatiga y considerar descanso activo.";
+    }
+
+    // 3. Si hay recomendación, escribir en la nueva tabla
+    if ($mensaje) {
+        $sql = "INSERT INTO recomendaciones_carga (id_atleta, tipo, mensaje) VALUES (:id_atleta, :tipo, :mensaje)";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':id_atleta' => $id_atleta,
+            ':tipo'      => $tipo,
+            ':mensaje'   => $mensaje
+        ]);
+    }
+}
+
+    /**
+     * Obtiene recomendaciones no leídas de los atletas asignados a un entrenador
+     */
+    public function obtenerRecomendacionesPorEntrenador(int $id_usuario): array {
+        try {
+            /* $sql = "SELECT r.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta
+                    FROM recomendaciones_carga r
+                    JOIN atletas a ON r.id_atleta = a.id_atleta
+                    JOIN entrenador_asignacion ea ON ea.id_atleta = a.id_atleta
+                    WHERE ea.id_usuario = :id_usuario
+                    AND r.leida = FALSE
+                    ORDER BY r.fecha DESC"; */
+                   /*  $sql = "SELECT 
+                        r.*, 
+                        CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta
+                    FROM recomendaciones_carga r
+                    INNER JOIN atletas a ON r.id_atleta = a.id_atleta
+                    INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                    INNER JOIN grupos g ON ga.id_grupo = g.id_grupo
+                    WHERE g.id_usuario = :id_usuario
+                      AND r.leida = FALSE
+                    ORDER BY r.fecha DESC"; */
+
+$sql = "SELECT DISTINCT
+                        r.*, 
+                        CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta
+                    FROM recomendaciones_carga r
+                    INNER JOIN atletas a ON r.id_atleta = a.id_atleta
+                    INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                    INNER JOIN grupos_entrenamiento g ON ga.id_grupo = g.id_grupo
+                    INNER JOIN entrenador e ON g.id_entrenador = e.id_entrenador
+                    WHERE e.id_usuario = :id_usuario
+                      AND r.leida = 0
+                    ORDER BY r.fecha DESC";
+
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':id_usuario' => $id_usuario]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error obtenerRecomendacionesPorEntrenador: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+ * Marca una recomendación como leída
+ */
+public function marcarRecomendacionLeida(int $id_recomendacion): bool {
+    try {
+        $sql = "UPDATE recomendaciones_carga SET leida = TRUE WHERE id_recomendacion = :id";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([':id' => $id_recomendacion]);
+    } catch (PDOException $e) {
+        error_log("Error marcarRecomendacionLeida: " . $e->getMessage());
+        return false;
+    }
+}
+
 
 }
