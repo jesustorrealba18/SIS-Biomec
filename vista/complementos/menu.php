@@ -20,6 +20,13 @@
         </div>
         <?php endif; ?>
 
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sistemaExperto', 'ver')): ?>
+        <a href="?p=sistemaExperto" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'sistemaExperto') ? 'bg-white/10 text-white' : ''; ?>">
+            <i class="fas fa-brain w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'sistemaExperto') ? 'text-white' : ''; ?>"></i> 
+            <span class="font-medium">Sistema Experto</span>
+        </a>
+        <?php endif; ?>
+
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
        <a href="?p=entrenador" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'entrenador') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-user-tie w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'entrenador') ? 'text-white' : ''; ?>"></i> 

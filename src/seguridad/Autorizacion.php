@@ -39,6 +39,7 @@ class Autorizacion {
         'testFisico'             => ['testFisico', 'ver'],
         'normalizacion'          => ['normalizacion', 'ver'],
         'temporadas'             => ['temporadas', 'ver'],
+        'sistemaExperto'         => ['sistemaExperto', 'ver'],
     ];
 
     public static function cargarPermisos(int $idUsuario): bool {
