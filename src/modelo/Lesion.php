@@ -105,51 +105,6 @@ class Lesion extends Conexion {
     // 3. OPERACIONES DE LECTURA (solo registros activos por defecto)
     // =================================================================
 
-    /**
-     * Lista lesiones con filtros. Por defecto solo registros activos (activo=1).
-     * Si $incluirInactivos = true, muestra también los de papelera.
-     */
-   /*  public function listarLesiones(string $estadoClinico = '', int $id_atleta = 0, string $tipo = '', string $zona = '', bool $incluirInactivos = false): array {
-        try {
-            $sql = "SELECT l.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta 
-                    FROM lesiones l
-                    INNER JOIN atletas a ON l.id_atleta = a.id_atleta
-                    WHERE 1=1";
-            $params = [];
-
-            if (!$incluirInactivos) {
-                $sql .= " AND l.activo = 1";
-            }
-
-            if (!empty($estadoClinico)) {
-                $sql .= " AND l.estado = :estado";
-                $params[':estado'] = $estadoClinico;
-            }
-            if ($id_atleta > 0) {
-                $sql .= " AND l.id_atleta = :id_atleta";
-                $params[':id_atleta'] = $id_atleta;
-            }
-            if (!empty($tipo)) {
-                $sql .= " AND l.tipo = :tipo";
-                $params[':tipo'] = $tipo;
-            }
-            if (!empty($zona)) {
-                $sql .= " AND l.zona_anatomica = :zona";
-                $params[':zona'] = $zona;
-            }
-
-            $sql .= " ORDER BY l.fecha_inicio DESC";
-            $stmt = $this->pdo->prepare($sql);
-            foreach ($params as $key => &$val) {
-                $stmt->bindValue($key, $val);
-            }
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error en listarLesiones: " . $e->getMessage());
-            return [];
-        }
-    } */
 
     public function listarLesiones(string $estadoClinico = '', int $id_atleta = 0, string $tipo = '', string $zona = '', bool $modoPapelera = false): array {
         try {
@@ -295,15 +250,15 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
     public function obtenerPromedioRPEPrevio(int $id_atleta, string $fecha_lesion): float {
         try {
             $sql = "SELECT COALESCE(AVG(rpe), 0) as promedio_rpe 
-                    FROM registro_rpe 
-                    WHERE id_atleta = :id_atleta 
-                    AND activo = 1
-                    AND fecha_registro BETWEEN DATE_SUB(:fecha_lesion, INTERVAL 3 DAY) AND :fecha_lesion2";
+                FROM registro_rpe 
+                WHERE id_atleta = :id_atleta 
+                  AND deleted_at IS NULL
+                  AND fecha BETWEEN DATE_SUB(:fecha_lesion, INTERVAL 3 DAY) AND :fecha_lesion";
             
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
             $stmt->bindValue(':fecha_lesion', $fecha_lesion, PDO::PARAM_STR);
-            $stmt->bindValue(':fecha_lesion2', $fecha_lesion, PDO::PARAM_STR);
+           /*  $stmt->bindValue(':fecha_lesion2', $fecha_lesion, PDO::PARAM_STR); */
             $stmt->execute();
             
             return (float) $stmt->fetchColumn();
@@ -317,10 +272,17 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
     // 4. OPERACIONES DE ESCRITURA (ACID)
     // =================================================================
 
+     public function anularLesion(int $id_lesion, string $motivo): bool|array {
+        if ($this->eliminarLesionLogicamente($id_lesion, $motivo)) {
+            return ['exito' => true, 'mensaje' => 'Lesión movida a la papelera correctamente.'];
+        }
+        return false;
+    }
+
     /**
      * Registra una nueva lesión (activo = 1 por defecto)
      */
-    public function registrarLesion(array $payload): bool|array {
+/*     public function registrarLesion(array $payload): bool|array {
         $this->setAtributos($payload);
         if (!$this->validarAtributosInternos(false)) {
             return false;
@@ -363,12 +325,92 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
             $this->agregarError('bd', 'Error interno al registrar la lesión.');
             return false;
         }
+    } */
+
+
+        /**
+     * Registra una nueva lesión y genera alertas biológicas transaccionalmente
+     */
+    public function registrarLesion(array $payload): bool|array {
+        $this->setAtributos($payload);
+        if (!$this->validarAtributosInternos(false)) {
+            return false;
+        }
+
+        try {
+            // 1. INICIAMOS TRANSACCIÓN ACID
+            $this->pdo->beginTransaction();
+
+            // 2. INSERT 1: Guardamos la lesión clínica
+            $sql = "INSERT INTO lesiones (
+                        id_atleta, zona_anatomica, lado, tipo, nivel_molestia,
+                        diagnostico, tratamiento, fecha_inicio, fecha_estimada_recup,
+                        estado, profesional, observaciones, activo
+                    ) VALUES (
+                        :id_atleta, :zona_anatomica, :lado, :tipo, :nivel_molestia,
+                        :diagnostico, :tratamiento, :fecha_inicio, :fecha_estimada_recup,
+                        COALESCE(:estado, 'Activa'), :profesional, :observaciones, 1
+                    )";
+            $stmt = $this->pdo->prepare($sql);
+            $mapa = [
+                ':id_atleta'            => ['id_atleta', PDO::PARAM_INT],
+                ':zona_anatomica'       => ['zona_anatomica', PDO::PARAM_STR],
+                ':lado'                 => ['lado', PDO::PARAM_STR],
+                ':tipo'                 => ['tipo', PDO::PARAM_STR],
+                ':nivel_molestia'       => ['nivel_molestia', PDO::PARAM_INT],
+                ':diagnostico'          => ['diagnostico', PDO::PARAM_STR],
+                ':tratamiento'          => ['tratamiento', PDO::PARAM_STR],
+                ':fecha_inicio'         => ['fecha_inicio', PDO::PARAM_STR],
+                ':fecha_estimada_recup' => ['fecha_estimada_recup', PDO::PARAM_STR],
+                ':estado'               => ['estado', PDO::PARAM_STR],
+                ':profesional'          => ['profesional', PDO::PARAM_STR],
+                ':observaciones'        => ['observaciones', PDO::PARAM_STR]
+            ];
+            $this->autoBind($stmt, $mapa, $this->datos);
+            $stmt->execute();
+            $id_insertado = $this->pdo->lastInsertId();
+
+            // 3. REGLA DE NEGOCIO: Análisis para la IA Simbólica
+            $molestia = (int)$this->datos['nivel_molestia'];
+            $tipo = $this->datos['tipo'];
+
+            if ($molestia >= 8 || $tipo === 'Recidiva') {
+                $gravedad = ($molestia >= 9 || $tipo === 'Recidiva') ? 3 : 2;
+                $tipoAlerta = ($tipo === 'Recidiva') ? 'ALERTA_RECIDIVA' : 'DOLOR_AGUDO';
+                $mensaje = "Atención requerida: Lesión ({$tipo}) en {$this->datos['zona_anatomica']} con nivel de molestia {$molestia}/10.";
+
+                // 4. INSERT 2: Escribimos el "Hecho" en la tabla de alertas
+                $sqlAlert = "INSERT INTO alertas_biologicas 
+                             (id_atleta, modulo_origen, id_registro_origen, tipo_alerta, gravedad, mensaje) 
+                             VALUES (:id_atleta, 'LESIONES', :id_registro_origen, :tipo_alerta, :gravedad, :mensaje)";
+                
+                $stmtAlert = $this->pdo->prepare($sqlAlert);
+                $stmtAlert->execute([
+                    ':id_atleta'   => $this->datos['id_atleta'],
+                    ':id_registro_origen' => $id_insertado,
+                    ':tipo_alerta' => $tipoAlerta,
+                    ':gravedad'    => $gravedad,
+                    ':mensaje'     => $mensaje
+                ]);
+            }
+
+            // 5. CONFIRMAR TRANSACCIÓN
+            $this->pdo->commit();
+            return ['exito' => true, 'id_lesion' => $id_insertado, 'mensaje' => 'Lesión registrada correctamente.'];
+
+        } catch (PDOException $e) {
+            // 6. ROLLBACK: Si la alerta o la lesión fallan, no se guarda nada
+            $this->pdo->rollBack();
+            error_log("Error transaccional en registrarLesion: " . $e->getMessage());
+            $this->agregarError('bd', 'Error interno al registrar la lesión y procesar alertas.');
+            return false;
+        }
     }
 
     /**
      * Actualiza una lesión existente (solo si está activa)
      */
-    public function actualizarLesion(array $payload, int $id_lesion): bool {
+   /*  public function actualizarLesion(array $payload, int $id_lesion): bool {
         $this->setAtributos($payload);
         if (!$this->validarAtributosInternos(true)) {
             return false;
@@ -421,16 +463,452 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
             $this->agregarError('bd', 'Error interno al actualizar la lesión.');
             return false;
         }
+    } */
+
+        /**
+     * Actualiza una lesión existente y evalúa la evolución clínica para la IA
+     */
+  /*   public function actualizarLesion(array $payload, int $id_lesion): bool {
+        $this->setAtributos($payload);
+        if (!$this->validarAtributosInternos(true)) {
+            return false;
+        }
+
+        try {
+            // 1. INICIAMOS TRANSACCIÓN
+            $this->pdo->beginTransaction();
+
+            // 2. ACTUALIZAMOS EL REGISTRO
+            $sql = "UPDATE lesiones SET
+                        id_atleta = :id_atleta, zona_anatomica = :zona_anatomica,
+                        lado = :lado, tipo = :tipo, nivel_molestia = :nivel_molestia,
+                        diagnostico = :diagnostico, tratamiento = :tratamiento,
+                        fecha_inicio = :fecha_inicio, fecha_estimada_recup = :fecha_estimada_recup,
+                        estado = :estado, profesional = :profesional, observaciones = :observaciones
+                    WHERE id_lesion = :id_lesion AND activo = 1";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $mapa = [
+                ':id_atleta'            => ['id_atleta', PDO::PARAM_INT],
+                ':zona_anatomica'       => ['zona_anatomica', PDO::PARAM_STR],
+                ':lado'                 => ['lado', PDO::PARAM_STR],
+                ':tipo'                 => ['tipo', PDO::PARAM_STR],
+                ':nivel_molestia'       => ['nivel_molestia', PDO::PARAM_INT],
+                ':diagnostico'          => ['diagnostico', PDO::PARAM_STR],
+                ':tratamiento'          => ['tratamiento', PDO::PARAM_STR],
+                ':fecha_inicio'         => ['fecha_inicio', PDO::PARAM_STR],
+                ':fecha_estimada_recup' => ['fecha_estimada_recup', PDO::PARAM_STR],
+                ':estado'               => ['estado', PDO::PARAM_STR],
+                ':profesional'          => ['profesional', PDO::PARAM_STR],
+                ':observaciones'        => ['observaciones', PDO::PARAM_STR],
+                ':id_lesion'            => ['id_lesion', PDO::PARAM_INT] // Pasado desde el controlador
+            ];
+            
+            // Inyectamos manualmente el id_lesion al arreglo de datos para el autoBind
+            $this->datos['id_lesion'] = $id_lesion; 
+            $this->autoBind($stmt, $mapa, $this->datos);
+            $stmt->execute();
+            
+            if ($stmt->rowCount() === 0) {
+                $this->pdo->rollBack();
+                $this->agregarError('actualizacion', 'No se encontró la lesión activa o no se realizaron cambios.');
+                return false;
+            } */
+
+            /* 
+
+            // 3. REGLAS DE NEGOCIO EVOLUTIVAS (IA SIMBÓLICA)
+            $estado = $this->datos['estado'];
+            $molestia = (int)$this->datos['nivel_molestia'];
+            $tipo = $this->datos['tipo'];
+
+            if ($estado === 'Recuperada') {
+                $sqlAlert = "INSERT INTO alertas_biologicas 
+                            (id_atleta, modulo_origen, id_registro_origen, tipo_alerta, gravedad, mensaje) 
+                            VALUES (:id_atleta, 'LESIONES', :id_registro_origen, 'ALTA_MEDICA', 1, 
+                                    'Evolución favorable: Atleta dado de alta médica.')";
+                $stmtAlert = $this->pdo->prepare($sqlAlert);
+                $stmtAlert->execute([
+                    ':id_atleta'          => $this->datos['id_atleta'],
+                    ':id_registro_origen' => $id_lesion   // ← el id que se está actualizando
+                ]);
+            } 
+            elseif ($molestia >= 8 || $tipo === 'Recidiva') {
+                $gravedad = ($molestia >= 9 || $tipo === 'Recidiva') ? 3 : 2;
+                $tipoAlerta = ($tipo === 'Recidiva') ? 'ALERTA_RECIDIVA' : 'DOLOR_AGUDO';
+                $mensaje = "Actualización clínica: Lesión ({$tipo}) mantiene molestia alta ({$molestia}/10). Riesgo vigente.";
+
+                $sqlAlert = "INSERT INTO alertas_biologicas 
+                            (id_atleta, modulo_origen, id_registro_origen, tipo_alerta, gravedad, mensaje) 
+                            VALUES (:id_atleta, 'LESIONES', :id_registro_origen, :tipo_alerta, :gravedad, :mensaje)";
+                $stmtAlert = $this->pdo->prepare($sqlAlert);
+                $stmtAlert->execute([
+                    ':id_atleta'          => $this->datos['id_atleta'],
+                    ':id_registro_origen' => $id_lesion,
+                    ':tipo_alerta'        => $tipoAlerta,
+                    ':gravedad'           => $gravedad,
+                    ':mensaje'            => $mensaje
+                ]);
+            } */
+
+       /*          // 2.5. LEEMOS EL VALOR ANTERIOR (Dentro de la misma transacción)
+                $sqlOld = "SELECT nivel_molestia, estado FROM lesiones WHERE id_lesion = :id FOR UPDATE";
+                $stmtOld = $this->pdo->prepare($sqlOld);
+                $stmtOld->execute([':id' => $id_lesion]);
+                $oldData = $stmtOld->fetch(PDO::FETCH_ASSOC);
+
+                if (!$oldData) {
+                    $this->pdo->rollBack();
+                    $this->agregarError('actualizacion', 'No se encontró la lesión para comparar.');
+                    return false;
+                }
+
+                $oldMolestia = (int)$oldData['nivel_molestia'];
+                $oldEstado = $oldData['estado'];
+                $newMolestia = (int)$this->datos['nivel_molestia'];
+                $newEstado = $this->datos['estado'];
+                $tipo = $this->datos['tipo'];
+
+                // ================================================================
+                // REGLA 1: El dolor AGUDO (>=8) o RECIDIVA se activa/desactiva dinámicamente
+                // ================================================================
+                $condicionAlta = ($newMolestia >= 8 || $tipo === 'Recidiva');
+                $condicionAltaAnterior = ($oldMolestia >= 8 || $tipo === 'Recidiva'); // Nota: El tipo no debería cambiar, pero lo evaluamos igual
+
+                if ($condicionAlta && !$condicionAltaAnterior) {
+                    // CASO A: Empeoró o apareció el riesgo → INSERTAMOS ALERTA NUEVA (ACTIVA)
+                    $gravedad = ($newMolestia >= 9 || $tipo === 'Recidiva') ? 3 : 2;
+                    $tipoAlerta = ($tipo === 'Recidiva') ? 'ALERTA_RECIDIVA' : 'DOLOR_AGUDO';
+                    $mensaje = "Actualización clínica: Lesión ({$tipo}) empeoró a molestia {$newMolestia}/10.";
+                    
+                    $sqlAlert = "INSERT INTO alertas_biologicas 
+                                (id_atleta, modulo_origen, id_registro_origen, tipo_alerta, gravedad, mensaje, activo) 
+                                VALUES (:id_atleta, 'LESIONES', :id_registro_origen, :tipo_alerta, :gravedad, :mensaje, 1)";
+                    $stmtAlert = $this->pdo->prepare($sqlAlert);
+                    $stmtAlert->execute([
+                        ':id_atleta'          => $this->datos['id_atleta'],
+                        ':id_registro_origen' => $id_lesion,
+                        ':tipo_alerta'        => $tipoAlerta,
+                        ':gravedad'           => $gravedad,
+                        ':mensaje'            => $mensaje
+                    ]);
+                } 
+                elseif (!$condicionAlta && $condicionAltaAnterior) {
+                    // CASO B: Mejoró (el doctor corrigió el 9 por un 3) → DESACTIVAMOS LA ALERTA ANTERIOR
+                    $sqlDesactivar = "UPDATE alertas_biologicas 
+                                    SET activo = 0 
+                                    WHERE modulo_origen = 'LESIONES' 
+                                        AND id_registro_origen = :id_lesion 
+                                        AND tipo_alerta IN ('DOLOR_AGUDO', 'ALERTA_RECIDIVA')";
+                    $stmtDes = $this->pdo->prepare($sqlDesactivar);
+                    $stmtDes->execute([':id_lesion' => $id_lesion]);
+                }
+                // Si se mantiene igual (sigue alta o sigue baja), NO hacemos nada con las alertas de dolor.
+
+                // ================================================================
+                // REGLA 2: ALTA MÉDICA (Solo se dispara si el estado cambia a Recuperada)
+                // ================================================================
+                if ($newEstado === 'Recuperada' && $oldEstado !== 'Recuperada') {
+                    // Insertamos el alta médica (activa por defecto)
+                    $sqlAlta = "INSERT INTO alertas_biologicas 
+                                (id_atleta, modulo_origen, id_registro_origen, tipo_alerta, gravedad, mensaje, activo) 
+                                VALUES (:id_atleta, 'LESIONES', :id_registro_origen, 'ALTA_MEDICA', 1, 
+                                        'Evolución favorable: Atleta dado de alta médica.', 1)";
+                    $stmtAlta = $this->pdo->prepare($sqlAlta);
+                    $stmtAlta->execute([
+                        ':id_atleta'          => $this->datos['id_atleta'],
+                        ':id_registro_origen' => $id_lesion
+                    ]);
+                    
+                    // Bonus: Si estaba en dolor agudo y ahora se cura, desactivamos las alertas de dolor residuales
+                    $sqlDesactivarDolor = "UPDATE alertas_biologicas 
+                                        SET activo = 0 
+                                        WHERE modulo_origen = 'LESIONES' 
+                                            AND id_registro_origen = :id_lesion 
+                                            AND tipo_alerta IN ('DOLOR_AGUDO', 'ALERTA_RECIDIVA')";
+                    $stmtDesDol = $this->pdo->prepare($sqlDesactivarDolor);
+                    $stmtDesDol->execute([':id_lesion' => $id_lesion]);
+                }
+
+            // 4. COMMIT
+            $this->pdo->commit();
+            return true;
+
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error transaccional en actualizarLesion: " . $e->getMessage());
+            $this->agregarError('bd', 'Error interno al actualizar la lesión.');
+            return false;
+        }
+    } */
+
+
+        public function actualizarLesion(array $payload, int $id_lesion): bool {
+    $this->setAtributos($payload);
+    if (!$this->validarAtributosInternos(true)) {
+        return false;
     }
 
+    try {
+        $this->pdo->beginTransaction();
+
+        // ============================================================
+        // 1. LECTURA DE VALORES ANTERIORES (CON BLOQUEO)
+        // ============================================================
+        $sqlOld = "SELECT nivel_molestia, estado, tipo 
+                   FROM lesiones 
+                   WHERE id_lesion = :id 
+                   FOR UPDATE";  // Bloquea la fila para evitar cambios concurrentes
+        $stmtOld = $this->pdo->prepare($sqlOld);
+        $stmtOld->execute([':id' => $id_lesion]);
+        $oldData = $stmtOld->fetch(PDO::FETCH_ASSOC);
+
+        if (!$oldData) {
+            $this->pdo->rollBack();
+            $this->agregarError('actualizacion', 'No se encontró la lesión.');
+            return false;
+        }
+
+        // Guardamos los valores anteriores
+        $oldMolestia = (int)$oldData['nivel_molestia'];
+        $oldEstado   = $oldData['estado'];
+        $oldTipo     = $oldData['tipo'];
+
+        // ============================================================
+        // 2. EJECUTAR LA ACTUALIZACIÓN
+        // ============================================================
+        $sql = "UPDATE lesiones SET
+                    id_atleta = :id_atleta,
+                    zona_anatomica = :zona_anatomica,
+                    lado = :lado,
+                    tipo = :tipo,
+                    nivel_molestia = :nivel_molestia,
+                    diagnostico = :diagnostico,
+                    tratamiento = :tratamiento,
+                    fecha_inicio = :fecha_inicio,
+                    fecha_estimada_recup = :fecha_estimada_recup,
+                    estado = :estado,
+                    profesional = :profesional,
+                    observaciones = :observaciones
+                WHERE id_lesion = :id_lesion AND activo = 1";
+
+        $stmt = $this->pdo->prepare($sql);
+       $mapa = [
+            ':id_atleta'            => ['id_atleta', PDO::PARAM_INT],
+            ':zona_anatomica'       => ['zona_anatomica', PDO::PARAM_STR],
+            ':lado'                 => ['lado', PDO::PARAM_STR],
+            ':tipo'                 => ['tipo', PDO::PARAM_STR],
+            ':nivel_molestia'       => ['nivel_molestia', PDO::PARAM_INT],
+            ':diagnostico'          => ['diagnostico', PDO::PARAM_STR],
+            ':tratamiento'          => ['tratamiento', PDO::PARAM_STR],
+            ':fecha_inicio'         => ['fecha_inicio', PDO::PARAM_STR],
+            ':fecha_estimada_recup' => ['fecha_estimada_recup', PDO::PARAM_STR],
+            ':estado'               => ['estado', PDO::PARAM_STR],
+            ':profesional'          => ['profesional', PDO::PARAM_STR],
+            ':observaciones'        => ['observaciones', PDO::PARAM_STR],
+            ':id_lesion'            => ['id_lesion', PDO::PARAM_INT]
+        ];
+        $this->datos['id_lesion'] = $id_lesion;
+        $this->autoBind($stmt, $mapa, $this->datos);
+        $stmt->execute();
+
+        if ($stmt->rowCount() === 0) {
+            $this->pdo->rollBack();
+            $this->agregarError('actualizacion', 'No se encontró la lesión activa o no se realizaron cambios.');
+            return false;
+        }
+
+        // ============================================================
+        // 3. REGLAS DE NEGOCIO (comparando old vs new)
+        // ============================================================
+        $newMolestia = (int)$this->datos['nivel_molestia'];
+        $newEstado   = $this->datos['estado'];
+        $newTipo     = $this->datos['tipo'];
+
+        // REGLA 1: Dolor agudo o recidiva (activar/desactivar)
+        $condicionAltaAnterior = ($oldMolestia >= 8 || $oldTipo === 'Recidiva');
+        $condicionAltaNueva    = ($newMolestia >= 8 || $newTipo === 'Recidiva');
+
+        if ($condicionAltaNueva && !$condicionAltaAnterior) {
+            // Empeoró: insertar alerta activa
+            $gravedad = ($newMolestia >= 9 || $newTipo === 'Recidiva') ? 3 : 2;
+            $tipoAlerta = ($newTipo === 'Recidiva') ? 'ALERTA_RECIDIVA' : 'DOLOR_AGUDO';
+            $mensaje = "Actualización clínica: Lesión ({$newTipo}) empeoró a molestia {$newMolestia}/10.";
+
+            $sqlAlert = "INSERT INTO alertas_biologicas 
+                         (id_atleta, modulo_origen, id_registro_origen, tipo_alerta, gravedad, mensaje, activo) 
+                         VALUES (:id_atleta, 'LESIONES', :id_registro_origen, :tipo_alerta, :gravedad, :mensaje, 1)";
+            $stmtAlert = $this->pdo->prepare($sqlAlert);
+            $stmtAlert->execute([
+                ':id_atleta'          => $this->datos['id_atleta'],
+                ':id_registro_origen' => $id_lesion,
+                ':tipo_alerta'        => $tipoAlerta,
+                ':gravedad'           => $gravedad,
+                ':mensaje'            => $mensaje
+            ]);
+        } 
+        elseif (!$condicionAltaNueva && $condicionAltaAnterior) {
+            // Mejoró: desactivar alertas de dolor/recidiva anteriores
+            $sqlDesactivar = "UPDATE alertas_biologicas 
+                              SET activo = 0 
+                              WHERE modulo_origen = 'LESIONES' 
+                                AND id_registro_origen = :id_lesion 
+                                AND tipo_alerta IN ('DOLOR_AGUDO', 'ALERTA_RECIDIVA')";
+            $stmtDes = $this->pdo->prepare($sqlDesactivar);
+            $stmtDes->execute([':id_lesion' => $id_lesion]);
+        }
+
+        // REGLA 2: Alta médica (solo si cambia a Recuperada)
+        if ($newEstado === 'Recuperada' && $oldEstado !== 'Recuperada') {
+            $sqlAlta = "INSERT INTO alertas_biologicas 
+                        (id_atleta, modulo_origen, id_registro_origen, tipo_alerta, gravedad, mensaje, activo) 
+                        VALUES (:id_atleta, 'LESIONES', :id_registro_origen, 'ALTA_MEDICA', 1, 
+                                'Evolución favorable: Atleta dado de alta médica.', 1)";
+            $stmtAlta = $this->pdo->prepare($sqlAlta);
+            $stmtAlta->execute([
+                ':id_atleta'          => $this->datos['id_atleta'],
+                ':id_registro_origen' => $id_lesion
+            ]);
+
+            // Bonus: desactivar alertas de dolor residuales al dar el alta
+            $sqlDesDol = "UPDATE alertas_biologicas 
+                          SET activo = 0 
+                          WHERE modulo_origen = 'LESIONES' 
+                            AND id_registro_origen = :id_lesion 
+                            AND tipo_alerta IN ('DOLOR_AGUDO', 'ALERTA_RECIDIVA')";
+            $stmtDesDol = $this->pdo->prepare($sqlDesDol);
+            $stmtDesDol->execute([':id_lesion' => $id_lesion]);
+        }
+
+        // ============================================================
+        // 4. CONFIRMAR TRANSACCIÓN
+        // ============================================================
+        $this->pdo->commit();
+        return true;
+
+    } catch (PDOException $e) {
+        $this->pdo->rollBack();
+        error_log("Error transaccional en actualizarLesion: " . $e->getMessage());
+        $this->agregarError('bd', 'Error interno al actualizar la lesión.');
+        return false;
+    }
+}
+
+   
+
     // =================================================================
-    // 5. SOFT DELETE, REACTIVACIÓN Y ELIMINACIÓN FÍSICA
+    // 5. SOFT DELETE, REACTIVACIÓN Y ELIMINACIÓN FÍSICA (ACID)
     // =================================================================
 
     /**
-     * Soft Delete: mueve el registro a la papelera (activo = 0) y guarda el motivo.
+     * Soft Delete: Anula la lesión y cualquier alerta biológica asociada.
      */
     public function eliminarLesionLogicamente(int $id_lesion, string $motivo): bool {
+        try {
+            $this->pdo->beginTransaction();
+
+            // 1. Anular la lesión
+            $sql = "UPDATE lesiones 
+                    SET activo = 0, motivo_eliminacion = :motivo 
+                    WHERE id_lesion = :id_lesion AND activo = 1";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':motivo' => trim($motivo),
+                ':id_lesion' => $id_lesion
+            ]);
+            
+            if ($stmt->rowCount() === 0) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            // 2. Anular las alertas generadas por este registro (Hecho falso para la IA)
+            $sqlAlertas = "UPDATE alertas_biologicas 
+                           SET activo = FALSE 
+                           WHERE modulo_origen = 'LESIONES' AND id_registro_origen = :id_lesion";
+            $stmtAlertas = $this->pdo->prepare($sqlAlertas);
+            $stmtAlertas->execute([':id_lesion' => $id_lesion]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error transaccional en eliminarLesionLogicamente: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Reactivación: Restaura la lesión y le devuelve la validez a sus alertas.
+     */
+    public function reactivarLesion(int $id_lesion): bool {
+        try {
+            $this->pdo->beginTransaction();
+
+            // 1. Restaurar la lesión
+            $sql = "UPDATE lesiones 
+                    SET activo = 1, motivo_eliminacion = NULL 
+                    WHERE id_lesion = :id AND activo = 0";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':id' => $id_lesion]);
+
+            if ($stmt->rowCount() === 0) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            // 2. Restaurar la alerta biológica para que la IA la vuelva a leer
+            $sqlAlertas = "UPDATE alertas_biologicas 
+                           SET activo = TRUE 
+                           WHERE modulo_origen = 'LESIONES' AND id_registro_origen = :id_lesion";
+            $stmtAlertas = $this->pdo->prepare($sqlAlertas);
+            $stmtAlertas->execute([':id_lesion' => $id_lesion]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error transaccional en reactivarLesion: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Eliminación física: Borra permanentemente la lesión y sus alertas.
+     */
+    public function eliminarfisico(int $id_lesion): bool {
+        try {
+            $this->pdo->beginTransaction();
+
+            // 1. Destruir las alertas primero (Para evitar errores de llaves foráneas si las hubiera)
+            $sqlAlertas = "DELETE FROM alertas_biologicas 
+                           WHERE modulo_origen = 'LESIONES' AND id_registro_origen = :id_lesion";
+            $stmtAlertas = $this->pdo->prepare($sqlAlertas);
+            $stmtAlertas->execute([':id_lesion' => $id_lesion]);
+
+            // 2. Destruir la lesión
+            $sql = "DELETE FROM lesiones WHERE id_lesion = :id AND activo = 0";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':id' => $id_lesion]);
+            
+            if ($stmt->rowCount() === 0) {
+                $this->agregarError('eliminar', 'No se encontró el registro o no está en papelera (activo=0).');
+                $this->pdo->rollBack();
+                return false;
+            }
+            
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error transaccional en eliminarFisico: " . $e->getMessage());
+            $this->agregarError('bd', 'Error interno al eliminar físicamente.');
+            return false;
+        }
+    }
+
+   
+/*     public function eliminarLesionLogicamente(int $id_lesion, string $motivo): bool {
         try {
             $sql = "UPDATE lesiones 
                     SET activo = 0, motivo_eliminacion = :motivo 
@@ -445,9 +923,7 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
         }
     }
 
-    /**
-     * Reactiva un registro previamente eliminado lógicamente (activo = 1, limpia motivo).
-     */
+   
     public function reactivarLesion(int $id_lesion): bool {
         try {
             $sql = "UPDATE lesiones 
@@ -462,9 +938,7 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
         }
     }
 
-    /**
- * Eliminación física permanente (solo para registros en papelera, activo = 0)
- */
+   
 public function eliminarfisico(int $id_lesion): bool {
     try {
         $sql = "DELETE FROM lesiones WHERE id_lesion = :id AND activo = 0";
@@ -482,16 +956,15 @@ public function eliminarfisico(int $id_lesion): bool {
         $this->agregarError('bd', 'Error interno al eliminar físicamente.');
         return false;
     }
-}
+} */
 
-    /**
-     * Método de compatibilidad con el frontend existente (si usaba 'anularLesion').
-     * Llama al soft delete.
-     */
-    public function anularLesion(int $id_lesion, string $motivo): bool|array {
-        if ($this->eliminarLesionLogicamente($id_lesion, $motivo)) {
-            return ['exito' => true, 'mensaje' => 'Lesión movida a la papelera correctamente.'];
-        }
-        return false;
+   public function obtenerRiesgosActivos(): array {
+    $sql = "SELECT ab.*, a.nombres, a.apellidos 
+            FROM alertas_biologicas ab
+            INNER JOIN atletas a ON ab.id_atleta = a.id_atleta
+            WHERE ab.activo = TRUE 
+            ORDER BY ab.gravedad DESC, ab.fecha_creacion DESC LIMIT 5";
+    return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
+   
 }

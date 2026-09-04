@@ -366,6 +366,56 @@ function actualizarKPIs(activos) {
     if (document.getElementById('kpi_reposo_promedio')) document.getElementById('kpi_reposo_promedio').innerText = count ? (totalDias/count).toFixed(1) : 0;
 } 
 
+async function cargarRiesgosActivos() {
+    const lista = document.getElementById('listaRiesgos');
+    if (!lista) return;
+
+    const riesgos = await peticionAjax('obtenerRiesgosActivos');
+    if (!riesgos || riesgos.length === 0) {
+        lista.innerHTML = `
+            <li class="text-center text-gray-500 dark:text-gray-400 py-4">
+                <i class="fas fa-check-circle text-green-500 mr-2"></i> No hay alertas activas.
+            </li>
+        `;
+        return;
+    }
+
+    let html = '';
+    riesgos.forEach(alert => {
+        // Determinar clase de gravedad
+        let gravedadClase, gravedadTexto;
+        if (alert.gravedad == 3) {
+            gravedadClase = 'bg-red-500';
+            gravedadTexto = 'Alta';
+        } else if (alert.gravedad == 2) {
+            gravedadClase = 'bg-amber-500';
+            gravedadTexto = 'Media';
+        } else {
+            gravedadClase = 'bg-blue-500';
+            gravedadTexto = 'Baja';
+        }
+
+        html += `
+            <li class="flex justify-between items-center bg-white dark:bg-[#161430] p-3 rounded shadow-sm border border-red-100 dark:border-red-500/20">
+                <div>
+                    <p class="font-bold text-gray-800 dark:text-white">
+                        ${alert.nombres} ${alert.apellidos}
+                        <span class="text-xs ${gravedadClase} text-white px-2 py-0.5 rounded ml-1">${gravedadTexto}</span>
+                    </p>
+                    <p class="text-xs text-gray-500">${alert.tipo_alerta}: ${alert.mensaje}</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">${new Date(alert.fecha_creacion).toLocaleString()}</p>
+                </div>
+                <a href="javascript:verDetalle(${alert.id_registro_origen})" 
+                   class="text-indigo-600 hover:text-indigo-800 text-sm font-bold">
+                   Ver Ficha &rarr;
+                </a>
+            </li>
+        `;
+    });
+
+    lista.innerHTML = html;
+}
+
 // =====================================================================
 // OPERACIONES DE FORMULARIO
 // =====================================================================
@@ -441,6 +491,7 @@ formulario.addEventListener('submit', async (e) => {
         UI.exito('Procesado', resultado.message);
         cerrarModal();
         cargarTabla();
+        cargarRiesgosActivos(); 
     } else {
         UI.error('Advertencia', resultado?.message || 'Error de procesamiento');
     }
@@ -504,6 +555,8 @@ async function eliminarFisico(id_lesion) {
         UI.error('Acción Bloqueada', resultado?.message);
     }
 }
+
+
 
 // =====================================================================
 // FICHA DE DETALLE Y GRÁFICA RPE
@@ -647,6 +700,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+     cargarRiesgosActivos(); 
     
     // Toggle Papelera
     btnPapelera?.addEventListener('click', () => {
@@ -681,5 +736,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
         
         cargarTabla();
+       
     });
 });

@@ -193,6 +193,56 @@ class Notificacion extends Conexion {
         }
     }
 
+
+    /**
+     * 3. Notificar al Entrenador del Atleta (vía Grupo de Entrenamiento)
+     */
+    public static function notificarEntrenador(int $id_atleta, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion'); 
+            
+            // Asumiendo que existe una relación entre el atleta y el grupo, y el grupo con el entrenador.
+            // Si usas una tabla pivote (ej: grupo_atleta), ajusta el JOIN correspondiente.
+            $sql = "SELECT e.id_usuario 
+                    FROM atletas a
+                    INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                    INNER JOIN grupos_entrenamiento g ON ga.id_grupo = g.id_grupo 
+                    INNER JOIN entrenadores e ON g.id_entrenador = e.id_entrenador
+                    WHERE a.id_atleta = :id_atleta AND e.id_usuario IS NOT NULL";
+            
+            $stmt = $dbNegocio->getConex1()->prepare($sql);
+            $stmt->execute([':id_atleta' => $id_atleta]);
+            $entrenador = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if ($entrenador && !empty($entrenador['id_usuario'])) {
+                self::enviar($entrenador['id_usuario'], "Atleta de tu grupo: " . $titulo, $mensaje, $icono, $color, $enlace_url);
+            }
+        } catch (\PDOException $e) {
+            error_log("Error Routing Notificacion Entrenador: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * 4. Notificar a todo el Staff Médico (rol 3) y Administradores (rol 1)
+     */
+    public static function notificarStaffMedicoYAdmin(string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): void {
+        try {
+            $instNoti = new self(); // Se conecta a sis_seguridad por defecto
+            
+            $sql = "SELECT DISTINCT id_usuario 
+                    FROM usuario_roles 
+                    WHERE id_rol IN (1, 3)";
+            $stmt = $instNoti->getConex1()->query($sql);
+            $usuarios = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            foreach ($usuarios as $user) {
+                self::enviar($user['id_usuario'], "Clínica: " . $titulo, $mensaje, $icono, $color, $enlace_url);
+            }
+        } catch (\PDOException $e) {
+            error_log("Error Routing Notificacion Staff: " . $e->getMessage());
+        }
+    }
+
     /**
      * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE MARCAS
      */
@@ -473,6 +523,69 @@ class Notificacion extends Conexion {
 
         } catch (\Throwable $th) {
             error_log("Aviso Crítico en Notificaciones: Falló despacho de periodizacion [{$accion}]: " . $th->getMessage());
+        }
+    }
+
+    
+    /**
+     * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE LESIONES
+     */
+    public static function NotificarLesiones(string $accion, array $data, int $id_atleta, ?int $id_lesion = null): void {
+        try {
+            $deepLink = "?p=lesiones";
+            if ($id_lesion) {
+                $deepLink .= "&id=" . $id_lesion; 
+            }
+
+            $zona = $data['zona_anatomica'] ?? 'no especificada';
+            $tipo = $data['tipo'] ?? 'lesión';
+            $estado = $data['estado'] ?? 'Activa';
+
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "Nuevo Informe Médico Registrado";
+                    $mensaje = "Se ha registrado un diagnóstico de {$tipo} en la zona: {$zona}.";
+                    $icono = "fa-notes-medical";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "Evolución Clínica Actualizada";
+                    $mensaje = "Se ha actualizado el estado de la lesión en {$zona}. Nuevo estado: {$estado}.";
+                    $icono = "fa-laptop-medical";
+                    $color = "amber";
+                    break;
+
+                case 'DELETE':
+                    $titulo = "Informe Clínico Anulado";
+                    $mensaje = "Un registro de lesión ha sido movido a la papelera.";
+                    $icono = "fa-trash-alt";
+                    $color = "red";
+                    $deepLink = "?p=lesiones&modo=papelera";
+                    break;
+
+                case 'RESTORE':
+                    $titulo = "Informe Clínico Restaurado";
+                    $mensaje = "Se ha restaurado un registro clínico del historial médico.";
+                    $icono = "fa-briefcase-medical";
+                    $color = "indigo";
+                    break;
+
+                default:
+                    return;
+            }
+
+            // 1. Notificar al Atleta y Representante (tu método existente)
+            self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
+
+            // 2. Notificar al Entrenador del grupo
+            self::notificarEntrenador($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
+
+            // 3. Notificar a Médicos y Administradores
+            self::notificarStaffMedicoYAdmin($titulo, $mensaje, $icono, $color, $deepLink);
+
+        } catch (\Throwable $th) {
+            error_log("Aviso Crítico en Notificaciones: Falló despacho de lesiones [{$accion}]: " . $th->getMessage());
         }
     }
 }

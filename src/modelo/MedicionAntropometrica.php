@@ -159,7 +159,7 @@ class MedicionAntropometrica extends Conexion {
     /**
      * Operación SQL atómica para INSERCIÓN
      */
-    private function insertarMedicionBD(): bool {
+/*     private function insertarMedicionBD(): bool {
         try {
             $sql = "INSERT INTO mediciones_antropometricas 
                         (id_atleta, fecha, peso_kg, talla_cm, envergadura_cm, 
@@ -187,7 +187,63 @@ class MedicionAntropometrica extends Conexion {
             error_log("Error en insertarMedicionBD: " . $e->getMessage());
             return false;
         }
+    } */
+
+private function insertarMedicionBD(): bool {
+    try {
+        // 1. Iniciamos la transacción (El candado ACID)
+        $this->pdo->beginTransaction();
+
+        // 2. Extraer peso anterior (SELECT)
+        $sqlAnt = "SELECT peso_kg FROM mediciones_antropometricas 
+                   WHERE id_atleta = :id_atleta ORDER BY fecha DESC LIMIT 1";
+        $stmtAnt = $this->pdo->prepare($sqlAnt);
+        $stmtAnt->execute([':id_atleta' => $this->datos['id_atleta']]);
+        $anterior = $stmtAnt->fetch(PDO::FETCH_ASSOC);
+
+        // 3. Insertar la nueva medición (INSERT 1)
+        $sqlInsert = "INSERT INTO mediciones_antropometricas (id_atleta, peso_kg, talla_cm, imc) 
+                      VALUES (:id_atleta, :peso, :talla, :imc)";
+        $stmtIn = $this->pdo->prepare($sqlInsert);
+        $stmtIn->execute([
+            ':id_atleta' => $this->datos['id_atleta'],
+            ':peso'      => $this->datos['peso_kg'],
+            ':talla'     => $this->datos['talla_cm'],
+            ':imc'       => $this->datos['imc']
+        ]);
+
+        // 4. Evaluar Regla de Negocio e Insertar Alerta (INSERT 2)
+        if ($anterior) {
+            $pesoNuevo = (float)$this->datos['peso_kg'];
+            $pesoViejo = (float)$anterior['peso_kg'];
+            
+            $variacion = (($pesoNuevo - $pesoViejo) / $pesoViejo) * 100;
+
+            if ($variacion <= -2.0) {
+                $mensaje = "Pérdida de peso crítica detectada: " . round($variacion, 2) . "% respecto a la última medición.";
+                
+                $sqlAlert = "INSERT INTO alertas_biologicas 
+                             (id_atleta, modulo_origen, tipo_alerta, gravedad, mensaje) 
+                             VALUES (:id, 'ANTROPOMETRÍA', 'PÉRDIDA_PESO_SEVERA', 3, :mensaje)";
+                $stmtAlert = $this->pdo->prepare($sqlAlert);
+                $stmtAlert->execute([
+                    ':id'      => $this->datos['id_atleta'],
+                    ':mensaje' => $mensaje
+                ]);
+            }
+        }
+
+        // 5. Confirmar transacción si todo fue exitoso
+        $this->pdo->commit();
+        return true;
+
+    } catch (PDOException $e) {
+        // Si algo falla, la base de datos deshace TODOS los cambios
+        $this->pdo->rollBack();
+        error_log("Error transaccional en Antropometría: " . $e->getMessage());
+        return false;
     }
+}
 
     /**
      * Operación SQL atómica para ACTUALIZACIÓN

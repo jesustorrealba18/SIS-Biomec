@@ -267,6 +267,21 @@ if (isset($_SESSION['id'])) {
                         </div>
                     </div>
                 </div>
+<div class="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg p-5 shadow-sm">
+    <div class="flex items-center gap-3 mb-4">
+        <div class="p-2 bg-red-100 dark:bg-red-500/30 rounded-full">
+            <i class="fas fa-heartbeat text-red-600 dark:text-red-400 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-bold text-red-800 dark:text-red-300">Atletas en Riesgo Clínico</h3>
+    </div>
+    
+    <ul id="listaRiesgos" class="space-y-3">
+        <!-- Se llenará dinámicamente desde JavaScript -->
+        <li class="text-center text-gray-500 dark:text-gray-400 py-4">
+            <i class="fas fa-spinner fa-spin mr-2"></i> Cargando alertas...
+        </li>
+    </ul>
+</div>
 
                 <!-- Filtros -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-5 transition-colors duration-300">
@@ -350,6 +365,8 @@ if (isset($_SESSION['id'])) {
         </div>
     </div>
 </div>
+
+
                 <!-- <div class="mt-2">
                     <h2 id="tituloTablaState" class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-3 ml-2 flex items-center gap-2">
                         <i class="fas fa-check-circle"></i> Mostrando Registros Activos

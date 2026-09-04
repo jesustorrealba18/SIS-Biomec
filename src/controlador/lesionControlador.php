@@ -13,6 +13,7 @@ use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 use GrupoProyecto\SisBiomec\modelo\Lesion;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\modelo\Notificacion;
 
 $objLesion = new Lesion();
 $id_usuario = $_SESSION['id'];
@@ -59,12 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    if ($accion === 'verDetalle') {
+   /*  if ($accion === 'verDetalle') {
         ob_start(); // Buffer para proteger el JSON
         $id_lesion = (int)($_GET['id_lesion'] ?? 0);
         
-        $detalleLesion = $objLesion->obtenerPorId($id_lesion);
-        
+        //$detalleLesion = $objLesion->obtenerPorId($id_lesion);// esta linea me genera problema no existe en el modelo
+        $detalleLesion = $objLesion->obtenerDetallePorId($id_lesion);
         // --- INYECCIÓN DE INTELIGENCIA ---
         if ($detalleLesion) {
             $promedioRPE = $objLesion->obtenerPromedioRPEPrevio($detalleLesion['id_atleta'], $detalleLesion['fecha_evento']);
@@ -74,6 +75,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         ob_end_clean();
         echo json_encode(['status' => 'success', 'data' => $detalleLesion]);
         exit;
+    } */
+
+    if ($accion === 'obtenerRiesgosActivos') {
+    header('Content-Type: application/json');
+    $riesgos = $objLesion->obtenerRiesgosActivos();
+    echo json_encode($riesgos);
+    exit;
     }
 
     // Cargar la vista HTML por defecto
@@ -101,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($res) {
             Bitacora::registrar($id_usuario, 'Lesiones', 'INSERT', null, 'Nueva lesión registrada', null, json_encode($_POST));
+            Notificacion::NotificarLesiones('CREATE', $_POST, (int)$_POST['id_atleta'], $res['id_lesion']);
             echo json_encode(['status' => 'success', 'message' => 'Informe clínico registrado con éxito.']);
         } else {
             $err = $objLesion->obtenerErrores();
@@ -125,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($res) {
             Bitacora::registrar($id_usuario, 'Lesiones', 'UPDATE', $id, 'Actualización de diagnóstico/estado', null, json_encode($_POST));
+            Notificacion::NotificarLesiones('UPDATE', $_POST, (int)$_POST['id_atleta'], $id);
             echo json_encode(['status' => 'success', 'message' => 'Informe clínico actualizado.']);
         } else {
             $err = $objLesion->obtenerErrores();
@@ -145,12 +155,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['status' => 'error', 'message' => 'Debe proveer un ID válido y un motivo justificado (min. 10 caracteres).']); 
             exit; 
         }
+        $detalleLesion = $objLesion->obtenerDetallePorId($id);
         
         $res = $objLesion->eliminarLesionLogicamente($id, $motivo);
         ob_end_clean();
         
         if ($res) {
             Bitacora::registrar($id_usuario, 'Lesiones', 'SOFT_DELETE', $id, 'Movido a papelera', null, "Motivo: $motivo");
+           if ($detalleLesion) {
+               Notificacion::NotificarLesiones('DELETE', $detalleLesion, (int)$detalleLesion['id_atleta'], $id);
+            }
             echo json_encode(['status' => 'success', 'message' => 'Registro movido a la papelera.']);
         } else {
             $err = $objLesion->obtenerErrores();
@@ -169,12 +183,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['status' => 'error', 'message' => 'ID inválido']); 
             exit; 
         }
-        
+        $detalleLesion = $objLesion->obtenerDetallePorId($id);
         $res = $objLesion->reactivarLesion($id);
         ob_end_clean();
         
         if ($res) {
             Bitacora::registrar($id_usuario, 'Lesiones', 'REACTIVATE', $id, 'Restaurado desde papelera', null, null);
+            if ($detalleLesion) {
+               Notificacion::NotificarLesiones('RESTORE', $detalleLesion, (int)$detalleLesion['id_atleta'], $id);
+            }
             echo json_encode(['status' => 'success', 'message' => 'Lesión reactivada exitosamente.']);
         } else {
             $err = $objLesion->obtenerErrores();
