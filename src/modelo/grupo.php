@@ -118,12 +118,23 @@ class Grupo extends Conexion {
                     )";
             
             $stmt = $conex->prepare($sql);
-            
-            return $stmt->execute([
+            $resultado = $stmt->execute([
                 ':nombre'        => trim($datos['nombre'] ?? ''),
                 ':descripcion'   => trim($datos['descripcion'] ?? ''),
                 ':id_entrenador' => !empty($datos['id_entrenador']) ? (int)$datos['id_entrenador'] : null
             ]);
+
+            if ($resultado) {
+                $id_grupo = (int)$conex->lastInsertId();
+                $this->notificarEventoGrupo('crear_grupo', [
+                    'id_grupo' => $id_grupo,
+                    'nombre' => $datos['nombre'] ?? '',
+                    'id_entrenador' => $datos['id_entrenador'] ?? null
+                ]);
+            }
+
+            return $resultado;
+
         } catch (PDOException $e) {
             $this->setUltimoError($e->getMessage());
             return false;
@@ -163,9 +174,23 @@ class Grupo extends Conexion {
     public function cambiarEstadoGrupo(int $id, int $estado): bool {
         $conex = $this->pdo;
         try {
+            $sqlInfo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = ?";
+            $stmtInfo = $conex->prepare($sqlInfo);
+            $stmtInfo->execute([$id]);
+            $grupo = $stmtInfo->fetch(\PDO::FETCH_ASSOC);
+
             $sql = "UPDATE grupos_entrenamiento SET activo = :estado WHERE id_grupo = :id";
             $stmt = $conex->prepare($sql);
-            return $stmt->execute([':estado' => $estado, ':id' => $id]);
+            $resultado = $stmt->execute([':estado' => $estado, ':id' => $id]);
+
+            if ($resultado && $estado === 0 && $grupo) {
+                $this->notificarEventoGrupo('archivar_grupo', [
+                    'id_grupo' => $id,
+                    'nombre' => $grupo['nombre'] ?? 'Grupo de entrenamiento'
+                ]);
+            }
+
+            return $resultado;
         } catch (PDOException $e) {
             return false;
         }
@@ -305,7 +330,7 @@ class Grupo extends Conexion {
             
         } catch (PDOException $e) {
             return [];
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             return [];
         }
     }
@@ -377,18 +402,21 @@ class Grupo extends Conexion {
                 return false;
             }
 
-            // Eliminar TODOS los atletas actuales del grupo
+            $sqlActuales = "SELECT id_atleta FROM grupo_atleta WHERE id_grupo = ?";
+            $stmtActuales = $conex->prepare($sqlActuales);
+            $stmtActuales->execute([$id_grupo]);
+            $atletasActuales = $stmtActuales->fetchAll(\PDO::FETCH_COLUMN);
+
             $sqlEliminar = "DELETE FROM grupo_atleta WHERE id_grupo = ?";
             $stmtEliminar = $conex->prepare($sqlEliminar);
             $stmtEliminar->execute([$id_grupo]);
 
-            // Insertar los nuevos atletas
             $sqlInsert = "INSERT INTO grupo_atleta (id_grupo, id_atleta, fecha_asignacion) 
                           VALUES (?, ?, ?)";
             
             $stmtInsert = $conex->prepare($sqlInsert);
             
-            $insertados = 0;
+            $insertados = [];
             foreach ($atletas as $id_atleta) {
                 $id_atleta = (int)$id_atleta;
                 if ($id_atleta > 0) {
@@ -397,12 +425,47 @@ class Grupo extends Conexion {
                         $id_atleta,
                         $fecha_asignacion
                     ]);
-                    $insertados++;
+                    $insertados[] = $id_atleta;
                 }
             }
 
             $conex->commit();
-            return $insertados > 0;
+
+            if (!empty($insertados)) {
+                $sqlInfo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = ?";
+                $stmtInfo = $this->pdo->prepare($sqlInfo);
+                $stmtInfo->execute([$id_grupo]);
+                $grupoInfo = $stmtInfo->fetch(\PDO::FETCH_ASSOC);
+
+                $this->notificarEventoGrupo('asignar_atletas', [
+                    'id_grupo' => $id_grupo,
+                    'atletas' => $insertados,
+                    'nombre' => $grupoInfo['nombre'] ?? 'Grupo de entrenamiento'
+                ]);
+
+                $removidos = array_diff($atletasActuales, $insertados);
+                if (!empty($removidos)) {
+                    foreach ($removidos as $id_atleta) {
+                        $sqlAtleta = "SELECT id_usuario FROM atletas WHERE id_atleta = ? AND estado = 1";
+                        $stmtA = $this->pdo->prepare($sqlAtleta);
+                        $stmtA->execute([$id_atleta]);
+                        $atleta = $stmtA->fetch(\PDO::FETCH_ASSOC);
+
+                        if ($atleta && !empty($atleta['id_usuario'])) {
+                            \GrupoProyecto\SisBiomec\modelo\Notificacion::enviar(
+                                (int)$atleta['id_usuario'],
+                                "📤 Removido del grupo de entrenamiento",
+                                "Has sido removido del grupo \"{$grupoInfo['nombre']}\". Contacta a tu entrenador para más información.",
+                                'fa-user-minus',
+                                'orange',
+                                "?p=grupo"
+                            );
+                        }
+                    }
+                }
+            }
+
+            return !empty($insertados);
 
         } catch (PDOException $e) {
             if ($conex->inTransaction()) {
@@ -436,6 +499,11 @@ class Grupo extends Conexion {
         try {
             $conex->beginTransaction();
 
+            $sqlActual = "SELECT id_grupo FROM grupo_atleta WHERE id_atleta = ?";
+            $stmtActual = $conex->prepare($sqlActual);
+            $stmtActual->execute([$id_atleta]);
+            $grupo_actual = $stmtActual->fetchColumn();
+
             $sqlEliminar = "DELETE FROM grupo_atleta WHERE id_atleta = ?";
             $stmtEliminar = $conex->prepare($sqlEliminar);
             $stmtEliminar->execute([$id_atleta]);
@@ -446,6 +514,15 @@ class Grupo extends Conexion {
             $stmtInsert->execute([$id_nuevo_grupo, $id_atleta]);
 
             $conex->commit();
+
+            if ($grupo_actual) {
+                $this->notificarEventoGrupo('cambiar_grupo_atleta', [
+                    'id_atleta' => $id_atleta,
+                    'id_grupo_anterior' => (int)$grupo_actual,
+                    'id_grupo_nuevo' => $id_nuevo_grupo
+                ]);
+            }
+
             return true;
 
         } catch (PDOException $e) {
@@ -605,6 +682,58 @@ class Grupo extends Conexion {
             return $resultado ?: null;
         } catch (PDOException $e) {
             return null;
+        }
+    }
+
+    private function notificarEventoGrupo(string $evento, array $datos): void {
+        try {
+            if (!class_exists('\GrupoProyecto\SisBiomec\modelo\Notificacion')) {
+                return;
+            }
+
+            switch ($evento) {
+                case 'asignar_atletas':
+                    if (!empty($datos['id_grupo']) && !empty($datos['atletas'])) {
+                        \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarAsignacionGrupo(
+                            $datos['id_grupo'],
+                            $datos['atletas'],
+                            'ASIGNAR'
+                        );
+                    }
+                    break;
+
+                case 'crear_grupo':
+                    if (!empty($datos['id_grupo']) && !empty($datos['id_entrenador'])) {
+                        // Obtener id_usuario del entrenador
+                        $sql = "SELECT id_usuario FROM entrenador WHERE id_entrenador = :id_entrenador";
+                        $stmt = $this->pdo->prepare($sql);
+                        $stmt->execute([':id_entrenador' => $datos['id_entrenador']]);
+                        $entrenador = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+                        if ($entrenador && !empty($entrenador['id_usuario'])) {
+                            \GrupoProyecto\SisBiomec\modelo\Notificacion::enviar(
+                                (int)$entrenador['id_usuario'],
+                                "Nuevo grupo de entrenamiento creado",
+                                "Se ha creado el grupo \"{$datos['nombre']}\". Ya puedes comenzar a asignar atletas.",
+                                'fa-users-cog',
+                                'indigo',
+                                "?p=grupo&accion=ver&id={$datos['id_grupo']}"
+                            );
+                        }
+                    }
+                    break;
+
+                case 'archivar_grupo':
+                    if (!empty($datos['id_grupo']) && !empty($datos['nombre'])) {
+                        \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarGrupoArchivado(
+                            $datos['id_grupo'],
+                            $datos['nombre']
+                        );
+                    }
+                    break;
+            }
+        } catch (\Throwable $e) {
+            error_log("Error en notificarEventoGrupo: " . $e->getMessage());
         }
     }
 }

@@ -680,6 +680,30 @@ async function abrirModalVerGrupo(idGrupo) {
     }
 }
 
+async function desasignarAtleta(id_atleta, id_grupo) {
+    if (!confirm("¿Está seguro de remover este atleta del grupo?")) return;
+
+    const formData = new FormData();
+    formData.append('accion', 'desasignarAtleta');
+    formData.append('id_atleta', id_atleta);
+
+    const resultado = await peticionAjax('desasignarAtleta', formData);
+    
+    if (resultado && resultado.status === 'success') {
+        if (typeof UI !== 'undefined') {
+            UI.exito('Desasignado', 'El atleta ha sido removido del grupo.');
+        }
+        if (grupoActualVer) {
+            abrirModalVerGrupo(grupoActualVer.id_grupo);
+        }
+        cargarTablaGrupos();
+    } else {
+        if (typeof UI !== 'undefined') {
+            UI.error('Error', resultado?.message || 'No se pudo desasignar el atleta.');
+        }
+    }
+}
+
 function renderizarDetalleGrupo(grupo, atletas) {
     const contenido = document.getElementById('detalleGrupoContenido');
 
@@ -695,19 +719,26 @@ function renderizarDetalleGrupo(grupo, atletas) {
             <div class="space-y-2 max-h-60 overflow-y-auto pr-2">
                 ${atletas.map(atleta => `
                     <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-white/5 rounded-xl hover:bg-gray-200 dark:hover:bg-white/10 transition">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                        <div class="flex items-center gap-3 flex-1">
+                            <div class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0">
                                 <i class="fas fa-user"></i>
                             </div>
-                            <div>
+                            <div class="flex-1 min-w-0">
                                 <p class="text-gray-900 dark:text-white font-medium text-sm">${escapeHtml(atleta.nombres || '')} ${escapeHtml(atleta.apellidos || '')}</p>
-                                <div class="flex gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                <div class="flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
                                     <span>${atleta.edad || 'N/A'} años</span>
                                     <span class="text-emerald-600 dark:text-emerald-400">${escapeHtml(atleta.categoria_nombre || 'Sin categoría')}</span>
                                     <span class="text-gray-500 dark:text-gray-400">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
                                 </div>
                             </div>
                         </div>
+                        ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
+                            <button onclick="desasignarAtleta(${atleta.id_atleta}, ${grupo.id_grupo})" 
+                                    class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition duration-200 ml-2 flex-shrink-0"
+                                    title="Remover del grupo">
+                                <i class="fas fa-user-minus text-base"></i>
+                            </button>
+                        ` : ''}
                     </div>
                 `).join('')}
             </div>
@@ -807,7 +838,7 @@ async function cargarTablaGrupos() {
     }
 
     gruposData = grupos;
-    tablaPagina = 1; // Reiniciar a la primera página tras recargar
+    tablaPagina = 1;
     renderTablaGrupos();
 }
 
@@ -817,7 +848,6 @@ function renderTablaGrupos() {
 
     let datos = gruposData.slice();
 
-    // 1. Filtrado de búsqueda
     if (tablaFiltro) {
         datos = datos.filter(g => {
             const busqueda = `${g.nombre} ${g.descripcion} ${g.entrenador_nombre || ''}`.toLowerCase();
@@ -825,7 +855,6 @@ function renderTablaGrupos() {
         });
     }
 
-    // 2. Ordenamiento por columnas
     if (tablaSortCol) {
         const col = tablaSortCol;
         const dir = tablaSortDir === 'asc' ? 1 : -1;
@@ -840,7 +869,6 @@ function renderTablaGrupos() {
         });
     }
 
-    // 3. Cálculos de Paginación
     const total = datos.length;
     const totalPaginas = Math.max(1, Math.ceil(total / tablaPorPagina));
     if (tablaPagina > totalPaginas) tablaPagina = totalPaginas;
@@ -850,7 +878,6 @@ function renderTablaGrupos() {
 
     actualizarInfoYPieTabla(total, totalPaginas);
 
-    // 4. Renderizado HTML de los 10 registros de la página actual
     if (pagina.length === 0 && total > 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500 dark:text-gray-400"><span class="text-xs uppercase tracking-wider">Sin resultados para la búsqueda</span></td></tr>`;
         return;
@@ -959,17 +986,15 @@ function actualizarInfoYPieTabla(total, totalPaginas) {
     pieTabla.innerHTML = html;
 }
 
-// Listener para la Búsqueda Instantánea con Paginación
 const inputBusqueda = document.getElementById('busquedaNombre');
 if (inputBusqueda) {
     inputBusqueda.addEventListener('input', function(e) {
         tablaFiltro = e.target.value.toLowerCase().trim();
-        tablaPagina = 1; // Resetea a la página 1 al filtrar
+        tablaPagina = 1;
         renderTablaGrupos();
     });
 }
 
-// Oyente de clic en los encabezados para ordenar columnas
 document.querySelectorAll('[data-sort]').forEach(th => {
     th.addEventListener('click', () => {
         const col = th.getAttribute('data-sort');
@@ -1127,7 +1152,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnFiltrarEdad) {
         btnFiltrarEdad.addEventListener('click', filtrarAtletasPorEdad);
     }
-
     const btnLimpiarFiltros = document.getElementById('btnLimpiarFiltros');
     if (btnLimpiarFiltros) {
         btnLimpiarFiltros.addEventListener('click', function() {
@@ -1136,4 +1160,14 @@ document.addEventListener('DOMContentLoaded', () => {
             cargarAtletasDisponibles();
         });
     }
+
+    async function obtenerGruposParaSelect() {
+    try {
+        const grupos = await peticionAjax('listarGruposConConteo');
+        return grupos || [];
+    } catch (error) {
+        console.error('Error obteniendo grupos:', error);
+        return [];
+    }
+}
 });

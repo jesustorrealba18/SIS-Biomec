@@ -64,17 +64,29 @@ $pagina = 'reportes';
         @media (max-width: 767px) {
             .tabla-responsive thead { display: none; }
             .tabla-responsive tbody tr {
-                display: block; padding: 12px; margin-bottom: 8px;
-                border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;
+                display: block;
+                padding: 12px;
+                margin-bottom: 8px;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                background: #ffffff;
             }
             .dark .tabla-responsive tbody tr { border-color: #252345; background: #161430; }
             .tabla-responsive tbody td {
-                display: flex; justify-content: space-between; align-items: center;
-                padding: 6px 0; border: none;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 6px 0;
+                border: none;
             }
             .tabla-responsive tbody td::before {
-                content: attr(data-label); font-size: 10px; text-transform: uppercase;
-                color: #6b7280; font-weight: 700; letter-spacing: 0.05em; margin-right: 8px;
+                content: attr(data-label);
+                font-size: 10px;
+                text-transform: uppercase;
+                color: #6b7280;
+                font-weight: 700;
+                letter-spacing: 0.05em;
+                margin-right: 8px;
             }
         }
         @media (min-width: 768px) {
@@ -128,6 +140,7 @@ if (isset($_SESSION['id'])) {
 
                 <!-- GRID DE CARDS -->
                 <div id="gridCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Reportes Existentes -->
                     <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('evolucion_marcas')">
                         <div class="flex items-start justify-between mb-4">
                             <div class="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xl">
@@ -204,16 +217,62 @@ if (isset($_SESSION['id'])) {
                         <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Lista de Representantes (PDF)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Directorio de representantes con filtro por estado.</p>
                     </div>
+
                     <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('lista_entrenadores')">
-             <div class="flex items-start justify-between mb-4">
-                  <div class="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center text-rose-600 dark:text-rose-400 text-xl">
-                 <i class="fas fa-chalkboard-teacher"></i>
-            </div>
-        <i class="fas fa-chevron-right text-gray-400 dark:text-gray-600 mt-1"></i>
-         </div>
-          <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Lista de Entrenadores (PDF)</h3>
-       <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Directorio completo de entrenadores. Filtra por entrenador específico o general.</p>
-          </div>
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center text-rose-600 dark:text-rose-400 text-xl">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 dark:text-gray-600 mt-1"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Lista de Entrenadores (PDF)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Directorio completo de entrenadores. Filtra por entrenador especifico o general.</p>
+                    </div>
+
+                    <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('lista_grupos')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-cyan-100 dark:bg-cyan-500/15 flex items-center justify-center text-cyan-600 dark:text-cyan-400 text-xl">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 dark:text-gray-600 mt-1"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Lista de Grupos (PDF)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Directorio completo de grupos de entrenamiento con filtro por estado.</p>
+                    </div>
+
+                    <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('detalle_grupo')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-fuchsia-100 dark:bg-fuchsia-500/15 flex items-center justify-center text-fuchsia-600 dark:text-fuchsia-400 text-xl">
+                                <i class="fas fa-users-cog"></i>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 dark:text-gray-600 mt-1"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Detalle de Grupo (PDF)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Informacion completa del grupo con lista detallada de atletas asignados.</p>
+                    </div>
+
+                    <!-- NUEVOS REPORTES DE SESIONES -->
+                    <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('detalle_sesion')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center text-amber-600 dark:text-amber-400 text-xl">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 dark:text-gray-600 mt-1"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Detalle de Sesion (PDF)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Informacion completa de la sesion con series, volumen por bloque y detalles.</p>
+                    </div>
+
+                    <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('resumen_sesiones_grupo')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-teal-100 dark:bg-teal-500/15 flex items-center justify-center text-teal-600 dark:text-teal-400 text-xl">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 dark:text-gray-600 mt-1"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Resumen de Sesiones por Grupo (PDF)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Resumen de volumen y sesiones por grupo en un periodo con grafica de barras.</p>
+                    </div>
                 </div>
 
                 <!-- SECCION DINAMICA -->
