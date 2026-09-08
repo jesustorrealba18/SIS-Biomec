@@ -1,5 +1,4 @@
 <?php
-
 ob_start();
 
 if (empty($_SESSION['id'])) {
@@ -87,6 +86,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         jsonSalida($objReporte->obtenerCategoriasSelect());
     }
 
+    if ($accion === 'select_entrenadores') {
+       jsonSalida($objReporte->obtenerEntrenadoresSelect());
+    }
+
+    if ($accion === 'lista_entrenadores') {
+        $idEntrenador = isset($_GET['id_entrenador']) && $_GET['id_entrenador'] !== '' 
+          ? (int)$_GET['id_entrenador'] 
+          : null;
+         jsonSalida($objReporte->listaEntrenadores($idEntrenador));
+    }
     require_once 'vista/reportes.php';
 }
 
@@ -437,6 +446,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         . '<table><thead><tr><th>#</th><th>Cedula</th><th>Nombre Completo</th><th>Telefono</th><th>Parentesco</th><th>Atletas Vinculados</th></tr></thead><tbody>' . $filas . '</tbody></table>'
                         . '<footer>Generado el ' . $fechaGeneracion . ' por ' . htmlspecialchars($generadoPor) . '</footer>'
                         . '</body></html>';
+                    break;
+
+                case 'lista_entrenadores':
+                    $idEntrenador = isset($_POST['id_entrenador']) && $_POST['id_entrenador'] !== '' 
+                        ? (int)$_POST['id_entrenador'] 
+                        : null;
+                    
+                    $datos = $objReporte->listaEntrenadores($idEntrenador);
+                    $titulo = $idEntrenador ? 'Ficha del Entrenador' : 'Lista de Entrenadores';
+
+                    $filas = '';
+                    $num = 0;
+                    foreach ($datos as $d) {
+                        $num++;
+                        $genero = $d['genero'] === 'M' ? 'Masculino' : 'Femenino';
+                        $filas .= '<tr>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . $num . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['cedula']) . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;font-weight:500;">' . htmlspecialchars($d['nombres'] . ' ' . $d['apellidos']) . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['edad']) . ' años</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($genero) . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['telefono']) . '</td>'
+                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['correo'] ?: '-') . '</td>'
+                            . '</tr>';
+                    }
+
+                    $total = count($datos);
+                    $subtitulo = $idEntrenador 
+                        ? 'Ficha completa del entrenador' 
+                        : 'Total: ' . $total . ' entrenadores registrados';
+
+                    $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+                        body{font-family:Helvetica,Arial,sans-serif;margin:30px;color:#1f2937;}
+                        h1{color:#4f46e5;font-size:18px;margin-bottom:4px;}
+                        h2{color:#374151;font-size:12px;font-weight:normal;margin-bottom:4px;}
+                        h2 span{font-weight:bold;color:#4f46e5;}
+                        table{width:100%;border-collapse:collapse;font-size:10px;margin-top:15px;}
+                        th{background:#4f46e5;color:#fff;padding:6px 8px;text-align:left;font-size:10px;}
+                        td{padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;}
+                        tr:nth-child(even) td{background:#f9fafb;}
+                        footer{margin-top:30px;font-size:9px;color:#9ca3af;text-align:center;}
+                        .ficha-dato{display:grid;grid-template-columns:120px 1fr;gap:8px;margin:4px 0;font-size:12px;}
+                        .ficha-label{color:#6b7280;font-weight:bold;}
+                    </style></head><body>';
+
+                    if ($idEntrenador !== null && count($datos) > 0) {
+                        $d = $datos[0];
+                        $genero = $d['genero'] === 'M' ? 'Masculino' : 'Femenino';
+                        $html .= '<h1>' . htmlspecialchars($d['nombres'] . ' ' . $d['apellidos']) . '</h1>';
+                        $html .= '<div style="margin:20px 0;">';
+                        $html .= '<div class="ficha-dato"><span class="ficha-label">Cédula:</span><span>' . htmlspecialchars($d['cedula']) . '</span></div>';
+                        $html .= '<div class="ficha-dato"><span class="ficha-label">Fecha Nacimiento:</span><span>' . htmlspecialchars($d['fecha_nacimiento']) . ' (' . $d['edad'] . ' años)</span></div>';
+                        $html .= '<div class="ficha-dato"><span class="ficha-label">Género:</span><span>' . htmlspecialchars($genero) . '</span></div>';
+                        $html .= '<div class="ficha-dato"><span class="ficha-label">Teléfono:</span><span>' . htmlspecialchars($d['telefono']) . '</span></div>';
+                        $html .= '<div class="ficha-dato"><span class="ficha-label">Correo:</span><span>' . htmlspecialchars($d['correo'] ?: '-') . '</span></div>';
+                        $html .= '<div class="ficha-dato"><span class="ficha-label">Dirección:</span><span>' . htmlspecialchars($d['direccion'] ?: '-') . '</span></div>';
+                        $html .= '<div class="ficha-dato"><span class="ficha-label">Atletas a cargo:</span><span>' . htmlspecialchars($d['total_atletas'] ?? '0') . '</span></div>';
+                        $html .= '<div class="ficha-dato"><span class="ficha-label">Grupos asignados:</span><span>' . htmlspecialchars($d['grupos_asignados'] ?: 'Ninguno') . '</span></div>';
+                        $html .= '</div>';
+                    } else {
+                        $html .= '<h1>' . $titulo . '</h1>
+                            <h2>' . $subtitulo . '</h2>
+                            <table><thead><tr><th>#</th><th>Cédula</th><th>Nombre Completo</th><th>Edad</th><th>Género</th><th>Teléfono</th><th>Correo</th></tr></thead><tbody>' . $filas . '</tbody></table>';
+                    }
+
+                    $html .= '<footer>Generado el ' . $fechaGeneracion . ' por ' . htmlspecialchars($generadoPor) . '</footer>
+                        </body></html>';
                     break;
 
                 default:

@@ -286,4 +286,52 @@ class Reporte extends Conexion
             return [];
         }
     }
+
+    public function listaEntrenadores(?int $idEntrenador = null): array
+    {
+        try {
+            $sql = "SELECT e.id_entrenador, e.cedula, e.nombres, e.apellidos, 
+                           e.fecha_nacimiento, e.genero, e.correo, e.telefono, e.direccion, e.foto,
+                           TIMESTAMPDIFF(YEAR, e.fecha_nacimiento, CURDATE()) AS edad,
+                           COUNT(DISTINCT ga.id_atleta) AS total_atletas,
+                           GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') AS grupos_asignados
+                    FROM entrenador e
+                    LEFT JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
+                    LEFT JOIN grupo_atleta ga ON ga.id_grupo = g.id_grupo
+                    WHERE 1=1";
+        
+            $params = [];
+        
+            if ($idEntrenador !== null && $idEntrenador > 0) {
+                $sql .= " AND e.id_entrenador = :id_entrenador";
+                $params[':id_entrenador'] = $idEntrenador;
+            }
+        
+            $sql .= " GROUP BY e.id_entrenador ORDER BY e.apellidos, e.nombres ASC";
+        
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $val) {
+                $stmt->bindValue($key, $val);
+            }
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Reporte::listaEntrenadores - " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function obtenerEntrenadoresSelect(): array
+    {
+        try {
+            $sql = "SELECT id_entrenador, CONCAT(nombres, ' ', apellidos) AS nombre_completo
+                    FROM entrenador
+                    ORDER BY apellidos, nombres ASC";
+            $stmt = $this->pdo->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Reporte::obtenerEntrenadoresSelect - " . $e->getMessage());
+            return [];
+        }
+    }
 }

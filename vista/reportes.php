@@ -204,6 +204,16 @@ if (isset($_SESSION['id'])) {
                         <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Lista de Representantes (PDF)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Directorio de representantes con filtro por estado.</p>
                     </div>
+                    <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('lista_entrenadores')">
+             <div class="flex items-start justify-between mb-4">
+                  <div class="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center text-rose-600 dark:text-rose-400 text-xl">
+                 <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+        <i class="fas fa-chevron-right text-gray-400 dark:text-gray-600 mt-1"></i>
+         </div>
+          <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Lista de Entrenadores (PDF)</h3>
+       <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Directorio completo de entrenadores. Filtra por entrenador específico o general.</p>
+          </div>
                 </div>
 
                 <!-- SECCION DINAMICA -->

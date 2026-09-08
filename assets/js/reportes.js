@@ -6,6 +6,7 @@ let datosGlobales = [];
 let atletasCache = [];
 let gruposCache = [];
 let categoriasCache = [];
+let entrenadoresCache = [];
 
 const ESTILOS = ['Libre', 'Espalda', 'Braza', 'Mariposa', 'Combinado'];
 const DISTANCIAS = [50, 100, 200, 400, 800, 1500];
@@ -18,7 +19,8 @@ const TITULOS = {
     carga_srpe: { titulo: 'Monitoreo de Carga (sRPE)', sub: 'Carga subjetiva, sueno y bienestar diario' },
     ficha_atleta: { titulo: 'Ficha del Atleta', sub: 'Hoja de vida completa - Descarga directa en PDF' },
     lista_atletas: { titulo: 'Lista de Atletas', sub: 'Directorio completo - Descarga directa en PDF' },
-    lista_representantes: { titulo: 'Lista de Representantes', sub: 'Directorio de representantes - Descarga directa en PDF' }
+    lista_representantes: { titulo: 'Lista de Representantes', sub: 'Directorio de representantes - Descarga directa en PDF' },
+    lista_entrenadores: { titulo: 'Lista de Entrenadores', sub: 'Directorio completo de entrenadores - Descarga directa en PDF' }
 };
 
 async function peticionAjax(accion, params = {}) {
@@ -36,14 +38,16 @@ async function peticionAjax(accion, params = {}) {
 }
 
 async function cargarSelects() {
-    const [atletas, grupos, categorias] = await Promise.all([
+    const [atletas, grupos, categorias, entrenadores] = await Promise.all([
         peticionAjax('select_atletas'),
         peticionAjax('select_grupos'),
-        peticionAjax('select_categorias')
+        peticionAjax('select_categorias'),
+        peticionAjax('select_entrenadores')
     ]);
     if (atletas) atletasCache = atletas;
     if (grupos) gruposCache = grupos;
     if (categorias) categoriasCache = categorias;
+    if (entrenadores) entrenadoresCache = entrenadores;
 }
 
 function opcionesAtletas(selected) {
@@ -149,6 +153,15 @@ function mostrarReporte(tipo) {
         return;
     }
 
+    if (tipo === 'lista_entrenadores') {
+        renderFiltrosListaEntrenadores();
+        document.getElementById('contenedorGrafica').classList.add('hidden');
+        document.getElementById('contenedorTabla').classList.add('hidden');
+        document.getElementById('estadoVacio').classList.add('hidden');
+        document.getElementById('btnDescargarPDF').classList.remove('hidden');
+        return;
+    }
+
     document.getElementById('btnDescargarPDF').classList.remove('hidden');
     renderFiltros(tipo);
     seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -212,6 +225,18 @@ function renderFiltrosListaRepresentantes() {
     document.getElementById('contenedorFiltros').innerHTML =
         labelFiltro('Estado', 'fEstado', selectHtml('fEstado', opcionesEstadosRep()))
         + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarListaRepresentantesDirecta()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
+}
+
+function renderFiltrosListaEntrenadores() {
+    document.getElementById('contenedorFiltros').innerHTML =
+        labelFiltro('Entrenador', 'fEntrenador', selectHtml('fEntrenador', opcionesEntrenadores()))
+        + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarListaEntrenadoresDirecta()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
+}
+
+function opcionesEntrenadores(selected) {
+    selected = selected || '';
+    return '<option value="">Todos</option>' +
+        entrenadoresCache.map(e => '<option value="' + e.id_entrenador + '" ' + (e.id_entrenador == selected ? 'selected' : '') + '>' + e.nombre_completo + '</option>').join('');
 }
 
 async function aplicarFiltros() {
@@ -484,6 +509,49 @@ async function descargarListaRepresentantesDirecta() {
         var a = document.createElement('a'); a.href = url; a.download = 'lista_representantes_' + new Date().toISOString().slice(0,10) + '.pdf';
         document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     } catch (e) { console.error('Error Lista Representantes:', e); UI.error('Error', 'No se pudo generar el PDF.'); }
+}
+
+async function descargarListaEntrenadoresDirecta() {
+    var selEntrenador = document.getElementById('fEntrenador');
+    if (!selEntrenador) return;
+    
+    var idEntrenador = selEntrenador.value;
+    if (!idEntrenador) {
+        UI.advertencia('Seleccione un entrenador', 'Para descargar la ficha individual, debe seleccionar un entrenador específico.');
+        return;
+    }
+    
+    var form = new FormData();
+    form.append('accion', 'generar_pdf');
+    form.append('tipo_reporte', 'lista_entrenadores');
+    form.append('id_entrenador', idEntrenador);
+    
+    UI.exito('Generando PDF', 'La ficha del entrenador se descargará automáticamente.');
+    try {
+        var res = await fetch(API_URL, { method: 'POST', body: form });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        var ct = res.headers.get('content-type');
+        if (!ct || !ct.includes('application/pdf')) { 
+            var textoError = await res.text();
+            console.error('ERROR DEL SERVIDOR:', textoError);
+            UI.error('Error', 'El servidor devolvió un error en lugar del PDF.');
+            return; 
+        }
+
+        var blob = await res.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); 
+        a.href = url;
+        a.download = 'ficha_entrenador_' + idEntrenador + '.pdf';
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a); 
+        URL.revokeObjectURL(url);
+    } catch (e) { 
+        console.error('Error en descarga:', e); 
+        UI.error('Error', 'No se pudo generar el PDF.'); 
+    }
 }
 
 document.addEventListener('DOMContentLoaded', cargarSelects);
