@@ -17,7 +17,7 @@
                   <?php echo ($pagina == 'inicio') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
             <i class="fas fa-home w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
                       <?php echo ($pagina == 'inicio') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i>
-            <span>Inicio</span>
+            <span class="font-medium">Inicio</span>
         </a>
 
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
@@ -28,7 +28,7 @@
                   <?php echo ($pagina == 'analitica') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
             <i class="fas fa-chart-pie w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
                       <?php echo ($pagina == 'analitica') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i>
-            <span>Analítica</span>
+            <span class="font-medium">Analítica</span>
         </a>
         <?php endif; ?>
 
@@ -87,8 +87,8 @@
                   text-gray-700 dark:text-gray-300 
                   hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
                   <?php echo ($pagina == 'horario') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-clock text-indigo-500 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'horario') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <i class="fas fa-clock w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+   <?php echo ($pagina == 'horario') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
             <span class="font-medium">Horario</span>
         </a>
         <?php endif; ?>
@@ -99,8 +99,8 @@
                   text-gray-700 dark:text-gray-300 
                   hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
                   <?php echo ($pagina == 'grupo') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-layer-group text-indigo-500 w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'grupo') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <i class="fas fa-layer-group w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+   <?php echo ($pagina == 'grupo') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i>
             <span class="font-medium">Grupo</span>
         </a>
         <?php endif; ?>
@@ -111,8 +111,8 @@
                   text-gray-700 dark:text-gray-300 
                   hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
                   <?php echo ($pagina == 'asignacion') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-exchange-alt text-indigo-500 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'asignacion') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <i class="fas fa-exchange-alt w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+   <?php echo ($pagina == 'asignacion') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
             <span class="font-medium">Asignacion de Carriles</span>
         </a>
         <?php endif; ?>
@@ -123,8 +123,8 @@
                    text-gray-700 dark:text-gray-300 
                    hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
                    <?php echo ($pagina == 'drills') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-dumbbell text-indigo-500 w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'drills') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <i class="fas fa-dumbbell w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+   <?php echo ($pagina == 'drills') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i>
             <span class="font-medium">Drills</span>
         </a>
         <?php endif; ?>
@@ -139,8 +139,8 @@
                   text-gray-700 dark:text-gray-300 
                   hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
                   <?php echo ($pagina == 'sesiones') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-swimming-pool text-indigo-500 w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'sesiones') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <i class="fas fa-swimming-pool w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+   <?php echo ($pagina == 'sesiones') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
             <span class="font-medium">Sesiones</span>
         </a>
         <?php endif; ?>
@@ -288,8 +288,8 @@
                   text-gray-700 dark:text-gray-300 
                   hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
                   <?php echo ($pagina == 'reportes') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-chart-bar w-5 text-center text-indigo-500 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                       <?php echo ($pagina == 'reportes') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <i class="fas fa-chart-bar w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+   <?php echo ($pagina == 'reportes') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i>
              <span class="font-medium">Reportes</span>
         </a>
         <?php endif; ?>
@@ -302,7 +302,7 @@
                   <?php echo ($pagina == 'sistemaExperto') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
             <i class="fas fa-brain w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
                       <?php echo ($pagina == 'sistemaExperto') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i>
-            <span>Sistema Experto</span>
+            <span class="font-medium">Sistema Experto</span>
         </a>
         <?php endif; ?>
 
