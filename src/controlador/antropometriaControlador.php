@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // =====================================================================
 // CONTROLADOR PIVOTE: SEGUIMIENTO ANTROPOMÉTRICO (RF-05)
 // =====================================================================
@@ -8,6 +11,7 @@ use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\modelo\MedicionAntropometrica;
 use GrupoProyecto\SisBiomec\modelo\Atleta;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+use GrupoProyecto\SisBiomec\modelo\Notificacion;
 
 
 // 2. Filtro de Seguridad estricto
@@ -25,6 +29,7 @@ $objAntropometria = new MedicionAntropometrica();
 // =====================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $accion = $_GET['accion'] ?? '';
+
 
     // Ruta A: Listar atletas para el buscador predictivo del formulario
     if ($accion === 'listarAtletasSelect') {
@@ -144,6 +149,15 @@ if ($accion === 'listarAlertas') {
     exit;
 }
 
+// Ruta H: Obtener alertas biológicas activas (para el widget de la interfaz)
+if ($accion === 'obtenerAlertasActivas') {
+    Autorizacion::exigir('antropometria', 'registrar');
+    header('Content-Type: application/json');
+    $alertas = $objAntropometria->obtenerAlertasActivas();
+    echo json_encode($alertas);
+    exit;
+}
+
     // Por defecto: cargar la pantalla HTML
     require_once 'vista/antropometria.php';
     exit;
@@ -154,7 +168,9 @@ if ($accion === 'listarAlertas') {
 // =====================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
-    $accionPost = $_POST['accion'] ?? '';
+    
+    //$accionPost = $_POST['accion'] ?? '';
+    $accionPost = $_GET['accion'] ?? $_POST['accion'] ?? '';
 
     // Mapeo unificado de Payload: 
     // Extraemos los datos una sola vez para mantener el código DRY.
@@ -188,6 +204,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'N/A',
                 "Nueva medición. Atleta ID: {$payload['id_atleta']}, Peso: {$payload['peso_kg']} kg, Talla: {$payload['talla_cm']} cm"
             );
+            Notificacion::NotificarAntropometria('CREATE', $payload, (int)$payload['id_atleta']);
+            $alerta = $objAntropometria->getAlertaGenerada();
+            if (!empty($alerta)) {
+                $enlace = "?p=antropometria&id=" . $alerta['id_medicion'];
+                Notificacion::NotificarAlertaBiologica((int)$payload['id_atleta'], $alerta['mensaje'], 'Antropometría', $enlace);
+            }
             echo json_encode(['status' => 'success', 'message' => 'Evaluación registrada correctamente.']);
         } else {
             $errores = $objAntropometria->obtenerErroresValidacion();
@@ -228,6 +250,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'Ver valores previos en auditoría',
                 "Medición actualizada. Justificación: $justificacion. Nuevos datos: Peso {$payload['peso_kg']} kg, Talla {$payload['talla_cm']} cm"
             );
+            Notificacion::NotificarAntropometria('UPDATE', $payload, (int)$payload['id_atleta'], $id_medicion);
+            $alerta = $objAntropometria->getAlertaGenerada();
+            if (!empty($alerta)) {
+                $enlace = "?p=antropometria&id=" . $alerta['id_medicion'];
+                \GrupoProyecto\SisBiomec\modelo\Notificacion::NotificarAlertaBiologica((int)$payload['id_atleta'], $alerta['mensaje'], 'Antropometría', $enlace);
+            }
             echo json_encode(['status' => 'success', 'message' => 'El registro ha sido corregido exitosamente.']);
         } else {
             $errores = $objAntropometria->obtenerErroresValidacion();
@@ -243,10 +271,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // -----------------------------------------------------------------
     // Ruta G: Eliminar físicamente una medición (Hard Delete)
     // -----------------------------------------------------------------
-    if ($accionPost === 'eliminar') {
+/*     if ($accionPost === 'eliminar') {
         Autorizacion::exigir('antropometria', 'registrar');
         $id_medicion = (int)($_POST['id_medicion'] ?? 0);
         $motivo = trim($_POST['motivo'] ?? 'Sin justificación');
+
+        // 1. OBTENER DETALLE ANTES DE ELIMINAR PARA SABER A QUIÉN NOTIFICAR
+    $detalleMed = $objAntropometria->obtenerDetallePorId($id_medicion);
 
         // El modelo valida internamente el $id_medicion
         if ($objAntropometria->eliminarMedicion($id_medicion)) {
@@ -259,13 +290,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'Datos eliminados permanentemente',
                 "Medición eliminada. Motivo: $motivo"
             );
+            if ($detalleMed) {
+            Notificacion::NotificarAntropometria('DELETE', $detalleMed, (int)$detalleMed['id_atleta'], $id_medicion);
+            }
             echo json_encode(['status' => 'success', 'message' => 'Medición eliminada correctamente.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'No se pudo eliminar la medición.']);
         }
         exit;
     }
-
+ */
     // -----------------------------------------------------------------
 // Ruta H: Anular medición (soft delete)
 // -----------------------------------------------------------------
@@ -277,6 +311,9 @@ if ($accionPost === 'anular') {
         echo json_encode(['status' => 'error', 'message' => 'ID inválido']);
         exit;
     }
+
+    // 1. OBTENER DETALLE ANTES DE ELIMINAR PARA SABER A QUIÉN NOTIFICAR
+    $detalleMed = $objAntropometria->obtenerDetallePorId($id_medicion);
     // Llama al método anular del modelo (lo implementaremos luego)
     if ($objAntropometria->anularMedicion($id_medicion, $motivo)) {
         Bitacora::registrar(
@@ -288,6 +325,9 @@ if ($accionPost === 'anular') {
             'NULL',
             "Medición anulada. Motivo: $motivo"
         );
+         if ($detalleMed) {
+            Notificacion::NotificarAntropometria('DELETE', $detalleMed, (int)$detalleMed['id_atleta'], $id_medicion);
+            }
         echo json_encode(['status' => 'success', 'message' => 'Medición anulada correctamente']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'No se pudo anular la medición']);
@@ -305,6 +345,7 @@ if ($accionPost === 'reactivar') {
         echo json_encode(['status' => 'error', 'message' => 'ID inválido']);
         exit;
     }
+     $detalleMed = $objAntropometria->obtenerDetallePorId($id_medicion);
     if ($objAntropometria->reactivarMedicion($id_medicion)) {
         Bitacora::registrar(
             $_SESSION['id'],
@@ -315,6 +356,9 @@ if ($accionPost === 'reactivar') {
             'fecha anterior',
             "Medición reactivada"
         );
+         if ($detalleMed) {
+            Notificacion::NotificarAntropometria('RESTORE', $detalleMed, (int)$detalleMed['id_atleta'], $id_medicion);
+            }
         echo json_encode(['status' => 'success', 'message' => 'Medición reactivada correctamente']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'No se pudo reactivar la medición']);
@@ -326,12 +370,16 @@ if ($accionPost === 'reactivar') {
 // Ruta J: Eliminar físicamente (hard delete)
 // -----------------------------------------------------------------
 if ($accionPost === 'eliminarFisico') {
-    Autorizacion::exigir('antropometria', 'eliminardb');
+
+
+   Autorizacion::exigir('antropometria', 'eliminardb');
     $id_medicion = (int)($_POST['id_medicion'] ?? 0);
     if ($id_medicion <= 0) {
         echo json_encode(['status' => 'error', 'message' => 'ID inválido']);
         exit;
     }
+
+     $detalleMed = $objAntropometria->obtenerDetallePorId($id_medicion);
     // Usamos el método eliminarMedicion existente (hard delete)
     if ($objAntropometria->eliminarMedicion($id_medicion)) {
         Bitacora::registrar(
@@ -343,11 +391,17 @@ if ($accionPost === 'eliminarFisico') {
             'Datos eliminados permanentemente',
             "Medición eliminada físicamente"
         );
+
+         if ($detalleMed) {
+            Notificacion::NotificarAntropometria('DELETE', $detalleMed, (int)$detalleMed['id_atleta'], $id_medicion);
+            }
+
+        
         echo json_encode(['status' => 'success', 'message' => 'Medición eliminada permanentemente']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'No se pudo eliminar la medición']);
     }
-    exit;
+    exit; 
 }
 
 

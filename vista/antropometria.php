@@ -398,6 +398,24 @@ if (isset($_SESSION['id'])) {
                     </div>
                 </div>
                 <?php endif; ?>
+<?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'registrar')): ?>
+<!-- Bloque de Alertas Biológicas (igual que en lesiones) -->
+<div class="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg p-5 shadow-sm">
+    <div class="flex items-center gap-3 mb-4">
+        <div class="p-2 bg-red-100 dark:bg-red-500/30 rounded-full">
+            <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-bold text-red-800 dark:text-red-300">Alertas Antropométricas Activas</h3>
+    </div>
+    
+    <ul id="listaAlertasBiologicas" class="space-y-3">
+        <!-- Se llenará dinámicamente desde JavaScript -->
+        <li class="text-center text-gray-500 dark:text-gray-400 py-4">
+            <i class="fas fa-spinner fa-spin mr-2"></i> Cargando alertas...
+        </li>
+    </ul>
+</div>    
+<?php endif; ?>            
 
 
                 <!-- Tabla de mediciones (con DataTables) -->

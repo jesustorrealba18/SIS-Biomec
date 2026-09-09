@@ -354,6 +354,8 @@ if (isset($_SESSION['id'])) {
                         <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Monitoreo de fatiga, sueño y percepción de esfuerzo (RF-11)</p>
                     </div>
                     <div class="flex flex-wrap gap-3">
+                        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'registrar')): ?>
+
                         <!-- Toggle papelera -->
                         <button id="toggleEstadoRPEBtn" class="group relative flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] hover:border-red-500/50 transition-all duration-200">
                             <i id="toggleIconoRPE" class="fas fa-trash-alt text-gray-500 dark:text-gray-400 group-hover:text-red-400 transition-colors"></i>
@@ -363,7 +365,6 @@ if (isset($_SESSION['id'])) {
                             </div>
                         </button>
                         <!-- Botón nuevo registro -->
-                        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'registrar')): ?>
                         <button onclick="abrirModalRPE()" class="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fas fa-plus-circle text-sm"></i> Nuevo Registro
                         </button>
@@ -411,6 +412,8 @@ if (isset($_SESSION['id'])) {
                     </div>
                 </div>
 
+<?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'registrar')): ?>
+
 <!-- ===== RECOMENDACIONES DE CARGA (IA) ===== -->
 <div id="recomendacionesPanel" class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg transition-colors duration-300 p-4 sm:p-6 hidden">
     <div class="flex justify-between items-center flex-wrap gap-3 mb-4">
@@ -443,6 +446,8 @@ if (isset($_SESSION['id'])) {
         </table>
     </div>
 </div>
+
+ <?php endif; ?>
 
                 <!-- Filtros -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-5 transition-colors duration-300">
@@ -498,7 +503,7 @@ if (isset($_SESSION['id'])) {
                         </div>
                     </div>
                 </div>
-
+<?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'registrar')): ?>
                 <!-- Sección de Inconsistencias Biológicas -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg transition-colors duration-300 p-4 sm:p-6">
                     <div class="flex justify-between items-center flex-wrap gap-3 mb-4">
@@ -530,6 +535,7 @@ if (isset($_SESSION['id'])) {
                         </table>
                     </div>
                 </div>
+                 <?php endif; ?>
 
             </main>
         </div>

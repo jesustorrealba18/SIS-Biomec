@@ -340,6 +340,7 @@ formMedicion.addEventListener('submit', async (e) => {
             cargarTablaAntropometria();
             cargarKPIsAntropometria();
             cargarAlertasAntropometria();
+            cargarAlertasBiologicas();
             
             // Si el modal de gráficas está abierto, refrescar
             if (!modalGraficas.classList.contains('hidden')) {
@@ -384,6 +385,7 @@ async function anularMedicion(id_medicion) {
         cargarTablaAntropometria();
         cargarKPIsAntropometria();
         cargarAlertasAntropometria();
+        cargarAlertasBiologicas();
     } else {
         UI.error('Error', resultado?.message);
     }
@@ -412,6 +414,7 @@ async function reactivarMedicion(id_medicion) {
         cargarTablaAntropometria();
         cargarKPIsAntropometria();
         cargarAlertasAntropometria();
+        cargarAlertasBiologicas();
     } else {
         UI.error('Error', resultado?.message);
     }
@@ -439,6 +442,7 @@ async function eliminarFisicoMedicion(id_medicion) {
         cargarTablaAntropometria();
         cargarKPIsAntropometria();
         cargarAlertasAntropometria();
+        cargarAlertasBiologicas();
     } else {
         UI.error('Error', resultado?.message);
     }
@@ -512,6 +516,56 @@ async function cargarAlertasAntropometria() {
         ],
         order: [[3, 'desc']] // Ordenar por "Días sin medir" descendente
     });
+}
+
+async function cargarAlertasBiologicas() {
+    const lista = document.getElementById('listaAlertasBiologicas');
+    if (!lista) return;
+
+    const alertas = await peticionAjaxAntropometria('obtenerAlertasActivas');
+    if (!alertas || alertas.length === 0) {
+        lista.innerHTML = `
+            <li class="text-center text-gray-500 dark:text-gray-400 py-4">
+                <i class="fas fa-check-circle text-green-500 mr-2"></i> No hay alertas activas.
+            </li>
+        `;
+        return;
+    }
+
+    let html = '';
+    alertas.forEach(alert => {
+        // Determinar clase de gravedad (igual que en lesiones)
+        let gravedadClase, gravedadTexto;
+        if (alert.gravedad == 3) {
+            gravedadClase = 'bg-red-500';
+            gravedadTexto = 'Alta';
+        } else if (alert.gravedad == 2) {
+            gravedadClase = 'bg-amber-500';
+            gravedadTexto = 'Media';
+        } else {
+            gravedadClase = 'bg-blue-500';
+            gravedadTexto = 'Baja';
+        }
+
+        html += `
+            <li class="flex justify-between items-center bg-white dark:bg-[#161430] p-3 rounded shadow-sm border border-red-100 dark:border-red-500/20">
+                <div>
+                    <p class="font-bold text-gray-800 dark:text-white">
+                        ${alert.nombres} ${alert.apellidos}
+                        <span class="text-xs ${gravedadClase} text-white px-2 py-0.5 rounded ml-1">${gravedadTexto}</span>
+                    </p>
+                    <p class="text-xs text-gray-500">${alert.tipo_alerta}: ${alert.mensaje}</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">${new Date(alert.fecha_creacion).toLocaleString()}</p>
+                </div>
+                <a href="javascript:verHistorial(${alert.id_atleta}, '${alert.nombres} ${alert.apellidos}')" 
+                   class="text-indigo-600 hover:text-indigo-800 text-sm font-bold">
+                   Ver Evolución &rarr;
+                </a>
+            </li>
+        `;
+    });
+
+    lista.innerHTML = html;
 }
 
 
@@ -735,6 +789,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarKPIsAntropometria();
     cargarTablaAntropometria();
     cargarAlertasAntropometria();
+    cargarAlertasBiologicas();
 
     if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
         Validador.vincularTiempoReal(formMedicion);

@@ -102,7 +102,7 @@ class CargaBienestar extends Conexion {
     /**
      * Lista registros RPE con filtros (similar a listarLesiones)
      */
-    public function listarRPE(string $fechaInicio = '', string $fechaFin = '', int $atleta_id = 0, bool $modoPapelera = false): array {
+   /*  public function listarRPE(string $fechaInicio = '', string $fechaFin = '', int $atleta_id = 0, bool $modoPapelera = false): array {
         try {
             $sql = "SELECT r.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta,
                     CASE 
@@ -150,6 +150,80 @@ class CargaBienestar extends Conexion {
             return [];
         }
     }
+ */
+    public function listarRPE(
+    string $fechaInicio = '',
+    string $fechaFin = '',
+    int $atleta_id = 0,
+    bool $modoPapelera = false,
+    int $id_usuario = 0,
+    string $rol = ''
+): array {
+    try {
+        $sql = "SELECT r.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta,
+                CASE 
+                    WHEN r.rpe = 1 AND EXISTS (
+                        SELECT 1 FROM marcas m
+                        WHERE m.id_atleta = r.id_atleta
+                          AND m.fecha = r.fecha
+                          AND m.es_pb = 1
+                    ) THEN 1 ELSE 0 
+                END AS inconsistencia
+                FROM registro_rpe r
+                JOIN atletas a ON r.id_atleta = a.id_atleta
+                WHERE 1=1";
+        $params = [];
+
+        // Filtro por estado (activo/papelera)
+        if ($modoPapelera) {
+            $sql .= " AND r.deleted_at IS NOT NULL";
+        } else {
+            $sql .= " AND r.deleted_at IS NULL";
+        }
+
+        // ---- NUEVO: FILTRO POR ROL/USUARIO ----
+        if (strpos($rol, 'Atleta') !== false) {
+            // El atleta solo ve sus propios registros
+            $sql .= " AND a.id_usuario = :id_usuario_seguridad";
+            $params[':id_usuario_seguridad'] = $id_usuario;
+        } elseif (strpos($rol, 'Representante') !== false) {
+            // El representante ve los atletas que tiene asignados
+            $sql .= " AND a.id_atleta IN (
+                        SELECT ar.id_atleta 
+                        FROM atleta_representante ar 
+                        JOIN representantes r ON ar.id_representante = r.id_representante 
+                        WHERE r.id_usuario = :id_usuario_seguridad
+                    )";
+            $params[':id_usuario_seguridad'] = $id_usuario;
+        }
+        // Médicos y Administradores ven todos (sin filtro adicional)
+
+        // Filtros de fecha y atleta
+        if ($atleta_id > 0) {
+            $sql .= " AND r.id_atleta = :atleta";
+            $params[':atleta'] = $atleta_id;
+        }
+        if (!empty($fechaInicio)) {
+            $sql .= " AND r.fecha >= :fecha_ini";
+            $params[':fecha_ini'] = $fechaInicio;
+        }
+        if (!empty($fechaFin)) {
+            $sql .= " AND r.fecha <= :fecha_fin";
+            $params[':fecha_fin'] = $fechaFin;
+        }
+
+        $sql .= " ORDER BY r.fecha DESC, a.apellidos ASC";
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => &$val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error listarRPE: " . $e->getMessage());
+        return [];
+    }
+}
 
     /**
      * Obtiene un registro RPE por ID (incluye datos del atleta)

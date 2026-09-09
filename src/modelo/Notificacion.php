@@ -244,6 +244,29 @@ class Notificacion extends Conexion {
     }
 
     /**
+     * DISPARADOR DE EMERGENCIAS (ALERTA BIOLÓGICA ROJA)
+     */
+    public static function NotificarAlertaBiologica(int $id_atleta, string $mensaje_alerta, string $modulo = 'Antropometría', ?string $enlace = null): void {
+        try {
+            $titulo = "⚠️ ALERTA CLÍNICA: " . $modulo;
+            $icono = "fa-exclamation-triangle";
+            $color = "red"; // Urgencia
+
+            // Notificamos al Médico y Administrador
+            self::notificarStaffMedicoYAdmin($titulo, $mensaje_alerta, $icono, $color, $enlace);
+            
+            // Notificamos al Entrenador del Atleta
+            self::notificarEntrenador($id_atleta, $titulo, $mensaje_alerta, $icono, $color, $enlace);
+
+            // Opcional: Podrías notificar al representante, pero para evitar alarmar a los padres antes de un chequeo médico, 
+            // se recomienda que la alerta roja se quede en el cuerpo técnico.
+
+        } catch (\Throwable $th) {
+            error_log("Error despachando alerta biológica: " . $th->getMessage());
+        }
+    }
+
+    /**
      * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE MARCAS
      */
     public static function NotificarAtletas(string $accion, array $data, int $id_atleta): void {
@@ -586,6 +609,68 @@ class Notificacion extends Conexion {
 
         } catch (\Throwable $th) {
             error_log("Aviso Crítico en Notificaciones: Falló despacho de lesiones [{$accion}]: " . $th->getMessage());
+        }
+    }
+
+    /**
+     * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE ANTROPOMETRÍA
+     */
+    public static function NotificarAntropometria(string $accion, array $data, int $id_atleta, ?int $id_medicion = null): void {
+        try {
+            $deepLink = "?p=antropometria";
+            if ($id_medicion) {
+                $deepLink .= "&id=" . $id_medicion; 
+            }
+
+            // Normalizamos las variables (soportando datos del payload o de la DB)
+            $peso = $data['peso_kg'] ?? $data['peso'] ?? '--';
+            $talla = $data['talla_cm'] ?? $data['talla'] ?? '--';
+
+            switch ($accion) {
+                case 'CREATE':
+                    $titulo = "Nueva Evaluación Antropométrica";
+                    $mensaje = "Se ha registrado una nueva medición: Peso {$peso}kg, Talla {$talla}cm.";
+                    $icono = "fa-weight";
+                    $color = "emerald";
+                    break;
+
+                case 'UPDATE':
+                    $titulo = "Evaluación Antropométrica Actualizada";
+                    $mensaje = "Se han corregido los datos de la medición: Peso {$peso}kg, Talla {$talla}cm.";
+                    $icono = "fa-edit";
+                    $color = "amber";
+                    break;
+
+                case 'DELETE':
+                    $titulo = "Medición Anulada";
+                    $mensaje = "Un registro antropométrico ha sido movido a la papelera.";
+                    $icono = "fa-trash-alt";
+                    $color = "red";
+                    $deepLink = "?p=antropometria&modo=papelera";
+                    break;
+
+                case 'RESTORE':
+                    $titulo = "Medición Restaurada";
+                    $mensaje = "Se ha restaurado un registro antropométrico en el historial.";
+                    $icono = "fa-undo";
+                    $color = "indigo";
+                    break;
+
+                default:
+                    return;
+            }
+
+            // 1. Notificar al Atleta y Representante
+            self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
+
+            // 2. Notificar al Entrenador del grupo
+            self::notificarEntrenador($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
+
+            // 3. Notificar a Médicos y Administradores
+            self::notificarStaffMedicoYAdmin($titulo, $mensaje, $icono, $color, $deepLink);
+
+        } catch (\Throwable $th) {
+            error_log("Aviso Crítico en Notificaciones: Falló despacho de antropometria [{$accion}]: " . $th->getMessage());
         }
     }
 }

@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     // Listado principal (activos / papelera)
-    if ($accion === 'listarRPE') {
+   /*  if ($accion === 'listarRPE') {
         header('Content-Type: application/json');
         $fechaInicio = trim($_GET['fechaInicio'] ?? '');
         $fechaFin    = trim($_GET['fechaFin'] ?? '');
@@ -42,6 +42,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $registros = $objCarga->listarRPE($fechaInicio, $fechaFin, $id_atleta, $modoPapelera);
         echo json_encode($registros);
         exit;
+    } */
+
+    if ($accion === 'listarRPE') {
+    header('Content-Type: application/json');
+    $fechaInicio = trim($_GET['fechaInicio'] ?? '');
+    $fechaFin    = trim($_GET['fechaFin'] ?? '');
+    $id_atleta   = (int)($_GET['id_atleta'] ?? 0);
+    $modo        = $_GET['modo'] ?? 'activos';
+    $modoPapelera = ($modo === 'papelera');
+
+    // Obtener datos de sesión
+    $id_usuario = $_SESSION['id'] ?? 0;
+    $rol = $_SESSION['rol'] ?? '';
+
+    $registros = $objCarga->listarRPE($fechaInicio, $fechaFin, $id_atleta, $modoPapelera, $id_usuario, $rol);
+    echo json_encode($registros);
+    exit;
     }
 
     // Obtener un registro para edición o detalle

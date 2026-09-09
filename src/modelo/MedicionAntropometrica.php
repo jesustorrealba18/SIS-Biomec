@@ -9,113 +9,41 @@ class MedicionAntropometrica extends Conexion {
     use ValidacionesTrait;
     use AutoBinderTrait;
 
-    // =====================================================================
-    // 1. ENCAPSULAMIENTO ESTRICTO Y LISTA BLANCA (REGLA 1)
-    // =====================================================================
+    
     private array $datos = [];
+    private array $alertaGenerada = [];
 
-    // Lista estricta basada exactamente en los campos de tu base de datos
+   
     private array $camposPermitidos = [
         'id_medicion', 'id_atleta', 'fecha', 'peso_kg', 'talla_cm',
         'envergadura_cm', 'perimetro_abdominal_cm',
         'imc', 'porcentaje_grasa', 'responsable',
-        // Variables de filtro para listados
+       
         'filtro_id_atleta', 'filtro_fecha_inicio', 'filtro_fecha_fin'
     ];
 
-    // =====================================================================
-    // 2. HIDRATACIÓN DEL MODELO (REGLA 2)
-    // =====================================================================
-    /**
-     * Siempre usa setDatos para cargar información de manera controlada.
-     */
+   
     public function setDatos(array $datosExternos): void {
         foreach ($this->camposPermitidos as $campo) {
             if (isset($datosExternos[$campo]) && $datosExternos[$campo] !== '') {
                 $this->datos[$campo] = $datosExternos[$campo];
             } elseif (!array_key_exists($campo, $this->datos)) {
-                $this->datos[$campo] = null; // Mantiene el esquema limpio
+                $this->datos[$campo] = null; 
             }
         }
     }
 
-    // =====================================================================
-    // 3. MÉTODOS PÚBLICOS: VALIDACIÓN Y ORQUESTACIÓN (REGLAS 4 y 6)
-    // =====================================================================
-    
-    public function registrarMedicion(array $datos): bool {
-        // 1. Cargamos datos con setDatos
-        $this->setDatos($datos);
+     
 
-        // 2. Método público valida que los datos sean correctos antes de operar
-        if (!$this->validarDatos()) {
-            return false;
-        }
-
-        // 3. Llamadas a métodos privados sin pasarles parámetros
-        $this->calcularIMC();
-        return $this->insertarMedicionBD();
+    public function getAlertaGenerada(): array {
+        return $this->alertaGenerada;
     }
-
-    public function actualizarMedicion(array $datos, int $id_medicion): bool {
-        // Validación de parámetro adicional (Regla 6)
-        if ($id_medicion <= 0) {
-            $this->agregarError('id_medicion', 'Identificador de medición inválido.');
-            return false;
-        }
-
-        $this->setDatos($datos);
-        
-        // Guardamos el parámetro adicional en nuestro atributo propio
-        $this->datos['id_medicion'] = $id_medicion;
-
-        if (!$this->validarDatos()) {
-            return false;
-        }
-
-        $this->calcularIMC();
-        return $this->actualizarMedicionBD();
-    }
-
-    public function eliminarMedicion(int $id_medicion): bool {
-        // Validación de parámetro adicional
-        if ($id_medicion <= 0) {
-            return false;
-        }
-
-        // Almacenamiento en atributo propio para el método privado
-        $this->datos['id_medicion'] = $id_medicion;
-        return $this->eliminarMedicionBD();
-    }
-
-  
-
-    public function obtenerDetallePorId(int $id_medicion): ?array {
-        if ($id_medicion <= 0) return null;
-        
-        $this->datos['id_medicion'] = $id_medicion;
-        return $this->ejecutarConsultaDetalle();
-    }
-
-   /*  public function obtenerDashboardPrincipal(): array {
-        return $this->ejecutarConsultaDashboard();
-    } */
-   public function obtenerDashboardPrincipal(int $id_atleta = 0, int $id_usuario = 0, string $rol = ''): array {
-    // Ahora pasamos correctamente todos los parámetros
-    return $this->ejecutarConsultaDashboard($id_atleta, $id_usuario, $rol);
-}
 
     public function obtenerErroresValidacion(): array {
         return $this->obtenerErrores();
     }
 
-    // =====================================================================
-    // 4. MÉTODOS PRIVADOS: ATÓMICOS, SIN PARÁMETROS Y SIN REGLAS (REGLAS 3 y 5)
-    // =====================================================================
     
-    /**
-     * Valida reglas de negocio apoyándose netamente en el arreglo propio $this->datos
-     */
     private function validarDatos(): bool {
         $this->resetearErrores();
 
@@ -146,6 +74,62 @@ class MedicionAntropometrica extends Conexion {
         return empty($this->obtenerErrores());
     }
 
+  
+    
+    public function registrarMedicion(array $datos): bool {
+        $this->setDatos($datos);
+
+        if (!$this->validarDatos()) {
+            return false;
+        }
+
+        $this->calcularIMC();
+        return $this->insertarMedicionBD();
+    }
+
+    public function actualizarMedicion(array $datos, int $id_medicion): bool {
+        if ($id_medicion <= 0) {
+            $this->agregarError('id_medicion', 'Identificador de medición inválido.');
+            return false;
+        }
+
+        $this->setDatos($datos);
+        
+        $this->datos['id_medicion'] = $id_medicion;
+
+        if (!$this->validarDatos()) {
+            return false;
+        }
+
+        $this->calcularIMC();
+        return $this->actualizarMedicionBD();
+    }
+
+    public function eliminarMedicion(int $id_medicion): bool {
+        if ($id_medicion <= 0) {
+            return false;
+        }
+
+        $this->datos['id_medicion'] = $id_medicion;
+        return $this->eliminarMedicionBD();
+    }
+
+  
+
+    public function obtenerDetallePorId(int $id_medicion): ?array {
+        if ($id_medicion <= 0) return null;
+        
+        $this->datos['id_medicion'] = $id_medicion;
+        return $this->ejecutarConsultaDetalle();
+    }
+
+  
+   public function obtenerDashboardPrincipal(int $id_atleta = 0, int $id_usuario = 0, string $rol = ''): array {
+    return $this->ejecutarConsultaDashboard($id_atleta, $id_usuario, $rol);
+}
+
+
+
     /**
      * Cálculo atómico interno utilizando $this->datos
      */
@@ -156,19 +140,28 @@ class MedicionAntropometrica extends Conexion {
         $this->datos['imc'] = round($peso_kg / ($talla_m * $talla_m), 1);
     }
 
-    /**
-     * Operación SQL atómica para INSERCIÓN
-     */
-/*     private function insertarMedicionBD(): bool {
-        try {
-            $sql = "INSERT INTO mediciones_antropometricas 
-                        (id_atleta, fecha, peso_kg, talla_cm, envergadura_cm, 
-                         perimetro_abdominal_cm, imc, porcentaje_grasa, responsable) 
-                    VALUES 
-                        (:id_atleta, :fecha, :peso_kg, :talla_cm, :envergadura_cm,
-                         :perimetro_abdominal_cm, :imc, :porcentaje_grasa, :responsable)";
+  
 
-            $stmt = $this->pdo->prepare($sql);
+private function insertarMedicionBD(): bool {
+        try {
+            $this->pdo->beginTransaction();
+
+            // 1. Extraer peso anterior (El último registrado antes de hoy)
+            $sqlAnt = "SELECT peso_kg FROM mediciones_antropometricas 
+                       WHERE id_atleta = :id_atleta AND deleted_at IS NULL
+                       ORDER BY fecha DESC LIMIT 1";
+            $stmtAnt = $this->pdo->prepare($sqlAnt);
+            $stmtAnt->execute([':id_atleta' => $this->datos['id_atleta']]);
+            $anterior = $stmtAnt->fetch(PDO::FETCH_ASSOC);
+
+            // 2. Insertar la nueva medición completa
+            $sqlInsert = "INSERT INTO mediciones_antropometricas 
+                            (id_atleta, fecha, peso_kg, talla_cm, envergadura_cm, 
+                             perimetro_abdominal_cm, imc, porcentaje_grasa, responsable) 
+                        VALUES 
+                            (:id_atleta, :fecha, :peso_kg, :talla_cm, :envergadura_cm,
+                             :perimetro_abdominal_cm, :imc, :porcentaje_grasa, :responsable)";
+            $stmtIn = $this->pdo->prepare($sqlInsert);
             $mapa = [
                 ':id_atleta'              => ['id_atleta', PDO::PARAM_INT],
                 ':fecha'                  => ['fecha', PDO::PARAM_STR],
@@ -180,103 +173,126 @@ class MedicionAntropometrica extends Conexion {
                 ':porcentaje_grasa'       => ['porcentaje_grasa', PDO::PARAM_STR],
                 ':responsable'            => ['responsable', PDO::PARAM_STR],
             ];
+            $this->autoBind($stmtIn, $mapa, $this->datos);
+            $stmtIn->execute();
+            
+            // ¡CLAVE! Capturamos el ID recién creado
+            $id_medicion = $this->pdo->lastInsertId();
 
-            $this->autoBind($stmt, $mapa, $this->datos);
-            return $stmt->execute();
+            // 3. Evaluar Regla de Negocio e Insertar Alerta
+            if ($anterior) {
+                $pesoNuevo = (float)$this->datos['peso_kg'];
+                $pesoViejo = (float)$anterior['peso_kg'];
+                $variacion = (($pesoNuevo - $pesoViejo) / $pesoViejo) * 100;
+
+                if ($variacion <= -2.0) {
+                    $mensaje = "Pérdida de peso crítica detectada: " . round($variacion, 2) . "% respecto a la medición anterior.";
+                    
+                    // Insertamos vinculando el id_registro_origen
+                    $sqlAlert = "INSERT INTO alertas_biologicas 
+                                 (id_atleta, modulo_origen, id_registro_origen, tipo_alerta, gravedad, mensaje, activo) 
+                                 VALUES (:id, 'ANTROPOMETRÍA', :id_reg, 'PÉRDIDA_PESO_SEVERA', 3, :mensaje, 1)";
+                    $stmtAlert = $this->pdo->prepare($sqlAlert);
+                    $stmtAlert->execute([
+                        ':id'      => $this->datos['id_atleta'],
+                        ':id_reg'  => $id_medicion,
+                        ':mensaje' => $mensaje
+                    ]);
+
+                    // Guardamos la alerta para que el controlador la dispare como notificación
+                    $this->alertaGenerada = [
+                        'mensaje' => $mensaje,
+                        'id_medicion' => $id_medicion
+                    ];
+                }
+            }
+
+            $this->pdo->commit();
+            return true;
+
         } catch (PDOException $e) {
-            error_log("Error en insertarMedicionBD: " . $e->getMessage());
+            $this->pdo->rollBack();
+            error_log("Error transaccional en insertarMedicionBD: " . $e->getMessage());
             return false;
         }
-    } */
-
-private function insertarMedicionBD(): bool {
-    try {
-        // 1. Iniciamos la transacción (El candado ACID)
-        $this->pdo->beginTransaction();
-
-        // 2. Extraer peso anterior (SELECT)
-        $sqlAnt = "SELECT peso_kg FROM mediciones_antropometricas 
-                   WHERE id_atleta = :id_atleta ORDER BY fecha DESC LIMIT 1";
-        $stmtAnt = $this->pdo->prepare($sqlAnt);
-        $stmtAnt->execute([':id_atleta' => $this->datos['id_atleta']]);
-        $anterior = $stmtAnt->fetch(PDO::FETCH_ASSOC);
-
-        // 3. Insertar la nueva medición (INSERT 1)
-        $sqlInsert = "INSERT INTO mediciones_antropometricas (id_atleta, peso_kg, talla_cm, imc) 
-                      VALUES (:id_atleta, :peso, :talla, :imc)";
-        $stmtIn = $this->pdo->prepare($sqlInsert);
-        $stmtIn->execute([
-            ':id_atleta' => $this->datos['id_atleta'],
-            ':peso'      => $this->datos['peso_kg'],
-            ':talla'     => $this->datos['talla_cm'],
-            ':imc'       => $this->datos['imc']
-        ]);
-
-        // 4. Evaluar Regla de Negocio e Insertar Alerta (INSERT 2)
-        if ($anterior) {
-            $pesoNuevo = (float)$this->datos['peso_kg'];
-            $pesoViejo = (float)$anterior['peso_kg'];
-            
-            $variacion = (($pesoNuevo - $pesoViejo) / $pesoViejo) * 100;
-
-            if ($variacion <= -2.0) {
-                $mensaje = "Pérdida de peso crítica detectada: " . round($variacion, 2) . "% respecto a la última medición.";
-                
-                $sqlAlert = "INSERT INTO alertas_biologicas 
-                             (id_atleta, modulo_origen, tipo_alerta, gravedad, mensaje) 
-                             VALUES (:id, 'ANTROPOMETRÍA', 'PÉRDIDA_PESO_SEVERA', 3, :mensaje)";
-                $stmtAlert = $this->pdo->prepare($sqlAlert);
-                $stmtAlert->execute([
-                    ':id'      => $this->datos['id_atleta'],
-                    ':mensaje' => $mensaje
-                ]);
-            }
-        }
-
-        // 5. Confirmar transacción si todo fue exitoso
-        $this->pdo->commit();
-        return true;
-
-    } catch (PDOException $e) {
-        // Si algo falla, la base de datos deshace TODOS los cambios
-        $this->pdo->rollBack();
-        error_log("Error transaccional en Antropometría: " . $e->getMessage());
-        return false;
     }
-}
 
-    /**
-     * Operación SQL atómica para ACTUALIZACIÓN
-     */
+
+
     private function actualizarMedicionBD(): bool {
         try {
+            $this->pdo->beginTransaction();
+
+            // 1. Actualizamos el registro
             $sql = "UPDATE mediciones_antropometricas SET
-                        fecha                  = :fecha,
-                        peso_kg                = :peso_kg,
-                        talla_cm               = :talla_cm,
-                        envergadura_cm         = :envergadura_cm,
+                        fecha = :fecha,
+                        peso_kg = :peso_kg,
+                        talla_cm = :talla_cm,
+                        envergadura_cm = :envergadura_cm,
                         perimetro_abdominal_cm = :perimetro_abdominal_cm,
-                        imc                    = :imc,
-                        porcentaje_grasa       = :porcentaje_grasa,
-                        responsable            = :responsable
+                        imc = :imc, 
+                        porcentaje_grasa = :porcentaje_grasa, 
+                        responsable = :responsable
                     WHERE id_medicion = :id_medicion";
-
             $stmt = $this->pdo->prepare($sql);
+            
             $mapa = [
-                ':fecha'                  => ['fecha', PDO::PARAM_STR],
-                ':peso_kg'                => ['peso_kg', PDO::PARAM_STR],
-                ':talla_cm'               => ['talla_cm', PDO::PARAM_STR],
-                ':envergadura_cm'         => ['envergadura_cm', PDO::PARAM_STR],
-                ':perimetro_abdominal_cm' => ['perimetro_abdominal_cm', PDO::PARAM_STR],
-                ':imc'                    => ['imc', PDO::PARAM_STR],
-                ':porcentaje_grasa'       => ['porcentaje_grasa', PDO::PARAM_STR],
-                ':responsable'            => ['responsable', PDO::PARAM_STR],
-                ':id_medicion'            => ['id_medicion', PDO::PARAM_INT], // Usa el atributo interno
+                ':fecha' => ['fecha', PDO::PARAM_STR],
+                ':peso_kg' => ['peso_kg', PDO::PARAM_STR],
+                ':talla_cm' => ['talla_cm', PDO::PARAM_STR], 
+                ':envergadura_cm' => ['envergadura_cm', PDO::PARAM_STR],
+                ':perimetro_abdominal_cm' => ['perimetro_abdominal_cm', PDO::PARAM_STR], 
+                ':imc' => ['imc', PDO::PARAM_STR],
+                ':porcentaje_grasa' => ['porcentaje_grasa', PDO::PARAM_STR], 
+                ':responsable' => ['responsable', PDO::PARAM_STR],
+                ':id_medicion' => ['id_medicion', PDO::PARAM_INT]
             ];
-
             $this->autoBind($stmt, $mapa, $this->datos);
-            return $stmt->execute();
+            $stmt->execute();
+
+            // 2. Desactivamos cualquier alerta previa generada por este registro
+            $sqlDesact = "UPDATE alertas_biologicas SET activo = 0 
+                          WHERE modulo_origen = 'ANTROPOMETRÍA' AND id_registro_origen = :id";
+            $stmtDesact = $this->pdo->prepare($sqlDesact);
+            $stmtDesact->execute([':id' => $this->datos['id_medicion']]);
+
+            // 3. Reevaluamos la regla buscando el peso de la medición cronológicamente anterior
+            $sqlAnt = "SELECT peso_kg FROM mediciones_antropometricas 
+                       WHERE id_atleta = :id_atleta AND fecha < :fecha AND deleted_at IS NULL
+                       ORDER BY fecha DESC LIMIT 1";
+            $stmtAnt = $this->pdo->prepare($sqlAnt);
+            $stmtAnt->execute([
+                ':id_atleta' => $this->datos['id_atleta'],
+                ':fecha' => $this->datos['fecha']
+            ]);
+            $anterior = $stmtAnt->fetch(PDO::FETCH_ASSOC);
+
+            if ($anterior) {
+                $pesoNuevo = (float)$this->datos['peso_kg'];
+                $pesoViejo = (float)$anterior['peso_kg'];
+                $variacion = (($pesoNuevo - $pesoViejo) / $pesoViejo) * 100;
+
+                if ($variacion <= -2.0) {
+                    $mensaje = "Actualización: Pérdida de peso crítica confirmada (" . round($variacion, 2) . "%).";
+                    
+                    $sqlAlert = "INSERT INTO alertas_biologicas 
+                                 (id_atleta, modulo_origen, id_registro_origen, tipo_alerta, gravedad, mensaje, activo) 
+                                 VALUES (:id, 'ANTROPOMETRÍA', :id_reg, 'PÉRDIDA_PESO_SEVERA', 3, :mensaje, 1)";
+                    $stmtAlert = $this->pdo->prepare($sqlAlert);
+                    $stmtAlert->execute([
+                        ':id' => $this->datos['id_atleta'],
+                        ':id_reg' => $this->datos['id_medicion'],
+                        ':mensaje' => $mensaje
+                    ]);
+
+                    $this->alertaGenerada = ['mensaje' => $mensaje, 'id_medicion' => $this->datos['id_medicion']];
+                }
+            }
+
+            $this->pdo->commit();
+            return true;
         } catch (PDOException $e) {
+            $this->pdo->rollBack();
             error_log("Error en actualizarMedicionBD: " . $e->getMessage());
             return false;
         }
@@ -377,46 +393,6 @@ private function insertarMedicionBD(): bool {
 
 
 
-/*    private function ejecutarConsultaDashboard(int $id_atleta = 0): array {
-    try {
-        $sql = "SELECT a.id_atleta, a.nombres, a.apellidos, a.cedula,
-                       c.nombre AS categoria,
-                       m.id_medicion,
-                       m.fecha AS ultima_fecha,
-                       m.peso_kg AS peso, 
-                       m.talla_cm AS talla, 
-                       m.imc, m.porcentaje_grasa, m.responsable,
-                       m.deleted_at,
-                       DATEDIFF(CURRENT_DATE, m.fecha) AS dias_sin_evaluacion
-                FROM atletas a
-                LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
-                LEFT JOIN mediciones_antropometricas m
-                    ON m.id_atleta = a.id_atleta
-                    AND m.fecha = (
-                        SELECT MAX(fecha)
-                        FROM mediciones_antropometricas
-                        WHERE id_atleta = a.id_atleta
-                        AND deleted_at IS NULL
-                    )
-                    AND m.deleted_at IS NULL
-                WHERE a.estado = 'Activo'";
-        if ($id_atleta > 0) {
-            $sql .= " AND a.id_atleta = :id_atleta";
-        }
-        $sql .= " ORDER BY dias_sin_evaluacion DESC, a.nombres ASC";
-
-        $stmt = $this->pdo->prepare($sql);
-        if ($id_atleta > 0) {
-            $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
-        }
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("Error en ejecutarConsultaDashboard: " . $e->getMessage());
-        return [];
-    }
-} */
-
 
     private function ejecutarConsultaDashboard(int $id_atleta = 0, int $id_usuario = 0, string $rol = ''): array {
     try {
@@ -483,48 +459,50 @@ private function insertarMedicionBD(): bool {
 }
 
 
- /**
- * Anular medición (soft delete)
- */
 public function anularMedicion(int $id_medicion, string $motivo): bool {
-    try {
-        $sql = "UPDATE mediciones_antropometricas 
-                SET deleted_at = NOW(), motivo_eliminacion = :motivo 
-                WHERE id_medicion = :id_medicion";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':id_medicion', $id_medicion, PDO::PARAM_INT);
-        $stmt->bindValue(':motivo', $motivo, PDO::PARAM_STR);
-        return $stmt->execute();
-    } catch (PDOException $e) {
-        error_log("Error en anularMedicion: " . $e->getMessage());
-        return false;
-    }
-}
+        try {
+            $this->pdo->beginTransaction();
+            $sql = "UPDATE mediciones_antropometricas SET deleted_at = NOW(), motivo_eliminacion = :motivo WHERE id_medicion = :id_medicion";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':id_medicion' => $id_medicion, ':motivo' => $motivo]);
 
-/**
- * Reactivar medición
- */
-public function reactivarMedicion(int $id_medicion): bool {
-    try {
-        $sql = "UPDATE mediciones_antropometricas 
-                SET deleted_at = NULL, motivo_eliminacion = NULL 
-                WHERE id_medicion = :id_medicion";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':id_medicion', $id_medicion, PDO::PARAM_INT);
-        return $stmt->execute();
-    } catch (PDOException $e) {
-        error_log("Error en reactivarMedicion: " . $e->getMessage());
-        return false;
+            // Apagamos la alerta (Soft Delete)
+            $sqlAlertas = "UPDATE alertas_biologicas SET activo = 0 WHERE modulo_origen = 'ANTROPOMETRÍA' AND id_registro_origen = :id";
+            $this->pdo->prepare($sqlAlertas)->execute([':id' => $id_medicion]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            return false;
+        }
     }
-}
+
+    public function reactivarMedicion(int $id_medicion): bool {
+        try {
+            $this->pdo->beginTransaction();
+            $sql = "UPDATE mediciones_antropometricas SET deleted_at = NULL, motivo_eliminacion = NULL WHERE id_medicion = :id_medicion";
+            $this->pdo->prepare($sql)->execute([':id_medicion' => $id_medicion]);
+
+            // Restauramos la alerta
+            $sqlAlertas = "UPDATE alertas_biologicas SET activo = 1 WHERE modulo_origen = 'ANTROPOMETRÍA' AND id_registro_origen = :id";
+            $this->pdo->prepare($sqlAlertas)->execute([':id' => $id_medicion]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            return false;
+        }
+    }
 
 /**
  * Eliminar físicamente (hard delete) - ya existe el método eliminarMedicion
  * pero lo dejamos por claridad
  */
-public function eliminarFisicoMedicion(int $id_medicion): bool {
+/* public function eliminarFisicoMedicion(int $id_medicion): bool {
     return $this->eliminarMedicion($id_medicion);
-}
+} */
 /**
  * Listar mediciones con filtros y soporte para papelera
  */
@@ -683,6 +661,27 @@ public function listarAlertas(): array {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         error_log("Error en listarAlertas: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Obtiene las alertas biológicas activas generadas por el módulo de Antropometría
+ */
+public function obtenerAlertasActivas(): array {
+    try {
+        $sql = "SELECT ab.*, a.nombres, a.apellidos 
+                FROM alertas_biologicas ab
+                INNER JOIN atletas a ON ab.id_atleta = a.id_atleta
+                WHERE ab.modulo_origen = 'ANTROPOMETRÍA' 
+                  AND ab.activo = TRUE 
+                ORDER BY ab.gravedad DESC, ab.fecha_creacion DESC 
+                LIMIT 5"; // Puedes ajustar el límite
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en obtenerAlertasActivas: " . $e->getMessage());
         return [];
     }
 }
