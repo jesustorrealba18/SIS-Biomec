@@ -55,8 +55,20 @@ class MedicionAntropometrica extends Conexion {
         $this->requerido((string)($this->datos['perimetro_abdominal_cm'] ?? ''), 'perimetro_abdominal_cm');
         $this->requerido((string)($this->datos['responsable'] ?? ''), 'responsable');
 
-        if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {
+        /* if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {
             $this->agregarError('fecha', 'La fecha no puede ser futura.');
+        } */
+       // --- VALIDACIÓN ESTRICTA DE FECHA ---
+        if (!empty($this->datos['fecha'])) {
+            $fechaMedicion = $this->datos['fecha'];
+            $hoy = date('Y-m-d');
+            $haceUnMes = date('Y-m-d', strtotime('-1 month'));
+
+            if ($fechaMedicion > $hoy) {
+                $this->agregarError('fecha', 'La fecha no puede ser futura.');
+            } elseif ($fechaMedicion < $haceUnMes) {
+                $this->agregarError('fecha', 'El sistema solo permite registrar evaluaciones con hasta 1 mes de antigüedad.');
+            }
         }
         if (!empty($this->datos['peso_kg']) && (float)$this->datos['peso_kg'] <= 0) {
             $this->agregarError('peso_kg', 'El peso debe ser mayor a 0 kg.');

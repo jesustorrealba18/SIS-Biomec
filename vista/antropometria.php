@@ -53,12 +53,17 @@ $pagina = 'antropometria';
         .dark .input-adapt:focus {
             box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
         }
-        .input-adapt::-webkit-calendar-picker-indicator {
+   /*      .input-adapt::-webkit-calendar-picker-indicator {
             filter: invert(1);
         }
         .dark .input-adapt::-webkit-calendar-picker-indicator {
             filter: invert(0);
+        } */
+
+              .dark .input-adapt::-webkit-calendar-picker-indicator {
+            filter: invert(1);
         }
+
 
         .tarjeta {
             background-color: #ffffff;
@@ -519,7 +524,7 @@ if (isset($_SESSION['id'])) {
                             <i class="fas fa-calendar-alt text-indigo-500 w-5"></i> Fecha de Evaluación *
                         </label>
                         <!-- Agregamos fecha_logica -->
-                        <input type="date" id="fecha" name="fecha" data-validar="requerido|fecha_logica" data-nombre="Fecha" class="w-full p-3.5 rounded-xl input-adapt text-sm" max="<?= date('Y-m-d') ?>">
+                        <input type="date" id="fecha" name="fecha" data-validar="requerido|fecha_reciente" data-nombre="Fecha" class="w-full p-3.5 rounded-xl input-adapt text-sm" max="<?= date('Y-m-d') ?>">
                     </div>
 
                    <div class="space-y-2">
@@ -554,13 +559,25 @@ if (isset($_SESSION['id'])) {
                         <input type="text" inputmode="decimal" maxlength="6" id="perimetro_abdominal" name="perimetro_abdominal" data-validar="requerido|decimal" data-min-num="40" data-max-num="150" data-nombre="Perímetro Abdominal" class="w-full p-3.5 rounded-xl input-adapt text-sm" placeholder="Ej: 80.0">
                     </div>
 
-                    <div class="space-y-2">
+                    <!-- <div class="space-y-2">
                         <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
                             <i class="fas fa-percent text-indigo-500 w-5"></i> % Grasa Corporal
                         </label>
-                        <!-- Grasa biológica: de 3% a 50% -->
+                        
                         <input type="text" inputmode="decimal" maxlength="5" id="grasa_corporal" name="grasa_corporal" data-validar="decimal" data-min-num="3" data-max-num="50" data-nombre="Grasa Corporal" class="w-full p-3.5 rounded-xl input-adapt text-sm" placeholder="Opcional">
-                    </div>
+                    </div> -->
+                    <div class="space-y-2">
+    <div class="flex justify-between items-center">
+        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+            <i class="fas fa-percent text-indigo-500 w-5"></i> % Grasa Corporal
+        </label>
+        <!-- BOTÓN Mágico de Estimación -->
+        <button type="button" onclick="estimarGrasaCorporal()" class="text-[11px] bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 px-2 py-0.5 rounded-lg transition font-semibold flex items-center gap-1 cursor-pointer" title="Estimar usando Talla y Perímetro Abdominal (RFM)">
+            <i class="fas fa-magic"></i> Estimar
+        </button>
+    </div>
+    <input type="text" inputmode="decimal" maxlength="5" id="grasa_corporal" name="grasa_corporal" data-validar="decimal" data-min-num="3" data-max-num="50" data-nombre="Grasa Corporal" class="w-full p-3.5 rounded-xl input-adapt text-sm" placeholder="Opcional o auto-estimado">
+</div>
                 </div>
 
                 <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-500/30 rounded-xl flex justify-between items-center mt-4 transition-colors duration-300">

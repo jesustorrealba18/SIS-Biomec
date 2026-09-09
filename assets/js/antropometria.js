@@ -65,7 +65,9 @@ function getChartColors() {
     let opcionesFiltro = '<option value="">👤 Todos los Atletas</option>';
     atletas.forEach(a => {
         const txt = `${a.cedula} - ${a.nombres} ${a.apellidos} - ${a.categoria_nombre}`;
-        opcionesForm += `<option value="${a.id_atleta}">${txt}</option>`;
+        /* opcionesForm += `<option value="${a.id_atleta}">${txt}</option>`;
+        opcionesFiltro += `<option value="${a.id_atleta}">${txt}</option>`; */
+        opcionesForm += `<option value="${a.id_atleta}" data-sexo="${a.sexo}">${txt}</option>`;
         opcionesFiltro += `<option value="${a.id_atleta}">${txt}</option>`;
     });
     document.getElementById('id_atleta').innerHTML = opcionesForm;
@@ -783,6 +785,85 @@ function formatearFecha(fechaISO) {
     return fecha.toLocaleDateString('es-ES');
 }
 
+// =====================================================================
+// BLOQUEO FÍSICO DEL CALENDARIO NATIVO (1 mes atrás, sin futuro)
+// =====================================================================
+function configurarLimitesCalendario() {
+    const inputFecha = document.getElementById('fecha');
+    if (!inputFecha) return;
+
+    // Obtener fecha de hoy y de hace un mes
+    const hoy = new Date();
+    const haceUnMes = new Date();
+    haceUnMes.setMonth(hoy.getMonth() - 1);
+
+    // Ajuste de zona horaria local para evitar saltos de día
+    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+    const strHoy = (new Date(hoy - tzOffset)).toISOString().split('T')[0];
+    const strHaceUnMes = (new Date(haceUnMes - tzOffset)).toISOString().split('T')[0];
+
+    // Inyectar los límites físicos en el input
+    inputFecha.min = strHaceUnMes;
+    inputFecha.max = strHoy;
+}
+
+// =====================================================================
+// ESTIMACIÓN AUTOMÁTICA DE GRASA CORPORAL (Fórmula RFM)
+// =====================================================================
+function estimarGrasaCorporal() {
+    const selectAtleta = document.getElementById('id_atleta');
+    const inputTalla = document.getElementById('talla');
+    const inputAbdominal = document.getElementById('perimetro_abdominal');
+    const inputGrasa = document.getElementById('grasa_corporal');
+
+    // Validar que se haya seleccionado un atleta
+    if (!selectAtleta.value) {
+        if (typeof UI !== 'undefined') UI.error('Atención', 'Por favor seleccione un atleta primero.');
+        else alert('Por favor seleccione un atleta primero.');
+        return;
+    }
+
+    // Obtener el sexo del option seleccionado mediante el atributo data-sexo
+    const optionSeleccionada = selectAtleta.options[selectAtleta.selectedIndex];
+    const sexo = optionSeleccionada.getAttribute('data-sexo'); // 'M' o 'F'
+
+    const tallaCm = parseFloat(inputTalla.value);
+    const perimetroCm = parseFloat(inputAbdominal.value);
+
+    // Validar que existan talla y perímetro abdominal
+    if (!tallaCm || !perimetroCm || tallaCm <= 0 || perimetroCm <= 0) {
+        if (typeof UI !== 'undefined') UI.error('Datos insuficientes', 'Debe ingresar la Talla y el Perímetro Abdominal para poder estimar la grasa.');
+        else alert('Debe ingresar la Talla y el Perímetro Abdominal.');
+        return;
+    }
+
+    let rfmMagnitud = 0;
+
+    // Aplicar fórmula RFM (Relative Fat Mass)
+    // Hombres: 64 - 20 * (Talla / Perímetro Abdominal)
+    // Mujeres: 76 - 20 * (Talla / Perímetro Abdominal)
+    if (sexo === 'M' || sexo === 'm') {
+        rfmMagnitud = 64 - (20 * (tallaCm / perimetroCm));
+    } else {
+        rfmMagnitud = 76 - (20 * (tallaCm / perimetroCm));
+    }
+
+    // Limitar lógicamente el resultado (por ejemplo, entre 3% y 50%)
+    let grasaEstimada = Math.max(3, Math.min(50, rfmMagnitud));
+
+    // Asignar al input redondeado a 1 decimal
+    inputGrasa.value = grasaEstimada.toFixed(1);
+
+    // Disparar validación visual en tiempo real si el validador está activo
+    if (typeof Validador !== 'undefined' && typeof Validador.validarCampo === 'function') {
+        Validador.validarCampo(inputGrasa);
+    }
+
+    if (typeof UI !== 'undefined') {
+        UI.exito('Estimación aplicada', `Se calculó un ~${grasaEstimada.toFixed(1)}% de grasa basado en la antropometría.`);
+    }
+}
+
 // ================== INICIALIZACIÓN ==================
 document.addEventListener('DOMContentLoaded', async () => {
     await cargarAtletasAntropometria();
@@ -794,6 +875,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
         Validador.vincularTiempoReal(formMedicion);
     }
+
+    configurarLimitesCalendario();
 
     // Inicializar estado del toggle
     actualizarUIAntropometria();
