@@ -78,14 +78,10 @@ class Notificacion extends Conexion {
 
         } catch (\Throwable $e) {
             $this->agregarError('Base de Datos', 'Ocurrió un error interno al actualizar.');
-            error_log("Error crítico en marcarLeida: " . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * 1. MÉTODO CORE: Guarda la notificación en sis_seguridad
-     */
     public static function enviar(int $id_usuario, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): bool {
         try {
             $instNoti = new self();
@@ -101,19 +97,76 @@ class Notificacion extends Conexion {
                 ':enlace_url' => $enlace_url
             ]);
         } catch (PDOException $e) {
-            error_log("Error Notificacion (Seguridad): " . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * 2. MÉTODO INTELIGENTE: Busca en sis_natacion y escribe en sis_seguridad
-     */
+    // ============================================================
+    // MÉTODOS AUXILIARES - OPCIÓN 3: Buscar por CORREO
+    // ============================================================
+
+    public static function obtenerIdUsuarioPorCorreo(?string $correo): ?int {
+        if (empty($correo)) {
+            return null;
+        }
+        
+        try {
+            $instNoti = new self();
+            $sql = "SELECT id_usuario FROM usuarios WHERE correo = :correo AND activo = 1";
+            $stmt = $instNoti->getConex1()->prepare($sql);
+            $stmt->execute([':correo' => trim($correo)]);
+            $resultado = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $resultado ? (int)$resultado['id_usuario'] : null;
+        } catch (\PDOException $e) {
+            return null;
+        }
+    }
+
+    public static function obtenerCorreoEntrenador(int $id_entrenador): ?string {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+            $sql = "SELECT correo FROM entrenador WHERE id_entrenador = :id_entrenador";
+            $stmt = $dbNegocio->getConex1()->prepare($sql);
+            $stmt->execute([':id_entrenador' => $id_entrenador]);
+            $resultado = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $resultado ? $resultado['correo'] : null;
+        } catch (\PDOException $e) {
+            return null;
+        }
+    }
+
+    public static function obtenerCorreoAtleta(int $id_atleta): ?string {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+            $sql = "SELECT correo FROM atletas WHERE id_atleta = :id_atleta AND estado = 1";
+            $stmt = $dbNegocio->getConex1()->prepare($sql);
+            $stmt->execute([':id_atleta' => $id_atleta]);
+            $resultado = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $resultado ? $resultado['correo'] : null;
+        } catch (\PDOException $e) {
+            return null;
+        }
+    }
+
+    public static function obtenerIdUsuarioEntrenador(int $id_entrenador): ?int {
+        $correo = self::obtenerCorreoEntrenador($id_entrenador);
+        return $correo ? self::obtenerIdUsuarioPorCorreo($correo) : null;
+    }
+
+    public static function obtenerIdUsuarioAtleta(int $id_atleta): ?int {
+        $correo = self::obtenerCorreoAtleta($id_atleta);
+        return $correo ? self::obtenerIdUsuarioPorCorreo($correo) : null;
+    }
+
+    // ============================================================
+    // MÉTODOS DE NOTIFICACIONES EXISTENTES
+    // ============================================================
+
     public static function notificarAtletaYRepresentante(int $id_atleta, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): void {
         try {
             $dbNegocio = new Conexion('sis_natacion'); 
 
-            $sqlAtleta = "SELECT id_usuario, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad 
+            $sqlAtleta = "SELECT correo, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad 
                           FROM atletas 
                           WHERE id_atleta = :id_atleta";
             $stmtA = $dbNegocio->getConex1()->prepare($sqlAtleta);
@@ -121,61 +174,58 @@ class Notificacion extends Conexion {
             $userAtleta = $stmtA->fetch(\PDO::FETCH_ASSOC);
 
             if ($userAtleta) {
-                // 1. Notificar al Atleta (usando id_usuario directamente)
-                if (!empty($userAtleta['id_usuario'])) {
-                    self::enviar((int)$userAtleta['id_usuario'], $titulo, $mensaje, $icono, $color, $enlace_url);
+                $id_usuario_atleta = self::obtenerIdUsuarioPorCorreo($userAtleta['correo']);
+                if ($id_usuario_atleta) {
+                    self::enviar($id_usuario_atleta, $titulo, $mensaje, $icono, $color, $enlace_url);
                 }
 
-                // 2. REGLA DE NEGOCIO: Solo notificar al representante si el atleta es menor de 18 años
                 if ($userAtleta['edad'] < 18) {
-                    $sqlRep = "SELECT r.id_usuario 
+                    $sqlRep = "SELECT r.correo 
                                FROM representantes r 
                                INNER JOIN atleta_representante ar ON r.id_representante = ar.id_representante 
-                               WHERE ar.id_atleta = :id_atleta AND r.id_usuario IS NOT NULL";
+                               WHERE ar.id_atleta = :id_atleta AND r.estado = 'Activo'";
                     $stmtR = $dbNegocio->getConex1()->prepare($sqlRep);
                     $stmtR->execute([':id_atleta' => $id_atleta]);
                     $representantes = $stmtR->fetchAll(\PDO::FETCH_ASSOC);
 
                     foreach ($representantes as $rep) {
-                        self::enviar((int)$rep['id_usuario'], "Atleta a tu cargo: " . $titulo, $mensaje, $icono, $color, $enlace_url);
+                        $id_usuario_rep = self::obtenerIdUsuarioPorCorreo($rep['correo']);
+                        if ($id_usuario_rep) {
+                            self::enviar($id_usuario_rep, "Atleta a tu cargo: " . $titulo, $mensaje, $icono, $color, $enlace_url);
+                        }
                     }
                 }
             }
 
         } catch (\PDOException $e) {
-            error_log("Error Routing Notificacion: " . $e->getMessage());
         }
     }
 
-    /**
-     * 3. Notificar al Entrenador del Atleta (vía Grupo de Entrenamiento)
-     */
     public static function notificarEntrenador(int $id_atleta, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): void {
         try {
             $dbNegocio = new Conexion('sis_natacion'); 
             
-            $sql = "SELECT e.id_usuario 
+            $sql = "SELECT e.correo 
                     FROM atletas a
                     INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
                     INNER JOIN grupos_entrenamiento g ON ga.id_grupo = g.id_grupo 
-                    INNER JOIN entrenadores e ON g.id_entrenador = e.id_entrenador
-                    WHERE a.id_atleta = :id_atleta AND e.id_usuario IS NOT NULL";
+                    INNER JOIN entrenador e ON g.id_entrenador = e.id_entrenador
+                    WHERE a.id_atleta = :id_atleta";
             
             $stmt = $dbNegocio->getConex1()->prepare($sql);
             $stmt->execute([':id_atleta' => $id_atleta]);
             $entrenador = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-            if ($entrenador && !empty($entrenador['id_usuario'])) {
-                self::enviar((int)$entrenador['id_usuario'], "Atleta de tu grupo: " . $titulo, $mensaje, $icono, $color, $enlace_url);
+            if ($entrenador && !empty($entrenador['correo'])) {
+                $id_usuario_entrenador = self::obtenerIdUsuarioPorCorreo($entrenador['correo']);
+                if ($id_usuario_entrenador) {
+                    self::enviar($id_usuario_entrenador, "Atleta de tu grupo: " . $titulo, $mensaje, $icono, $color, $enlace_url);
+                }
             }
         } catch (\PDOException $e) {
-            error_log("Error Routing Notificacion Entrenador: " . $e->getMessage());
         }
     }
 
-    /**
-     * 4. Notificar a todo el Staff Médico (rol 3) y Administradores (rol 1)
-     */
     public static function notificarStaffMedicoYAdmin(string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): void {
         try {
             $instNoti = new self();
@@ -190,42 +240,33 @@ class Notificacion extends Conexion {
                 self::enviar((int)$user['id_usuario'], "Clínica: " . $titulo, $mensaje, $icono, $color, $enlace_url);
             }
         } catch (\PDOException $e) {
-            error_log("Error Routing Notificacion Staff: " . $e->getMessage());
         }
     }
 
-    /**
-     * DISPARADOR DE EMERGENCIAS (ALERTA BIOLÓGICA ROJA)
-     */
     public static function NotificarAlertaBiologica(int $id_atleta, string $mensaje_alerta, string $modulo = 'Antropometría', ?string $enlace = null): void {
         try {
             $titulo = "⚠️ ALERTA CLÍNICA: " . $modulo;
             $icono = "fa-exclamation-triangle";
-            $color = "red"; // Urgencia
+            $color = "red";
 
-            // Notificamos al Médico y Administrador
             self::notificarStaffMedicoYAdmin($titulo, $mensaje_alerta, $icono, $color, $enlace);
-            
-            // Notificamos al Entrenador del Atleta
             self::notificarEntrenador($id_atleta, $titulo, $mensaje_alerta, $icono, $color, $enlace);
-
-            // Opcional: Podrías notificar al representante, pero para evitar alarmar a los padres antes de un chequeo médico, 
-            // se recomienda que la alerta roja se quede en el cuerpo técnico.
-
         } catch (\Throwable $th) {
-            error_log("Error despachando alerta biológica: " . $th->getMessage());
         }
     }
 
-    /**
-     * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE MARCAS
-     */
+    // ============================================================
+    // NOTIFICACIONES DEL MÓDULO DE GRUPOS
+    // ============================================================
+
     public static function notificarAsignacionGrupo(int $id_grupo, array $id_atletas, string $accion = 'ASIGNAR'): void {
         try {
             $dbNegocio = new Conexion('sis_natacion');
+            
             $sqlGrupo = "SELECT g.nombre, g.descripcion, 
                                 CONCAT(e.nombres, ' ', e.apellidos) as entrenador_nombre,
-                                e.id_usuario
+                                e.correo as entrenador_correo,
+                                e.id_entrenador
                          FROM grupos_entrenamiento g
                          LEFT JOIN entrenador e ON g.id_entrenador = e.id_entrenador
                          WHERE g.id_grupo = :id_grupo";
@@ -234,46 +275,47 @@ class Notificacion extends Conexion {
             $grupo = $stmtG->fetch(\PDO::FETCH_ASSOC);
 
             if (!$grupo) {
-                error_log("Grupo no encontrado para notificación: id_grupo={$id_grupo}");
                 return;
             }
 
             $nombreGrupo = $grupo['nombre'] ?? 'Grupo de entrenamiento';
 
-            if (!empty($grupo['id_usuario'])) {
-                $tituloEntrenador = match($accion) {
-                    'ASIGNAR' => "Nuevos atletas asignados a tu grupo",
-                    'DESASIGNAR' => "Atletas removidos de tu grupo",
-                    'CREAR' => "Nuevo grupo de entrenamiento creado",
-                    default => "Actualización de tu grupo de entrenamiento"
-                };
+            if (!empty($grupo['entrenador_correo'])) {
+                $id_usuario_entrenador = self::obtenerIdUsuarioPorCorreo($grupo['entrenador_correo']);
                 
-                $cantidad = count($id_atletas);
-                $mensajeEntrenador = match($accion) {
-                    'ASIGNAR' => "Se han asignado {$cantidad} atleta(s) a tu grupo \"{$nombreGrupo}\". Revisa tu planilla de entrenamiento.",
-                    'DESASIGNAR' => "Se han removido {$cantidad} atleta(s) del grupo \"{$nombreGrupo}\".",
-                    'CREAR' => "Se ha creado el grupo \"{$nombreGrupo}\". Ya puedes comenzar a asignar atletas.",
-                    default => "Actualización en el grupo \"{$nombreGrupo}\"."
-                };
-                
-                self::enviar(
-                    (int)$grupo['id_usuario'],
-                    $tituloEntrenador,
-                    $mensajeEntrenador,
-                    'fa-users-cog',
-                    'indigo',
-                    "?p=grupo&accion=ver&id={$id_grupo}"
-                );
+                if ($id_usuario_entrenador) {
+                    $tituloEntrenador = match($accion) {
+                        'ASIGNAR' => "Nuevos atletas asignados a tu grupo",
+                        'DESASIGNAR' => "Atletas removidos de tu grupo",
+                        'CREAR' => "Nuevo grupo de entrenamiento creado",
+                        default => "Actualización de tu grupo de entrenamiento"
+                    };
+                    
+                    $cantidad = count($id_atletas);
+                    $mensajeEntrenador = match($accion) {
+                        'ASIGNAR' => "Se han asignado {$cantidad} atleta(s) a tu grupo \"{$nombreGrupo}\". Revisa tu planilla de entrenamiento.",
+                        'DESASIGNAR' => "Se han removido {$cantidad} atleta(s) del grupo \"{$nombreGrupo}\".",
+                        'CREAR' => "Se ha creado el grupo \"{$nombreGrupo}\". Ya puedes comenzar a asignar atletas.",
+                        default => "Actualización en el grupo \"{$nombreGrupo}\"."
+                    };
+                    
+                    self::enviar(
+                        $id_usuario_entrenador,
+                        $tituloEntrenador,
+                        $mensajeEntrenador,
+                        'fa-users-cog',
+                        'indigo',
+                        "?p=grupo&accion=ver&id={$id_grupo}"
+                    );
+                }
             }
 
             if ($accion === 'ASIGNAR' || $accion === 'CREAR') {
                 foreach ($id_atletas as $id_atleta) {
-                    $sqlAtleta = "SELECT id_usuario FROM atletas WHERE id_atleta = :id_atleta AND estado = 1";
-                    $stmtA = $dbNegocio->getConex1()->prepare($sqlAtleta);
-                    $stmtA->execute([':id_atleta' => $id_atleta]);
-                    $atleta = $stmtA->fetch(\PDO::FETCH_ASSOC);
+                    $correo_atleta = self::obtenerCorreoAtleta($id_atleta);
+                    $id_usuario_atleta = $correo_atleta ? self::obtenerIdUsuarioPorCorreo($correo_atleta) : null;
 
-                    if ($atleta && !empty($atleta['id_usuario'])) {
+                    if ($id_usuario_atleta) {
                         $tituloAtleta = match($accion) {
                             'ASIGNAR' => "¡Asignado a un nuevo grupo!",
                             'CREAR' => "Nuevo grupo de entrenamiento",
@@ -287,7 +329,7 @@ class Notificacion extends Conexion {
                         };
 
                         self::enviar(
-                            (int)$atleta['id_usuario'],
+                            $id_usuario_atleta,
                             $tituloAtleta,
                             $mensajeAtleta,
                             'fa-swimmer',
@@ -301,14 +343,14 @@ class Notificacion extends Conexion {
             }
 
         } catch (\PDOException $e) {
-            error_log("Error Routing Notificacion Grupo: " . $e->getMessage());
+        } catch (\Throwable $e) {
         }
     }
 
     private static function notificarRepresentanteGrupo(int $id_atleta, string $nombreGrupo, string $accion): void {
         try {
             $dbNegocio = new Conexion('sis_natacion');
-      
+            
             $sqlEdad = "SELECT TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad 
                         FROM atletas WHERE id_atleta = :id_atleta";
             $stmtE = $dbNegocio->getConex1()->prepare($sqlEdad);
@@ -316,35 +358,37 @@ class Notificacion extends Conexion {
             $edad = $stmtE->fetchColumn();
 
             if ($edad < 18) {
-                $sqlRep = "SELECT r.id_usuario 
+                $sqlRep = "SELECT r.correo, r.nombres, r.apellidos
                            FROM representantes r 
                            INNER JOIN atleta_representante ar ON r.id_representante = ar.id_representante 
-                           WHERE ar.id_atleta = :id_atleta AND r.id_usuario IS NOT NULL";
+                           WHERE ar.id_atleta = :id_atleta AND r.estado = 'Activo'";
                 $stmtR = $dbNegocio->getConex1()->prepare($sqlRep);
                 $stmtR->execute([':id_atleta' => $id_atleta]);
                 $representantes = $stmtR->fetchAll(\PDO::FETCH_ASSOC);
 
                 foreach ($representantes as $rep) {
-                    self::enviar(
-                        (int)$rep['id_usuario'],
-                        "Atleta asignado a grupo: {$nombreGrupo}",
-                        "Tu representado ha sido asignado al grupo de entrenamiento \"{$nombreGrupo}\".",
-                        'fa-user-graduate',
-                        'amber',
-                        "?p=grupo&accion=ver"
-                    );
+                    $id_usuario_rep = self::obtenerIdUsuarioPorCorreo($rep['correo']);
+                    if ($id_usuario_rep) {
+                        self::enviar(
+                            $id_usuario_rep,
+                            "Atleta asignado a grupo: {$nombreGrupo}",
+                            "Tu representado ha sido asignado al grupo de entrenamiento \"{$nombreGrupo}\".",
+                            'fa-user-graduate',
+                            'amber',
+                            "?p=grupo&accion=ver"
+                        );
+                    }
                 }
             }
         } catch (\PDOException $e) {
-            error_log("Error notificando representante de grupo: " . $e->getMessage());
         }
     }
 
     public static function notificarGrupoArchivado(int $id_grupo, string $nombreGrupo): void {
         try {
             $dbNegocio = new Conexion('sis_natacion');
-        
-            $sqlAtletas = "SELECT a.id_usuario, CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta
+            
+            $sqlAtletas = "SELECT a.id_atleta, a.correo, CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta
                            FROM atletas a
                            INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
                            WHERE ga.id_grupo = :id_grupo AND a.estado = 1";
@@ -352,15 +396,11 @@ class Notificacion extends Conexion {
             $stmt->execute([':id_grupo' => $id_grupo]);
             $atletas = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            if (empty($atletas)) {
-                self::notificarEntrenadorGrupoArchivado($id_grupo, $nombreGrupo);
-                return;
-            }
-
             foreach ($atletas as $atleta) {
-                if (!empty($atleta['id_usuario'])) {
+                $id_usuario_atleta = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
+                if ($id_usuario_atleta) {
                     self::enviar(
-                        (int)$atleta['id_usuario'],
+                        $id_usuario_atleta,
                         "Grupo de entrenamiento desactivado",
                         "El grupo \"{$nombreGrupo}\" ha sido desactivado. Pronto serás reasignado a un nuevo grupo. Contacta a tu entrenador para más información.",
                         'fa-archive',
@@ -370,70 +410,476 @@ class Notificacion extends Conexion {
                 }
             }
 
-            foreach ($atletas as $atleta) {
-                $sqlEdad = "SELECT TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad 
-                            FROM atletas WHERE id_atleta = :id_atleta";
-                $stmtE = $dbNegocio->getConex1()->prepare($sqlEdad);
-                $stmtE->execute([':id_atleta' => $atleta['id_atleta'] ?? 0]);
-                $edad = $stmtE->fetchColumn();
+            $sqlEntrenador = "SELECT e.correo, CONCAT(e.nombres, ' ', e.apellidos) as nombre
+                              FROM entrenador e
+                              INNER JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
+                              WHERE g.id_grupo = :id_grupo";
+            $stmtEnt = $dbNegocio->getConex1()->prepare($sqlEntrenador);
+            $stmtEnt->execute([':id_grupo' => $id_grupo]);
+            $entrenador = $stmtEnt->fetch(\PDO::FETCH_ASSOC);
 
-                if ($edad < 18) {
-                    $sqlRep = "SELECT r.id_usuario 
-                               FROM representantes r 
-                               INNER JOIN atleta_representante ar ON r.id_representante = ar.id_representante 
-                               WHERE ar.id_atleta = :id_atleta AND r.id_usuario IS NOT NULL";
-                    $stmtR = $dbNegocio->getConex1()->prepare($sqlRep);
-                    $stmtR->execute([':id_atleta' => $atleta['id_atleta'] ?? 0]);
-                    $representantes = $stmtR->fetchAll(\PDO::FETCH_ASSOC);
-
-                    foreach ($representantes as $rep) {
-                        self::enviar(
-                            (int)$rep['id_usuario'],
-                            "Grupo de entrenamiento desactivado",
-                            "El grupo de entrenamiento \"{$nombreGrupo}\" de tu representado ha sido desactivado. Pronto será reasignado.",
-                            'fa-archive',
-                            'gray',
-                            "?p=grupo"
-                        );
-                    }
+            if ($entrenador && !empty($entrenador['correo'])) {
+                $id_usuario_entrenador = self::obtenerIdUsuarioPorCorreo($entrenador['correo']);
+                if ($id_usuario_entrenador) {
+                    self::enviar(
+                        $id_usuario_entrenador,
+                        "Grupo desactivado",
+                        "Tu grupo \"{$nombreGrupo}\" ha sido desactivado. Los atletas han sido notificados y serán reasignados.",
+                        'fa-archive',
+                        'orange',
+                        "?p=grupo"
+                    );
                 }
             }
 
-            self::notificarEntrenadorGrupoArchivado($id_grupo, $nombreGrupo);
-
         } catch (\PDOException $e) {
-            error_log("Error notificando grupo archivado: " . $e->getMessage());
         }
     }
 
-    private static function notificarEntrenadorGrupoArchivado(int $id_grupo, string $nombreGrupo): void {
+    public static function notificarSesionCreada(int $id_sesion, int $id_grupo, string $fecha, string $tipo_sesion): void {
         try {
             $dbNegocio = new Conexion('sis_natacion');
             
-            $sql = "SELECT e.id_usuario, CONCAT(e.nombres, ' ', e.apellidos) as nombre
-                    FROM entrenador e
-                    INNER JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
-                    WHERE g.id_grupo = :id_grupo AND e.id_usuario IS NOT NULL";
-            $stmt = $dbNegocio->getConex1()->prepare($sql);
-            $stmt->execute([':id_grupo' => $id_grupo]);
-            $entrenador = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $sqlGrupo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = :id_grupo";
+            $stmtG = $dbNegocio->getConex1()->prepare($sqlGrupo);
+            $stmtG->execute([':id_grupo' => $id_grupo]);
+            $grupo = $stmtG->fetch(\PDO::FETCH_ASSOC);
+            $nombreGrupo = $grupo['nombre'] ?? 'tu grupo';
 
-            if ($entrenador && !empty($entrenador['id_usuario'])) {
-                self::enviar(
-                    (int)$entrenador['id_usuario'],
-                    "Grupo desactivado",
-                    "Tu grupo \"{$nombreGrupo}\" ha sido desactivado. Los atletas han sido notificados y serán reasignados.",
-                    'fa-archive',
-                    'orange',
-                    "?p=grupo"
-                );
+            $sqlAtletas = "SELECT a.correo, a.id_atleta
+                           FROM atletas a
+                           INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                           WHERE ga.id_grupo = :id_grupo AND a.estado = 1";
+            $stmtA = $dbNegocio->getConex1()->prepare($sqlAtletas);
+            $stmtA->execute([':id_grupo' => $id_grupo]);
+            $atletas = $stmtA->fetchAll(\PDO::FETCH_ASSOC);
+            
+            $fecha_formateada = date('d/m/Y', strtotime($fecha));
+            $tipos = [
+                'Tecnica' => 'Técnica',
+                'Resistencia' => 'Resistencia',
+                'Velocidad' => 'Velocidad',
+                'Recuperacion' => 'Recuperación',
+                'Fuerza' => 'Fuerza',
+                'Flexibilidad' => 'Flexibilidad'
+            ];
+            $tipoLabel = $tipos[$tipo_sesion] ?? $tipo_sesion;
+            
+            foreach ($atletas as $atleta) {
+                $id_usuario = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
+                if ($id_usuario) {
+                    self::enviar(
+                        $id_usuario,
+                        "Nueva sesión planificada",
+                        "Se ha planificado una sesión de {$tipoLabel} para el grupo \"{$nombreGrupo}\" el día {$fecha_formateada}. Prepárate para el entrenamiento.",
+                        'fa-calendar-plus',
+                        'emerald',
+                        "?p=sesiones&accion=ver&id={$id_sesion}"
+                    );
+                }
             }
+
+            $sqlEntrenador = "SELECT e.correo 
+                              FROM entrenador e
+                              INNER JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
+                              WHERE g.id_grupo = :id_grupo";
+            $stmtE = $dbNegocio->getConex1()->prepare($sqlEntrenador);
+            $stmtE->execute([':id_grupo' => $id_grupo]);
+            $entrenador = $stmtE->fetch(\PDO::FETCH_ASSOC);
+            
+            if ($entrenador && !empty($entrenador['correo'])) {
+                $id_usuario_ent = self::obtenerIdUsuarioPorCorreo($entrenador['correo']);
+                if ($id_usuario_ent) {
+                    self::enviar(
+                        $id_usuario_ent,
+                        "Sesión creada exitosamente",
+                        "Has creado una sesión de {$tipoLabel} para el grupo \"{$nombreGrupo}\" el día {$fecha_formateada}. Los atletas han sido notificados.",
+                        'fa-check-circle',
+                        'indigo',
+                        "?p=sesiones&accion=ver&id={$id_sesion}"
+                    );
+                }
+            }
+            
         } catch (\PDOException $e) {
-            error_log("Error notificando entrenador grupo archivado: " . $e->getMessage());
         }
     }
 
-  
+    public static function notificarSesionIniciada(int $id_sesion, int $id_grupo): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+
+            $sqlGrupo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = :id_grupo";
+            $stmtG = $dbNegocio->getConex1()->prepare($sqlGrupo);
+            $stmtG->execute([':id_grupo' => $id_grupo]);
+            $grupo = $stmtG->fetch(\PDO::FETCH_ASSOC);
+            $nombreGrupo = $grupo['nombre'] ?? 'tu grupo';
+
+            $sqlAtletas = "SELECT a.correo
+                           FROM atletas a
+                           INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                           WHERE ga.id_grupo = :id_grupo AND a.estado = 1";
+            $stmtA = $dbNegocio->getConex1()->prepare($sqlAtletas);
+            $stmtA->execute([':id_grupo' => $id_grupo]);
+            $atletas = $stmtA->fetchAll(\PDO::FETCH_ASSOC);
+            
+            foreach ($atletas as $atleta) {
+                $id_usuario = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
+                if ($id_usuario) {
+                    self::enviar(
+                        $id_usuario,
+                        "¡La sesión ha comenzado!",
+                        "La sesión de entrenamiento para el grupo \"{$nombreGrupo}\" ha comenzado. ¡A darle con todo!",
+                        'fa-play-circle',
+                        'cyan',
+                        "?p=sesiones&accion=ver&id={$id_sesion}"
+                    );
+                }
+            }
+            
+        } catch (\PDOException $e) {
+        }
+    }
+
+    public static function notificarSesionCompletada(int $id_sesion, int $id_grupo, int $volumen_ejecutado): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+            
+            $sqlGrupo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = :id_grupo";
+            $stmtG = $dbNegocio->getConex1()->prepare($sqlGrupo);
+            $stmtG->execute([':id_grupo' => $id_grupo]);
+            $grupo = $stmtG->fetch(\PDO::FETCH_ASSOC);
+            $nombreGrupo = $grupo['nombre'] ?? 'tu grupo';
+            
+            $sqlAtletas = "SELECT a.correo
+                           FROM atletas a
+                           INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                           WHERE ga.id_grupo = :id_grupo AND a.estado = 1";
+            $stmtA = $dbNegocio->getConex1()->prepare($sqlAtletas);
+            $stmtA->execute([':id_grupo' => $id_grupo]);
+            $atletas = $stmtA->fetchAll(\PDO::FETCH_ASSOC);
+            
+            foreach ($atletas as $atleta) {
+                $id_usuario = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
+                if ($id_usuario) {
+                    self::enviar(
+                        $id_usuario,
+                        "Sesión completada",
+                        "La sesión del grupo \"{$nombreGrupo}\" ha finalizado. Volumen total: {$volumen_ejecutado}m. ¡Buen trabajo!",
+                        'fa-flag-checkered',
+                        'emerald',
+                        "?p=sesiones&accion=ver&id={$id_sesion}"
+                    );
+                }
+            }
+            
+            $sqlEntrenador = "SELECT e.correo 
+                              FROM entrenador e
+                              INNER JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
+                              WHERE g.id_grupo = :id_grupo";
+            $stmtE = $dbNegocio->getConex1()->prepare($sqlEntrenador);
+            $stmtE->execute([':id_grupo' => $id_grupo]);
+            $entrenador = $stmtE->fetch(\PDO::FETCH_ASSOC);
+            
+            if ($entrenador && !empty($entrenador['correo'])) {
+                $id_usuario_ent = self::obtenerIdUsuarioPorCorreo($entrenador['correo']);
+                if ($id_usuario_ent) {
+                    self::enviar(
+                        $id_usuario_ent,
+                        "Sesión completada exitosamente",
+                        "Has completado la sesión del grupo \"{$nombreGrupo}\". Volumen ejecutado: {$volumen_ejecutado}m. Los atletas han sido notificados.",
+                        'fa-check-double',
+                        'indigo',
+                        "?p=sesiones&accion=ver&id={$id_sesion}"
+                    );
+                }
+            }
+            
+        } catch (\PDOException $e) {
+        }
+    }
+
+    public static function notificarSesionCancelada(int $id_sesion, int $id_grupo, string $fecha): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+            
+            $sqlGrupo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = :id_grupo";
+            $stmtG = $dbNegocio->getConex1()->prepare($sqlGrupo);
+            $stmtG->execute([':id_grupo' => $id_grupo]);
+            $grupo = $stmtG->fetch(\PDO::FETCH_ASSOC);
+            $nombreGrupo = $grupo['nombre'] ?? 'tu grupo';
+            
+            $fecha_formateada = date('d/m/Y', strtotime($fecha));
+            
+            $sqlAtletas = "SELECT a.correo
+                           FROM atletas a
+                           INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                           WHERE ga.id_grupo = :id_grupo AND a.estado = 1";
+            $stmtA = $dbNegocio->getConex1()->prepare($sqlAtletas);
+            $stmtA->execute([':id_grupo' => $id_grupo]);
+            $atletas = $stmtA->fetchAll(\PDO::FETCH_ASSOC);
+            
+            foreach ($atletas as $atleta) {
+                $id_usuario = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
+                if ($id_usuario) {
+                    self::enviar(
+                        $id_usuario,
+                        "Sesión cancelada",
+                        "La sesión del grupo \"{$nombreGrupo}\" programada para el {$fecha_formateada} ha sido cancelada. Estaremos atentos a la reprogramación.",
+                        'fa-times-circle',
+                        'red',
+                        "?p=sesiones"
+                    );
+                }
+            }
+            
+        } catch (\PDOException $e) {
+        }
+    }
+
+    public static function notificarSesionEditada(int $id_sesion, int $id_grupo, string $fecha, string $tipo_sesion): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+            
+            $sqlGrupo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = :id_grupo";
+            $stmtG = $dbNegocio->getConex1()->prepare($sqlGrupo);
+            $stmtG->execute([':id_grupo' => $id_grupo]);
+            $grupo = $stmtG->fetch(\PDO::FETCH_ASSOC);
+            $nombreGrupo = $grupo['nombre'] ?? 'tu grupo';
+            
+            $fecha_formateada = date('d/m/Y', strtotime($fecha));
+            $tipos = [
+                'Tecnica' => 'Técnica',
+                'Resistencia' => 'Resistencia',
+                'Velocidad' => 'Velocidad',
+                'Recuperacion' => 'Recuperación',
+                'Fuerza' => 'Fuerza',
+                'Flexibilidad' => 'Flexibilidad',
+                'Competencia' => 'Competencia'
+            ];
+            $tipoLabel = $tipos[$tipo_sesion] ?? $tipo_sesion;
+            
+            $sqlAtletas = "SELECT a.correo
+                           FROM atletas a
+                           INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                           WHERE ga.id_grupo = :id_grupo AND a.estado = 1";
+            $stmtA = $dbNegocio->getConex1()->prepare($sqlAtletas);
+            $stmtA->execute([':id_grupo' => $id_grupo]);
+            $atletas = $stmtA->fetchAll(\PDO::FETCH_ASSOC);
+            
+            foreach ($atletas as $atleta) {
+                $id_usuario = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
+                if ($id_usuario) {
+                    self::enviar(
+                        $id_usuario,
+                        "Sesión actualizada",
+                        "La sesión de {$tipoLabel} para el grupo \"{$nombreGrupo}\" del día {$fecha_formateada} ha sido modificada. Revisa los detalles.",
+                        'fa-edit',
+                        'amber',
+                        "?p=sesiones&accion=ver&id={$id_sesion}"
+                    );
+                }
+            }
+            
+        } catch (\PDOException $e) {
+        }
+    }
+
+    public static function notificarAsignacionCarrilCreada(int $id_asignacion, int $id_grupo, int $carril_numero, string $dia_semana, string $hora_inicio, string $hora_fin, string $fecha_inicio): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+            
+            $sqlGrupo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = :id_grupo";
+            $stmtG = $dbNegocio->getConex1()->prepare($sqlGrupo);
+            $stmtG->execute([':id_grupo' => $id_grupo]);
+            $grupo = $stmtG->fetch(\PDO::FETCH_ASSOC);
+            $nombreGrupo = $grupo['nombre'] ?? 'tu grupo';
+            
+            $sqlAtletas = "SELECT a.correo, a.id_atleta
+                           FROM atletas a
+                           INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                           WHERE ga.id_grupo = :id_grupo AND a.estado = 1";
+            $stmtA = $dbNegocio->getConex1()->prepare($sqlAtletas);
+            $stmtA->execute([':id_grupo' => $id_grupo]);
+            $atletas = $stmtA->fetchAll(\PDO::FETCH_ASSOC);
+            
+            $fecha_formateada = date('d/m/Y', strtotime($fecha_inicio));
+            $hora_inicio_formateada = date('h:i A', strtotime($hora_inicio));
+            $hora_fin_formateada = date('h:i A', strtotime($hora_fin));
+            
+            $titulo = "Asignación de Carril";
+            $mensaje = "Tu grupo \"{$nombreGrupo}\" ha sido asignado al Carril {$carril_numero} los {$dia_semana} de {$hora_inicio_formateada} a {$hora_fin_formateada} (vigente desde {$fecha_formateada}).";
+            
+            foreach ($atletas as $atleta) {
+                $id_usuario = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
+                if ($id_usuario) {
+                    self::enviar(
+                        $id_usuario,
+                        $titulo,
+                        $mensaje,
+                        'fa-bell',
+                        'emerald',
+                        "?p=asignacion"
+                    );
+                }
+            }
+
+            $sqlEntrenador = "SELECT e.correo 
+                              FROM entrenador e
+                              INNER JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
+                              WHERE g.id_grupo = :id_grupo";
+            $stmtE = $dbNegocio->getConex1()->prepare($sqlEntrenador);
+            $stmtE->execute([':id_grupo' => $id_grupo]);
+            $entrenador = $stmtE->fetch(\PDO::FETCH_ASSOC);
+            
+            if ($entrenador && !empty($entrenador['correo'])) {
+                $id_usuario_ent = self::obtenerIdUsuarioPorCorreo($entrenador['correo']);
+                if ($id_usuario_ent) {
+                    self::enviar(
+                        $id_usuario_ent,
+                        "Nueva Asignación de Carril",
+                        "Tu grupo \"{$nombreGrupo}\" ha sido asignado al Carril {$carril_numero} los {$dia_semana} de {$hora_inicio_formateada} a {$hora_fin_formateada}. Los atletas han sido notificados.",
+                        'fa-bell',
+                        'purple',
+                        "?p=asignacion"
+                    );
+                }
+            }
+            
+        } catch (\PDOException $e) {
+        }
+    }
+
+
+    public static function notificarAsignacionCarrilFinalizada(int $id_grupo, int $carril_numero): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+
+            $sqlGrupo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = :id_grupo";
+            $stmtG = $dbNegocio->getConex1()->prepare($sqlGrupo);
+            $stmtG->execute([':id_grupo' => $id_grupo]);
+            $grupo = $stmtG->fetch(\PDO::FETCH_ASSOC);
+            $nombreGrupo = $grupo['nombre'] ?? 'tu grupo';
+
+            $sqlAtletas = "SELECT a.correo
+                           FROM atletas a
+                           INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                           WHERE ga.id_grupo = :id_grupo AND a.estado = 1";
+            $stmtA = $dbNegocio->getConex1()->prepare($sqlAtletas);
+            $stmtA->execute([':id_grupo' => $id_grupo]);
+            $atletas = $stmtA->fetchAll(\PDO::FETCH_ASSOC);
+            
+            $titulo = "Asignación Finalizada";
+            $mensaje = "La asignación del Carril {$carril_numero} para el grupo \"{$nombreGrupo}\" ha finalizado.";
+            
+            foreach ($atletas as $atleta) {
+                $id_usuario = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
+                if ($id_usuario) {
+                    self::enviar(
+                        $id_usuario,
+                        $titulo,
+                        $mensaje,
+                        'fa-flag-checkered',
+                        'amber',
+                        "?p=asignacion"
+                    );
+                }
+            }
+
+            $sqlEntrenador = "SELECT e.correo 
+                              FROM entrenador e
+                              INNER JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
+                              WHERE g.id_grupo = :id_grupo";
+            $stmtE = $dbNegocio->getConex1()->prepare($sqlEntrenador);
+            $stmtE->execute([':id_grupo' => $id_grupo]);
+            $entrenador = $stmtE->fetch(\PDO::FETCH_ASSOC);
+            
+            if ($entrenador && !empty($entrenador['correo'])) {
+                $id_usuario_ent = self::obtenerIdUsuarioPorCorreo($entrenador['correo']);
+                if ($id_usuario_ent) {
+                    self::enviar(
+                        $id_usuario_ent,
+                        "Fin de Asignación",
+                        "La asignación del Carril {$carril_numero} para tu grupo \"{$nombreGrupo}\" ha finalizado.",
+                        'fa-flag-checkered',
+                        'purple',
+                        "?p=asignacion"
+                    );
+                }
+            }
+            
+        } catch (\PDOException $e) {
+        }
+    }
+
+    public static function notificarAsignacionCarrilEditada(int $id_asignacion, int $id_grupo, int $carril_numero, string $dia_semana, string $hora_inicio, string $hora_fin): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+ 
+            $sqlGrupo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = :id_grupo";
+            $stmtG = $dbNegocio->getConex1()->prepare($sqlGrupo);
+            $stmtG->execute([':id_grupo' => $id_grupo]);
+            $grupo = $stmtG->fetch(\PDO::FETCH_ASSOC);
+            $nombreGrupo = $grupo['nombre'] ?? 'tu grupo';
+            
+            $sqlAtletas = "SELECT a.correo
+                           FROM atletas a
+                           INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                           WHERE ga.id_grupo = :id_grupo AND a.estado = 1";
+            $stmtA = $dbNegocio->getConex1()->prepare($sqlAtletas);
+            $stmtA->execute([':id_grupo' => $id_grupo]);
+            $atletas = $stmtA->fetchAll(\PDO::FETCH_ASSOC);
+            
+            $hora_inicio_formateada = date('h:i A', strtotime($hora_inicio));
+            $hora_fin_formateada = date('h:i A', strtotime($hora_fin));
+            
+            $titulo = "Asignación de Carril Actualizada";
+            $mensaje = "La asignación del Carril {$carril_numero} para el grupo \"{$nombreGrupo}\" ha sido modificada. Nuevo horario: {$dia_semana} de {$hora_inicio_formateada} a {$hora_fin_formateada}.";
+            
+            foreach ($atletas as $atleta) {
+                $id_usuario = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
+                if ($id_usuario) {
+                    self::enviar(
+                        $id_usuario,
+                        $titulo,
+                        $mensaje,
+                        'fa-edit',
+                        'amber',
+                        "?p=asignacion"
+                    );
+                }
+            }
+            
+            $sqlEntrenador = "SELECT e.correo 
+                              FROM entrenador e
+                              INNER JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
+                              WHERE g.id_grupo = :id_grupo";
+            $stmtE = $dbNegocio->getConex1()->prepare($sqlEntrenador);
+            $stmtE->execute([':id_grupo' => $id_grupo]);
+            $entrenador = $stmtE->fetch(\PDO::FETCH_ASSOC);
+            
+            if ($entrenador && !empty($entrenador['correo'])) {
+                $id_usuario_ent = self::obtenerIdUsuarioPorCorreo($entrenador['correo']);
+                if ($id_usuario_ent) {
+                    self::enviar(
+                        $id_usuario_ent,
+                        "Asignación de Carril Actualizada",
+                        "La asignación del Carril {$carril_numero} para tu grupo \"{$nombreGrupo}\" ha sido modificada. Nuevo horario: {$dia_semana} de {$hora_inicio_formateada} a {$hora_fin_formateada}.",
+                        'fa-edit',
+                        'purple',
+                        "?p=asignacion"
+                    );
+                }
+            }
+            
+        } catch (\PDOException $e) {
+        }
+    }
+
+    // ============================================================
+    // MÉTODOS DE LISTADO Y CONSULTA
+    // ============================================================
+
     public static function listarPorUsuario(int $id_usuario, int $limite = 10): array {
         try {
             $instNoti = new self();
@@ -449,7 +895,6 @@ class Notificacion extends Conexion {
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Error al listar notificaciones: " . $e->getMessage());
             return [];
         }
     }
@@ -466,6 +911,10 @@ class Notificacion extends Conexion {
             return 0;
         }
     }
+
+    // ============================================================
+    // DESPACHADORES DE OTROS MÓDULOS
+    // ============================================================
 
     public static function NotificarAtletas(string $accion, array $data, int $id_atleta): void {
         try {
@@ -503,7 +952,6 @@ class Notificacion extends Conexion {
             self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
 
         } catch (\Throwable $th) {
-            error_log("Aviso Crítico en Notificaciones: Falló despacho de atletas [{$accion}]: " . $th->getMessage());
         }
     }
 
@@ -551,7 +999,6 @@ class Notificacion extends Conexion {
             self::notificarAtletaYRepresentante((int)$data['id_atleta'], $titulo, $mensaje, $icono, $color, $deepLink);
 
         } catch (\Throwable $th) {
-            error_log("Aviso Crítico en Notificaciones: Falló despacho de marcas [{$accion}]: " . $th->getMessage());
         }
     }
 
@@ -634,7 +1081,6 @@ class Notificacion extends Conexion {
             }
 
         } catch (\Throwable $th) {
-            error_log("Aviso Critico en Notificaciones: Fallo despacho de eventos [{$accion}]: " . $th->getMessage());
         }
     }
 
@@ -682,7 +1128,6 @@ class Notificacion extends Conexion {
             }
 
         } catch (\Throwable $th) {
-            error_log("Aviso Critico en Notificaciones: Fallo despacho de observaciones [{$accion}]: " . $th->getMessage());
         }
     }
 
@@ -743,13 +1188,9 @@ class Notificacion extends Conexion {
             }
 
         } catch (\Throwable $th) {
-            error_log("Aviso Crítico en Notificaciones: Falló despacho de periodizacion [{$accion}]: " . $th->getMessage());
         }
     }
 
-    /**
-     * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE LESIONES
-     */
     public static function NotificarLesiones(string $accion, array $data, int $id_atleta, ?int $id_lesion = null): void {
         try {
             $deepLink = "?p=lesiones";
@@ -795,23 +1236,14 @@ class Notificacion extends Conexion {
                     return;
             }
 
-            // 1. Notificar al Atleta y Representante
             self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
-
-            // 2. Notificar al Entrenador del grupo
             self::notificarEntrenador($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
-
-            // 3. Notificar a Médicos y Administradores
             self::notificarStaffMedicoYAdmin($titulo, $mensaje, $icono, $color, $deepLink);
 
         } catch (\Throwable $th) {
-            error_log("Aviso Crítico en Notificaciones: Falló despacho de lesiones [{$accion}]: " . $th->getMessage());
         }
     }
 
-    /**
-     * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE ANTROPOMETRÍA
-     */
     public static function NotificarAntropometria(string $accion, array $data, int $id_atleta, ?int $id_medicion = null): void {
         try {
             $deepLink = "?p=antropometria";
@@ -819,7 +1251,6 @@ class Notificacion extends Conexion {
                 $deepLink .= "&id=" . $id_medicion; 
             }
 
-            // Normalizamos las variables (soportando datos del payload o de la DB)
             $peso = $data['peso_kg'] ?? $data['peso'] ?? '--';
             $talla = $data['talla_cm'] ?? $data['talla'] ?? '--';
 
@@ -857,17 +1288,11 @@ class Notificacion extends Conexion {
                     return;
             }
 
-            // 1. Notificar al Atleta y Representante
             self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
-
-            // 2. Notificar al Entrenador del grupo
             self::notificarEntrenador($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
-
-            // 3. Notificar a Médicos y Administradores
             self::notificarStaffMedicoYAdmin($titulo, $mensaje, $icono, $color, $deepLink);
 
         } catch (\Throwable $th) {
-            error_log("Aviso Crítico en Notificaciones: Falló despacho de antropometria [{$accion}]: " . $th->getMessage());
         }
     }
 }

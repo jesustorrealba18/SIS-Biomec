@@ -446,20 +446,23 @@ class Grupo extends Conexion {
                 $removidos = array_diff($atletasActuales, $insertados);
                 if (!empty($removidos)) {
                     foreach ($removidos as $id_atleta) {
-                        $sqlAtleta = "SELECT id_usuario FROM atletas WHERE id_atleta = ? AND estado = 1";
+                        $sqlAtleta = "SELECT correo FROM atletas WHERE id_atleta = ? AND estado = 1";
                         $stmtA = $this->pdo->prepare($sqlAtleta);
                         $stmtA->execute([$id_atleta]);
                         $atleta = $stmtA->fetch(\PDO::FETCH_ASSOC);
 
-                        if ($atleta && !empty($atleta['id_usuario'])) {
-                            \GrupoProyecto\SisBiomec\modelo\Notificacion::enviar(
-                                (int)$atleta['id_usuario'],
-                                "📤 Removido del grupo de entrenamiento",
-                                "Has sido removido del grupo \"{$grupoInfo['nombre']}\". Contacta a tu entrenador para más información.",
-                                'fa-user-minus',
-                                'orange',
-                                "?p=grupo"
-                            );
+                        if ($atleta && !empty($atleta['correo'])) {
+                            $id_usuario = \GrupoProyecto\SisBiomec\modelo\Notificacion::obtenerIdUsuarioPorCorreo($atleta['correo']);
+                            if ($id_usuario) {
+                                \GrupoProyecto\SisBiomec\modelo\Notificacion::enviar(
+                                    $id_usuario,
+                                    "Removido del grupo de entrenamiento",
+                                    "Has sido removido del grupo \"{$grupoInfo['nombre']}\". Contacta a tu entrenador para más información.",
+                                    'fa-user-minus',
+                                    'orange',
+                                    "?p=grupo"
+                                );
+                            }
                         }
                     }
                 }
@@ -516,11 +519,38 @@ class Grupo extends Conexion {
             $conex->commit();
 
             if ($grupo_actual) {
-                $this->notificarEventoGrupo('cambiar_grupo_atleta', [
-                    'id_atleta' => $id_atleta,
-                    'id_grupo_anterior' => (int)$grupo_actual,
-                    'id_grupo_nuevo' => $id_nuevo_grupo
-                ]);
+                $sqlAtleta = "SELECT correo, CONCAT(nombres, ' ', apellidos) as nombre 
+                              FROM atletas WHERE id_atleta = ? AND estado = 1";
+                $stmtAtleta = $conex->prepare($sqlAtleta);
+                $stmtAtleta->execute([$id_atleta]);
+                $atleta = $stmtAtleta->fetch(\PDO::FETCH_ASSOC);
+                
+                if ($atleta && !empty($atleta['correo'])) {
+                    $id_usuario = \GrupoProyecto\SisBiomec\modelo\Notificacion::obtenerIdUsuarioPorCorreo($atleta['correo']);
+                    if ($id_usuario) {
+                        $sqlGrupos = "SELECT id_grupo, nombre FROM grupos_entrenamiento 
+                                      WHERE id_grupo IN (?, ?)";
+                        $stmtG = $conex->prepare($sqlGrupos);
+                        $stmtG->execute([$grupo_actual, $id_nuevo_grupo]);
+                        $grupos = $stmtG->fetchAll(\PDO::FETCH_ASSOC);
+                        
+                        $nombreAnterior = 'grupo anterior';
+                        $nombreNuevo = 'nuevo grupo';
+                        foreach ($grupos as $g) {
+                            if ($g['id_grupo'] == $grupo_actual) $nombreAnterior = $g['nombre'];
+                            if ($g['id_grupo'] == $id_nuevo_grupo) $nombreNuevo = $g['nombre'];
+                        }
+                        
+                        \GrupoProyecto\SisBiomec\modelo\Notificacion::enviar(
+                            $id_usuario,
+                            "Cambio de grupo de entrenamiento",
+                            "Has sido movido del grupo \"{$nombreAnterior}\" al grupo \"{$nombreNuevo}\". Contacta a tu entrenador para más información.",
+                            'fa-exchange-alt',
+                            'blue',
+                            "?p=grupo&accion=ver&id={$id_nuevo_grupo}"
+                        );
+                    }
+                }
             }
 
             return true;
@@ -704,21 +734,24 @@ class Grupo extends Conexion {
 
                 case 'crear_grupo':
                     if (!empty($datos['id_grupo']) && !empty($datos['id_entrenador'])) {
-                        // Obtener id_usuario del entrenador
-                        $sql = "SELECT id_usuario FROM entrenador WHERE id_entrenador = :id_entrenador";
+                        $sql = "SELECT correo FROM entrenador WHERE id_entrenador = :id_entrenador";
                         $stmt = $this->pdo->prepare($sql);
                         $stmt->execute([':id_entrenador' => $datos['id_entrenador']]);
                         $entrenador = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-                        if ($entrenador && !empty($entrenador['id_usuario'])) {
-                            \GrupoProyecto\SisBiomec\modelo\Notificacion::enviar(
-                                (int)$entrenador['id_usuario'],
-                                "Nuevo grupo de entrenamiento creado",
-                                "Se ha creado el grupo \"{$datos['nombre']}\". Ya puedes comenzar a asignar atletas.",
-                                'fa-users-cog',
-                                'indigo',
-                                "?p=grupo&accion=ver&id={$datos['id_grupo']}"
-                            );
+                        if ($entrenador && !empty($entrenador['correo'])) {
+                            $id_usuario = \GrupoProyecto\SisBiomec\modelo\Notificacion::obtenerIdUsuarioPorCorreo($entrenador['correo']);
+                            
+                            if ($id_usuario) {
+                                \GrupoProyecto\SisBiomec\modelo\Notificacion::enviar(
+                                    $id_usuario,
+                                    "Nuevo grupo de entrenamiento creado",
+                                    "Se ha creado el grupo \"{$datos['nombre']}\". Ya puedes comenzar a asignar atletas.",
+                                    'fa-users-cog',
+                                    'indigo',
+                                    "?p=grupo&accion=ver&id={$datos['id_grupo']}"
+                                );
+                            }
                         }
                     }
                     break;
