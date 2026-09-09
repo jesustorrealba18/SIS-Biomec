@@ -17,7 +17,7 @@ class Login extends Conexion {
             }
 
             $sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.correo, 
-                           u.contrasena_hash, u.activo, u.bloqueado_hasta, u.intentos_fallidos,
+                           u.contrasena_hash, u.activo, u.bloqueado_hasta, u.intentos_fallidos,preferencias,
                            GROUP_CONCAT(r.nombre SEPARATOR ', ') AS roles
                     FROM usuarios u
                     LEFT JOIN usuario_roles ur ON u.id_usuario = ur.id_usuario

@@ -286,3 +286,34 @@ if (btnAyuda) {
 
     })();
 </script>
+
+<!-- SINCRONIZADOR DE PREFERENCIAS (Recupera datos si se borró la caché) -->
+<script>
+    (function() {
+        // Leemos las preferencias directo de la sesión de PHP
+        const dbTema = '<?= $_SESSION['tema'] ?? "" ?>';
+        const dbCrono = '<?= $_SESSION['crono_mode'] ?? "" ?>';
+        
+        // 1. Si la Base de Datos tiene un tema y NO coincide con la caché, lo restauramos
+        if (dbTema && localStorage.getItem('sgrd_tema') !== dbTema) {
+            localStorage.setItem('sgrd_tema', dbTema);
+            
+            // Forzamos el cambio visual inmediato para evitar parpadeos
+            if (dbTema === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        
+        // 2. Restauramos el modo del cronómetro si se borró
+        if (dbCrono && localStorage.getItem('sgrd_crono_mode') !== dbCrono) {
+            localStorage.setItem('sgrd_crono_mode', dbCrono);
+            
+            // Si el usuario justo está en la pantalla de "Mi Perfil", actualizamos los botones
+            if (typeof window.cambiarModoCrono === 'function') {
+                window.cambiarModoCrono(dbCrono);
+            }
+        }
+    })();
+</script>
