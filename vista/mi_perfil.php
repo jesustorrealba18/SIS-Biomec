@@ -29,6 +29,27 @@ $iconoPagina = 'fa-id-card'; // opcional, puedes usarlo en el header
         ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
         .menu-transition { transition: transform 0.3s ease-in-out; }
         .overlay { transition: opacity 0.3s ease-in-out; }
+
+        /* ===== INPUTS ADAPTATIVOS (asegurar visibilidad) ===== */
+.input-adapt {
+    background-color: #ffffff;
+    border: 1px solid #d1d5db; /* borde gris visible */
+    color: #1f2937;
+    transition: all 0.3s ease;
+}
+.dark .input-adapt {
+    background-color: #0f0d23;
+    border-color: #374151; /* borde más claro en modo oscuro */
+    color: #ffffff;
+}
+.input-adapt:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    outline: none;
+}
+.dark .input-adapt:focus {
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
@@ -180,17 +201,67 @@ $iconoPagina = 'fa-id-card'; // opcional, puedes usarlo en el header
         </div>
     </div>
 
-    <div id="tab-seguridad" class="tab-content hidden animate-fade-in">
-        <div class="tarjeta bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl shadow-sm p-6 sm:p-8 transition-colors duration-300">
-            <h2 class="text-gray-900 dark:text-white text-xl font-bold mb-6 flex items-center gap-2">
-                <i class="fas fa-shield-alt text-emerald-500"></i> Cambio de Contraseña
-            </h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Asegúrate de usar una contraseña larga y difícil de adivinar.</p>
-            <div class="p-8 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-center text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-transparent">
-                Formulario en construcción...
+<div id="tab-seguridad" class="tab-content hidden animate-fade-in">
+    <div class="tarjeta bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl shadow-sm p-6 sm:p-8 transition-colors duration-300">
+        <h2 class="text-gray-900 dark:text-white text-xl font-bold mb-6 flex items-center gap-2">
+            <i class="fas fa-shield-alt text-emerald-500"></i> Cambio de Contraseña
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Asegúrate de usar una contraseña larga y difícil de adivinar.</p>
+        
+        <form id="formCambioContrasena" class="space-y-5 max-w-md">
+            <!-- Contraseña Actual -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Contraseña Actual *</label>
+                <div class="relative">
+                    <input type="password" name="contrasena_actual" id="contrasena_actual" 
+                           data-validar="requerido" data-nombre="Contraseña actual"
+                           class="w-full input-adapt rounded-xl px-4 py-3 pr-12" required>
+                    <button type="button" onclick="togglePasswordVisibility('contrasena_actual')" 
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-indigo-500 transition">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
             </div>
-        </div>
+
+            <!-- Nueva Contraseña -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Nueva Contraseña *</label>
+                <div class="relative">
+                    <input type="password" name="nueva_contrasena" id="nueva_contrasena" 
+                           data-validar="requerido" data-nombre="Nueva contraseña" data-min="6" data-max="128"
+                           class="w-full input-adapt rounded-xl px-4 py-3 pr-12" required
+                           oninput="evaluarFortalezaCambio(this.value)">
+                    <button type="button" onclick="togglePasswordVisibility('nueva_contrasena')" 
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-indigo-500 transition">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div id="fortalezaCambio" class="mt-1 h-1.5 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                    <div id="fortalezaBarraCambio" class="h-full rounded-full transition-all duration-300" style="width:0"></div>
+                </div>
+                <small id="fortalezaTextoCambio" class="text-xs mt-1 block"></small>
+            </div>
+
+            <!-- Confirmar Nueva Contraseña -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Confirmar Nueva Contraseña *</label>
+                <div class="relative">
+                    <input type="password" name="confirmar_contrasena" id="confirmar_contrasena" 
+                           data-validar="requerido" data-nombre="Confirmar contraseña"
+                           class="w-full input-adapt rounded-xl px-4 py-3 pr-12" required>
+                    <button type="button" onclick="togglePasswordVisibility('confirmar_contrasena')" 
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-indigo-500 transition">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" id="btnCambiarPass" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
+                <i class="fas fa-key"></i> Cambiar Contraseña
+            </button>
+        </form>
     </div>
+</div>
 
     <div id="tab-preferencias" class="tab-content hidden animate-fade-in">
         <div class="tarjeta bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl shadow-sm p-6 sm:p-8 transition-colors duration-300">

@@ -75,6 +75,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+        // --- Cambio de Contraseña ---
+ // ==========================================================
+// CAMBIO DE CONTRASEÑA
+// ==========================================================
+if ($accion === 'cambiar_contrasena') {
+    $id_usuario = $_SESSION['id'];
+    $actual = trim($_POST['contrasena_actual'] ?? '');
+    $nueva  = trim($_POST['nueva_contrasena'] ?? '');
+
+    // Validación mínima en controlador (solo existencia, NO lógica pesada)
+    if (empty($actual) || empty($nueva)) {
+        echo json_encode(['status' => 'error', 'message' => 'Todos los campos son obligatorios.']);
+        exit;
+    }
+
+    // Instanciar modelo y ejecutar
+    $objUsuario = new UsuarioModelo();
+    $resultado = $objUsuario->cambiarContrasena($id_usuario, $actual, $nueva);
+
+    // Registrar en bitácora si fue exitoso
+    if ($resultado['status'] === 'success') {
+        Bitacora::registrar($id_usuario, 'Seguridad', 'CAMBIO_CONTRASENA', $id_usuario, 'Cambio de contraseña desde Mi Perfil', null, null);
+    }
+
+    echo json_encode($resultado);
+    exit;
+}
 
 
 }

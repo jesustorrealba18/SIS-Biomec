@@ -167,6 +167,58 @@ window.cambiarModoCrono = function(modo) {
             cambiarModoCrono(modoGuardado);
         }); */
 
+
+        // =====================================================================
+// CAMBIO DE CONTRASEÑA
+// =====================================================================
+
+function evaluarFortalezaCambio(pass) {
+    const barra = document.getElementById('fortalezaBarraCambio');
+    const texto = document.getElementById('fortalezaTextoCambio');
+    if (!barra || !texto) return;
+    let puntos = 0;
+    if (pass.length >= 6) puntos++;
+    if (pass.length >= 10) puntos++;
+    if (/[a-z]/.test(pass) && /[A-Z]/.test(pass)) puntos++;
+    if (/[0-9]/.test(pass)) puntos++;
+    if (/[^a-zA-Z0-9]/.test(pass)) puntos++;
+    const niveles = [
+        { w: '0%', bg: '#d1d5db', label: '', color: '' },
+        { w: '20%', bg: '#ef4444', label: 'Muy débil', color: '#ef4444' },
+        { w: '40%', bg: '#f97316', label: 'Débil', color: '#f97316' },
+        { w: '60%', bg: '#eab308', label: 'Media', color: '#eab308' },
+        { w: '80%', bg: '#22c55e', label: 'Fuerte', color: '#22c55e' },
+        { w: '100%', bg: '#10b981', label: 'Muy fuerte', color: '#10b981' }
+    ];
+    const n = niveles[puntos];
+    barra.style.width = n.w;
+    barra.style.backgroundColor = n.bg;
+    texto.textContent = n.label;
+    texto.style.color = n.color;
+}
+
+
+// =====================================================================
+// VISOR DE CONTRASEÑA (Toggle)
+// =====================================================================
+window.togglePasswordVisibility = function(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const button = input.nextElementSibling; // asumiendo que el botón está justo después
+    if (!button) return;
+    const icon = button.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     const API_URL = 'index.php?p=mi_perfil&accion=obtener_mi_ficha';
     
@@ -331,6 +383,74 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (error) {
         console.error("Error renderizando perfil modular:", error);
+    }
+
+      const formCambio = document.getElementById('formCambioContrasena');
+    if (formCambio) {
+        formCambio.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const actual = document.getElementById('contrasena_actual').value.trim();
+            const nueva = document.getElementById('nueva_contrasena').value.trim();
+            const confirmar = document.getElementById('confirmar_contrasena').value.trim();
+
+            // Validaciones básicas
+            if (actual === '') {
+                UI.error('Validación', 'Debes ingresar tu contraseña actual.');
+                return;
+            }
+            if (nueva.length < 6) {
+                UI.error('Validación', 'La nueva contraseña debe tener al menos 6 caracteres.');
+                return;
+            }
+            if (!/[a-zA-Z]/.test(nueva) || !/[0-9]/.test(nueva)) {
+                UI.error('Validación', 'La nueva contraseña debe contener al menos una letra y un número.');
+                return;
+            }
+            if (nueva !== confirmar) {
+                UI.error('Validación', 'Las contraseñas no coinciden.');
+                return;
+            }
+            if (actual === nueva) {
+                UI.error('Validación', 'La nueva contraseña no puede ser igual a la actual.');
+                return;
+            }
+
+            // Deshabilitar botón mientras se procesa
+            const btn = document.getElementById('btnCambiarPass');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+            btn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('accion', 'cambiar_contrasena');
+                formData.append('contrasena_actual', actual);
+                formData.append('nueva_contrasena', nueva);
+
+                const response = await fetch('index.php?p=mi_perfil', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    UI.exito('Éxito', data.message);
+                    formCambio.reset();
+                    // Limpiar barra de fortaleza
+                    document.getElementById('fortalezaBarraCambio').style.width = '0%';
+                    document.getElementById('fortalezaTextoCambio').textContent = '';
+                } else {
+                    UI.error('Error', data.message || 'No se pudo cambiar la contraseña.');
+                }
+            } catch (error) {
+                UI.error('Error', 'Error de comunicación con el servidor.');
+                console.error(error);
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        });
     }
 
     const modoGuardado = localStorage.getItem('sgrd_crono_mode') || 'manual';

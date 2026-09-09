@@ -472,6 +472,71 @@ class UsuarioModelo extends Conexion {
         }
     }
 
+// =====================================================================
+// CAMBIO DE CONTRASEÑA (PÚBLICO)
+// =====================================================================
+public function cambiarContrasena(int $id_usuario, string $contrasena_actual, string $nueva_contrasena): array {
+    // 1. Validar la nueva contraseña con el método privado
+    $errores = $this->validarNuevaContrasena($nueva_contrasena);
+    if (!empty($errores)) {
+        return ['status' => 'error', 'message' => reset($errores)];
+    }
+
+    // 2. Verificar la actual y realizar el cambio
+    return $this->ejecutarCambioContrasena($id_usuario, $contrasena_actual, $nueva_contrasena);
+}
+
+// =====================================================================
+// MÉTODO PRIVADO: VALIDACIÓN DE NUEVA CONTRASEÑA
+// =====================================================================
+private function validarNuevaContrasena(string $nueva): array {
+    $this->resetearErrores();
+    $this->validarContrasena($nueva); // reutiliza el método existente
+    return $this->obtenerErrores();
+}
+
+// =====================================================================
+// MÉTODO PRIVADO: EJECUCIÓN DEL CAMBIO
+// =====================================================================
+private function ejecutarCambioContrasena(int $id_usuario, string $actual, string $nueva): array {
+    try {
+        $conex = $this->getConex1();
+        
+        // 1. Obtener hash actual
+        $sql = "SELECT contrasena_hash FROM usuarios WHERE id_usuario = :id";
+        $stmt = $conex->prepare($sql);
+        $stmt->execute([':id' => $id_usuario]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$row) {
+            return ['status' => 'error', 'message' => 'Usuario no encontrado.'];
+        }
+        
+        // 2. Verificar contraseña actual
+        if (!password_verify($actual, $row['contrasena_hash'])) {
+            return ['status' => 'error', 'message' => 'La contraseña actual es incorrecta.'];
+        }
+        
+        // 3. Validar que la nueva sea diferente a la actual
+        if (password_verify($nueva, $row['contrasena_hash'])) {
+            return ['status' => 'error', 'message' => 'La nueva contraseña no puede ser igual a la actual.'];
+        }
+        
+        // 4. Hash y actualizar
+        $hash = password_hash($nueva, PASSWORD_BCRYPT, ['cost' => 10]);
+        $sqlUpdate = "UPDATE usuarios SET contrasena_hash = :hash, intentos_fallidos = 0, bloqueado_hasta = NULL WHERE id_usuario = :id";
+        $stmtUpdate = $conex->prepare($sqlUpdate);
+        $stmtUpdate->execute([':hash' => $hash, ':id' => $id_usuario]);
+        
+        return ['status' => 'success', 'message' => 'Contraseña cambiada correctamente.'];
+        
+    } catch (PDOException $e) {
+        error_log("Error cambiarContrasena: " . $e->getMessage());
+        return ['status' => 'error', 'message' => 'Error interno al cambiar la contraseña.'];
+    }
+}
+
+
     public function obtenerPerfilModular(int $id_usuario): ?array {
         try {
             $perfil = [

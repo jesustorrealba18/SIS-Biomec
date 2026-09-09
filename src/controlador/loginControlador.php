@@ -28,6 +28,12 @@ if (!empty($_POST['usuario']) && !empty($_POST['password'])) {
             $_SESSION['id']     = $datosUser['id_usuario'];
             $_SESSION['nombre'] = $datosUser['nombres'] . ' ' . $datosUser['apellidos'];
             $_SESSION['rol']    = $datosUser['roles'];
+            // Ejemplo en tu controlador de Login, al autenticar exitosamente:
+            $prefs = json_decode($datosUser['preferencias'], true) ?? [];
+
+            // Guardamos las preferencias individuales en la sesión
+            $_SESSION['tema'] = $prefs['tema'] ?? 'dark'; // Dark por defecto
+            $_SESSION['crono_mode'] = $prefs['crono_mode'] ?? 'manual';
             if (!Autorizacion::cargarPermisos($datosUser['id_usuario'])) {
                 $_SESSION = [];
                 session_destroy();
