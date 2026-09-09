@@ -194,7 +194,6 @@ class Notificacion extends Conexion {
         }
     }
 
-<<<<<<< HEAD
     /**
      * DISPARADOR DE EMERGENCIAS (ALERTA BIOLÓGICA ROJA)
      */
@@ -221,7 +220,6 @@ class Notificacion extends Conexion {
     /**
      * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE MARCAS
      */
-=======
     public static function notificarAsignacionGrupo(int $id_grupo, array $id_atletas, string $accion = 'ASIGNAR'): void {
         try {
             $dbNegocio = new Conexion('sis_natacion');
@@ -469,7 +467,6 @@ class Notificacion extends Conexion {
         }
     }
 
->>>>>>> eb50f6eab47652c61cbb66c5c0b16eca945d9638
     public static function NotificarAtletas(string $accion, array $data, int $id_atleta): void {
         try {
             $deepLink = "?p=atleta";
