@@ -625,35 +625,68 @@ if (isset($_SESSION['id'])) {
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Fecha *</label>
-                            <input type="date" name="fecha" id="fecha_rpe" class="w-full input-adapt rounded-xl px-4 py-3" required>
+                            <input type="date" name="fecha" id="fecha_rpe" data-validar="requerido|fecha_reciente" data-nombre="Fecha" class="w-full input-adapt rounded-xl px-4 py-3" required>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">RPE (1-10) *</label>
-                            <input type="number" name="rpe" id="rpe_valor" min="1" max="10" class="w-full input-adapt rounded-xl px-4 py-3" required>
+                            <input type="number" name="rpe" id="rpe_valor" 
+                            data-validar="requerido|numeros"
+                            data-min-num="1"
+                            data-max-num="10"
+                            data-nombre="RPE"
+                           class="w-full input-adapt rounded-xl px-4 py-3" required>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Duración (minutos)</label>
-                            <input type="number" name="duracion_minutos" id="duracion_minutos" class="w-full input-adapt rounded-xl px-4 py-3" placeholder="Opcional, se calcula sRPE">
+                            <input type="number" name="duracion_minutos" id="duracion_minutos"
+                            data-validar="numeros"
+                            data-min-num="0"
+                            data-nombre="Duración (minutos)"
+                            class="w-full input-adapt rounded-xl px-4 py-3" placeholder="Opcional, se calcula sRPE">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Metros nadados</label>
-                            <input type="number" name="metros_nadados" id="metros_nadados" class="w-full input-adapt rounded-xl px-4 py-3">
+                            <input type="number" name="metros_nadados" id="metros_nadados" 
+                            data-validar="numeros"
+                            data-min-num="0"
+                            data-nombre="Metros nadados"
+                            class="w-full input-adapt rounded-xl px-4 py-3">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Horas de sueño</label>
-                            <input type="number" step="0.5" name="horas_sueno" id="horas_sueno" class="w-full input-adapt rounded-xl px-4 py-3">
+                            <input type="number" step="0.5" name="horas_sueno" id="horas_sueno"
+                            data-validar="requerido|decimal"
+                            data-min-num="0"
+                            data-max-num="24"
+                            data-nombre="Horas de sueño"
+                            class="w-full input-adapt rounded-xl px-4 py-3">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Calidad de sueño (1-10)</label>
-                            <input type="number" name="calidad_sueno" id="calidad_sueno" min="1" max="10" class="w-full input-adapt rounded-xl px-4 py-3">
+                            <input type="number" name="calidad_sueno" id="calidad_sueno"
+                            data-validar="numeros"
+                            data-min-num="1"
+                            data-max-num="10"
+                            data-nombre="Calidad de sueño"
+                            class="w-full input-adapt rounded-xl px-4 py-3">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Sensación muscular (1-10)</label>
-                            <input type="number" name="sensacion_muscular" id="sensacion_muscular" min="1" max="10" class="w-full input-adapt rounded-xl px-4 py-3">
+                            <input type="number" name="sensacion_muscular" id="sensacion_muscular" 
+                            data-validar="numeros"
+                            data-min-num="1"
+                            data-max-num="10"
+                            data-nombre="Sensación muscular"
+                            class="w-full input-adapt rounded-xl px-4 py-3">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Estrés percibido (1-10)</label>
-                            <input type="number" name="estres_percibido" id="estres_percibido" min="1" max="10" class="w-full input-adapt rounded-xl px-4 py-3">
+                            <input type="number" name="estres_percibido" id="estres_percibido" 
+                             data-validar="numeros"
+                            data-min-num="1"
+                            data-max-num="10"
+                            data-nombre="Estrés percibido"
+                            min="1" max="10" class="w-full input-adapt rounded-xl px-4 py-3">
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Observaciones</label>

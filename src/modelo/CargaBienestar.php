@@ -66,8 +66,20 @@ class CargaBienestar extends Conexion {
         }
 
         // Fecha no futura
-        if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {
+        /* if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {
             $this->agregarError('fecha', 'La fecha no puede ser futura.');
+        } */
+
+        if (!empty($this->datos['fecha'])) {
+            $fechaMedicion = $this->datos['fecha'];
+            $hoy = date('Y-m-d');
+            $haceUnMes = date('Y-m-d', strtotime('-1 month'));
+
+            if ($fechaMedicion > $hoy) {
+                $this->agregarError('fecha', 'La fecha no puede ser futura.');
+            } elseif ($fechaMedicion < $haceUnMes) {
+                $this->agregarError('fecha', 'El sistema solo permite registrar evaluaciones con hasta 1 mes de antigüedad.');
+            }
         }
 
         // Duración y metros (positivos)

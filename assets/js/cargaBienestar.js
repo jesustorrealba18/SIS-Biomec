@@ -603,6 +603,28 @@ async function marcarRecomendacionLeida(id_recomendacion) {
     }
 }
 
+// =====================================================================
+// BLOQUEO FÍSICO DEL CALENDARIO NATIVO (1 mes atrás, sin futuro)
+// =====================================================================
+function configurarLimitesCalendario() {
+    const inputFecha = document.getElementById('fecha_rpe');
+    if (!inputFecha) return;
+
+    // Obtener fecha de hoy y de hace un mes
+    const hoy = new Date();
+    const haceUnMes = new Date();
+    haceUnMes.setMonth(hoy.getMonth() - 1);
+
+    // Ajuste de zona horaria local para evitar saltos de día
+    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+    const strHoy = (new Date(hoy - tzOffset)).toISOString().split('T')[0];
+    const strHaceUnMes = (new Date(haceUnMes - tzOffset)).toISOString().split('T')[0];
+
+    // Inyectar los límites físicos en el input
+    inputFecha.min = strHaceUnMes;
+    inputFecha.max = strHoy;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     await cargarAtletasRPE();
     cargarTablaRPE();
@@ -612,6 +634,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
         Validador.vincularTiempoReal(formRPE);
     }
+
+    // === BLOQUEO DE RANGOS NUMÉRICOS EN TIEMPO REAL ===
+ 
+    const camposConRango = [
+        { id: 'rpe_valor', min: 1, max: 10 },
+        { id: 'horas_sueno', min: 0, max: 24 },
+        { id: 'calidad_sueno', min: 1, max: 10 },
+        { id: 'sensacion_muscular', min: 1, max: 10 },
+        { id: 'estres_percibido', min: 1, max: 10 },
+        { id: 'metros_nadados', min: 0, max: 99999 },
+        { id: 'duracion_minutos', min: 0, max: 99999 }
+    ];
+
+
+    camposConRango.forEach(({ id, min, max }) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+
+        input.addEventListener('input', function() {
+            let val = parseFloat(this.value);
+            // Si el campo está vacío, no forzar nada
+            if (this.value === '' || isNaN(val)) return;
+
+            if (val < min) this.value = min;
+            if (val > max) this.value = max;
+        });
+    });
+
+    
+
+    
+
+    configurarLimitesCalendario();
 
     actualizarUIRPE();
 });
