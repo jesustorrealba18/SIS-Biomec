@@ -69,9 +69,28 @@ class Lesion extends Conexion {
         }
 
         // Fechas
-        if (!empty($this->datos['fecha_inicio']) && $this->datos['fecha_inicio'] > date('Y-m-d')) {
+       /*  if (!empty($this->datos['fecha_inicio']) && $this->datos['fecha_inicio'] > date('Y-m-d')) {
             $this->agregarError('fecha_inicio', 'La fecha de inicio no puede ser futura.');
         }
+        if (!empty($this->datos['fecha_estimada_recup']) && !empty($this->datos['fecha_inicio'])
+            && $this->datos['fecha_estimada_recup'] < $this->datos['fecha_inicio']) {
+            $this->agregarError('fecha_estimada_recup', 'No puede ser anterior a la fecha de inicio.');
+        } */
+
+            // Validación estricta de Fecha de Inicio en el Modelo
+        if (!empty($this->datos['fecha_inicio'])) {
+            $fechaInicio = $this->datos['fecha_inicio'];
+            $hoy = date('Y-m-d');
+            $haceUnMes = date('Y-m-d', strtotime('-1 month'));
+
+            if ($fechaInicio > $hoy) {
+                $this->agregarError('fecha_inicio', 'La fecha de inicio no puede ser futura.');
+            } elseif ($fechaInicio < $haceUnMes) {
+                $this->agregarError('fecha_inicio', 'El sistema solo permite registrar lesiones con hasta 1 mes de antigüedad.');
+            }
+        }
+
+        // La de fecha_estimada_recup ya la tienes bien, solo verifica que sea mayor o igual a fecha_inicio
         if (!empty($this->datos['fecha_estimada_recup']) && !empty($this->datos['fecha_inicio'])
             && $this->datos['fecha_estimada_recup'] < $this->datos['fecha_inicio']) {
             $this->agregarError('fecha_estimada_recup', 'No puede ser anterior a la fecha de inicio.');
@@ -962,7 +981,8 @@ public function eliminarfisico(int $id_lesion): bool {
     $sql = "SELECT ab.*, a.nombres, a.apellidos 
             FROM alertas_biologicas ab
             INNER JOIN atletas a ON ab.id_atleta = a.id_atleta
-            WHERE ab.activo = TRUE 
+            WHERE ab.modulo_origen = 'LESIONES' 
+                  AND ab.activo = TRUE 
             ORDER BY ab.gravedad DESC, ab.fecha_creacion DESC LIMIT 5";
     return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }

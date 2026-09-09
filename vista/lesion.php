@@ -426,11 +426,11 @@ if (isset($_SESSION['id'])) {
 
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Fecha de Inicio *</label>
-                            <input type="date" name="fecha_inicio" id="fecha_inicio" class="w-full input-adapt rounded-xl px-4 py-3" required data-validar="requerido|fecha_logica" data-nombre="Fecha de inicio">
+                            <input type="date" name="fecha_inicio" id="fecha_inicio" class="w-full input-adapt rounded-xl px-4 py-3" required data-validar="requerido|fecha_reciente" data-nombre="Fecha de inicio">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Fecha Estimada Recuperación</label>
-                            <input type="date" name="fecha_estimada_recup" id="fecha_estimada_recup" class="w-full input-adapt rounded-xl px-4 py-3" data-validar="fecha_logica" data-nombre="Fecha estimada de recuperación" data-depende="fecha_inicio" data-mensaje="La fecha estimada no puede ser anterior a la fecha de inicio">
+                            <input type="date" name="fecha_estimada_recup" id="fecha_estimada_recup" class="w-full input-adapt rounded-xl px-4 py-3" data-validar="fecha_posterior" data-nombre="Fecha estimada de recuperación" data-depende="fecha_inicio" data-mensaje="La fecha estimada no puede ser anterior a la fecha de inicio">
                         </div>
 
                         <div>

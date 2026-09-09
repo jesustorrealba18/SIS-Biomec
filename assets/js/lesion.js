@@ -111,6 +111,28 @@ function validarCampoPersonalizado(campo) {
         }
     }
 
+    // NUEVA REGLA: FECHA RECIENTE (Máximo 1 mes atrás y sin futuro)
+    if (reglas.includes('fecha_reciente') && valor !== '') {
+        const partes = valor.split('-');
+        if (partes.length === 3) {
+            const fechaInput = new Date(partes[0], partes[1] - 1, partes[2]);
+            const hoy = new Date(); 
+            hoy.setHours(0, 0, 0, 0);
+            
+            const limitePasado = new Date();
+            limitePasado.setMonth(limitePasado.getMonth() - 1);
+            limitePasado.setHours(0, 0, 0, 0);
+
+            if (fechaInput > hoy) {
+                valido = false;
+                mensaje = 'La fecha de inicio no puede ser futura.';
+            } else if (fechaInput < limitePasado) {
+                valido = false;
+                mensaje = 'Solo se permiten fechas de hasta 1 mes de antigüedad.';
+            }
+        }
+    }
+
     if (reglas.includes('fecha_posterior') && valor !== '') {
         const dependencia = campo.getAttribute('data-depende');
         if (dependencia) {
@@ -680,12 +702,55 @@ function cerrarModalVer() {
 }
 
 // =====================================================================
+// BLOQUEO FÍSICO DE CALENDARIOS NATIVOS
+// =====================================================================
+function configurarLimitesCalendario() {
+    const inputInicio = document.getElementById('fecha_inicio');
+    const inputRecup = document.getElementById('fecha_estimada_recup');
+
+    if (!inputInicio || !inputRecup) return;
+
+    // Obtener la fecha de hoy
+    const hoy = new Date();
+    
+    // Obtener la fecha de hace exactamente un mes
+    const haceUnMes = new Date();
+    haceUnMes.setMonth(hoy.getMonth() - 1);
+
+    // Convertir a formato YYYY-MM-DD (que es el que lee el input date)
+    // Ajustamos por la zona horaria local para evitar saltos de día
+    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+    const strHoy = (new Date(hoy - tzOffset)).toISOString().split('T')[0];
+    const strHaceUnMes = (new Date(haceUnMes - tzOffset)).toISOString().split('T')[0];
+
+    // 1. Bloquear Fecha de Inicio (Mínimo hace un mes, Máximo hoy)
+    inputInicio.min = strHaceUnMes;
+    inputInicio.max = strHoy;
+
+    // 2. Bloquear Fecha de Recuperación dinámicamente
+    // Si el usuario cambia la fecha de inicio, la fecha de recuperación no puede ser menor a esa
+    inputInicio.addEventListener('change', () => {
+        if (inputInicio.value) {
+            inputRecup.min = inputInicio.value;
+            
+            // Si la fecha de recuperación actual quedó "huérfana" (es menor a la de inicio), la borramos
+            if (inputRecup.value && inputRecup.value < inputInicio.value) {
+                inputRecup.value = '';
+                validarCampoPersonalizado(inputRecup); // Refrescar validación visual
+            }
+        }
+    });
+}
+
+// =====================================================================
 // INICIALIZACIÓN DE VALIDACIONES EN TIEMPO REAL
 // =====================================================================
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
         Validador.vincularTiempoReal(formulario);
     }
+
+    configurarLimitesCalendario();
     
     const camposFormulario = formulario.querySelectorAll('[data-validar]');
     camposFormulario.forEach(campo => {

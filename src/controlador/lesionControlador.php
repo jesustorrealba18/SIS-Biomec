@@ -3,17 +3,19 @@
 // CONTROLADOR: CONTROL CLÍNICO DE LESIONES (RF-10)
 // Protegido contra caídas en JMeter mediante Buffering (ob_start)
 // =====================================================================
+use GrupoProyecto\SisBiomec\seguridad\Bitacora;
+use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+use GrupoProyecto\SisBiomec\modelo\Lesion;
+use GrupoProyecto\SisBiomec\modelo\Atleta;
+use GrupoProyecto\SisBiomec\modelo\Notificacion;
+
 
 if (empty($_SESSION['id'])) { 
     header('Location: ?p=login'); 
     exit; 
 }
 
-use GrupoProyecto\SisBiomec\seguridad\Bitacora;
-use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
-use GrupoProyecto\SisBiomec\modelo\Lesion;
-use GrupoProyecto\SisBiomec\modelo\Atleta;
-use GrupoProyecto\SisBiomec\modelo\Notificacion;
+
 
 $objLesion = new Lesion();
 $id_usuario = $_SESSION['id'];
