@@ -286,4 +286,261 @@ class Reporte extends Conexion
             return [];
         }
     }
+
+    public function listaEntrenadores(?int $idEntrenador = null): array
+    {
+        try {
+            $sql = "SELECT e.id_entrenador, e.cedula, e.nombres, e.apellidos, 
+                           e.fecha_nacimiento, e.genero, e.correo, e.telefono, e.direccion, e.foto,
+                           TIMESTAMPDIFF(YEAR, e.fecha_nacimiento, CURDATE()) AS edad,
+                           COUNT(DISTINCT ga.id_atleta) AS total_atletas,
+                           GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') AS grupos_asignados
+                    FROM entrenador e
+                    LEFT JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
+                    LEFT JOIN grupo_atleta ga ON ga.id_grupo = g.id_grupo
+                    WHERE 1=1";
+        
+            $params = [];
+        
+            if ($idEntrenador !== null && $idEntrenador > 0) {
+                $sql .= " AND e.id_entrenador = :id_entrenador";
+                $params[':id_entrenador'] = $idEntrenador;
+            }
+        
+            $sql .= " GROUP BY e.id_entrenador ORDER BY e.apellidos, e.nombres ASC";
+        
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $val) {
+                $stmt->bindValue($key, $val);
+            }
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Reporte::listaEntrenadores - " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function obtenerEntrenadoresSelect(): array
+    {
+        try {
+            $sql = "SELECT id_entrenador, CONCAT(nombres, ' ', apellidos) AS nombre_completo
+                    FROM entrenador
+                    ORDER BY apellidos, nombres ASC";
+            $stmt = $this->pdo->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Reporte::obtenerEntrenadoresSelect - " . $e->getMessage());
+            return [];
+        }
+    }
+
+public function listaGrupos(string $estado = 'Activo'): array
+{
+    try {
+        $estadoInt = ($estado === 'Activo') ? 1 : ($estado === 'Inactivo' ? 0 : null);
+        
+        $sql = "SELECT g.id_grupo, g.nombre, g.descripcion, g.activo,
+                       CONCAT(e.nombres, ' ', e.apellidos) AS entrenador_nombre,
+                       e.cedula AS entrenador_cedula,
+                       COUNT(ga.id_atleta) AS total_atletas
+                FROM grupos_entrenamiento g
+                LEFT JOIN entrenador e ON g.id_entrenador = e.id_entrenador
+                LEFT JOIN grupo_atleta ga ON g.id_grupo = ga.id_grupo";
+        
+        $params = [];
+        
+        if ($estadoInt !== null) {
+            $sql .= " WHERE g.activo = :estado";
+            $params[':estado'] = $estadoInt;
+        }
+        
+        $sql .= " GROUP BY g.id_grupo ORDER BY g.nombre ASC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Reporte::listaGrupos - " . $e->getMessage());
+        return [];
+    }
+}
+
+public function detalleGrupo(int $idGrupo): ?array
+{
+    try {
+        // Informacion del grupo
+        $sqlGrupo = "SELECT g.id_grupo, g.nombre, g.descripcion, g.activo,
+                            CONCAT(e.nombres, ' ', e.apellidos) AS entrenador_nombre,
+                            e.cedula AS entrenador_cedula,
+                            e.telefono AS entrenador_telefono,
+                            e.correo AS entrenador_correo
+                     FROM grupos_entrenamiento g
+                     LEFT JOIN entrenador e ON g.id_entrenador = e.id_entrenador
+                     WHERE g.id_grupo = :id_grupo";
+        
+        $stmt = $this->pdo->prepare($sqlGrupo);
+        $stmt->bindValue(':id_grupo', $idGrupo, PDO::PARAM_INT);
+        $stmt->execute();
+        $grupo = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$grupo) {
+            return null;
+        }
+        
+        // Atletas del grupo
+        $sqlAtletas = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos,
+                              a.fecha_nacimiento, a.telefono, a.correo,
+                              TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) AS edad,
+                              c.nombre AS categoria_nombre,
+                              r.nombres AS rep_nombres, r.apellidos AS rep_apellidos,
+                              r.telefono_principal AS rep_telefono
+                       FROM grupo_atleta ga
+                       INNER JOIN atletas a ON ga.id_atleta = a.id_atleta
+                       LEFT JOIN categorias_feveda c ON a.id_categoria = c.id_categoria
+                       LEFT JOIN atleta_representante ar ON a.id_atleta = ar.id_atleta
+                       LEFT JOIN representantes r ON ar.id_representante = r.id_representante
+                       WHERE ga.id_grupo = :id_grupo AND a.estado = 'Activo'
+                       ORDER BY a.apellidos, a.nombres ASC";
+        
+        $stmt = $this->pdo->prepare($sqlAtletas);
+        $stmt->bindValue(':id_grupo', $idGrupo, PDO::PARAM_INT);
+        $stmt->execute();
+        $atletas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        return [
+            'grupo' => $grupo,
+            'atletas' => $atletas,
+            'total_atletas' => count($atletas)
+        ];
+    } catch (PDOException $e) {
+        error_log("Reporte::detalleGrupo - " . $e->getMessage());
+        return null;
+    }
+}
+
+// Agrega estos métodos al final de la clase Reporte
+
+public function listarSesionesSelect(): array
+{
+    try {
+        $sql = "SELECT s.id_sesion, s.fecha, s.tipo_sesion, s.estado,
+                       g.nombre AS grupo_nombre
+                FROM sesiones s
+                INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
+                WHERE s.estado IN ('Planificada', 'Parcial', 'Completada')
+                ORDER BY s.fecha DESC LIMIT 50";
+        $stmt = $this->pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Reporte::listarSesionesSelect - " . $e->getMessage());
+        return [];
+    }
+}
+
+public function detalleSesion(int $idSesion): ?array
+{
+    try {
+        // Información de la sesión
+        $sqlSesion = "SELECT s.id_sesion, s.fecha, s.tipo_sesion, s.estado,
+                             s.duracion_minutos, s.volumen_planificado, s.volumen_ejecutado,
+                             s.calentamiento, s.vuelta_calma, s.observaciones,
+                             g.nombre AS grupo_nombre,
+                             CONCAT(e.nombres, ' ', e.apellidos) AS entrenador_nombre
+                      FROM sesiones s
+                      INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
+                      LEFT JOIN entrenador e ON s.id_entrenador = e.id_entrenador
+                      WHERE s.id_sesion = :id_sesion";
+        
+        $stmt = $this->pdo->prepare($sqlSesion);
+        $stmt->bindValue(':id_sesion', $idSesion, PDO::PARAM_INT);
+        $stmt->execute();
+        $sesion = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$sesion) {
+            return null;
+        }
+        
+        // Series de la sesión
+        $sqlSeries = "SELECT ss.orden_ejecucion, ss.bloque, ss.repeticiones, ss.distancia_m,
+                             ss.descanso_seg, ss.zona_intensidad, ss.ritmo_objetivo,
+                             ss.ejercicio_descripcion,
+                             d.nombre AS drill_nombre, d.estilo AS drill_estilo
+                      FROM series_sesion ss
+                      LEFT JOIN drills d ON ss.id_drill = d.id_drill
+                      WHERE ss.id_sesion = :id_sesion
+                      ORDER BY ss.orden_ejecucion ASC";
+        
+        $stmt = $this->pdo->prepare($sqlSeries);
+        $stmt->bindValue(':id_sesion', $idSesion, PDO::PARAM_INT);
+        $stmt->execute();
+        $sesion['series'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Calcular volúmenes por bloque
+        $volCalentamiento = 0;
+        $volPrincipal = 0;
+        $volVueltaCalma = 0;
+        
+        foreach ($sesion['series'] as $serie) {
+            $volumen = ($serie['repeticiones'] ?? 0) * ($serie['distancia_m'] ?? 0);
+            if ($serie['bloque'] === 'Calentamiento') {
+                $volCalentamiento += $volumen;
+            } elseif ($serie['bloque'] === 'Principal') {
+                $volPrincipal += $volumen;
+            } elseif ($serie['bloque'] === 'VuletaCalma') {
+                $volVueltaCalma += $volumen;
+            }
+        }
+        
+        $sesion['vol_calentamiento'] = $volCalentamiento;
+        $sesion['vol_principal'] = $volPrincipal;
+        $sesion['vol_vuelta_calma'] = $volVueltaCalma;
+        
+        return $sesion;
+    } catch (PDOException $e) {
+        error_log("Reporte::detalleSesion - " . $e->getMessage());
+        return null;
+    }
+}
+
+public function resumenSesionesGrupo(int $idGrupo, string $estado, string $fechaIni, string $fechaFin): array
+{
+    try {
+        $sql = "SELECT s.id_sesion, s.fecha, s.tipo_sesion, s.estado,
+                       s.volumen_planificado, s.volumen_ejecutado,
+                       s.duracion_minutos,
+                       g.nombre AS grupo_nombre
+                FROM sesiones s
+                INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
+                WHERE s.id_grupo = :id_grupo
+                  AND s.fecha BETWEEN :fecha_ini AND :fecha_fin";
+        
+        $params = [
+            ':id_grupo' => $idGrupo,
+            ':fecha_ini' => $fechaIni,
+            ':fecha_fin' => $fechaFin
+        ];
+        
+        if ($estado !== '') {
+            $sql .= " AND s.estado = :estado";
+            $params[':estado'] = $estado;
+        }
+        
+        $sql .= " ORDER BY s.fecha DESC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Reporte::resumenSesionesGrupo - " . $e->getMessage());
+        return [];
+    }
+}
+
 }

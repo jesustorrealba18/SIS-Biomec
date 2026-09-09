@@ -27,11 +27,9 @@ class Notificacion extends Conexion {
     private function ValidacionBackend(): bool {
         $this->resetearErrores();
 
-        // 1. EXTRAER DATOS ENCAPSULADOS
         $id_notif = $this->datos['id_notificacion'] ?? '';
         $id_user = $this->datos['id_usuario'] ?? '';
 
-        // 2. VALIDACIONES DE FORMATO (Usando tu Trait)
         if (!$this->requerido((string)$id_notif, 'ID Notificación') || 
             !$this->soloNumeros((string)$id_notif, 'ID Notificación')) {
             return false;
@@ -42,9 +40,8 @@ class Notificacion extends Conexion {
             return false;
         }
 
-        // 3. VALIDACIÓN DE EXISTENCIA Y PROPIEDAD
         $sqlCheck = "SELECT leida FROM notificaciones WHERE id_notificacion = :id_notificacion AND id_usuario = :id_usuario";
-        $stmtCheck = $this->getConex1()->prepare($sqlCheck); // ← CAMBIADO: $this->pdo → $this->getConex1()
+        $stmtCheck = $this->getConex1()->prepare($sqlCheck);
         $stmtCheck->execute([
             ':id_notificacion' => (int)$id_notif, 
             ':id_usuario' => (int)$id_user
@@ -75,9 +72,8 @@ class Notificacion extends Conexion {
         try {
             $id_notif = $this->datos['id_notificacion'] ?? '';
             
-            // 4. EJECUCIÓN SEGURA
             $sql = "UPDATE notificaciones SET leida = 1 WHERE id_notificacion = :id_notificacion";
-            $stmt = $this->getConex1()->prepare($sql); // ← CAMBIADO: $this->pdo → $this->getConex1()
+            $stmt = $this->getConex1()->prepare($sql);
             return $stmt->execute([':id_notificacion' => (int)$id_notif]);
 
         } catch (\Throwable $e) {
@@ -115,21 +111,19 @@ class Notificacion extends Conexion {
      */
     public static function notificarAtletaYRepresentante(int $id_atleta, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): void {
         try {
-            // Para BUSCAR a los usuarios, necesitamos conectarnos temporalmente a sis_natacion
             $dbNegocio = new Conexion('sis_natacion'); 
 
-            // A) Buscar el id_usuario del Atleta Y SU EDAD
             $sqlAtleta = "SELECT id_usuario, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad 
                           FROM atletas 
                           WHERE id_atleta = :id_atleta";
-            $stmtA = $dbNegocio->getConex1()->prepare($sqlAtleta); // ← CAMBIADO: $dbNegocio->pdo → $dbNegocio->getConex1()
+            $stmtA = $dbNegocio->getConex1()->prepare($sqlAtleta);
             $stmtA->execute([':id_atleta' => $id_atleta]);
             $userAtleta = $stmtA->fetch(\PDO::FETCH_ASSOC);
 
             if ($userAtleta) {
-                // 1. Notificar al Atleta (Si tiene un usuario web asignado)
+                // 1. Notificar al Atleta (usando id_usuario directamente)
                 if (!empty($userAtleta['id_usuario'])) {
-                    self::enviar($userAtleta['id_usuario'], $titulo, $mensaje, $icono, $color, $enlace_url);
+                    self::enviar((int)$userAtleta['id_usuario'], $titulo, $mensaje, $icono, $color, $enlace_url);
                 }
 
                 // 2. REGLA DE NEGOCIO: Solo notificar al representante si el atleta es menor de 18 años
@@ -138,13 +132,12 @@ class Notificacion extends Conexion {
                                FROM representantes r 
                                INNER JOIN atleta_representante ar ON r.id_representante = ar.id_representante 
                                WHERE ar.id_atleta = :id_atleta AND r.id_usuario IS NOT NULL";
-                    $stmtR = $dbNegocio->getConex1()->prepare($sqlRep); // ← CAMBIADO: $dbNegocio->pdo → $dbNegocio->getConex1()
+                    $stmtR = $dbNegocio->getConex1()->prepare($sqlRep);
                     $stmtR->execute([':id_atleta' => $id_atleta]);
                     $representantes = $stmtR->fetchAll(\PDO::FETCH_ASSOC);
 
-                    // Enviamos copia a cada representante
                     foreach ($representantes as $rep) {
-                        self::enviar($rep['id_usuario'], "Atleta a tu cargo: " . $titulo, $mensaje, $icono, $color, $enlace_url);
+                        self::enviar((int)$rep['id_usuario'], "Atleta a tu cargo: " . $titulo, $mensaje, $icono, $color, $enlace_url);
                     }
                 }
             }
@@ -155,54 +148,12 @@ class Notificacion extends Conexion {
     }
 
     /**
-     * Obtiene la lista de notificaciones de un usuario
-     */
-    public static function listarPorUsuario(int $id_usuario, int $limite = 10): array {
-        try {
-            $instNoti = new self();
-            $sql = "SELECT id_notificacion, titulo, mensaje, icono, color, leida, fecha, enlace_url 
-                    FROM notificaciones 
-                    WHERE id_usuario = :id_usuario 
-                    ORDER BY fecha DESC LIMIT :limite";
-            
-            $stmt = $instNoti->getConex1()->prepare($sql); // ← CAMBIADO: $instNoti->pdo → $instNoti->getConex1()
-            $stmt->bindValue(':id_usuario', $id_usuario, PDO::PARAM_INT);
-            $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
-            $stmt->execute();
-            
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error al listar notificaciones: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    /**
-     * Cuenta cuántas notificaciones no ha leído el usuario
-     */
-    public static function contarNoLeidas(int $id_usuario): int {
-        try {
-            $instNoti = new self();
-            $sql = "SELECT COUNT(*) FROM notificaciones WHERE id_usuario = :id_usuario AND leida = 0";
-            $stmt = $instNoti->getConex1()->prepare($sql); // ← CAMBIADO: $instNoti->pdo → $instNoti->getConex1()
-            $stmt->execute([':id_usuario' => $id_usuario]);
-            
-            return (int) $stmt->fetchColumn();
-        } catch (PDOException $e) {
-            return 0;
-        }
-    }
-
-
-    /**
      * 3. Notificar al Entrenador del Atleta (vía Grupo de Entrenamiento)
      */
     public static function notificarEntrenador(int $id_atleta, string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): void {
         try {
             $dbNegocio = new Conexion('sis_natacion'); 
             
-            // Asumiendo que existe una relación entre el atleta y el grupo, y el grupo con el entrenador.
-            // Si usas una tabla pivote (ej: grupo_atleta), ajusta el JOIN correspondiente.
             $sql = "SELECT e.id_usuario 
                     FROM atletas a
                     INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
@@ -215,7 +166,7 @@ class Notificacion extends Conexion {
             $entrenador = $stmt->fetch(\PDO::FETCH_ASSOC);
 
             if ($entrenador && !empty($entrenador['id_usuario'])) {
-                self::enviar($entrenador['id_usuario'], "Atleta de tu grupo: " . $titulo, $mensaje, $icono, $color, $enlace_url);
+                self::enviar((int)$entrenador['id_usuario'], "Atleta de tu grupo: " . $titulo, $mensaje, $icono, $color, $enlace_url);
             }
         } catch (\PDOException $e) {
             error_log("Error Routing Notificacion Entrenador: " . $e->getMessage());
@@ -227,7 +178,7 @@ class Notificacion extends Conexion {
      */
     public static function notificarStaffMedicoYAdmin(string $titulo, string $mensaje, string $icono = 'fa-bell', string $color = 'indigo', ?string $enlace_url = null): void {
         try {
-            $instNoti = new self(); // Se conecta a sis_seguridad por defecto
+            $instNoti = new self();
             
             $sql = "SELECT DISTINCT id_usuario 
                     FROM usuario_roles 
@@ -236,13 +187,14 @@ class Notificacion extends Conexion {
             $usuarios = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
             foreach ($usuarios as $user) {
-                self::enviar($user['id_usuario'], "Clínica: " . $titulo, $mensaje, $icono, $color, $enlace_url);
+                self::enviar((int)$user['id_usuario'], "Clínica: " . $titulo, $mensaje, $icono, $color, $enlace_url);
             }
         } catch (\PDOException $e) {
             error_log("Error Routing Notificacion Staff: " . $e->getMessage());
         }
     }
 
+<<<<<<< HEAD
     /**
      * DISPARADOR DE EMERGENCIAS (ALERTA BIOLÓGICA ROJA)
      */
@@ -269,6 +221,255 @@ class Notificacion extends Conexion {
     /**
      * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE MARCAS
      */
+=======
+    public static function notificarAsignacionGrupo(int $id_grupo, array $id_atletas, string $accion = 'ASIGNAR'): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+            $sqlGrupo = "SELECT g.nombre, g.descripcion, 
+                                CONCAT(e.nombres, ' ', e.apellidos) as entrenador_nombre,
+                                e.id_usuario
+                         FROM grupos_entrenamiento g
+                         LEFT JOIN entrenador e ON g.id_entrenador = e.id_entrenador
+                         WHERE g.id_grupo = :id_grupo";
+            $stmtG = $dbNegocio->getConex1()->prepare($sqlGrupo);
+            $stmtG->execute([':id_grupo' => $id_grupo]);
+            $grupo = $stmtG->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$grupo) {
+                error_log("Grupo no encontrado para notificación: id_grupo={$id_grupo}");
+                return;
+            }
+
+            $nombreGrupo = $grupo['nombre'] ?? 'Grupo de entrenamiento';
+
+            if (!empty($grupo['id_usuario'])) {
+                $tituloEntrenador = match($accion) {
+                    'ASIGNAR' => "Nuevos atletas asignados a tu grupo",
+                    'DESASIGNAR' => "Atletas removidos de tu grupo",
+                    'CREAR' => "Nuevo grupo de entrenamiento creado",
+                    default => "Actualización de tu grupo de entrenamiento"
+                };
+                
+                $cantidad = count($id_atletas);
+                $mensajeEntrenador = match($accion) {
+                    'ASIGNAR' => "Se han asignado {$cantidad} atleta(s) a tu grupo \"{$nombreGrupo}\". Revisa tu planilla de entrenamiento.",
+                    'DESASIGNAR' => "Se han removido {$cantidad} atleta(s) del grupo \"{$nombreGrupo}\".",
+                    'CREAR' => "Se ha creado el grupo \"{$nombreGrupo}\". Ya puedes comenzar a asignar atletas.",
+                    default => "Actualización en el grupo \"{$nombreGrupo}\"."
+                };
+                
+                self::enviar(
+                    (int)$grupo['id_usuario'],
+                    $tituloEntrenador,
+                    $mensajeEntrenador,
+                    'fa-users-cog',
+                    'indigo',
+                    "?p=grupo&accion=ver&id={$id_grupo}"
+                );
+            }
+
+            if ($accion === 'ASIGNAR' || $accion === 'CREAR') {
+                foreach ($id_atletas as $id_atleta) {
+                    $sqlAtleta = "SELECT id_usuario FROM atletas WHERE id_atleta = :id_atleta AND estado = 1";
+                    $stmtA = $dbNegocio->getConex1()->prepare($sqlAtleta);
+                    $stmtA->execute([':id_atleta' => $id_atleta]);
+                    $atleta = $stmtA->fetch(\PDO::FETCH_ASSOC);
+
+                    if ($atleta && !empty($atleta['id_usuario'])) {
+                        $tituloAtleta = match($accion) {
+                            'ASIGNAR' => "¡Asignado a un nuevo grupo!",
+                            'CREAR' => "Nuevo grupo de entrenamiento",
+                            default => "Actualización de tu grupo"
+                        };
+                        
+                        $mensajeAtleta = match($accion) {
+                            'ASIGNAR' => "Has sido asignado al grupo \"{$nombreGrupo}\". Prepárate para los próximos entrenamientos.",
+                            'CREAR' => "Se ha creado el grupo \"{$nombreGrupo}\". Tu entrenador te asignará próximamente.",
+                            default => "Hay novedades en el grupo \"{$nombreGrupo}\"."
+                        };
+
+                        self::enviar(
+                            (int)$atleta['id_usuario'],
+                            $tituloAtleta,
+                            $mensajeAtleta,
+                            'fa-swimmer',
+                            'emerald',
+                            "?p=grupo&accion=ver&id={$id_grupo}"
+                        );
+                    }
+
+                    self::notificarRepresentanteGrupo($id_atleta, $nombreGrupo, $accion);
+                }
+            }
+
+        } catch (\PDOException $e) {
+            error_log("Error Routing Notificacion Grupo: " . $e->getMessage());
+        }
+    }
+
+    private static function notificarRepresentanteGrupo(int $id_atleta, string $nombreGrupo, string $accion): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+      
+            $sqlEdad = "SELECT TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad 
+                        FROM atletas WHERE id_atleta = :id_atleta";
+            $stmtE = $dbNegocio->getConex1()->prepare($sqlEdad);
+            $stmtE->execute([':id_atleta' => $id_atleta]);
+            $edad = $stmtE->fetchColumn();
+
+            if ($edad < 18) {
+                $sqlRep = "SELECT r.id_usuario 
+                           FROM representantes r 
+                           INNER JOIN atleta_representante ar ON r.id_representante = ar.id_representante 
+                           WHERE ar.id_atleta = :id_atleta AND r.id_usuario IS NOT NULL";
+                $stmtR = $dbNegocio->getConex1()->prepare($sqlRep);
+                $stmtR->execute([':id_atleta' => $id_atleta]);
+                $representantes = $stmtR->fetchAll(\PDO::FETCH_ASSOC);
+
+                foreach ($representantes as $rep) {
+                    self::enviar(
+                        (int)$rep['id_usuario'],
+                        "Atleta asignado a grupo: {$nombreGrupo}",
+                        "Tu representado ha sido asignado al grupo de entrenamiento \"{$nombreGrupo}\".",
+                        'fa-user-graduate',
+                        'amber',
+                        "?p=grupo&accion=ver"
+                    );
+                }
+            }
+        } catch (\PDOException $e) {
+            error_log("Error notificando representante de grupo: " . $e->getMessage());
+        }
+    }
+
+    public static function notificarGrupoArchivado(int $id_grupo, string $nombreGrupo): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+        
+            $sqlAtletas = "SELECT a.id_usuario, CONCAT(a.nombres, ' ', a.apellidos) as nombre_atleta
+                           FROM atletas a
+                           INNER JOIN grupo_atleta ga ON a.id_atleta = ga.id_atleta
+                           WHERE ga.id_grupo = :id_grupo AND a.estado = 1";
+            $stmt = $dbNegocio->getConex1()->prepare($sqlAtletas);
+            $stmt->execute([':id_grupo' => $id_grupo]);
+            $atletas = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            if (empty($atletas)) {
+                self::notificarEntrenadorGrupoArchivado($id_grupo, $nombreGrupo);
+                return;
+            }
+
+            foreach ($atletas as $atleta) {
+                if (!empty($atleta['id_usuario'])) {
+                    self::enviar(
+                        (int)$atleta['id_usuario'],
+                        "Grupo de entrenamiento desactivado",
+                        "El grupo \"{$nombreGrupo}\" ha sido desactivado. Pronto serás reasignado a un nuevo grupo. Contacta a tu entrenador para más información.",
+                        'fa-archive',
+                        'gray',
+                        "?p=grupo"
+                    );
+                }
+            }
+
+            foreach ($atletas as $atleta) {
+                $sqlEdad = "SELECT TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad 
+                            FROM atletas WHERE id_atleta = :id_atleta";
+                $stmtE = $dbNegocio->getConex1()->prepare($sqlEdad);
+                $stmtE->execute([':id_atleta' => $atleta['id_atleta'] ?? 0]);
+                $edad = $stmtE->fetchColumn();
+
+                if ($edad < 18) {
+                    $sqlRep = "SELECT r.id_usuario 
+                               FROM representantes r 
+                               INNER JOIN atleta_representante ar ON r.id_representante = ar.id_representante 
+                               WHERE ar.id_atleta = :id_atleta AND r.id_usuario IS NOT NULL";
+                    $stmtR = $dbNegocio->getConex1()->prepare($sqlRep);
+                    $stmtR->execute([':id_atleta' => $atleta['id_atleta'] ?? 0]);
+                    $representantes = $stmtR->fetchAll(\PDO::FETCH_ASSOC);
+
+                    foreach ($representantes as $rep) {
+                        self::enviar(
+                            (int)$rep['id_usuario'],
+                            "Grupo de entrenamiento desactivado",
+                            "El grupo de entrenamiento \"{$nombreGrupo}\" de tu representado ha sido desactivado. Pronto será reasignado.",
+                            'fa-archive',
+                            'gray',
+                            "?p=grupo"
+                        );
+                    }
+                }
+            }
+
+            self::notificarEntrenadorGrupoArchivado($id_grupo, $nombreGrupo);
+
+        } catch (\PDOException $e) {
+            error_log("Error notificando grupo archivado: " . $e->getMessage());
+        }
+    }
+
+    private static function notificarEntrenadorGrupoArchivado(int $id_grupo, string $nombreGrupo): void {
+        try {
+            $dbNegocio = new Conexion('sis_natacion');
+            
+            $sql = "SELECT e.id_usuario, CONCAT(e.nombres, ' ', e.apellidos) as nombre
+                    FROM entrenador e
+                    INNER JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
+                    WHERE g.id_grupo = :id_grupo AND e.id_usuario IS NOT NULL";
+            $stmt = $dbNegocio->getConex1()->prepare($sql);
+            $stmt->execute([':id_grupo' => $id_grupo]);
+            $entrenador = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if ($entrenador && !empty($entrenador['id_usuario'])) {
+                self::enviar(
+                    (int)$entrenador['id_usuario'],
+                    "Grupo desactivado",
+                    "Tu grupo \"{$nombreGrupo}\" ha sido desactivado. Los atletas han sido notificados y serán reasignados.",
+                    'fa-archive',
+                    'orange',
+                    "?p=grupo"
+                );
+            }
+        } catch (\PDOException $e) {
+            error_log("Error notificando entrenador grupo archivado: " . $e->getMessage());
+        }
+    }
+
+  
+    public static function listarPorUsuario(int $id_usuario, int $limite = 10): array {
+        try {
+            $instNoti = new self();
+            $sql = "SELECT id_notificacion, titulo, mensaje, icono, color, leida, fecha, enlace_url 
+                    FROM notificaciones 
+                    WHERE id_usuario = :id_usuario 
+                    ORDER BY fecha DESC LIMIT :limite";
+            
+            $stmt = $instNoti->getConex1()->prepare($sql);
+            $stmt->bindValue(':id_usuario', $id_usuario, PDO::PARAM_INT);
+            $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error al listar notificaciones: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public static function contarNoLeidas(int $id_usuario): int {
+        try {
+            $instNoti = new self();
+            $sql = "SELECT COUNT(*) FROM notificaciones WHERE id_usuario = :id_usuario AND leida = 0";
+            $stmt = $instNoti->getConex1()->prepare($sql);
+            $stmt->execute([':id_usuario' => $id_usuario]);
+            
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            return 0;
+        }
+    }
+
+>>>>>>> eb50f6eab47652c61cbb66c5c0b16eca945d9638
     public static function NotificarAtletas(string $accion, array $data, int $id_atleta): void {
         try {
             $deepLink = "?p=atleta";
@@ -549,7 +750,6 @@ class Notificacion extends Conexion {
         }
     }
 
-    
     /**
      * DESPACHADOR CENTRALIZADO PARA EL MÓDULO DE LESIONES
      */
@@ -598,7 +798,7 @@ class Notificacion extends Conexion {
                     return;
             }
 
-            // 1. Notificar al Atleta y Representante (tu método existente)
+            // 1. Notificar al Atleta y Representante
             self::notificarAtletaYRepresentante($id_atleta, $titulo, $mensaje, $icono, $color, $deepLink);
 
             // 2. Notificar al Entrenador del grupo
