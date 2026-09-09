@@ -30,19 +30,9 @@
                       <?php echo ($pagina == 'analitica') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i>
             <span>Analítica</span>
         </a>
-<?php endif; ?>
-
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sistemaExperto', 'ver')): ?>
-        <a href="?p=sistemaExperto" 
-           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
-                  text-gray-700 dark:text-gray-300 
-                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
-                  <?php echo ($pagina == 'sistemaExperto') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-brain w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'sistemaExperto') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i>
-            <span>Sistema Experto</span>
-        </a>
         <?php endif; ?>
+
+        
 
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'gestionar')): ?>
        <a href="?p=entrenador" 
@@ -55,20 +45,7 @@
             <span class="font-medium">Entrenadores</span>
         </a>
         <?php endif; ?>
-
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('drills', 'ver')): ?>
-         <a href="?p=drills" 
-            class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
-                   text-gray-700 dark:text-gray-300 
-                   hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
-                   <?php echo ($pagina == 'drills') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-dumbbell text-indigo-500 w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'drills') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
-            <span class="font-medium">Drills</span>
-        </a>
-        <?php endif; ?>
-        
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'ver')): ?>
+         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('atletas', 'ver')): ?>
         <a href="?p=atleta" 
            class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
                   text-gray-700 dark:text-gray-300 
@@ -92,6 +69,30 @@
         </a>
         <?php endif; ?>
 
+         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('temporadas', 'ver')): ?>
+        <a href="?p=temporadas" 
+           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                  text-gray-700 dark:text-gray-300 
+                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                  <?php echo ($pagina == 'temporadas') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-calendar-check w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'temporadas') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <span class="font-medium">Temporadas</span>
+        </a>
+        <?php endif; ?>
+
+         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('horario', 'ver')): ?>
+        <a href="?p=horario" 
+           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                  text-gray-700 dark:text-gray-300 
+                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                  <?php echo ($pagina == 'horario') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-clock text-indigo-500 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'horario') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <span class="font-medium">Horario</span>
+        </a>
+        <?php endif; ?>
+
          <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('grupo', 'ver')): ?>
         <a href="?p=grupo" 
            class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
@@ -101,18 +102,6 @@
             <i class="fas fa-layer-group text-indigo-500 w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
                       <?php echo ($pagina == 'grupo') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
             <span class="font-medium">Grupo</span>
-        </a>
-        <?php endif; ?>
-
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sesiones', 'ver')): ?>
-        <a href="?p=sesiones" 
-           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
-                  text-gray-700 dark:text-gray-300 
-                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
-                  <?php echo ($pagina == 'sesiones') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-swimming-pool text-indigo-500 w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'sesiones') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
-            <span class="font-medium">Sesiones</span>
         </a>
         <?php endif; ?>
 
@@ -127,6 +116,73 @@
             <span class="font-medium">Asignacion de Carriles</span>
         </a>
         <?php endif; ?>
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('drills', 'ver')): ?>
+         <a href="?p=drills" 
+            class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                   text-gray-700 dark:text-gray-300 
+                   hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                   <?php echo ($pagina == 'drills') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-dumbbell text-indigo-500 w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'drills') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <span class="font-medium">Drills</span>
+        </a>
+        <?php endif; ?>
+        
+       
+
+        
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sesiones', 'ver')): ?>
+        <a href="?p=sesiones" 
+           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                  text-gray-700 dark:text-gray-300 
+                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                  <?php echo ($pagina == 'sesiones') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-swimming-pool text-indigo-500 w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'sesiones') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <span class="font-medium">Sesiones</span>
+        </a>
+        <?php endif; ?>
+
+         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'ver')): ?>
+        <a href="?p=periodizacion" 
+           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                  text-gray-700 dark:text-gray-300 
+                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                  <?php echo ($pagina == 'periodizacion') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-project-diagram w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'periodizacion') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <span class="font-medium">Periodizacion ATR</span>
+        </a>
+        <?php endif; ?>
+
+
+         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'crear')): ?>
+        <a href="?p=eventos" 
+           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                  text-gray-700 dark:text-gray-300 
+                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                  <?php echo ($pagina == 'eventos') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-calendar-alt w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'eventos') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <span class="font-medium">Eventos y Metas</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'ver')): ?>
+        <a href="?p=calendario" 
+           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                  text-gray-700 dark:text-gray-300 
+                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                  <?php echo ($pagina == 'calendario') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-calendar-week w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'calendario') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <span class="font-medium">Calendario</span>
+        </a>
+        <?php endif; ?>
+
+      
 
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'ver')): ?>
         <a href="?p=antropometria" 
@@ -179,41 +235,21 @@
         </a>
         <?php endif; ?>
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'ver')): ?>
-        <a href="?p=periodizacion" 
+       
+
+       <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('asistencia', 'ver')): ?>
+        <a href="?p=asistencia" 
            class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
                   text-gray-700 dark:text-gray-300 
                   hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
-                  <?php echo ($pagina == 'periodizacion') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-project-diagram w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'periodizacion') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
-            <span class="font-medium">Periodizacion ATR</span>
+                  <?php echo ($pagina == 'asistencia') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-clipboard-check w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'asistencia') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
+            <span class="font-medium">Asistencia</span>
         </a>
         <?php endif; ?>
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('horario', 'ver')): ?>
-        <a href="?p=horario" 
-           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
-                  text-gray-700 dark:text-gray-300 
-                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
-                  <?php echo ($pagina == 'horario') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-clock text-indigo-500 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'horario') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
-            <span class="font-medium">Horario</span>
-        </a>
-        <?php endif; ?>
-
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('temporadas', 'ver')): ?>
-        <a href="?p=temporadas" 
-           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
-                  text-gray-700 dark:text-gray-300 
-                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
-                  <?php echo ($pagina == 'temporadas') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-calendar-check w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'temporadas') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
-            <span class="font-medium">Temporadas</span>
-        </a>
-        <?php endif; ?>
+       
 
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('marcas', 'ver')): ?>
         <a href="?p=marcas" 
@@ -229,41 +265,9 @@
 
 
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'crear')): ?>
-        <a href="?p=eventos" 
-           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
-                  text-gray-700 dark:text-gray-300 
-                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
-                  <?php echo ($pagina == 'eventos') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-calendar-alt w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'eventos') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
-            <span class="font-medium">Eventos y Metas</span>
-        </a>
-        <?php endif; ?>
+       
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'ver')): ?>
-        <a href="?p=calendario" 
-           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
-                  text-gray-700 dark:text-gray-300 
-                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
-                  <?php echo ($pagina == 'calendario') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-calendar-week w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'calendario') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
-            <span class="font-medium">Calendario</span>
-        </a>
-        <?php endif; ?>
-
-         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('asistencia', 'ver')): ?>
-        <a href="?p=asistencia" 
-           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
-                  text-gray-700 dark:text-gray-300 
-                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
-                  <?php echo ($pagina == 'asistencia') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
-            <i class="fas fa-clipboard-check w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
-                      <?php echo ($pagina == 'asistencia') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
-            <span class="font-medium">Asistencia</span>
-        </a>
-        <?php endif; ?>
+         
 
 
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('observacionesTecnicas', 'ver')): ?>
@@ -287,6 +291,18 @@
             <i class="fas fa-chart-bar w-5 text-center text-indigo-500 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
                        <?php echo ($pagina == 'reportes') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i> 
              <span class="font-medium">Reportes</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('sistemaExperto', 'ver')): ?>
+        <a href="?p=sistemaExperto" 
+           class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
+                  text-gray-700 dark:text-gray-300 
+                  hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white
+                  <?php echo ($pagina == 'sistemaExperto') ? 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''; ?>">
+            <i class="fas fa-brain w-5 text-center text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white 
+                      <?php echo ($pagina == 'sistemaExperto') ? 'text-indigo-600 dark:text-indigo-400' : ''; ?>"></i>
+            <span>Sistema Experto</span>
         </a>
         <?php endif; ?>
 
