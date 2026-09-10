@@ -79,6 +79,7 @@ if (isset($_SESSION['id'])) {
                             <h2 class="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
                                 <span>👋</span>
                                 <?php
+                                date_default_timezone_set('America/Caracas');
                                     $hora = date('H');
                                     $saludo = $hora < 12 ? 'Buenos días' : ($hora < 18 ? 'Buenas tardes' : 'Buenas noches');
                                     $nombre = $_SESSION['nombre'] ?? 'Usuario';
@@ -102,10 +103,10 @@ if (isset($_SESSION['id'])) {
                     <?php
                     $modulos = [
                         ['url' => '?p=atleta', 'icon' => 'fa-swimmer', 'label' => 'Atletas', 'color' => 'text-indigo-400'],
-                        ['url' => '?p=entrenador', 'icon' => 'fa-user-tie', 'label' => 'Entrenadores', 'color' => 'text-emerald-400'],
-                        ['url' => '?p=sesiones', 'icon' => 'fa-swimming-pool', 'label' => 'Sesiones', 'color' => 'text-cyan-400'],
+                        ['url' => '?p=antropometria', 'icon' => 'fa-ruler-combined', 'label' => 'Expediente Antropométrico', 'color' => 'text-emerald-400'],
+                        ['url' => '?p=cargaBienestar', 'icon' => 'fa-notes-medical', 'label' => 'Monitoreo de Carga y Bienestar', 'color' => 'text-cyan-400'],
                         ['url' => '?p=marcas', 'icon' => 'fa-stopwatch', 'label' => 'Marcas', 'color' => 'text-amber-400'],
-                        ['url' => '?p=eventos', 'icon' => 'fa-calendar-alt', 'label' => 'Eventos', 'color' => 'text-rose-400'],
+                        ['url' => '?p=calendario', 'icon' => 'fa-calendar-week', 'label' => 'Calendario', 'color' => 'text-rose-400'],
                         ['url' => '?p=analitica', 'icon' => 'fa-chart-pie', 'label' => 'Analítica', 'color' => 'text-purple-400']
                     ];
                     foreach ($modulos as $modulo):
@@ -151,8 +152,8 @@ if (isset($_SESSION['id'])) {
                 <!-- ======================================================= -->
 
                 <!-- Últimas actividades y resumen rápido -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Últimas actividades -->
+                <!-- <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                   
                     <div class="lg:col-span-2 bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-6 transition-colors duration-300">
                         <h3 class="text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
                             <i class="fas fa-history text-indigo-500"></i> Últimas Actividades
@@ -181,7 +182,7 @@ if (isset($_SESSION['id'])) {
                         </div>
                     </div>
 
-                    <!-- Resumen rápido -->
+                    
                     <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-6 transition-colors duration-300">
                         <h3 class="text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
                             <i class="fas fa-chart-simple text-indigo-500"></i> Resumen Rápido
@@ -225,7 +226,7 @@ if (isset($_SESSION['id'])) {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
             </main>
         </div>
