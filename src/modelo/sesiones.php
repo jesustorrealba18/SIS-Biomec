@@ -217,10 +217,8 @@ class Sesiones extends Conexion {
         return $this->editarSesionP($id_sesion, $datosSesion, $series);
     }
 
-
     public function InicializarSesion(): bool {
-
-         $id = (int)($this->datos['id_sesion'] ?? 0);
+        $id = (int)($this->datos['id_sesion'] ?? 0);
         if ($id <= 0) {
             $this->agregarError('id_sesion', 'No se proporcionó un identificador válido para actualizar el registro.');
             return false;
@@ -229,12 +227,27 @@ class Sesiones extends Conexion {
         return $this->iniciarSesion();
     }
 
-
     private function iniciarSesion(): bool {
         try {
             $sql = "UPDATE sesiones SET estado = 'Parcial', fecha_modificacion = NOW() WHERE id_sesion = :id_sesion AND estado = 'Planificada'";
             $stmt = $this->pdo->prepare($sql);
-            return $stmt->execute([':id_sesion' => $this->datos['id_sesion']]);
+            $resultado = $stmt->execute([':id_sesion' => $this->datos['id_sesion']]);
+            
+            if ($resultado) {
+                $sqlInfo = "SELECT id_grupo FROM sesiones WHERE id_sesion = :id_sesion";
+                $stmtInfo = $this->pdo->prepare($sqlInfo);
+                $stmtInfo->execute([':id_sesion' => $this->datos['id_sesion']]);
+                $sesion = $stmtInfo->fetch(\PDO::FETCH_ASSOC);
+                
+                if ($sesion) {
+                    $this->notificarEventoSesion('iniciar_sesion', [
+                        'id_sesion' => $this->datos['id_sesion'],
+                        'id_grupo' => $sesion['id_grupo']
+                    ]);
+                }
+            }
+            
+            return $resultado;
         } catch (PDOException $e) {
             return false;
         }
@@ -251,12 +264,29 @@ class Sesiones extends Conexion {
                     WHERE id_sesion = :id_sesion";
 
             $stmt = $conex->prepare($sql);
-            return $stmt->execute([
+            $resultado = $stmt->execute([
                 ':volumen_ejecutado'=> (int)$datosCierre['volumen_ejecutado'],
                 ':estado'           => $datosCierre['estado'] ?? 'Completada',
                 ':observaciones'    => $datosCierre['observaciones'] ?? null,
                 ':id_sesion'        => (int)$datosCierre['id_sesion']
             ]);
+
+            if ($resultado) {
+                $sqlInfo = "SELECT id_grupo FROM sesiones WHERE id_sesion = :id_sesion";
+                $stmtInfo = $conex->prepare($sqlInfo);
+                $stmtInfo->execute([':id_sesion' => $datosCierre['id_sesion']]);
+                $sesion = $stmtInfo->fetch(\PDO::FETCH_ASSOC);
+                
+                if ($sesion) {
+                    $this->notificarEventoSesion('completar_sesion', [
+                        'id_sesion' => $datosCierre['id_sesion'],
+                        'id_grupo' => $sesion['id_grupo'],
+                        'volumen_ejecutado' => $datosCierre['volumen_ejecutado']
+                    ]);
+                }
+            }
+
+            return $resultado;
         } catch (PDOException $e) {
             return false;
         }
@@ -265,9 +295,24 @@ class Sesiones extends Conexion {
     public function cancelarSesion(int $id_sesion): bool {
         $conex = $this->pdo;
         try {
+            $sqlInfo = "SELECT id_grupo, fecha FROM sesiones WHERE id_sesion = :id_sesion";
+            $stmtInfo = $conex->prepare($sqlInfo);
+            $stmtInfo->execute([':id_sesion' => $id_sesion]);
+            $sesion = $stmtInfo->fetch(\PDO::FETCH_ASSOC);
+
             $sql = "UPDATE sesiones SET estado = 'Cancelada', fecha_modificacion = NOW() WHERE id_sesion = :id_sesion";
             $stmt = $conex->prepare($sql);
-            return $stmt->execute([':id_sesion' => $id_sesion]);
+            $resultado = $stmt->execute([':id_sesion' => $id_sesion]);
+
+            if ($resultado && $sesion) {
+                $this->notificarEventoSesion('cancelar_sesion', [
+                    'id_sesion' => $id_sesion,
+                    'id_grupo' => $sesion['id_grupo'],
+                    'fecha' => $sesion['fecha']
+                ]);
+            }
+
+            return $resultado;
         } catch (PDOException $e) {
             return false;
         }
@@ -358,8 +403,6 @@ class Sesiones extends Conexion {
         }
     }
 
-     //Listar sesiones para el módulo de Marcas (NO MODIFICAR)
-    
     public function listarSesionesSelectMarca(): array {
         try {
             $sql = "SELECT s.id_sesion, s.fecha, s.tipo_sesion, g.nombre AS grupo_nombre 
@@ -373,8 +416,6 @@ class Sesiones extends Conexion {
             return [];
         }
     }
-
-
 
     public function validarDatosSesion(array $datos): array {
         return $this->validarDatos($datos);
@@ -465,6 +506,14 @@ class Sesiones extends Conexion {
             }
 
             $conex->commit();
+
+            $this->notificarEventoSesion('crear_sesion', [
+                'id_sesion' => $id_sesion,
+                'id_grupo' => (int)$datosSesion['id_grupo'],
+                'fecha' => $datosSesion['fecha'],
+                'tipo_sesion' => $datosSesion['tipo_sesion']
+            ]);
+
             return true;
             
         } catch (PDOException $e) {
@@ -558,10 +607,81 @@ class Sesiones extends Conexion {
             }
 
             $conex->commit();
+
+            $this->notificarEventoSesion('editar_sesion', [
+                'id_sesion' => $id_sesion,
+                'id_grupo' => (int)$datosSesion['id_grupo'],
+                'fecha' => $datosSesion['fecha'],
+                'tipo_sesion' => $datosSesion['tipo_sesion']
+            ]);
+
             return true;
         } catch (PDOException $e) {
             $conex->rollBack();
             return false;
+        }
+    }
+
+    private function notificarEventoSesion(string $evento, array $datos): void {
+        try {
+            if (!class_exists('\GrupoProyecto\SisBiomec\modelo\Notificacion')) {
+                return;
+            }
+
+            switch ($evento) {
+                case 'crear_sesion':
+                    if (!empty($datos['id_sesion']) && !empty($datos['id_grupo'])) {
+                        \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarSesionCreada(
+                            $datos['id_sesion'],
+                            $datos['id_grupo'],
+                            $datos['fecha'],
+                            $datos['tipo_sesion']
+                        );
+                    }
+                    break;
+
+                case 'iniciar_sesion':
+                    if (!empty($datos['id_sesion']) && !empty($datos['id_grupo'])) {
+                        \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarSesionIniciada(
+                            $datos['id_sesion'],
+                            $datos['id_grupo']
+                        );
+                    }
+                    break;
+
+                case 'completar_sesion':
+                    if (!empty($datos['id_sesion']) && !empty($datos['id_grupo'])) {
+                        \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarSesionCompletada(
+                            $datos['id_sesion'],
+                            $datos['id_grupo'],
+                            $datos['volumen_ejecutado'] ?? 0
+                        );
+                    }
+                    break;
+
+                case 'cancelar_sesion':
+                    if (!empty($datos['id_sesion']) && !empty($datos['id_grupo'])) {
+                        \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarSesionCancelada(
+                            $datos['id_sesion'],
+                            $datos['id_grupo'],
+                            $datos['fecha']
+                        );
+                    }
+                    break;
+
+                case 'editar_sesion':
+                    if (!empty($datos['id_sesion']) && !empty($datos['id_grupo'])) {
+                        \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarSesionEditada(
+                            $datos['id_sesion'],
+                            $datos['id_grupo'],
+                            $datos['fecha'],
+                            $datos['tipo_sesion']
+                        );
+                    }
+                    break;
+            }
+        } catch (\Throwable $e) {
+            error_log("Error en notificarEventoSesion: " . $e->getMessage());
         }
     }
 }
