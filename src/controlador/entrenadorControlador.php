@@ -7,6 +7,7 @@ if (empty($_SESSION['id'])) {
 
 use GrupoProyecto\SisBiomec\modelo\entrenador;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 
 $objEntrenador = new entrenador();
 
@@ -36,6 +37,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($resultado) {
+            $idAfectado = isset($_POST['id_entrenador']) ? (int)$_POST['id_entrenador'] : null;
+            Bitacora::registrar(
+                $_SESSION['id'],
+                'Entrenadores',
+                $tipoAccion === 'editar' ? 'UPDATE' : 'INSERT',
+                $idAfectado,
+                'entrenador',
+                null,
+                trim(($_POST['nombres'] ?? '') . ' ' . ($_POST['apellidos'] ?? ''))
+            );
             echo json_encode(['status' => 'success', 'message' => 'Operación realizada con éxito.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Error en la base de datos al guardar.']);
@@ -50,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($id_entrenador) {
             $resultado = $objEntrenador->eliminarEntrenador($id_entrenador);
             if ($resultado) {
+                Bitacora::registrar($_SESSION['id'], 'Entrenadores', 'DELETE', (int)$id_entrenador, 'entrenador', null, null);
                 echo json_encode(['status' => 'success', 'message' => 'Entrenador eliminado correctamente.']);
             } else {
                 echo json_encode(['status' => 'error', 'message' => 'No se pudo eliminar el entrenador.']);

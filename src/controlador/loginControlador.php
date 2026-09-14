@@ -10,6 +10,7 @@ if (!empty($_SESSION['id'])) {
 }
 
 $error = "";
+$exito = (($_GET['restablecido'] ?? '') === '1') ? "Tu contrasena fue actualizada. Inicia sesion con tu nueva contrasena." : "";
 
 if (!empty($_POST['usuario']) && !empty($_POST['password'])) {
     if (!Captcha::verificar($_POST['captcha'] ?? '')) {

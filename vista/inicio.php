@@ -109,6 +109,9 @@ if (isset($_SESSION['id'])) {
                         ['url' => '?p=calendario', 'icon' => 'fa-calendar-week', 'label' => 'Calendario', 'color' => 'text-rose-400'],
                         ['url' => '?p=analitica', 'icon' => 'fa-chart-pie', 'label' => 'Analítica', 'color' => 'text-purple-400']
                     ];
+                    if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'ver')) {
+                        $modulos[] = ['url' => '?p=eventos', 'icon' => 'fa-calendar-alt', 'label' => 'Eventos', 'color' => 'text-rose-400'];
+                    }
                     foreach ($modulos as $modulo):
                     ?>
                     <a href="<?php echo $modulo['url']; ?>" class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-4 text-center transition-all hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/10 cursor-pointer group">

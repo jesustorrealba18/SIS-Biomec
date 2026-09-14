@@ -136,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'roles'      => $_POST['roles'] ?? [],
         ];
 
-        $errores = $objUsuario->validarDatos($datos, $datos['correo']);
+        $errores = $objUsuario->validarDatos($datos, $idUsuario);
         if (!empty($errores)) {
             echo json_encode(['status' => 'warning', 'errores' => $errores]);
             exit;

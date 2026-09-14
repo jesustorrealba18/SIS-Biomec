@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<link rel="icon" type="image/png" href="assets/img/logo_nadador.png">
-    <title>Login | SGRD</title>
+    <title>Recuperar contrasena | SGRD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -43,10 +43,10 @@
         
         <div class="text-center mb-10">
             <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-tr from-indigo-600 to-blue-400 rounded-2xl mb-4 shadow-lg">
-                <i class="fas fa-swimmer text-white text-3xl"></i>
+                <i class="fas fa-lock-open text-white text-3xl"></i>
             </div>
-            <h1 class="text-4xl font-extrabold text-white tracking-tight">SGRD</h1>
-            <p class="text-sm text-gray-400 mt-2 uppercase tracking-[0.2em]">Acceso al Sistema</p>
+            <h1 class="text-3xl font-extrabold text-white tracking-tight">Recuperar contrasena</h1>
+            <p class="text-sm text-gray-400 mt-2">Ingresa tu correo y te enviaremos un enlace para restablecerla</p>
         </div>
 
         <?php if(!empty($error)): ?>
@@ -56,14 +56,14 @@
             </div>
         <?php endif; ?>
 
-        <?php if(!empty($exito)): ?>
+        <?php if(!empty($mensaje)): ?>
             <div class="bg-green-500/10 border-l-4 border-green-500 text-green-400 text-sm p-4 rounded-r-xl mb-6 flex items-center">
-                <i class="fas fa-circle-check mr-3 text-lg"></i>
-                <span><?php echo $exito; ?></span>
+                <i class="fas fa-envelope-circle-check mr-3 text-lg"></i>
+                <span><?php echo $mensaje; ?></span>
             </div>
         <?php endif; ?>
 
-        <form action="?p=login" method="POST" class="space-y-6">
+        <form action="?p=recuperar" method="POST" class="space-y-6">
             <div>
                 <label class="text-xs font-bold text-gray-400 uppercase ml-1">Correo electrónico</label>
                 <div class="relative group mt-2">
@@ -76,20 +76,6 @@
             </div>
 
             <div>
-                <label class="text-xs font-bold text-gray-400 uppercase ml-1">Contraseña</label>
-                <div class="relative group mt-2">
-                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-500 group-focus-within:text-blue-400">
-                        <i class="fas fa-key text-sm"></i>
-                    </span>
-                    <input type="password" id="password" name="password" required placeholder="••••••••"
-                        class="input-dark w-full rounded-2xl py-4 pl-12 pr-12 text-white focus:outline-none">
-                    <button type="button" onclick="togglePass()" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500">
-                        <i class="fas fa-eye" id="eye"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div>
                 <label class="text-xs font-bold text-gray-400 uppercase ml-1">Verificacion de seguridad</label>
                 <div class="flex items-center gap-3 mt-2">
                     <img src="captcha.php" alt="CAPTCHA" id="captchaImg" class="rounded-lg border border-gray-600 cursor-pointer" onclick="refreshCaptcha()" title="Click para refrescar">
@@ -97,29 +83,23 @@
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
-                <input type="text" name="captcha"  autocomplete="off" placeholder="Escribe el codigo"
+                <input type="text" name="captcha" required autocomplete="off" placeholder="Escribe el codigo"
                     class="input-dark w-full rounded-2xl py-3 pl-4 pr-4 text-white focus:outline-none mt-2">
             </div>
 
             <button type="submit" class="w-full gradiente-boton py-4 rounded-2xl font-bold text-white text-lg hover:scale-[1.01] transition active:scale-[0.98]">
-                INGRESAR
+                ENVIAR ENLACE
             </button>
         </form>
 
         <div class="mt-6 text-center">
-            <a href="?p=recuperar" class="text-sm text-gray-400 hover:text-blue-400 transition inline-flex items-center gap-2">
-                <i class="fas fa-lock-open text-xs"></i> ¿Olvidaste tu contrasena?
+            <a href="?p=login" class="text-sm text-gray-400 hover:text-blue-400 transition inline-flex items-center gap-2">
+                <i class="fas fa-arrow-left text-xs"></i> Volver al inicio de sesion
             </a>
         </div>
     </div>
 
     <script>
-        function togglePass() {
-            const p = document.getElementById('password');
-            const i = document.getElementById('eye');
-            p.type = p.type === 'password' ? 'text' : 'password';
-            i.classList.toggle('fa-eye-slash');
-        }
         function refreshCaptcha() {
             document.getElementById('captchaImg').src = 'captcha.php?' + Date.now();
         }

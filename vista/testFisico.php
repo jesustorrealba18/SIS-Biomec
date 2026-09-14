@@ -15,6 +15,13 @@ $pagina = 'testFisico';
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- LIBRERÍAS DATATABLES RESPONSIVE -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
     <style>
         /* ===== ESTILOS BASE ===== */
         body { font-family: 'Inter', sans-serif; }
@@ -68,6 +75,25 @@ $pagina = 'testFisico';
         .menu-transition {
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        /* Ajustes de DataTables para Tailwind y Dark Mode */
+        table.dataTable.no-footer { border-bottom: none !important; }
+        table.dataTable thead th { border-bottom: 1px solid #e5e7eb; }
+        .dark table.dataTable thead th { border-bottom: 1px solid #252345; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            color: #6b7280 !important; border-radius: 0.5rem; border: 1px solid transparent; padding: 0.25em 0.75em; cursor: pointer;
+        }
+        .dark .dataTables_wrapper .dataTables_paginate .paginate_button { color: #9ca3af !important; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important;
+        }
+        .dataTables_wrapper .dataTables_info { padding-top: 1rem; color: #6b7280; font-size: 0.75rem; }
+        .dark .dataTables_wrapper .dataTables_info { color: #9ca3af; }
+        .dataTables_wrapper .dataTables_length select {
+            background-color: #ffffff; border: 1px solid #d1d5db; color: #1f2937; border-radius: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.75rem;
+        }
+        .dark .dataTables_wrapper .dataTables_length select { background-color: #0f0d23; border-color: #252345; color: #ffffff; }
     </style>
      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
@@ -183,7 +209,7 @@ if (isset($_SESSION['id'])) {
                 <!-- Tabla de tests -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-2xl transition-colors duration-300">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                        <table class="w-full text-left border-collapse" id="tablaTests">
                             <thead>
                                 <tr class="bg-gray-100 dark:bg-[#0f0d23] text-gray-600 dark:text-gray-400 uppercase text-[11px] font-bold tracking-wider border-b border-gray-200 dark:border-[#252345] sticky top-0">
                                     <th class="p-4">Fecha</th>

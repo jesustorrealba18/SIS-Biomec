@@ -8,6 +8,7 @@ const API_URL = 'index.php?p=testFisico';
 let atletasGlobal = [];
 let tiposGlobal = [];
 let variablesCache = {};
+let tablaDt;
 
 // =====================================================================
 // BADGES DE ESTADO CON SOPORTE CLARO/OSCURO
@@ -429,61 +430,96 @@ async function cargarTabla() {
     if (id_tipo_test) params.append('id_tipo_test', id_tipo_test);
     if (estado) params.append('estado', estado);
 
-    const tbody = document.getElementById('tbodyTests');
-    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>Cargando...</td></tr>';
-
     const tests = await peticionAjax(`listarTests&${params.toString()}`);
 
-    if (!tests || tests.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500 dark:text-gray-400 font-mono text-xs">No hay tests registrados.</td></tr>';
+    if (!tests) return;
+
+    inicializarDataTableTests(tests);
+}
+
+function inicializarDataTableTests(datos) {
+    const tabla = $('#tablaTests');
+
+    if ($.fn.DataTable.isDataTable('#tablaTests')) {
+        tabla.DataTable().clear().rows.add(datos).draw();
         return;
     }
 
-    let html = '';
-    tests.forEach(test => {
-        const fecha = formatearFecha(test.fecha);
-        const badgeEstado = BADGES_ESTADO[test.estado] || BADGES_ESTADO['Completo'];
-
-        const puedeEditar = typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar;
-
-        html += `<tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345]">
-            <td class="p-4 text-xs font-mono text-gray-600 dark:text-gray-400">${fecha}</td>
-            <td class="p-4">
-                <div class="font-bold text-gray-900 dark:text-white text-sm">${test.nombre_atleta}</div>
-                <div class="text-[10px] text-gray-500 dark:text-gray-400 font-mono">C.I: ${test.cedula}</div>
-            </td>
-            <td class="p-4">
-                <span class="text-indigo-600 dark:text-indigo-300 text-sm font-medium">${test.nombre_test || 'N/A'}</span>
-            </td>
-            <td class="p-4 text-sm font-mono text-gray-700 dark:text-gray-300">—</td>
-            <td class="p-4">
-                <span class="px-2 py-1 rounded-lg text-[10px] font-bold ${badgeEstado}">${test.estado}</span>
-            </td>
-            <td class="p-4 text-right space-x-1">
-                <button onclick="verDetalle(${test.id_registro_test})" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Detalle">
-                    <i class="fas fa-eye text-base"></i>
-                </button>
-                ${puedeEditar ? `
-                <button onclick="abrirModalTest(${test.id_registro_test})" class="text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar">
-                    <i class="fas fa-edit text-base"></i>
-                </button>
-                <button onclick="eliminarTest(${test.id_registro_test})" class="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 p-2 rounded-lg transition" title="Eliminar">
-                    <i class="fas fa-trash-alt text-base"></i>
-                </button>` : ''}
-            </td>
-        </tr>`;
+    tablaDt = tabla.DataTable({
+        data: datos,
+        responsive: true,
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100],
+        order: [[0, 'desc']],
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+        },
+        dom: '<"flex justify-end mb-3 text-xs text-gray-600 dark:text-gray-400"l>rt<"flex flex-col sm:flex-row justify-between items-center mt-4"ip>',
+        columns: [
+            {
+                data: 'fecha',
+                render: function(data, type) {
+                    if (type === 'sort' || type === 'type') return data;
+                    return `<span class="text-xs font-mono text-gray-600 dark:text-gray-400">${formatearFecha(data)}</span>`;
+                }
+            },
+            {
+                data: null,
+                render: function(data, type, row) {
+                    return `
+                    <div class="font-bold text-gray-900 dark:text-white text-sm">${row.nombre_atleta}</div>
+                    <div class="text-[10px] text-gray-500 dark:text-gray-400 font-mono">C.I: ${row.cedula}</div>`;
+                }
+            },
+            {
+                data: 'nombre_test',
+                render: function(data) {
+                    return `<span class="text-indigo-600 dark:text-indigo-300 text-sm font-medium">${data || 'N/A'}</span>`;
+                }
+            },
+            {
+                data: null,
+                render: function() {
+                    return `<span class="text-sm font-mono text-gray-700 dark:text-gray-300">—</span>`;
+                }
+            },
+            {
+                data: 'estado',
+                render: function(data) {
+                    const badgeEstado = BADGES_ESTADO[data] || BADGES_ESTADO['Completo'];
+                    return `<span class="px-2 py-1 rounded-lg text-[10px] font-bold ${badgeEstado}">${data}</span>`;
+                }
+            },
+            {
+                data: null,
+                orderable: false,
+                className: 'text-right',
+                render: function(data, type, row) {
+                    const puedeEditar = typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.registrar;
+                    return `
+                    <button onclick="verDetalle(${row.id_registro_test})" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Detalle">
+                        <i class="fas fa-eye text-base"></i>
+                    </button>
+                    ${puedeEditar ? `
+                    <button onclick="abrirModalTest(${row.id_registro_test})" class="text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar">
+                        <i class="fas fa-edit text-base"></i>
+                    </button>
+                    <button onclick="eliminarTest(${row.id_registro_test})" class="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 p-2 rounded-lg transition" title="Eliminar">
+                        <i class="fas fa-trash-alt text-base"></i>
+                    </button>` : ''}`;
+                }
+            }
+        ],
+        createdRow: function(row) {
+            $(row).addClass('hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200');
+            $(row).find('td').addClass('border-b border-gray-200 dark:border-[#252345] align-middle');
+        }
     });
-
-    tbody.innerHTML = html;
 }
 
 function filtrarTabla() {
-    const texto = document.getElementById('busquedaGeneral').value.toLowerCase();
-    const filas = document.querySelectorAll('#tbodyTests tr');
-    filas.forEach(fila => {
-        const contenido = fila.textContent.toLowerCase();
-        fila.style.display = contenido.includes(texto) ? '' : 'none';
-    });
+    const texto = document.getElementById('busquedaGeneral').value;
+    if (tablaDt) tablaDt.search(texto).draw();
 }
 
 // =====================================================================

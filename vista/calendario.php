@@ -294,7 +294,7 @@ if (isset($_SESSION['id'])) {
                 firstDay: 1,
                 eventSources: [
                     {
-                        url: 'index.php?p=eventos&accion=calendario',
+                        url: 'index.php?p=calendario&accion=calendario',
                         color: '#6366f1'
                     }
                 ],

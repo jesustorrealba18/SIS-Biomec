@@ -29,7 +29,7 @@ function setupValidacionTiempoReal() {
         { id: 'apellidos', reglas: 'requerido|letras', nombre: 'Apellidos', min: 2, max: 50 },
         { id: 'fecha_nacimiento', reglas: 'requerido|mayor18', nombre: 'Fecha de Nacimiento' },
         { id: 'telefono', reglas: 'requerido|numeros', nombre: 'Teléfono', min: 11, max: 11 },
-        { id: 'correo', regras: 'requerido|email', nombre: 'Correo Electrónico' },
+        { id: 'correo', reglas: 'requerido|email', nombre: 'Correo Electrónico' },
         { id: 'direccion', reglas: 'requerido', nombre: 'Dirección', min: 5, max: 50 },
         { id: 'genero', reglas: 'requerido', nombre: 'Género' }
     ];

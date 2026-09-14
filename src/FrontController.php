@@ -127,7 +127,8 @@ try {
     $dotenv = Dotenv\Dotenv::createImmutable(RAIZ);
     $dotenv->load();
 } catch (Exception $e) {
-    die("Error crítico: No se encontró el archivo de configuración de entorno (.env).");
+    error_log("Error critico: El archivo .env no se pudo cargar. Detalle: " . $e->getMessage());
+    die("Error crítico: El archivo de configuración de entorno (.env) no existe o tiene un error de sintaxis. Los valores con espacios deben ir entre comillas.");
 }
 
 ini_set('session.cookie_httponly', 1);
@@ -161,7 +162,8 @@ $paginasPermitidas = [
     'login', 'inicio', 'entrenador', 'drills', 'atleta', 'eventos', 'marcas',
     'periodizacion', 'temporadas', 'antropometria', 'representante', 'calendario', 'salir', 'sesiones', 
     'carriles', 'horario', 'asignacion', 'lesion', 'categorias', 'grupo', 'bitacora', 'usuarios', 'roles', 'mantenimiento', 'cargaBienestar', 'mi_perfil', 'asistencia',
-    'observacionesTecnicas', 'testFisico', 'normalizacion','notificaciones','analitica', 'live', 'reportes', 'sistemaExperto'
+    'observacionesTecnicas', 'testFisico', 'normalizacion','notificaciones','analitica', 'live', 'reportes', 'sistemaExperto',
+    'recuperar', 'restablecer'
 ];
 
 
@@ -171,7 +173,7 @@ if (!empty($_GET['p']) && in_array($_GET['p'], $paginasPermitidas, true)) {
     $pagina = $_GET['p'];
 }
 
-$rutasPublicas = ['login','live'];
+$rutasPublicas = ['login','live','recuperar','restablecer'];
 $rutasGlobalesPrivadas = ['notificaciones'];
 
 if (!in_array($pagina, $rutasPublicas, true) && empty($_SESSION['id'])) {
@@ -186,7 +188,10 @@ if (!in_array($pagina, $rutasPublicas, true) && empty($_SESSION['id'])) {
 } */
 
 if (!in_array($pagina, $rutasPublicas, true) && !empty($_SESSION['id'])) {
-    
+
+    // Recargamos permisos en cada peticion para que los cambios de roles apliquen al instante
+    \GrupoProyecto\SisBiomec\seguridad\Autorizacion::cargarPermisos((int)$_SESSION['id']);
+
     // Si la página NO forma parte de los servicios globales, exigimos validación por Rol/Permiso
     if (!in_array($pagina, $rutasGlobalesPrivadas, true)) {
         if (!\GrupoProyecto\SisBiomec\seguridad\Autorizacion::tieneAcceso($pagina)) {

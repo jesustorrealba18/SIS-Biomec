@@ -272,12 +272,12 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
                 FROM registro_rpe 
                 WHERE id_atleta = :id_atleta 
                   AND deleted_at IS NULL
-                  AND fecha BETWEEN DATE_SUB(:fecha_lesion, INTERVAL 3 DAY) AND :fecha_lesion";
+                  AND fecha BETWEEN DATE_SUB(:fecha_desde, INTERVAL 3 DAY) AND :fecha_hasta";
             
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':id_atleta', $id_atleta, PDO::PARAM_INT);
-            $stmt->bindValue(':fecha_lesion', $fecha_lesion, PDO::PARAM_STR);
-           /*  $stmt->bindValue(':fecha_lesion2', $fecha_lesion, PDO::PARAM_STR); */
+            $stmt->bindValue(':fecha_desde', $fecha_lesion, PDO::PARAM_STR);
+            $stmt->bindValue(':fecha_hasta', $fecha_lesion, PDO::PARAM_STR);
             $stmt->execute();
             
             return (float) $stmt->fetchColumn();
@@ -978,13 +978,18 @@ public function eliminarfisico(int $id_lesion): bool {
 } */
 
    public function obtenerRiesgosActivos(): array {
-    $sql = "SELECT ab.*, a.nombres, a.apellidos 
-            FROM alertas_biologicas ab
-            INNER JOIN atletas a ON ab.id_atleta = a.id_atleta
-            WHERE ab.modulo_origen = 'LESIONES' 
-                  AND ab.activo = TRUE 
-            ORDER BY ab.gravedad DESC, ab.fecha_creacion DESC LIMIT 5";
-    return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    try {
+        $sql = "SELECT ab.*, a.nombres, a.apellidos 
+                FROM alertas_biologicas ab
+                INNER JOIN atletas a ON ab.id_atleta = a.id_atleta
+                WHERE ab.modulo_origen = 'LESIONES' 
+                      AND ab.activo = TRUE 
+                ORDER BY ab.gravedad DESC, ab.fecha_creacion DESC LIMIT 5";
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en obtenerRiesgosActivos: " . $e->getMessage());
+        return [];
+    }
     }
    
 }

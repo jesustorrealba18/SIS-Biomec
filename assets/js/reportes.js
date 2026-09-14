@@ -258,46 +258,39 @@ function renderFiltros(tipo) {
 
 function renderFiltrosFichaAtleta() {
     document.getElementById('contenedorFiltros').innerHTML =
-        labelFiltro('Atleta', 'fAtleta', selectHtml('fAtleta', opcionesAtletas()))
-        + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarFichaDirecta()" class="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-purple-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
+        labelFiltro('Atleta', 'fAtleta', selectHtml('fAtleta', opcionesAtletas()));
 }
 
 function renderFiltrosListaAtletas() {
     document.getElementById('contenedorFiltros').innerHTML =
         labelFiltro('Grupo', 'fGrupo', selectHtml('fGrupo', opcionesGrupos()))
         + labelFiltro('Categoria', 'fCategoria', selectHtml('fCategoria', opcionesCategorias()))
-        + labelFiltro('Estado', 'fEstado', selectHtml('fEstado', opcionesEstados()))
-        + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarListaAtletasDirecta()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
+        + labelFiltro('Estado', 'fEstado', selectHtml('fEstado', opcionesEstados()));
 }
 
 function renderFiltrosListaRepresentantes() {
     document.getElementById('contenedorFiltros').innerHTML =
-        labelFiltro('Estado', 'fEstado', selectHtml('fEstado', opcionesEstadosRep()))
-        + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarListaRepresentantesDirecta()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
+        labelFiltro('Estado', 'fEstado', selectHtml('fEstado', opcionesEstadosRep()));
 }
 
 function renderFiltrosListaEntrenadores() {
     document.getElementById('contenedorFiltros').innerHTML =
-        labelFiltro('Entrenador', 'fEntrenador', selectHtml('fEntrenador', opcionesEntrenadores()))
-        + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarListaEntrenadoresDirecta()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
+        labelFiltro('Entrenador', 'fEntrenador', selectHtml('fEntrenador', opcionesEntrenadores()));
 }
 
 function renderFiltrosListaGrupos() {
     document.getElementById('contenedorFiltros').innerHTML =
-        labelFiltro('Estado', 'fEstadoGrupo', selectHtml('fEstadoGrupo', opcionesEstadosGrupo()))
-        + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarListaGruposDirecta()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
+        labelFiltro('Estado', 'fEstadoGrupo', selectHtml('fEstadoGrupo', opcionesEstadosGrupo()));
 }
 
 function renderFiltrosDetalleGrupo() {
     document.getElementById('contenedorFiltros').innerHTML =
-        labelFiltro('Grupo', 'fGrupoDetalle', selectHtml('fGrupoDetalle', opcionesGruposDetalle()))
-        + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarDetalleGrupoDirecta()" class="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-purple-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
+        labelFiltro('Grupo', 'fGrupoDetalle', selectHtml('fGrupoDetalle', opcionesGruposDetalle()));
 }
 
 function renderFiltrosDetalleSesion() {
     document.getElementById('contenedorFiltros').innerHTML =
-        labelFiltro('Sesion', 'fSesionDetalle', selectHtml('fSesionDetalle', opcionesSesionesDetalle()))
-        + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="descargarDetalleSesionDirecta()" class="px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-file-pdf"></i> Generar y Descargar PDF</button></div>';
+        labelFiltro('Sesion', 'fSesionDetalle', selectHtml('fSesionDetalle', opcionesSesionesDetalle()));
 }
 
 function renderFiltrosResumenSesionesGrupo() {

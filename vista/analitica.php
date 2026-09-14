@@ -106,31 +106,45 @@ if (isset($_SESSION['id'])) {
                 </div>
 
                 <!-- KPIs principales -->
+                <?php
+                    $kpis = $datosAnalitica['kpis'];
+                    $rendimiento = $datosAnalitica['rendimiento'];
+                    function badgeTendenciaAnalitica(array $t): string {
+                        if (($t['dir'] === 'up' || $t['dir'] === 'down') && $t['pct'] !== null) {
+                            $esUp = $t['dir'] === 'up';
+                            $clase = $esUp ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-500 dark:text-red-400';
+                            $icono = $esUp ? 'fa-arrow-up' : 'fa-arrow-down';
+                            $signo = $esUp ? '+' : '';
+                            return '<span class="text-[10px] ' . $clase . '"><i class="fas ' . $icono . ' mr-1"></i> ' . $signo . $t['pct'] . '%</span>';
+                        }
+                        return '<span class="text-[10px] text-amber-500 dark:text-amber-400"><i class="fas fa-minus mr-1"></i> Estable</span>';
+                    }
+                ?>
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                     <div class="tarjeta transition-colors duration-300">
                         <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-wider">Atletas Activos</p>
-                        <h4 class="text-2xl font-black text-gray-900 dark:text-white mt-1">156</h4>
-                        <span class="text-[10px] text-emerald-500 dark:text-emerald-400"><i class="fas fa-arrow-up mr-1"></i> +8%</span>
+                        <h4 class="text-2xl font-black text-gray-900 dark:text-white mt-1"><?php echo $kpis['atletas']['valor']; ?></h4>
+                        <?php echo badgeTendenciaAnalitica($kpis['atletas']['tendencia']); ?>
                     </div>
                     <div class="tarjeta transition-colors duration-300">
                         <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-wider">Volumen Semanal (m)</p>
-                        <h4 class="text-2xl font-black text-gray-900 dark:text-white mt-1">48.2k</h4>
-                        <span class="text-[10px] text-emerald-500 dark:text-emerald-400"><i class="fas fa-arrow-up mr-1"></i> +5%</span>
+                        <h4 class="text-2xl font-black text-gray-900 dark:text-white mt-1"><?php echo $kpis['volumen']['valor']; ?></h4>
+                        <?php echo badgeTendenciaAnalitica($kpis['volumen']['tendencia']); ?>
                     </div>
                     <div class="tarjeta transition-colors duration-300">
                         <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-wider">RPE Promedio</p>
-                        <h4 class="text-2xl font-black text-gray-900 dark:text-white mt-1">6.8</h4>
-                        <span class="text-[10px] text-amber-500 dark:text-amber-400"><i class="fas fa-minus mr-1"></i> Estable</span>
+                        <h4 class="text-2xl font-black text-gray-900 dark:text-white mt-1"><?php echo $kpis['rpe']['valor']; ?></h4>
+                        <?php echo badgeTendenciaAnalitica($kpis['rpe']['tendencia']); ?>
                     </div>
                     <div class="tarjeta transition-colors duration-300">
                         <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-wider">Asistencia (%)</p>
-                        <h4 class="text-2xl font-black text-gray-900 dark:text-white mt-1">92%</h4>
-                        <span class="text-[10px] text-emerald-500 dark:text-emerald-400"><i class="fas fa-arrow-up mr-1"></i> +2%</span>
+                        <h4 class="text-2xl font-black text-gray-900 dark:text-white mt-1"><?php echo $kpis['asistencia']['valor']; ?></h4>
+                        <?php echo badgeTendenciaAnalitica($kpis['asistencia']['tendencia']); ?>
                     </div>
                     <div class="tarjeta transition-colors duration-300">
-                        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-wider">PBs batidos</p>
-                        <h4 class="text-2xl font-black text-gray-900 dark:text-white mt-1">12</h4>
-                        <span class="text-[10px] text-emerald-500 dark:text-emerald-400"><i class="fas fa-arrow-up mr-1"></i> +3</span>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold tracking-wider">PBs últimos 30d</p>
+                        <h4 class="text-2xl font-black text-gray-900 dark:text-white mt-1"><?php echo $kpis['pbs']['valor']; ?></h4>
+                        <?php echo badgeTendenciaAnalitica($kpis['pbs']['tendencia']); ?>
                     </div>
                 </div>
 
@@ -139,7 +153,7 @@ if (isset($_SESSION['id'])) {
                     <!-- Evolución de Rendimiento -->
                     <div class="tarjeta transition-colors duration-300">
                         <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Evolución de Marcas</h3>
-                        <p class="text-[10px] text-gray-500 dark:text-gray-400 mb-4">100m Libre - Promedio del equipo</p>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 mb-4"><?php echo $rendimiento['prueba'] ? htmlspecialchars($rendimiento['prueba']) . ' - Promedio del equipo' : 'Sin datos registrados aún'; ?></p>
                         <div class="h-48">
                             <canvas id="graficaEvolucion"></canvas>
                         </div>
@@ -148,7 +162,7 @@ if (isset($_SESSION['id'])) {
                     <!-- Comparativa Atletas -->
                     <div class="tarjeta transition-colors duration-300">
                         <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Comparativa Top Atletas</h3>
-                        <p class="text-[10px] text-gray-500 dark:text-gray-400 mb-4">Mejores tiempos en 100m Libre</p>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 mb-4"><?php echo $rendimiento['prueba'] ? 'Mejores tiempos en ' . htmlspecialchars($rendimiento['prueba']) : 'Sin datos registrados aún'; ?></p>
                         <div class="h-48">
                             <canvas id="graficaComparativa"></canvas>
                         </div>
@@ -300,193 +314,237 @@ if (isset($_SESSION['id'])) {
         Chart.defaults.color = colorTexto;
         Chart.defaults.font.family = 'Inter';
 
-        // 1. Evolución de marcas (100m Libre)
-        new Chart(document.getElementById('graficaEvolucion'), {
-            type: 'line',
-            data: {
-                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul'],
-                datasets: [{
-                    label: 'Tiempo (seg)',
-                    data: [58.2, 57.5, 56.8, 56.1, 55.4, 54.7, 53.9],
-                    borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    borderWidth: 3,
-                    tension: 0.4,
-                    fill: true,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#6366f1'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { color: colorGrid }, ticks: { color: colorTexto } },
-                    y: { 
-                        grid: { color: colorGrid }, 
-                        ticks: { color: colorTexto },
-                        reverse: true  // tiempos menores = mejor
-                    }
-                }
-            }
-        });
+        const DATA = <?php echo json_encode($datosAnalitica, JSON_UNESCAPED_UNICODE); ?>;
 
-        // 2. Comparativa top atletas (100m Libre)
-        new Chart(document.getElementById('graficaComparativa'), {
-            type: 'bar',
-            data: {
-                labels: ['Jesús H.', 'Maikol P.', 'Ana G.', 'Carlos R.', 'Luisa M.'],
-                datasets: [{
-                    label: 'Mejor tiempo (seg)',
-                    data: [52.3, 53.1, 54.5, 55.0, 55.8],
-                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: colorTexto } },
-                    y: { 
-                        grid: { color: colorGrid }, 
-                        ticks: { color: colorTexto },
-                        reverse: false
+        const MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const etiquetaMes = m => {
+            const partes = String(m).split('-');
+            const idx = parseInt(partes[1], 10) - 1;
+            return (MESES_CORTOS[idx] || m) + (partes[0] ? " '" + partes[0].slice(2) : '');
+        };
+        const nombreCorto = n => {
+            const p = String(n).split(' ');
+            return p.length > 1 ? p[0] + ' ' + p[1].charAt(0) + '.' : String(n);
+        };
+        const tieneDatos = arr => Array.isArray(arr) && arr.length > 0 && arr.some(v => v !== null && v !== undefined && v !== '');
+        const marcarSinDatos = id => {
+            const canvas = document.getElementById(id);
+            if (canvas && canvas.parentElement) {
+                canvas.parentElement.innerHTML = '<div class="h-full flex items-center justify-center text-xs text-gray-400 dark:text-gray-500"><span>Sin datos registrados aún</span></div>';
+            }
+        };
+
+        // 1. Evolución de marcas (promedio mensual de la prueba con más registros)
+        if (tieneDatos(DATA.rendimiento.evolucion.valores)) {
+            new Chart(document.getElementById('graficaEvolucion'), {
+                type: 'line',
+                data: {
+                    labels: DATA.rendimiento.evolucion.labels.map(etiquetaMes),
+                    datasets: [{
+                        label: 'Tiempo (seg)',
+                        data: DATA.rendimiento.evolucion.valores,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#6366f1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: colorGrid }, ticks: { color: colorTexto } },
+                        y: {
+                            grid: { color: colorGrid },
+                            ticks: { color: colorTexto },
+                            reverse: true  // tiempos menores = mejor
+                        }
                     }
                 }
-            }
-        });
+            });
+        } else {
+            marcarSinDatos('graficaEvolucion');
+        }
+
+        // 2. Comparativa top atletas (mejores tiempos de la prueba)
+        if (tieneDatos(DATA.rendimiento.comparativa.valores)) {
+            new Chart(document.getElementById('graficaComparativa'), {
+                type: 'bar',
+                data: {
+                    labels: DATA.rendimiento.comparativa.labels.map(nombreCorto),
+                    datasets: [{
+                        label: 'Mejor tiempo (seg)',
+                        data: DATA.rendimiento.comparativa.valores,
+                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: colorTexto } },
+                        y: {
+                            grid: { color: colorGrid },
+                            ticks: { color: colorTexto },
+                            reverse: true  // tiempos menores = mejor
+                        }
+                    }
+                }
+            });
+        } else {
+            marcarSinDatos('graficaComparativa');
+        }
 
         // 3. Carga de entrenamiento (Volumen + RPE)
-        new Chart(document.getElementById('graficaCarga'), {
-            type: 'bar',
-            data: {
-                labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6'],
-                datasets: [
-                    {
-                        label: 'Volumen (km)',
-                        data: [42, 45, 48, 50, 52, 48],
-                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
-                        borderRadius: 4,
-                        order: 2,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'RPE Promedio',
-                        data: [5.2, 5.8, 6.1, 6.8, 7.2, 6.5],
-                        type: 'line',
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        pointBackgroundColor: '#f59e0b',
-                        fill: true,
-                        order: 1,
-                        yAxisID: 'y1'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: colorTexto, font: { size: 10 } } } },
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: colorTexto } },
-                    y: { 
-                        type: 'linear',
-                        position: 'left',
-                        grid: { color: colorGrid },
-                        ticks: { color: colorTexto },
-                        beginAtZero: true
-                    },
-                    y1: {
-                        type: 'linear',
-                        position: 'right',
-                        grid: { drawOnChartArea: false },
-                        ticks: { color: colorTexto, max: 10, min: 0 },
-                        beginAtZero: true
+        if (tieneDatos(DATA.carga.volumen_km)) {
+            new Chart(document.getElementById('graficaCarga'), {
+                type: 'bar',
+                data: {
+                    labels: DATA.carga.labels,
+                    datasets: [
+                        {
+                            label: 'Volumen (km)',
+                            data: DATA.carga.volumen_km,
+                            backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                            borderRadius: 4,
+                            order: 2,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'RPE Promedio',
+                            data: DATA.carga.rpe,
+                            type: 'line',
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointBackgroundColor: '#f59e0b',
+                            fill: true,
+                            order: 1,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: colorTexto, font: { size: 10 } } } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: colorTexto } },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            grid: { color: colorGrid },
+                            ticks: { color: colorTexto },
+                            beginAtZero: true
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: colorTexto, max: 10, min: 0 },
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
-        });
+            });
+        } else {
+            marcarSinDatos('graficaCarga');
+        }
 
         // 4. Distribución por categoría
-        new Chart(document.getElementById('graficaCategorias'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Élite', 'Desarrollo', 'Iniciación', 'Master'],
-                datasets: [{
-                    data: [45, 60, 35, 16],
-                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: colorTexto, font: { size: 9 }, boxWidth: 10 }
+        if (tieneDatos(DATA.categorias.valores)) {
+            new Chart(document.getElementById('graficaCategorias'), {
+                type: 'doughnut',
+                data: {
+                    labels: DATA.categorias.labels,
+                    datasets: [{
+                        data: DATA.categorias.valores,
+                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: colorTexto, font: { size: 9 }, boxWidth: 10 }
+                        }
                     }
                 }
-            }
-        });
+            });
+        } else {
+            marcarSinDatos('graficaCategorias');
+        }
 
         // 5. Lesiones activas por zona
-        new Chart(document.getElementById('graficaLesiones'), {
-            type: 'bar',
-            data: {
-                labels: ['Hombro', 'Rodilla', 'Espalda', 'Tobillo', 'Codo'],
-                datasets: [{
-                    label: 'Casos activos',
-                    data: [4, 3, 2, 1, 1],
-                    backgroundColor: ['#ef4444', '#f59e0b', '#6366f1', '#10b981', '#8b5cf6'],
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: colorTexto } },
-                    y: { 
-                        grid: { color: colorGrid }, 
-                        ticks: { color: colorTexto, stepSize: 1, beginAtZero: true }
+        if (tieneDatos(DATA.lesiones.valores)) {
+            new Chart(document.getElementById('graficaLesiones'), {
+                type: 'bar',
+                data: {
+                    labels: DATA.lesiones.labels,
+                    datasets: [{
+                        label: 'Casos activos',
+                        data: DATA.lesiones.valores,
+                        backgroundColor: ['#ef4444', '#f59e0b', '#6366f1', '#10b981', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: colorTexto } },
+                        y: {
+                            grid: { color: colorGrid },
+                            ticks: { color: colorTexto, stepSize: 1, beginAtZero: true }
+                        }
                     }
                 }
-            }
-        });
+            });
+        } else {
+            marcarSinDatos('graficaLesiones');
+        }
 
         // 6. Progreso de metas (porcentaje de cumplimiento)
-        new Chart(document.getElementById('graficaMetas'), {
-            type: 'bar',
-            data: {
-                labels: ['Jesús H.', 'Maikol P.', 'Ana G.', 'Carlos R.', 'Luisa M.'],
-                datasets: [{
-                    label: '% de meta alcanzado',
-                    data: [85, 72, 90, 60, 78],
-                    backgroundColor: ['#10b981', '#f59e0b', '#10b981', '#ef4444', '#6366f1'],
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: colorTexto } },
-                    y: { 
-                        grid: { color: colorGrid }, 
-                        ticks: { color: colorTexto, max: 100, beginAtZero: true },
-                        max: 100
+        if (tieneDatos(DATA.metas.valores)) {
+            new Chart(document.getElementById('graficaMetas'), {
+                type: 'bar',
+                data: {
+                    labels: DATA.metas.labels.map(nombreCorto),
+                    datasets: [{
+                        label: '% de meta alcanzado',
+                        data: DATA.metas.valores,
+                        backgroundColor: DATA.metas.valores.map(v => v >= 85 ? '#10b981' : (v >= 60 ? '#f59e0b' : '#ef4444')),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: colorTexto } },
+                        y: {
+                            grid: { color: colorGrid },
+                            ticks: { color: colorTexto, max: 100, beginAtZero: true },
+                            max: 100
+                        }
                     }
                 }
-            }
-        });
+            });
+        } else {
+            marcarSinDatos('graficaMetas');
+        }
     </script>
 
 </body>

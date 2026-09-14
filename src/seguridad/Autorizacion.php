@@ -23,7 +23,7 @@ class Autorizacion {
         'horario'       => ['horario', 'ver'],
         'asignacion'    => ['asignacion', 'ver'],
         'grupo'         => ['grupo', 'ver'],
-        'calendario'    => ['eventos', 'ver'],
+        'calendario'    => ['calendario', 'ver'],
         'sesiones'      => ['sesiones', 'ver'],
         'lesion'        => ['lesiones', 'ver'],
         'bitacora'      => ['seguridad', 'bitacora'],

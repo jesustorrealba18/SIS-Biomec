@@ -63,6 +63,7 @@ function inicializarDataTable(datos) {
         data: datos,
         responsive: true,
         pageLength: 15,
+        order: [[0, 'desc']],
         lengthChange: false, // Ocultamos el selector de "Mostrar X registros" para un diseño más limpio
         language: {
             url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
@@ -72,7 +73,8 @@ function inicializarDataTable(datos) {
         columns: [
             { 
                 data: 'fecha_operacion',
-                render: function(data) {
+                render: function(data, type) {
+                    if (type === 'sort' || type === 'type') return data;
                     return `<span class="font-mono text-xs text-gray-600 dark:text-gray-400">${formatoFechaHora(data)}</span>`;
                 }
             },

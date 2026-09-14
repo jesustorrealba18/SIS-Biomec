@@ -55,7 +55,7 @@ class UsuarioModelo extends Conexion {
         return true;
     }
 
-    public function validarDatos(array $datos, ?string $excluirCorreo = null): array {
+    public function validarDatos(array $datos, ?int $excluirId = null): array {
         $this->resetearErrores();
 
         $nombres   = $datos['nombres'] ?? '';
@@ -74,18 +74,13 @@ class UsuarioModelo extends Conexion {
         if (!empty($cedula)) {
             $this->cedula($cedula, 'cedula');
             $this->longitud($cedula, 'cedula', 5, 20);
-            $this->unico($this->getConex1(), $cedula, 'usuarios', 'cedula', null, 'id_usuario');
+            $this->unico($this->getConex1(), $cedula, 'usuarios', 'cedula', $excluirId, 'id_usuario');
         }
 
         $this->requerido($correo, 'correo');
         $this->correoValido($correo, 'correo');
         $this->longitud($correo, 'correo', 5, 60);
-
-        if ($excluirCorreo === null) {
-            $this->unico($this->getConex1(), $correo, 'usuarios', 'correo');
-        } else {
-            $this->unico($this->getConex1(), $correo, 'usuarios', 'correo', (int)$excluirCorreo, 'id_usuario');
-        }
+        $this->unico($this->getConex1(), $correo, 'usuarios', 'correo', $excluirId, 'id_usuario');
 
         return $this->obtenerErrores();
     }

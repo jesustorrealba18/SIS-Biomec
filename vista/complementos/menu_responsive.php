@@ -170,7 +170,7 @@
         </a>
         <?php endif; ?>
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'ver')): ?>
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('calendario', 'ver')): ?>
         <a href="?p=calendario" 
            class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group 
                   text-gray-700 dark:text-gray-300 
@@ -267,7 +267,7 @@
 
        
 
-         
+        
 
 
         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('observacionesTecnicas', 'ver')): ?>

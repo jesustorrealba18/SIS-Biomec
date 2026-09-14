@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $accion = $_GET['accion'] ?? '';
 
     if ($accion === 'listarEventos') {
+        Autorizacion::exigir('eventos', 'ver');
         header('Content-Type: application/json');
         $estado = !empty($_GET['estado']) ? $_GET['estado'] : null;
         $tipo = !empty($_GET['tipo']) ? $_GET['tipo'] : null;
@@ -29,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if ($accion === 'obtenerDetalle') {
+        Autorizacion::exigir('eventos', 'ver');
         header('Content-Type: application/json');
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
         echo json_encode($objEvento->obtenerDetallePorId($id));
@@ -36,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if ($accion === 'listarAtletasSelect') {
+        Autorizacion::exigir('eventos', 'ver');
         header('Content-Type: application/json');
         $objAtleta = new Atleta();
         //echo json_encode($objAtleta->listarAtletas());
@@ -44,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if ($accion === 'listarCategorias') {
+        Autorizacion::exigir('eventos', 'ver');
         header('Content-Type: application/json');
         $objAtleta = new Atleta();
         echo json_encode($objAtleta->obtenerCategorias());
@@ -51,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if ($accion === 'calendario') {
+        Autorizacion::exigir('eventos', 'ver');
         header('Content-Type: application/json');
         $mes = isset($_GET['mes']) ? (int)$_GET['mes'] : null;
         $anio = isset($_GET['anio']) ? (int)$_GET['anio'] : null;
@@ -59,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if ($accion === 'eventosProximos') {
+        Autorizacion::exigir('eventos', 'ver');
         header('Content-Type: application/json');
         $dias = isset($_GET['dias']) ? (int)$_GET['dias'] : 14;
         echo json_encode($objEvento->obtenerEventosProximos($dias));

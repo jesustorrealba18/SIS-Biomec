@@ -69,7 +69,7 @@
         </a>
         <?php endif; ?>
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('carrriles', 'ver')): ?>
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('carriles', 'ver')): ?>
         <a href="?p=carriles" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'carriles') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-user-shield w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'carriles') ? 'text-white' : ''; ?>"></i> 
             <span class="font-medium">Carriles</span>
@@ -146,7 +146,7 @@
         </a>
         <?php endif; ?>
 
-        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'ver')): ?>
+        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('calendario', 'ver')): ?>
         <a href="?p=calendario" class="flex items-center gap-3 p-3 rounded-xl transition cursor-pointer group hover:text-white hover:bg-white/5 <?php echo ($pagina == 'calendario') ? 'bg-white/10 text-white' : ''; ?>">
             <i class="fas fa-calendar-week w-5 text-center text-indigo-400 group-hover:text-white <?php echo ($pagina == 'calendario') ? 'text-white' : ''; ?>"></i> 
             <span class="font-medium">Calendario</span>
