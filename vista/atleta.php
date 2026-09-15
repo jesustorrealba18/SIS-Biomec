@@ -251,6 +251,11 @@
         .menu-transition {
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+         /* Para el calendario (date) en modo oscuro */
+        .dark .input-adapt::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
@@ -420,7 +425,7 @@ if (isset($_SESSION['id'])) {
                         <div class="space-y-2">
                             <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Fecha de Nacimiento</label>
                             <input type="date" name="fecha_nacimiento" id="fecha_nacimiento"
-                                   data-validar="requerido" data-nombre="Fecha de nacimiento" class="input-adapt w-full p-3 rounded-xl">
+                                   data-validar="requerido|fecha_logica" data-nombre="Fecha de nacimiento" class="input-adapt w-full p-3 rounded-xl">
                         </div>
                         <div class="space-y-2">
                             <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Sexo</label>

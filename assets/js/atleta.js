@@ -38,6 +38,34 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
+// ====== LIMITAR FECHAS EN INPUTS DATE ======
+function limitarFechasNacimiento() {
+    const hoy = new Date();
+
+    // Formateador local (evita el bug de UTC de toISOString)
+    const fmt = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dd}`;
+    };
+
+    // fecha_nacimiento: máximo hoy, mínimo hace 120 años
+    const inputNacimiento = document.getElementById('fecha_nacimiento');
+    if (inputNacimiento) {
+        inputNacimiento.max = fmt(hoy);
+        inputNacimiento.min = fmt(new Date(hoy.getFullYear() - 120, hoy.getMonth(), hoy.getDate()));
+    }
+
+    // fecha_registro_club: máximo hoy (no tiene sentido fichar en el futuro)
+    const inputRegistro = document.getElementById('fecha_registro_club');
+    if (inputRegistro) {
+        inputRegistro.max = fmt(hoy);
+        // Opcional: mínimo razonable (por ej. 50 años atrás para clubes históricos)
+        inputRegistro.min = fmt(new Date(hoy.getFullYear() - 50, hoy.getMonth(), hoy.getDate()));
+    }
+}
+
 async function cargarTabla() {
     if (!tbodyLista) return;
 
@@ -356,6 +384,8 @@ async function abrirModal(id = null) {
     formAtleta.reset();
     try { Validador.limpiarEstilos(formAtleta); } catch (e) {}
 
+    limitarFechasNacimiento(); 
+
     document.getElementById('id_atleta').value = '';
     fotoPreview.innerHTML = '<i class="fas fa-camera text-gray-600 text-lg"></i>';
     document.getElementById('estado').value = 'Activo';
@@ -561,9 +591,31 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+document.getElementById('fecha_nacimiento').addEventListener('change', function() {
+    const fechaNac = new Date(this.value);
+    const añoActual = new Date().getFullYear();
+    
+    // Cálculo FINA en el Frontend
+    const edadFina = añoActual - fechaNac.getFullYear();
+
+    // Buscamos la categoría correcta
+    const categoriaCorrecta = categoriasCache.find(cat => edadFina >= cat.edad_minima && edadFina <= cat.edad_maxima);
+    const selectCategoria = document.getElementById('id_categoria');
+
+    if (categoriaCorrecta) {
+        selectCategoria.value = categoriaCorrecta.id_categoria;
+    } else {
+        selectCategoria.value = edadFina < 8 ? 1 : 6; 
+    }
+    
+    selectCategoria.style.pointerEvents = "none";
+   /*  selectCategoria.style.backgroundColor = "#f3f4f6"; */
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     try { Validador.vincularTiempoReal(formAtleta); } catch (e) {}
 
+    limitarFechasNacimiento();
     cargarTabla();
 
     formAtleta.addEventListener('submit', async function (e) {
@@ -574,6 +626,23 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.advertencia('Datos Incompletos o Inválidos', erroresJS);
             return;
         }
+
+         const fechaNac = document.getElementById('fecha_nacimiento').value;
+    if (fechaNac) {
+        const f = new Date(fechaNac + 'T00:00:00');
+        const hoy = new Date();
+        hoy.setHours(23, 59, 59, 999);
+        const hace120 = new Date(hoy.getFullYear() - 120, hoy.getMonth(), hoy.getDate());
+
+        if (f > hoy) {
+            UI.advertencia('Fecha inválida', 'La fecha de nacimiento no puede ser futura.');
+            return;
+        }
+        if (f < hace120) {
+            UI.advertencia('Fecha inválida', 'La fecha de nacimiento no puede tener más de 120 años.');
+            return;
+        }
+    }
 
         const textoOriginal = btnGuardar.innerHTML;
         btnGuardar.disabled = true;
