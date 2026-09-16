@@ -37,6 +37,55 @@ $pagina = 'analitica';
             background-color: #161430;
             border-color: #252345;
         }
+
+        /* === Inputs / Selects adaptables a modo claro y oscuro === */
+.input-adapt {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    color: #1f2937;
+    outline: none;
+    appearance: none;               /* quita la flecha nativa fea */
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    padding-right: 2.25rem;         /* espacio para la flecha */
+    cursor: pointer;
+    transition: border-color .2s, background-color .2s, color .2s;
+}
+.input-adapt:hover {
+    border-color: #a5b4fc;
+}
+.input-adapt:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* Modo oscuro */
+.dark .input-adapt {
+    background-color: #161430;
+    border-color: #252345;
+    color: #e5e7eb;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a5b4fc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+.dark .input-adapt:hover {
+    border-color: #3a3a6e;
+}
+.dark .input-adapt:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+/* Estilos para las opciones del desplegable (nativo) */
+.input-adapt option {
+    background-color: #ffffff;
+    color: #1f2937;
+}
+.dark .input-adapt option {
+    background-color: #161430;
+    color: #e5e7eb;
+}
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 dark:bg-[#0f0d23] dark:text-gray-300 font-sans antialiased transition-colors duration-300 overflow-x-hidden">
