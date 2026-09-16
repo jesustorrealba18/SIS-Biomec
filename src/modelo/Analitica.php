@@ -13,12 +13,18 @@ class Analitica extends Conexion {
 
     public function obtenerDashboard(): array {
         return [
-            'kpis'        => $this->obtenerKPIs(),
-            'rendimiento' => $this->obtenerRendimiento(),
-            'carga'       => $this->obtenerCargaSemanal(),
-            'categorias'  => $this->obtenerDistribucionCategorias(),
-            'lesiones'    => $this->obtenerLesionesPorZona(),
-            'metas'       => $this->obtenerProgresoMetas()
+            'kpis'         => $this->obtenerKPIs(),
+            'rendimiento'  => $this->obtenerRendimiento(),
+            'carga'        => $this->obtenerCargaSemanal(),
+            'categorias'   => $this->obtenerDistribucionCategorias(),
+            'lesiones'     => $this->obtenerLesionesPorZona(),
+            'metas'        => $this->obtenerProgresoMetas(),
+            'grupos'       => $this->obtenerAtletasPorGrupo(),
+            'entrenadores' => $this->obtenerAtletasPorEntrenador(),
+            'tipos_sesion' => $this->obtenerDistribucionTiposSesion(),
+            'cumplimiento' => $this->obtenerCumplimientoPlan(),
+            'estado_sesiones' => $this->obtenerEstadoSesiones(),
+            'bloques'      => $this->obtenerBloquesTrabajados()
         ];
     }
 
@@ -220,6 +226,145 @@ class Analitica extends Conexion {
         } catch (PDOException $e) {
             error_log("Error metas analitica: " . $e->getMessage());
             return ['labels' => [], 'valores' => []];
+        }
+    }
+
+    private function obtenerAtletasPorGrupo(): array {
+        try {
+            $sql = "SELECT g.nombre AS grupo,
+                           COUNT(a.id_atleta) AS total,
+                           CONCAT(COALESCE(e.nombres,''), ' ', COALESCE(e.apellidos,'')) AS entrenador
+                    FROM grupos_entrenamiento g
+                    LEFT JOIN grupo_atleta ga ON g.id_grupo = ga.id_grupo
+                    LEFT JOIN atletas a ON ga.id_atleta = a.id_atleta AND a.estado = 'Activo'
+                    LEFT JOIN entrenador e ON g.id_entrenador = e.id_entrenador
+                    WHERE g.activo = 1
+                    GROUP BY g.id_grupo, g.nombre, entrenador
+                    ORDER BY total DESC
+                    LIMIT 8";
+            $filas = $this->pdo->query($sql, PDO::FETCH_ASSOC)->fetchAll();
+            return [
+                'labels'     => array_column($filas, 'grupo'),
+                'valores'    => array_map('intval', array_column($filas, 'total')),
+                'entrenador' => array_column($filas, 'entrenador')
+            ];
+        } catch (PDOException $e) {
+            error_log("Error grupos analitica: " . $e->getMessage());
+            return ['labels' => [], 'valores' => [], 'entrenador' => []];
+        }
+    }
+
+    private function obtenerAtletasPorEntrenador(): array {
+        try {
+            $sql = "SELECT CONCAT(e.nombres, ' ', e.apellidos) AS entrenador,
+                           COUNT(DISTINCT a.id_atleta) AS total,
+                           COUNT(DISTINCT g.id_grupo) AS grupos
+                    FROM entrenador e
+                    LEFT JOIN grupos_entrenamiento g 
+                           ON g.id_entrenador = e.id_entrenador AND g.activo = 1
+                    LEFT JOIN grupo_atleta ga ON ga.id_grupo = g.id_grupo
+                    LEFT JOIN atletas a ON ga.id_atleta = a.id_atleta AND a.estado = 'Activo'
+                    GROUP BY e.id_entrenador, entrenador
+                    HAVING total > 0
+                    ORDER BY total DESC
+                    LIMIT 8";
+            $filas = $this->pdo->query($sql, PDO::FETCH_ASSOC)->fetchAll();
+            return [
+                'labels'  => array_column($filas, 'entrenador'),
+                'valores' => array_map('intval', array_column($filas, 'total')),
+                'grupos'  => array_map('intval', array_column($filas, 'grupos'))
+            ];
+        } catch (PDOException $e) {
+            error_log("Error entrenadores analitica: " . $e->getMessage());
+            return ['labels' => [], 'valores' => [], 'grupos' => []];
+        }
+    }
+
+    private function obtenerDistribucionTiposSesion(): array {
+        try {
+            $sql = "SELECT tipo_sesion, COUNT(*) AS total
+                    FROM sesiones
+                    WHERE estado != 'Cancelada'
+                    GROUP BY tipo_sesion
+                    ORDER BY total DESC";
+            $filas = $this->pdo->query($sql, PDO::FETCH_ASSOC)->fetchAll();
+            return [
+                'labels'  => array_column($filas, 'tipo_sesion'),
+                'valores' => array_map('intval', array_column($filas, 'total'))
+            ];
+        } catch (PDOException $e) {
+            error_log("Error tipos sesion analitica: " . $e->getMessage());
+            return ['labels' => [], 'valores' => []];
+        }
+    }
+
+    private function obtenerCumplimientoPlan(): array {
+        try {
+            $sql = "SELECT g.nombre AS grupo,
+                           ROUND(AVG(s.volumen_ejecutado / NULLIF(s.volumen_planificado,0) * 100), 1) AS cumplimiento,
+                           COUNT(*) AS sesiones
+                    FROM sesiones s
+                    INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo
+                    WHERE s.estado = 'Completada'
+                      AND s.volumen_planificado > 0
+                      AND s.volumen_ejecutado IS NOT NULL
+                    GROUP BY g.id_grupo, g.nombre
+                    HAVING cumplimiento IS NOT NULL
+                    ORDER BY cumplimiento DESC
+                    LIMIT 8";
+            $filas = $this->pdo->query($sql, PDO::FETCH_ASSOC)->fetchAll();
+            return [
+                'labels'   => array_column($filas, 'grupo'),
+                'valores'  => array_map('floatval', array_column($filas, 'cumplimiento')),
+                'sesiones' => array_map('intval', array_column($filas, 'sesiones'))
+            ];
+        } catch (PDOException $e) {
+            error_log("Error cumplimiento analitica: " . $e->getMessage());
+            return ['labels' => [], 'valores' => [], 'sesiones' => []];
+        }
+    }
+
+    private function obtenerEstadoSesiones(): array {
+        try {
+            $sql = "SELECT estado, COUNT(*) AS total
+                    FROM sesiones
+                    GROUP BY estado
+                    ORDER BY total DESC";
+            $filas = $this->pdo->query($sql, PDO::FETCH_ASSOC)->fetchAll();
+            return [
+                'labels'  => array_column($filas, 'estado'),
+                'valores' => array_map('intval', array_column($filas, 'total'))
+            ];
+        } catch (PDOException $e) {
+            error_log("Error estado sesiones analitica: " . $e->getMessage());
+            return ['labels' => [], 'valores' => []];
+        }
+    }
+
+    private function obtenerBloquesTrabajados(): array {
+        try {
+            $sql = "SELECT ss.bloque,
+                           COUNT(*) AS total_series,
+                           COALESCE(SUM(ss.repeticiones * ss.distancia_m), 0) AS volumen_total
+                    FROM series_sesion ss
+                    INNER JOIN sesiones s ON ss.id_sesion = s.id_sesion
+                    WHERE s.estado IN ('Completada', 'Parcial')
+                    GROUP BY ss.bloque
+                    ORDER BY volumen_total DESC";
+            $filas = $this->pdo->query($sql, PDO::FETCH_ASSOC)->fetchAll();
+
+            $etiquetas = array_map(function ($bloque) {
+                return $bloque === 'VuletaCalma' ? 'Vuelta a la calma' : $bloque;
+            }, array_column($filas, 'bloque'));
+
+            return [
+                'labels'         => $etiquetas,
+                'series'         => array_map('intval', array_column($filas, 'total_series')),
+                'volumen_total'  => array_map('intval', array_column($filas, 'volumen_total'))
+            ];
+        } catch (PDOException $e) {
+            error_log("Error bloques analitica: " . $e->getMessage());
+            return ['labels' => [], 'series' => [], 'volumen_total' => []];
         }
     }
 }
