@@ -1,7 +1,4 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 // =====================================================================
 // CONTROLADOR PIVOTE: SEGUIMIENTO ANTROPOMÉTRICO (RF-05)
 // =====================================================================
@@ -369,7 +366,7 @@ if ($accionPost === 'reactivar') {
 // -----------------------------------------------------------------
 // Ruta J: Eliminar físicamente (hard delete)
 // -----------------------------------------------------------------
-if ($accionPost === 'eliminarFisico') {
+/* if ($accionPost === 'eliminarFisico') {
 
 
    Autorizacion::exigir('antropometria', 'eliminardb');
@@ -402,7 +399,7 @@ if ($accionPost === 'eliminarFisico') {
         echo json_encode(['status' => 'error', 'message' => 'No se pudo eliminar la medición']);
     }
     exit; 
-}
+} */
 
 
 }

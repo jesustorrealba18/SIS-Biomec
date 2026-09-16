@@ -106,8 +106,7 @@ if (isset($_SESSION['id'])) {
                         ['url' => '?p=antropometria', 'icon' => 'fa-ruler-combined', 'label' => 'Expediente Antropométrico', 'color' => 'text-emerald-400'],
                         ['url' => '?p=cargaBienestar', 'icon' => 'fa-notes-medical', 'label' => 'Monitoreo de Carga y Bienestar', 'color' => 'text-cyan-400'],
                         ['url' => '?p=marcas', 'icon' => 'fa-stopwatch', 'label' => 'Marcas', 'color' => 'text-amber-400'],
-                        ['url' => '?p=calendario', 'icon' => 'fa-calendar-week', 'label' => 'Calendario', 'color' => 'text-rose-400'],
-                        ['url' => '?p=analitica', 'icon' => 'fa-chart-pie', 'label' => 'Analítica', 'color' => 'text-purple-400']
+                        ['url' => '?p=calendario', 'icon' => 'fa-calendar-week', 'label' => 'Calendario', 'color' => 'text-rose-400']
                     ];
                     if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('eventos', 'ver')) {
                         $modulos[] = ['url' => '?p=eventos', 'icon' => 'fa-calendar-alt', 'label' => 'Eventos', 'color' => 'text-rose-400'];

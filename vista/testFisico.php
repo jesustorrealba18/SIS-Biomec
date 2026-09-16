@@ -53,11 +53,9 @@ $pagina = 'testFisico';
         .dark .input-adapt:focus {
             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
-        .input-adapt::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-        }
+         /* Para el calendario (date) en modo oscuro */
         .dark .input-adapt::-webkit-calendar-picker-indicator {
-            filter: invert(0);
+            filter: invert(1);
         }
 
         /* ===== TARJETAS ===== */

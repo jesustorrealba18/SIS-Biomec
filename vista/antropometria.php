@@ -727,7 +727,7 @@ if (isset($_SESSION['id'])) {
             registrar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'registrar') ? 'true' : 'false'; ?>,
             editar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'editar') ? 'true' : 'false'; ?>,
             eliminar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'eliminar') ? 'true' : 'false'; ?>,
-            eliminardb: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'eliminardb') ? 'true' : 'false'; ?>,
+            
             reactivar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('antropometria', 'reactivar') ? 'true' : 'false'; ?>
         };
     </script>
