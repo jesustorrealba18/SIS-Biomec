@@ -219,6 +219,20 @@ window.togglePasswordVisibility = function(inputId) {
     }
 };
 
+// Helper reutilizable — agrégalo en alertas.js o utilidades.js
+function formatearFecha(fechaStr) {
+    if (!fechaStr) return '—';
+    
+    // Quitamos la hora si viene: "2025-01-15 10:00:00" → "2025-01-15"
+    const soloFecha = String(fechaStr).split(' ')[0];
+    
+    // Partimos por guion: ["2025", "01", "15"]
+    const [anio, mes, dia] = soloFecha.split('-');
+    
+    // Retornamos DD/MM/YYYY
+    return `${dia}/${mes}/${anio}`;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const API_URL = 'index.php?p=mi_perfil&accion=obtener_mi_ficha';
     
@@ -271,7 +285,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="flex flex-wrap gap-2 pt-2">${rolesBadges}</div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-white/5 mt-4">
                             <div><p class="text-[9px] uppercase text-gray-500">Correo Electrónico</p><p class="text-gray-900 dark:text-white text-sm break-all">${datos.usuario.correo}</p></div>
-                            <div><p class="text-[9px] uppercase text-gray-500">Miembro desde</p><p class="text-gray-900 dark:text-white text-sm">${datos.usuario.fecha_creacion.split(' ')[0]}</p></div>
+                            <div><p class="text-[9px] uppercase text-gray-500">Miembro desde</p><p class="text-gray-900 dark:text-white text-sm">${formatearFecha(datos.usuario.fecha_creacion)}</p></div>
                         </div>
                     </div>
                 </div>

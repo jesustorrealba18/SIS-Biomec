@@ -42,12 +42,11 @@
         .dark .input-adapt:focus {
             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
-        .input-adapt::-webkit-calendar-picker-indicator {
+        /* Para el calendario (date) en modo oscuro */
+        .dark .input-adapt::-webkit-calendar-picker-indicator {
             filter: invert(1);
         }
-        .dark .input-adapt::-webkit-calendar-picker-indicator {
-            filter: invert(0);
-        }
+     
 
         /* ===== TABS ===== */
         /* ===== STEPPER ===== */
@@ -252,10 +251,7 @@
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-         /* Para el calendario (date) en modo oscuro */
-        .dark .input-adapt::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-        }
+        
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
