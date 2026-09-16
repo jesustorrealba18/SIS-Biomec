@@ -364,6 +364,10 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
 
         } catch (PDOException $e) {
             $this->pdo->rollBack();
+             if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta o lesion) fueron alterados y no existen en el sistema.');
+                return false;
+            }
             error_log("Error transaccional en ejecutarRegistro: " . $e->getMessage());
             $this->agregarError('bd', 'Error interno al registrar la lesión.');
             return false;
@@ -426,6 +430,10 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
 
         } catch (PDOException $e) {
             $this->pdo->rollBack();
+             if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta o lesion) fueron alterados y no existen en el sistema.');
+                return false;
+            }
             error_log("Error transaccional en ejecutarActualizacion: " . $e->getMessage());
             $this->agregarError('bd', 'Error interno al actualizar la lesión.');
             return false;
@@ -473,6 +481,10 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
             return true;
         } catch (PDOException $e) {
             $this->pdo->rollBack();
+             if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta o lesion) fueron alterados y no existen en el sistema.');
+                return false;
+            }
             error_log("Error transaccional en ejecutarEliminacionLogica: " . $e->getMessage());
             return false;
         }
@@ -513,6 +525,10 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
             return true;
         } catch (PDOException $e) {
             $this->pdo->rollBack();
+             if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta o lesion) fueron alterados y no existen en el sistema.');
+                return false;
+            }
             error_log("Error transaccional en ejecutarReactivacion: " . $e->getMessage());
             return false;
         }
