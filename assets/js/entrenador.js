@@ -27,7 +27,7 @@ function setupValidacionTiempoReal() {
         { id: 'cedula', reglas: 'requerido|numeros', nombre: 'Cédula', min: 8, max: 8 },
         { id: 'nombres', reglas: 'requerido|letras', nombre: 'Nombres', min: 2, max: 50 },
         { id: 'apellidos', reglas: 'requerido|letras', nombre: 'Apellidos', min: 2, max: 50 },
-        { id: 'fecha_nacimiento', reglas: 'requerido|mayor18', nombre: 'Fecha de Nacimiento' },
+        { id: 'fecha_nacimiento', reglas: 'requerido|fecha_logica|mayor_edad', nombre: 'Fecha de Nacimiento' },
         { id: 'telefono', reglas: 'requerido|numeros', nombre: 'Teléfono', min: 11, max: 11 },
         { id: 'correo', reglas: 'requerido|email', nombre: 'Correo Electrónico' },
         { id: 'direccion', reglas: 'requerido', nombre: 'Dirección', min: 5, max: 50 },
@@ -91,23 +91,27 @@ function validarCampo(input, reglas, nombre, min, max) {
         if (reglas.includes('email') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)) {
             error = `Ingrese un correo electrónico válido`;
         }
-        if (reglas.includes('mayor18')) {
-            if (!valor) {
-                error = `La fecha de nacimiento es requerida`;
-            } else {
-                const fecha = new Date(valor);
-                const hoy = new Date();
-                let edad = hoy.getFullYear() - fecha.getFullYear();
-                const mes = hoy.getMonth() - fecha.getMonth();
-                if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) {
-                    edad--;
-                }
-                if (edad < 18) {
-                    error = `Debe ser mayor de 18 años`;
-                }
-            }
+        
+if (reglas.includes('fecha_logica')) {
+    if (valor) {
+        const fecha = new Date(valor);
+        const anio = fecha.getFullYear();
+        if (isNaN(fecha.getTime()) || anio < 1900 || anio > new Date().getFullYear()) {
+            error = `${nombre} no es una fecha válida`;
         }
-  
+    }
+}
+
+if (reglas.includes('mayor_edad') && valor) {
+    const fecha = new Date(valor);
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - fecha.getFullYear();
+    const mes = hoy.getMonth() - fecha.getMonth();
+    if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) edad--;
+
+    if (edad < 18) error = `Debe ser mayor de 18 años`;
+    else if (edad > 100) error = `La fecha de nacimiento no es válida (edad máxima: 100 años)`;
+}
         if (min && valor.length < min) {
             error = `${nombre} debe tener al menos ${min} caracteres`;
         }
