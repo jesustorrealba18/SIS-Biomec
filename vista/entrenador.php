@@ -48,6 +48,10 @@
             filter: invert(0);
         }
 
+        .dark .input-adapt::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+
         /* ===== TARJETAS ===== */
         .tarjeta {
             background-color: #ffffff;
@@ -140,16 +144,20 @@ if (isset($_SESSION['id'])) {
                 </div>
 
                 <!-- Buscador -->
-                <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-5 transition-colors duration-300">
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <div class="relative flex-1">
-                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm"></i>
-                            <input type="text" id="busquedaCedula" placeholder="Buscar por cédula o nombre..."
-                                   class="input-adapt w-full pl-11 pr-4 py-3 rounded-xl text-sm shadow-inner">
-                        </div>
-                        <span id="totalEntrenador" class="flex items-center gap-2 text-xs bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/20 self-center">0 Registrados</span>
-                    </div>
-                </div>
+               <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-5 transition-colors duration-300">
+    <div class="flex flex-col sm:flex-row gap-4 items-center">
+        <div class="relative flex-1 w-full">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm"></i>
+            <input type="text" id="busquedaCedula" placeholder="Buscar por cédula o nombre..."
+                   class="input-adapt w-full pl-11 pr-4 py-3 rounded-xl text-sm shadow-inner">
+        </div>
+        <label class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+            <input type="checkbox" id="toggleInactivos" class="w-4 h-4 accent-red-500">
+            Ver inactivos
+        </label>
+        <span id="totalEntrenador" class="flex items-center gap-2 text-xs bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/20 self-center">0 Activos</span>
+    </div>
+</div>
 
                 <!-- Tabla -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-2xl transition-colors duration-300">

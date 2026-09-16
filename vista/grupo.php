@@ -320,10 +320,9 @@ if (isset($_SESSION['id'])) {
                 </div>
 
                 <div class="flex gap-2">
-                    <button type="button" onclick="filtrarAtletasPorCategoria()" 
-                            class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold transition cursor-pointer text-xs uppercase tracking-wider">
-                        <i class="fas fa-filter mr-2"></i> Aplicar Filtros
-                    </button>
+              <button type="button" onclick="aplicarFiltros()" ...>
+    <i class="fas fa-filter mr-2"></i> Aplicar Filtros
+      </button>
                     <button type="button" onclick="limpiarFiltros()" 
                             class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white px-4 py-2 rounded-xl font-bold transition cursor-pointer text-xs uppercase tracking-wider">
                         <i class="fas fa-undo"></i> Limpiar

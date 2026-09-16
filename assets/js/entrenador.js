@@ -10,17 +10,17 @@ const fotoPreview = document.getElementById('previsualizarFoto');
 const iconoFotoDefecto = document.getElementById('iconoFotoPorDefecto'); 
 const totalEntrenador = document.getElementById('totalEntrenador');
 
-// Referencias para la tabla paginada y ordenada
 const infoTabla = document.getElementById('infoTabla');
 const pieTabla = document.getElementById('pieTabla');
 
-// Estado de la tabla
 let entrenadoresData = [];
 let tablaFiltro = '';
 let tablaSortCol = '';
 let tablaSortDir = '';
 let tablaPagina = 1;
 const tablaPorPagina = 10;
+
+let mostrarInactivos = false;
 
 function setupValidacionTiempoReal() {
     const campos = [
@@ -358,7 +358,7 @@ async function cargarTablaEntrenador() {
 
     if (!entrenadores || entrenadores.length === 0) {
         entrenadoresData = [];
-        if (totalEntrenador) totalEntrenador.textContent = '0 Registrados';
+        if (totalEntrenador) totalEntrenador.textContent = '0 Activos';
         if (infoTabla) infoTabla.textContent = '';
         if (pieTabla) pieTabla.innerHTML = '';
         tbody.innerHTML = `
@@ -386,7 +386,12 @@ function renderTablaEntrenador() {
 
     let datos = entrenadoresData.slice();
 
-    // 1. Filtrar por búsqueda
+    if (mostrarInactivos) {
+        datos = datos.filter(ent => (ent.estado || 'Activo') === 'Inactivo');
+    } else {
+        datos = datos.filter(ent => (ent.estado || 'Activo') === 'Activo');
+    }
+
     if (tablaFiltro) {
         const q = tablaFiltro;
         datos = datos.filter(ent =>
@@ -394,7 +399,6 @@ function renderTablaEntrenador() {
         );
     }
 
-    // 2. Ordenar datos
     if (tablaSortCol) {
         const col = tablaSortCol;
         const dir = tablaSortDir === 'asc' ? 1 : -1;
@@ -408,9 +412,15 @@ function renderTablaEntrenador() {
         });
     }
 
-    // 3. Paginación
     const total = datos.length;
-    if (totalEntrenador) totalEntrenador.textContent = `${entrenadoresData.length} Registrados`;
+    const totalActivos = entrenadoresData.filter(e => (e.estado || 'Activo') === 'Activo').length;
+    const totalInactivos = entrenadoresData.filter(e => (e.estado || 'Activo') === 'Inactivo').length;
+
+    if (totalEntrenador) {
+        totalEntrenador.textContent = mostrarInactivos 
+            ? `${totalInactivos} Inactivos` 
+            : `${totalActivos} Activos`;
+    }
     if (infoTabla) infoTabla.textContent = `Mostrando ${total === 0 ? 0 : (tablaPagina - 1) * tablaPorPagina + 1}–${Math.min(tablaPagina * tablaPorPagina, total)} de ${total}`;
 
     const totalPaginas = Math.max(1, Math.ceil(total / tablaPorPagina));
@@ -421,7 +431,6 @@ function renderTablaEntrenador() {
 
     actualizarSortIcons();
 
-    // 4. Inyección del HTML
     if (pagina.length === 0 && total > 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-500 dark:text-gray-400"><span class="text-xs uppercase tracking-wider">Sin resultados para la búsqueda</span></td></tr>`;
     } else if (pagina.length === 0) {
@@ -429,7 +438,7 @@ function renderTablaEntrenador() {
             <tr>
                 <td colspan="5" class="text-center p-12 text-gray-500 dark:text-gray-400">
                     <i class="fas fa-users-slash text-4xl mb-3 block text-gray-400 dark:text-gray-600 animate-pulse"></i>
-                    <span class="text-xs uppercase tracking-wider block">No hay entrenadores registrados en el sistema</span>
+                    <span class="text-xs uppercase tracking-wider block">${mostrarInactivos ? 'No hay entrenadores inactivos' : 'No hay entrenadores activos registrados'}</span>
                 </td>
             </tr>`;
     } else {
@@ -438,6 +447,19 @@ function renderTablaEntrenador() {
                 ? `<img src="${ent.foto}" class="w-8 h-8 rounded-full object-cover">`
                 : `<div class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold uppercase">${ent.nombres[0]}${ent.apellidos[0]}</div>`;
 
+            const estadoActual = ent.estado || 'Activo';
+            const badgeEstado = estadoActual === 'Activo'
+                ? `<span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400">Activo</span>`
+                : `<span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400">Inactivo</span>`;
+
+            const botonEstado = estadoActual === 'Activo'
+                ? `<button onclick="eliminarEntrenador(${ent.id_entrenador})" class="bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 p-2 rounded-lg transition" title="Desactivar">
+                        <i class="fas fa-ban text-xs"></i>
+                   </button>`
+                : `<button onclick="reactivarEntrenador(${ent.id_entrenador})" class="bg-green-50 dark:bg-green-500/10 hover:bg-green-100 dark:hover:bg-green-500/20 text-green-600 dark:text-green-400 p-2 rounded-lg transition" title="Reactivar">
+                        <i class="fas fa-undo text-xs"></i>
+                   </button>`;
+
             return `
             <tr class="entrenador-row border-b border-gray-200 dark:border-gray-800/50 hover:bg-gray-100 dark:hover:bg-[#1c1a3a]/40 transition-colors duration-200" data-busqueda="${ent.cedula} ${ent.nombres} ${ent.apellidos}">
                 <td class="p-4 font-medium text-gray-900 dark:text-white flex items-center gap-3">
@@ -445,6 +467,7 @@ function renderTablaEntrenador() {
                     <div>
                         <span class="block">${ent.nombres} ${ent.apellidos}</span>
                         <span class="text-xs text-gray-500 dark:text-gray-400">${ent.correo || ''}</span>
+                        ${badgeEstado}
                     </div>
                 </td>
                 <td class="p-4 text-gray-700 dark:text-gray-300 font-mono text-xs">${ent.cedula}</td>
@@ -459,9 +482,7 @@ function renderTablaEntrenador() {
                         <button onclick="abrirModalEntrenador(${ent.id_entrenador})" class="bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 p-2 rounded-lg transition" title="Editar">
                             <i class="fas fa-edit text-xs"></i>
                         </button>
-                        <button onclick="eliminarEntrenador(${ent.id_entrenador})" class="bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 p-2 rounded-lg transition" title="Eliminar">
-                            <i class="fas fa-trash text-xs"></i>
-                        </button>
+                        ${botonEstado}
                     </div>
                     ` : '<span class="text-gray-500 dark:text-gray-400 text-xs">Solo lectura</span>'}
                 </td>
@@ -543,6 +564,15 @@ if (inputBusqueda) {
     });
 }
 
+const toggleInactivos = document.getElementById('toggleInactivos');
+if (toggleInactivos) {
+    toggleInactivos.addEventListener('change', function(e) {
+        mostrarInactivos = e.target.checked;
+        tablaPagina = 1;
+        renderTablaEntrenador();
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     cargarTablaEntrenador();
 
@@ -617,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function eliminarEntrenador(id_entrenador) {
-    const confirmacion = confirm("¿Está seguro de eliminar este entrenador? Esta acción no se puede deshacer.");
+    const confirmacion = confirm("¿Está seguro de desactivar este entrenador? Podrá reactivarlo después.");
     
     if (confirmacion) {
         let datosDelete = new FormData();
@@ -627,12 +657,34 @@ async function eliminarEntrenador(id_entrenador) {
         
         if (resultado && resultado.status === 'success') {
             if (typeof UI !== 'undefined') {
-                UI.exito('Eliminado', 'El registro ha sido removido exitosamente.');
+                UI.exito('Desactivado', 'El entrenador ha sido desactivado correctamente.');
             }
             cargarTablaEntrenador();
         } else {
             if (typeof UI !== 'undefined') {
-                UI.error('Error', resultado?.message || 'No se pudo eliminar el registro.');
+                UI.error('Error', resultado?.message || 'No se pudo desactivar el registro.');
+            }
+        }
+    }
+}
+
+async function reactivarEntrenador(id_entrenador) {
+    const confirmacion = confirm("¿Desea reactivar este entrenador?");
+    
+    if (confirmacion) {
+        let datos = new FormData();
+        datos.append('id_entrenador', id_entrenador);
+        
+        const resultado = await peticionAjax('reactivar', datos);
+        
+        if (resultado && resultado.status === 'success') {
+            if (typeof UI !== 'undefined') {
+                UI.exito('Reactivado', 'El entrenador ha sido reactivado correctamente.');
+            }
+            cargarTablaEntrenador();
+        } else {
+            if (typeof UI !== 'undefined') {
+                UI.error('Error', resultado?.message || 'No se pudo reactivar el registro.');
             }
         }
     }

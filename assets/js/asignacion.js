@@ -1,4 +1,3 @@
-// ==================== CONFIGURACIÓN DE PAGINACIÓN ====================
 let asignacionData = [];
 let tablaFiltro = '';
 let tablaSortCol = '';
@@ -6,7 +5,6 @@ let tablaSortDir = '';
 let tablaPagina = 1;
 const tablaPorPagina = 10;
 
-// ==================== VARIABLES EXISTENTES ====================
 const modalAsignacion = document.getElementById('modalAsignacion');
 const modalVer = document.getElementById('modalVerAsignacion');
 const formAsignacion = document.getElementById('formAsignacion');
@@ -17,7 +15,6 @@ const pieTabla = document.getElementById('pieTabla');
 
 const API_URL = 'index.php?p=asignacion'; 
 
-// ==================== FUNCIONES EXISTENTES ====================
 function validarCampoAsignacion(input) {
     const valor = input.value.trim();
     const nombre = input.dataset.nombre || input.name || 'Campo';
@@ -144,7 +141,6 @@ function validarFormularioCompletoAsignacion(form) {
     return { hasError, errores: primerosErrores };
 }
 
-// ==================== PETICIÓN AJAX ====================
 async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
     if (datos) opciones.body = datos; 
@@ -161,7 +157,6 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
-// ==================== FUNCIONES DE CIERRE DE MODALES ====================
 function cerrarModalAsignacion() {
     if (modalAsignacion && modalAsignacion.firstElementChild) {
         modalAsignacion.firstElementChild.classList.add('scale-95', 'opacity-0');
@@ -220,7 +215,6 @@ function cerrarModalHistorial() {
     }, 200);
 }
 
-// ==================== EVENT LISTENER TECLA ESC ====================
 document.addEventListener('keydown', (e) => {
     if (e.key === "Escape") {
         if (modalAsignacion && !modalAsignacion.classList.contains('hidden')) cerrarModalAsignacion();
@@ -239,7 +233,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// ==================== FUNCIONES DE DETALLE ====================
 async function verDetalleCarril(id) {
     const carril = await peticionAjax(`obtenerDetalleCarril&id=${id}`);
     if (!carril) {
@@ -330,7 +323,6 @@ async function verDetalleGrupo(id) {
     }
 }
 
-// ==================== FUNCIONES DE CARGA DE SELECTS ====================
 async function cargarSelects() {
     try {
         const carriles = await peticionAjax('listarCarriles');
@@ -374,7 +366,6 @@ async function cargarSelects() {
     }
 }
 
-// ==================== ABRIR MODAL ====================
 async function abrirModalAsignacion(id_asignacion = null) {
     if (formAsignacion) formAsignacion.reset(); 
     
@@ -449,7 +440,6 @@ async function abrirModalAsignacion(id_asignacion = null) {
     }
 }
 
-// ==================== VER DETALLE ====================
 async function verDetalle(id) {
     const asignacion = await peticionAjax(`obtenerAsignacion&id=${id}`);
     
@@ -517,7 +507,6 @@ async function verDetalle(id) {
     }
 }
 
-// ==================== COMPLETAR ASIGNACIÓN ====================
 async function completarAsignacion(id_asignacion) {
     if (typeof Swal !== 'undefined') {
         const result = await Swal.fire({
@@ -566,7 +555,6 @@ async function completarAsignacion(id_asignacion) {
     }
 }
 
-// ==================== REACTIVAR ASIGNACIÓN ====================
 async function reactivarAsignacion(id_asignacion) {
     if (typeof Swal !== 'undefined') {
         const result = await Swal.fire({
@@ -609,7 +597,6 @@ async function reactivarAsignacion(id_asignacion) {
     }
 }
 
-// ==================== VER HISTORIAL ====================
 async function verHistorialCompletadas() {
     const modal = document.getElementById('modalHistorial');
     const tbody = document.getElementById('listaCompletadas');
@@ -676,7 +663,6 @@ async function verHistorialCompletadas() {
     `).join('');
 }
 
-// ==================== VERIFICAR ASIGNACIONES VENCIDAS ====================
 async function verificarAsignacionesVencidas() {
     try {
         const resultado = await peticionAjax('verificarVencidas');
@@ -698,11 +684,9 @@ async function verificarAsignacionesVencidas() {
             }
         }
     } catch (error) {
-        // Error silencioso
     }
 }
 
-// ==================== RENDERIZAR TABLA CON PAGINACIÓN ====================
 function renderTabla() {
     const tbody = document.getElementById('listaAsignaciones');
     if (!tbody) return;
@@ -849,7 +833,6 @@ function renderTabla() {
     renderPaginacion(totalPaginas);
 }
 
-// ==================== RENDER PAGINACIÓN ====================
 function renderPaginacion(totalPaginas) {
     if (!pieTabla || totalPaginas <= 1) { 
         if (pieTabla) pieTabla.innerHTML = ''; 
@@ -887,7 +870,6 @@ function renderPaginacion(totalPaginas) {
     pieTabla.innerHTML = html;
 }
 
-// ==================== CARGAR TABLA DE ASIGNACIONES ====================
 async function cargarTablaAsignaciones() {
     const tbody = document.getElementById('listaAsignaciones');
     if (!tbody) return;
@@ -925,7 +907,6 @@ async function cargarTablaAsignaciones() {
     renderTabla();
 }
 
-// ==================== BUSCADOR ====================
 const inputBusqueda = document.getElementById('busquedaAsignacion');
 if (inputBusqueda) {
     inputBusqueda.addEventListener('input', function(e) {
@@ -935,7 +916,6 @@ if (inputBusqueda) {
     });
 }
 
-// ==================== ORDENAMIENTO POR CLICK EN HEADERS ====================
 document.querySelectorAll('[data-sort]').forEach(th => {
     th.addEventListener('click', () => {
         const col = th.getAttribute('data-sort');
@@ -950,7 +930,6 @@ document.querySelectorAll('[data-sort]').forEach(th => {
     });
 });
 
-// ==================== ELIMINAR ASIGNACIÓN ====================
 async function eliminarAsignacion(id_asignacion) {
     if (confirm("¿Está seguro de desactivar esta asignación?")) {
         let datosDelete = new FormData();
@@ -967,7 +946,6 @@ async function eliminarAsignacion(id_asignacion) {
     }
 }
 
-// ==================== EVENTOS DOM ====================
 document.addEventListener('DOMContentLoaded', () => {
     cargarTablaAsignaciones();
     
@@ -976,7 +954,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         setupValidacionTiempoRealAsignacion();
     } catch (e) {
-        // Error silencioso
     }
     
     try { 

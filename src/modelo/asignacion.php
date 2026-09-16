@@ -8,30 +8,38 @@ use PDOException;
 class Asignacion extends Conexion {
     use ValidacionesTrait;
 
+    private const CAMPOS_PERMITIDOS = ['id_asignacion', 'id_carril', 'id_bloque_horario', 'id_grupo', 'dia_especifico', 'fecha_vigencia_inicio',
+        'fecha_vigencia_fin', 'activa',
+    ];
+
     private array $datos = [];
 
     public function __construct() {
-        parent::__construct('sis_natacion'); 
+        parent::__construct('sis_natacion');
     }
 
-    public function setDatos(array $datos) {
-        $this->datos = $datos;
+    public function setDatos(array $datos): void {
+        $this->datos = array_intersect_key($datos, array_flip(self::CAMPOS_PERMITIDOS));
     }
-    
-    public function validarDatos(array $datos, ?string $excluirId = null): array {
+
+    public function setIdEliminar(int $id): void {
+        $this->datos['id_asignacion'] = $id;
+    }
+
+    public function validarDatos(?string $excluirId = null): array {
         $this->resetearErrores();
 
-        $id_carril              = $datos['id_carril'] ?? '';
-        $id_bloque_horario      = $datos['id_bloque_horario'] ?? '';
-        $id_grupo               = $datos['id_grupo'] ?? '';
-        $dia_especifico         = $datos['dia_especifico'] ?? '';
-        $fecha_vigencia_inicio  = $datos['fecha_vigencia_inicio'] ?? $datos['fecha_vigente_inicio'] ?? '';
-        $fecha_vigencia_fin     = $datos['fecha_vigencia_fin'] ?? $datos['fecha_vigente_fin'] ?? '';
-        $activa                 = $datos['activa'] ?? '';
+        $id_carril         = $this->datos['id_carril'] ?? '';
+        $id_bloque_horario = $this->datos['id_bloque_horario'] ?? '';
+        $id_grupo          = $this->datos['id_grupo'] ?? '';
+        $dia_especifico    = $this->datos['dia_especifico'] ?? '';
+        $fecha_vigencia_inicio = $this->datos['fecha_vigencia_inicio'] ?? '';
+        $fecha_vigencia_fin    = $this->datos['fecha_vigencia_fin'] ?? '';
+        $activa            = $this->datos['activa'] ?? '';
 
         $this->requerido($id_carril, 'id_carril');
         $this->soloNumeros($id_carril, 'id_carril');
-        
+
         $this->requerido($id_bloque_horario, 'id_bloque_horario');
         $this->soloNumeros($id_bloque_horario, 'id_bloque_horario');
 
@@ -39,7 +47,7 @@ class Asignacion extends Conexion {
         $this->soloNumeros($id_grupo, 'id_grupo');
 
         $this->requerido($fecha_vigencia_inicio, 'fecha_vigencia_inicio');
-        
+
         if (!empty($fecha_vigencia_fin) && $fecha_vigencia_inicio > $fecha_vigencia_fin) {
             $this->errores['fecha_vigencia_fin'] = 'La fecha de fin debe ser mayor o igual a la fecha de inicio';
         }
@@ -52,7 +60,7 @@ class Asignacion extends Conexion {
             if ($conex) {
                 try {
                     $diaEspecificoValue = empty($dia_especifico) ? null : $dia_especifico;
-                    
+
                     if ($excluirId !== null) {
                         $sqlDuplicado = "SELECT COUNT(*) FROM asignacion_carril 
                                          WHERE id_asignacion != :id 
@@ -60,7 +68,6 @@ class Asignacion extends Conexion {
                                          AND id_bloque_horario = :id_bloque_horario 
                                          AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL)) 
                                          AND activa = 1";
-                        
                         $stmtDuplicado = $conex->prepare($sqlDuplicado);
                         $stmtDuplicado->bindParam(':id', $excluirId, PDO::PARAM_INT);
                     } else {
@@ -69,27 +76,26 @@ class Asignacion extends Conexion {
                                          AND id_bloque_horario = :id_bloque_horario 
                                          AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL)) 
                                          AND activa = 1";
-                        
                         $stmtDuplicado = $conex->prepare($sqlDuplicado);
                     }
-                    
+
                     $stmtDuplicado->bindParam(':id_carril', $id_carril, PDO::PARAM_INT);
                     $stmtDuplicado->bindParam(':id_bloque_horario', $id_bloque_horario, PDO::PARAM_INT);
-                    
+
                     if ($diaEspecificoValue === null) {
                         $stmtDuplicado->bindValue(':dia_especifico', null, PDO::PARAM_NULL);
                     } else {
                         $stmtDuplicado->bindParam(':dia_especifico', $diaEspecificoValue, PDO::PARAM_STR);
                     }
-                    
+
                     $stmtDuplicado->execute();
                     $existe = $stmtDuplicado->fetchColumn();
-                    
+
                     if ($existe > 0) {
                         $this->errores['asignacion'] = 'Ya existe una asignación activa para este carril, horario y día';
                     }
-                    
                 } catch (PDOException $e) {
+                    error_log("Error validando duplicado: " . $e->getMessage());
                 }
             }
         }
@@ -98,38 +104,62 @@ class Asignacion extends Conexion {
     }
 
     public function registrarAsignacion(): bool {
-        return $this->registrarAsignacionP($this->datos);
+        $errores = $this->validarDatos();
+        if (!empty($errores)) {
+            return false;
+        }
+        return $this->registrarAsignacionP();
     }
 
     public function editarAsignacion(): bool {
-        return $this->editarAsignacionP($this->datos);
+        if (empty($this->datos['id_asignacion'])) {
+            return false;
+        }
+        $errores = $this->validarDatos((string)$this->datos['id_asignacion']);
+        if (!empty($errores)) {
+            return false;
+        }
+        return $this->editarAsignacionP();
     }
 
     public function eliminarAsignacion(): bool {
-        $id = $this->datos['id_asignacion'] ?? 0;
+        $id = (int)($this->datos['id_asignacion'] ?? 0);
+        if ($id <= 0) {
+            return false;
+        }
         return $this->eliminarAsignacionP($id);
     }
 
-    public function desactivarAsignacion($id): bool {
-        $conex = $this->getConex1();
-        try {
-            $sql = "UPDATE asignacion_carril SET activa = 0 WHERE id_asignacion = :id";
-            $stmt = $conex->prepare($sql);
-            return $stmt->execute([':id' => $id]);
-        } catch (PDOException $e) { 
-            return false; 
+    public function desactivarAsignacion(int $id): bool {
+        if ($id <= 0) {
+            return false;
         }
+        return $this->desactivarAsignacionP($id);
     }
 
-    public function reactivarAsignacion($id): bool {
-        $conex = $this->getConex1();
-        try {
-            $sql = "UPDATE asignacion_carril SET activa = 1 WHERE id_asignacion = :id";
-            $stmt = $conex->prepare($sql);
-            return $stmt->execute([':id' => $id]);
-        } catch (PDOException $e) { 
-            return false; 
+    public function reactivarAsignacion(int $id): bool {
+        if ($id <= 0) {
+            return false;
         }
+        return $this->reactivarAsignacionP($id);
+    }
+
+    public function completarAsignacion(int $id): bool {
+        if ($id <= 0) {
+            return false;
+        }
+        return $this->completarAsignacionP($id);
+    }
+
+    public function cambiarEstadoAsignacion(int $id, string $estado): bool {
+        if ($id <= 0) {
+            return false;
+        }
+        $estadosValidos = ['pendiente', 'en_progreso', 'completada', 'cancelada'];
+        if (!in_array($estado, $estadosValidos, true)) {
+            return false;
+        }
+        return $this->cambiarEstadoAsignacionP($id, $estado);
     }
 
     public function listarAsignaciones(int $activa = 1): array {
@@ -156,16 +186,19 @@ class Asignacion extends Conexion {
                     LEFT JOIN grupos_entrenamiento g ON a.id_grupo = g.id_grupo
                     WHERE a.activa = :activa
                     ORDER BY a.fecha_vigencia_inicio DESC";
-                
             $stmt = $conex->prepare($sql);
             $stmt->execute([':activa' => $activa]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
+            error_log("Error listando asignaciones: " . $e->getMessage());
             return [];
         }
     }
 
     public function obtenerAsignacionPorId(int $id): ?array {
+        if ($id <= 0) {
+            return null;
+        }
         $conex = $this->getConex1();
         try {
             $sql = "SELECT 
@@ -191,14 +224,9 @@ class Asignacion extends Conexion {
             $stmt = $conex->prepare($sql);
             $stmt->execute([':id' => $id]);
             $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($resultado) {
-                $resultado['fecha_vigencia_inicio'] = $resultado['fecha_vigencia_inicio'] ?? null;
-                $resultado['fecha_vigencia_fin'] = $resultado['fecha_vigencia_fin'] ?? null;
-            }
-            
             return $resultado ? $resultado : null;
         } catch (PDOException $e) {
+            error_log("Error obteniendo asignación por ID: " . $e->getMessage());
             return null;
         }
     }
@@ -216,16 +244,19 @@ class Asignacion extends Conexion {
                     LEFT JOIN entrenador e ON g.id_entrenador = e.id_entrenador
                     WHERE g.activo = :estado 
                     ORDER BY g.nombre ASC";
-                
             $stmt = $conex->prepare($sql);
             $stmt->execute([':estado' => $estado]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
+            error_log("Error listando grupos: " . $e->getMessage());
             return [];
         }
     }
 
     public function obtenerGrupoPorId(int $id): ?array {
+        if ($id <= 0) {
+            return null;
+        }
         $conex = $this->getConex1();
         try {
             $sql = "SELECT 
@@ -243,6 +274,7 @@ class Asignacion extends Conexion {
             $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
             return $resultado ? $resultado : null;
         } catch (PDOException $e) {
+            error_log("Error obteniendo grupo: " . $e->getMessage());
             return null;
         }
     }
@@ -258,6 +290,7 @@ class Asignacion extends Conexion {
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
+            error_log("Error listando todos los grupos: " . $e->getMessage());
             return [];
         }
     }
@@ -273,11 +306,15 @@ class Asignacion extends Conexion {
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
+            error_log("Error listando carriles: " . $e->getMessage());
             return [];
         }
     }
 
     public function obtenerCarrilPorId(int $id): ?array {
+        if ($id <= 0) {
+            return null;
+        }
         $conex = $this->getConex1();
         try {
             $sql = "SELECT id_carril, numero, capacidad_maxima, activo 
@@ -288,6 +325,7 @@ class Asignacion extends Conexion {
             $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
             return $resultado ? $resultado : null;
         } catch (PDOException $e) {
+            error_log("Error obteniendo carril: " . $e->getMessage());
             return null;
         }
     }
@@ -302,11 +340,15 @@ class Asignacion extends Conexion {
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
+            error_log("Error listando horarios: " . $e->getMessage());
             return [];
         }
     }
 
     public function obtenerHorarioPorId(int $id): ?array {
+        if ($id <= 0) {
+            return null;
+        }
         $conex = $this->getConex1();
         try {
             $sql = "SELECT id_bloque, dia_semana, hora_inicio, hora_fin 
@@ -317,216 +359,8 @@ class Asignacion extends Conexion {
             $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
             return $resultado ? $resultado : null;
         } catch (PDOException $e) {
+            error_log("Error obteniendo horario: " . $e->getMessage());
             return null;
-        }
-    }
-
-    public function obtenerDatosParaFormulario(): array {
-        return [
-            'carriles' => $this->listarCarrilesActivos(),
-            'bloques_horarios' => $this->listarHorariosActivos(),
-            'grupos' => $this->listarTodosLosGrupos()
-        ];
-    }
-        
-    private function registrarAsignacionP(array $datos): bool {
-        $conex = $this->getConex1();
-        try {
-            $conex->beginTransaction();
-            
-            $idCarril = isset($datos['id_carril']) ? (int)$datos['id_carril'] : 0;
-            $idBloque = isset($datos['id_bloque_horario']) ? (int)$datos['id_bloque_horario'] : 0;
-            $idGrupo = isset($datos['id_grupo']) ? (int)$datos['id_grupo'] : 0;
-            $diaEsp = !empty($datos['dia_especifico']) ? $datos['dia_especifico'] : null;
-            $fechaInicio = isset($datos['fecha_vigencia_inicio']) ? $datos['fecha_vigencia_inicio'] : null;
-            $fechaFin = isset($datos['fecha_vigencia_fin']) && !empty($datos['fecha_vigencia_fin']) ? $datos['fecha_vigencia_fin'] : null;
-            $activa = isset($datos['activa']) ? (int)$datos['activa'] : 1;
-            
-            $sql = "INSERT INTO asignacion_carril (
-                id_carril, 
-                id_bloque_horario, 
-                id_grupo, 
-                dia_especifico, 
-                fecha_vigencia_inicio, 
-                fecha_vigencia_fin, 
-                activa
-            ) VALUES (
-                :id_carril, 
-                :id_bloque_horario, 
-                :id_grupo, 
-                :dia_especifico, 
-                :fecha_vigencia_inicio, 
-                :fecha_vigencia_fin, 
-                :activa
-            )";
-            
-            $stmt = $conex->prepare($sql);
-            
-            $params = [
-                ':id_carril' => $idCarril,
-                ':id_bloque_horario' => $idBloque,
-                ':id_grupo' => $idGrupo,
-                ':dia_especifico' => $diaEsp,
-                ':fecha_vigencia_inicio' => $fechaInicio,
-                ':fecha_vigencia_fin' => $fechaFin,
-                ':activa' => $activa
-            ];
-            
-            $resultado = $stmt->execute($params);
-            
-            $idAsignacion = (int)$conex->lastInsertId();
-
-            $conex->commit();
-
-            if ($resultado && $idAsignacion > 0) {
-                $asignacion = $this->obtenerAsignacionPorId($idAsignacion);
-                if ($asignacion) {
-                    $this->notificarEventoAsignacion('crear_asignacion', [
-                        'id_asignacion' => $idAsignacion,
-                        'id_grupo' => $idGrupo,
-                        'carril_numero' => $asignacion['carril_numero'] ?? $idCarril,
-                        'dia_semana' => $asignacion['dia_semana'] ?? $diaEsp ?? 'día asignado',
-                        'hora_inicio' => $asignacion['hora_inicio'] ?? '',
-                        'hora_fin' => $asignacion['hora_fin'] ?? '',
-                        'fecha_inicio' => $fechaInicio
-                    ]);
-                }
-            }
-
-            return $resultado;
-            
-        } catch (PDOException $e) {
-            $conex->rollBack();
-            return false;
-        }
-    }
-
-    private function editarAsignacionP(array $datos): bool {
-        $conex = $this->getConex1();
-        try {
-            $conex->beginTransaction();
-
-            $idAsignacion = isset($datos['id_asignacion']) ? (int)$datos['id_asignacion'] : 0;
-            $idCarril = isset($datos['id_carril']) ? (int)$datos['id_carril'] : 0;
-            $idBloque = isset($datos['id_bloque_horario']) ? (int)$datos['id_bloque_horario'] : 0;
-            $idGrupo = isset($datos['id_grupo']) ? (int)$datos['id_grupo'] : 0;
-            $diaEsp = !empty($datos['dia_especifico']) ? $datos['dia_especifico'] : null;
-            $fechaInicio = isset($datos['fecha_vigencia_inicio']) ? $datos['fecha_vigencia_inicio'] : null;
-            $fechaFin = isset($datos['fecha_vigencia_fin']) && !empty($datos['fecha_vigencia_fin']) ? $datos['fecha_vigencia_fin'] : null;
-            $activa = isset($datos['activa']) ? (int)$datos['activa'] : 1;
-            
-            $sql = "UPDATE asignacion_carril SET 
-                id_carril = :id_carril,
-                id_bloque_horario = :id_bloque_horario,
-                id_grupo = :id_grupo,
-                dia_especifico = :dia_especifico,
-                fecha_vigencia_inicio = :fecha_vigencia_inicio,
-                fecha_vigencia_fin = :fecha_vigencia_fin,
-                activa = :activa
-            WHERE id_asignacion = :id_asignacion";
-                
-            $stmt = $conex->prepare($sql);
-            
-            $params = [
-                ':id_asignacion' => $idAsignacion,
-                ':id_carril' => $idCarril,
-                ':id_bloque_horario' => $idBloque,
-                ':id_grupo' => $idGrupo,
-                ':dia_especifico' => $diaEsp,
-                ':fecha_vigencia_inicio' => $fechaInicio,
-                ':fecha_vigencia_fin' => $fechaFin,
-                ':activa' => $activa
-            ];
-            
-            $resultado = $stmt->execute($params);
-
-            $conex->commit();
-
-            if ($resultado) {
-                $asignacionDespues = $this->obtenerAsignacionPorId($idAsignacion);
-                if ($asignacionDespues) {
-                    $this->notificarEventoAsignacion('editar_asignacion', [
-                        'id_asignacion' => $idAsignacion,
-                        'id_grupo' => $idGrupo,
-                        'carril_numero' => $asignacionDespues['carril_numero'] ?? $idCarril,
-                        'dia_semana' => $asignacionDespues['dia_semana'] ?? $diaEsp ?? 'día asignado',
-                        'hora_inicio' => $asignacionDespues['hora_inicio'] ?? '',
-                        'hora_fin' => $asignacionDespues['hora_fin'] ?? ''
-                    ]);
-                }
-            }
-
-            return $resultado;
-            
-        } catch (PDOException $e) {
-            $conex->rollBack();
-            return false;
-        }
-    }
-
-    private function eliminarAsignacionP(int $id): bool {
-        $conex = $this->getConex1();
-        try {
-            $sql = "DELETE FROM asignacion_carril WHERE id_asignacion = :id";
-            $stmt = $conex->prepare($sql);
-            return $stmt->execute([':id' => $id]);
-        } catch (PDOException $e) { 
-            return false; 
-        }
-    }
-
-    public function completarAsignacion($id): bool {
-        $conex = $this->getConex1();
-        try {
-            // Obtener datos ANTES de completar
-            $asignacion = $this->obtenerAsignacionPorId($id);
-            
-            if (!$asignacion || $asignacion['activa'] == 0) {
-                return false;
-            }
-
-            $sql = "UPDATE asignacion_carril SET 
-                    activa = 0,
-                    fecha_completacion = NOW(),
-                    estado = 'completada'
-                    WHERE id_asignacion = :id";
-            $stmt = $conex->prepare($sql);
-            $resultado = $stmt->execute([':id' => $id]);
-         
-            if ($resultado && $asignacion) {
-                $this->notificarEventoAsignacion('finalizar_asignacion', [
-                    'id_grupo' => $asignacion['id_grupo'],
-                    'carril_numero' => $asignacion['carril_numero'] ?? 'desconocido'
-                ]);
-            }
-
-            return $resultado;
-        } catch (PDOException $e) { 
-            return false; 
-        }
-    }
-
-    public function verificarAsignacionesVencidas(): int {
-        $conex = $this->getConex1();
-        $contador = 0;
-        try {
-            $sql = "SELECT id_asignacion FROM asignacion_carril 
-                    WHERE activa = 1 
-                    AND fecha_vigencia_fin IS NOT NULL 
-                    AND fecha_vigencia_fin < CURDATE()
-                    AND (estado IS NULL OR estado != 'completada')";
-            $stmt = $conex->prepare($sql);
-            $stmt->execute();
-            $vencidas = $stmt->fetchAll(PDO::FETCH_COLUMN);
-            
-            foreach ($vencidas as $id) {
-                if ($this->completarAsignacion($id)) {
-                    $contador++;
-                }
-            }
-            return $contador;
-        } catch (PDOException $e) {
-            return 0;
         }
     }
 
@@ -558,22 +392,12 @@ class Asignacion extends Conexion {
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
+            error_log("Error listando completadas: " . $e->getMessage());
             return [];
         }
     }
 
-    public function cambiarEstadoAsignacion($id, $estado): bool {
-        $conex = $this->getConex1();
-        try {
-            $sql = "UPDATE asignacion_carril SET estado = :estado WHERE id_asignacion = :id";
-            $stmt = $conex->prepare($sql);
-            return $stmt->execute([':id' => $id, ':estado' => $estado]);
-        } catch (PDOException $e) {
-            return false;
-        }
-    }
-
-    public function obtenerCarrilesDisponibles($diaSemana = null, $horaInicio = null, $horaFin = null): array {
+    public function obtenerCarrilesDisponibles(?string $diaSemana = null, ?string $horaInicio = null, ?string $horaFin = null): array {
         $conex = $this->getConex1();
         try {
             $params = [];
@@ -586,31 +410,72 @@ class Asignacion extends Conexion {
                         WHERE a.id_carril = c.id_carril
                         AND a.activa = 1
                         AND (a.estado IS NULL OR a.estado != 'completada')";
-            
+
             if ($diaSemana) {
                 $sql .= " AND b.dia_semana = :diaSemana";
                 $params[':diaSemana'] = $diaSemana;
             }
             if ($horaInicio && $horaFin) {
-                $sql .= " AND (
-                    (b.hora_inicio < :horaFin AND b.hora_fin > :horaInicio)
-                )";
+                $sql .= " AND (b.hora_inicio < :horaFin AND b.hora_fin > :horaInicio)";
                 $params[':horaInicio'] = $horaInicio;
                 $params[':horaFin'] = $horaFin;
             }
-            
+
             $sql .= ") ORDER BY c.numero ASC";
-            
+
             $stmt = $conex->prepare($sql);
             $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
+            error_log("Error obteniendo carriles disponibles: " . $e->getMessage());
             return [];
         }
     }
 
-    public function notificarAsignacionGrupo(array $asignacion): void
-    {
+    public function obtenerUltimoIdAsignacion(): ?int {
+        $conex = $this->getConex1();
+        try {
+            $id = $conex->lastInsertId();
+            if ($id && $id > 0) {
+                return (int) $id;
+            }
+            $sql = "SELECT MAX(id_asignacion) as id FROM asignacion_carril";
+            $stmt = $conex->prepare($sql);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['id'] ? (int)$result['id'] : null;
+        } catch (PDOException $e) {
+            error_log("Error en obtenerUltimoIdAsignacion: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function verificarAsignacionesVencidas(): int {
+        $conex = $this->getConex1();
+        $contador = 0;
+        try {
+            $sql = "SELECT id_asignacion FROM asignacion_carril 
+                    WHERE activa = 1 
+                    AND fecha_vigencia_fin IS NOT NULL 
+                    AND fecha_vigencia_fin < CURDATE()
+                    AND (estado IS NULL OR estado != 'completada')";
+            $stmt = $conex->prepare($sql);
+            $stmt->execute();
+            $vencidas = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            foreach ($vencidas as $id) {
+                if ($this->completarAsignacion((int)$id)) {
+                    $contador++;
+                }
+            }
+            return $contador;
+        } catch (PDOException $e) {
+            error_log("Error verificando vencidas: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function notificarAsignacionGrupo(array $asignacion): void {
         try {
             $id_grupo = $asignacion['id_grupo'];
             $carril_numero = $asignacion['carril_numero'] ?? 'desconocido';
@@ -625,7 +490,7 @@ class Asignacion extends Conexion {
             $color = "emerald";
             $enlace = "?p=asignacion";
 
-            $conexNegocio = $this->getConex1(); 
+            $conexNegocio = $this->getConex1();
 
             $sqlAtletas = "SELECT a.id_atleta, a.cedula, CONCAT(a.nombres, ' ', a.apellidos) as nombre_completo
                            FROM grupo_atleta ga
@@ -636,14 +501,14 @@ class Asignacion extends Conexion {
             $atletas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $conexSeguridad = new Conexion('sis_seguridad');
-            
+
             foreach ($atletas as $atleta) {
                 if (!empty($atleta['cedula'])) {
                     $sqlUser = "SELECT id_usuario FROM usuarios WHERE cedula = :cedula AND activo = 1";
                     $stmtUser = $conexSeguridad->getConex1()->prepare($sqlUser);
                     $stmtUser->execute([':cedula' => $atleta['cedula']]);
                     $usuario = $stmtUser->fetch(PDO::FETCH_ASSOC);
-                    
+
                     if ($usuario && !empty($usuario['id_usuario'])) {
                         Notificacion::enviar(
                             $usuario['id_usuario'],
@@ -682,14 +547,12 @@ class Asignacion extends Conexion {
                     );
                 }
             }
-
         } catch (PDOException $e) {
             error_log("Error notificando asignación de grupo: " . $e->getMessage());
         }
     }
 
-    public function notificarFinAsignacion(array $asignacion): void
-    {
+    public function notificarFinAsignacion(array $asignacion): void {
         try {
             $id_grupo = $asignacion['id_grupo'];
             $carril_numero = $asignacion['carril_numero'] ?? 'desconocido';
@@ -700,7 +563,7 @@ class Asignacion extends Conexion {
             $color = "amber";
             $enlace = "?p=asignacion";
 
-            $conexNegocio = $this->getConex1(); 
+            $conexNegocio = $this->getConex1();
 
             $sqlAtletas = "SELECT a.id_atleta, a.cedula, CONCAT(a.nombres, ' ', a.apellidos) as nombre_completo
                            FROM grupo_atleta ga
@@ -711,14 +574,14 @@ class Asignacion extends Conexion {
             $atletas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $conexSeguridad = new Conexion('sis_seguridad');
-            
+
             foreach ($atletas as $atleta) {
                 if (!empty($atleta['cedula'])) {
                     $sqlUser = "SELECT id_usuario FROM usuarios WHERE cedula = :cedula AND activo = 1";
                     $stmtUser = $conexSeguridad->getConex1()->prepare($sqlUser);
                     $stmtUser->execute([':cedula' => $atleta['cedula']]);
                     $usuario = $stmtUser->fetch(PDO::FETCH_ASSOC);
-                    
+
                     if ($usuario && !empty($usuario['id_usuario'])) {
                         Notificacion::enviar(
                             $usuario['id_usuario'],
@@ -747,39 +610,209 @@ class Asignacion extends Conexion {
                 $usuarioEnt = $stmtUserEnt->fetch(PDO::FETCH_ASSOC);
 
                 if ($usuarioEnt && !empty($usuarioEnt['id_usuario'])) {
-                    Notificacion::enviar(
-                        $usuarioEnt['id_usuario'],
-                        "Fin de Asignación",
-                        "La asignación del Carril {$carril_numero} para tu grupo ha finalizado.",
-                        $icono,
-                        "purple",
-                        $enlace
+                    Notificacion::enviar($usuarioEnt['id_usuario'], "Fin de Asignación", "La asignación del Carril {$carril_numero} para tu grupo ha finalizado.", $icono, "purple", $enlace
                     );
                 }
             }
-
         } catch (PDOException $e) {
             error_log("Error notificando fin de asignación: " . $e->getMessage());
         }
     }
 
-    public function obtenerUltimoIdAsignacion(): ?int
-    {
+    private function registrarAsignacionP(): bool {
         $conex = $this->getConex1();
         try {
-            $id = $conex->lastInsertId();
-            if ($id && $id > 0) {
-                return (int) $id;
+            $conex->beginTransaction();
+
+            $idCarril    = (int)($this->datos['id_carril'] ?? 0);
+            $idBloque    = (int)($this->datos['id_bloque_horario'] ?? 0);
+            $idGrupo     = (int)($this->datos['id_grupo'] ?? 0);
+            $diaEsp      = !empty($this->datos['dia_especifico']) ? $this->datos['dia_especifico'] : null;
+            $fechaInicio = $this->datos['fecha_vigencia_inicio'] ?? null;
+            $fechaFin    = !empty($this->datos['fecha_vigencia_fin']) ? $this->datos['fecha_vigencia_fin'] : null;
+            $activa      = (int)($this->datos['activa'] ?? 1);
+
+            $sql = "INSERT INTO asignacion_carril (
+                id_carril, id_bloque_horario, id_grupo, dia_especifico,
+                fecha_vigencia_inicio, fecha_vigencia_fin, activa
+            ) VALUES (
+                :id_carril, :id_bloque_horario, :id_grupo, :dia_especifico,
+                :fecha_vigencia_inicio, :fecha_vigencia_fin, :activa
+            )";
+
+            $stmt = $conex->prepare($sql);
+            $resultado = $stmt->execute([
+                ':id_carril'             => $idCarril,
+                ':id_bloque_horario'     => $idBloque,
+                ':id_grupo'              => $idGrupo,
+                ':dia_especifico'        => $diaEsp,
+                ':fecha_vigencia_inicio' => $fechaInicio,
+                ':fecha_vigencia_fin'    => $fechaFin,
+                ':activa'                => $activa,
+            ]);
+
+            $idAsignacion = (int)$conex->lastInsertId();
+            $conex->commit();
+
+            if ($resultado && $idAsignacion > 0) {
+                $asignacion = $this->obtenerAsignacionPorId($idAsignacion);
+                if ($asignacion) {
+                    $this->notificarEventoAsignacion('crear_asignacion', [
+                        'id_asignacion' => $idAsignacion,
+                        'id_grupo'      => $idGrupo,
+                        'carril_numero' => $asignacion['carril_numero'] ?? $idCarril,
+                        'dia_semana'    => $asignacion['dia_semana'] ?? $diaEsp ?? 'día asignado',
+                        'hora_inicio'   => $asignacion['hora_inicio'] ?? '',
+                        'hora_fin'      => $asignacion['hora_fin'] ?? '',
+                        'fecha_inicio'  => $fechaInicio,
+                    ]);
+                }
             }
 
-            $sql = "SELECT MAX(id_asignacion) as id FROM asignacion_carril";
-            $stmt = $conex->prepare($sql);
-            $stmt->execute();
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result['id'] ? (int)$result['id'] : null;
+            return $resultado;
         } catch (PDOException $e) {
-            error_log("Error en obtenerUltimoIdAsignacion: " . $e->getMessage());
-            return null;
+            $conex->rollBack();
+            error_log("Error registrando asignación: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function editarAsignacionP(): bool {
+        $conex = $this->getConex1();
+        try {
+            $conex->beginTransaction();
+
+            $idAsignacion = (int)($this->datos['id_asignacion'] ?? 0);
+            $idCarril     = (int)($this->datos['id_carril'] ?? 0);
+            $idBloque     = (int)($this->datos['id_bloque_horario'] ?? 0);
+            $idGrupo      = (int)($this->datos['id_grupo'] ?? 0);
+            $diaEsp       = !empty($this->datos['dia_especifico']) ? $this->datos['dia_especifico'] : null;
+            $fechaInicio  = $this->datos['fecha_vigencia_inicio'] ?? null;
+            $fechaFin     = !empty($this->datos['fecha_vigencia_fin']) ? $this->datos['fecha_vigencia_fin'] : null;
+            $activa       = (int)($this->datos['activa'] ?? 1);
+
+            $sql = "UPDATE asignacion_carril SET 
+                id_carril = :id_carril,
+                id_bloque_horario = :id_bloque_horario,
+                id_grupo = :id_grupo,
+                dia_especifico = :dia_especifico,
+                fecha_vigencia_inicio = :fecha_vigencia_inicio,
+                fecha_vigencia_fin = :fecha_vigencia_fin,
+                activa = :activa
+            WHERE id_asignacion = :id_asignacion";
+
+            $stmt = $conex->prepare($sql);
+            $resultado = $stmt->execute([
+                ':id_asignacion'         => $idAsignacion,
+                ':id_carril'             => $idCarril,
+                ':id_bloque_horario'     => $idBloque,
+                ':id_grupo'              => $idGrupo,
+                ':dia_especifico'        => $diaEsp,
+                ':fecha_vigencia_inicio' => $fechaInicio,
+                ':fecha_vigencia_fin'    => $fechaFin,
+                ':activa'                => $activa,
+            ]);
+
+            $conex->commit();
+
+            if ($resultado) {
+                $asignacionDespues = $this->obtenerAsignacionPorId($idAsignacion);
+                if ($asignacionDespues) {
+                    $this->notificarEventoAsignacion('editar_asignacion', [
+                        'id_asignacion' => $idAsignacion,
+                        'id_grupo'      => $idGrupo,
+                        'carril_numero' => $asignacionDespues['carril_numero'] ?? $idCarril,
+                        'dia_semana'    => $asignacionDespues['dia_semana'] ?? $diaEsp ?? 'día asignado',
+                        'hora_inicio'   => $asignacionDespues['hora_inicio'] ?? '',
+                        'hora_fin'      => $asignacionDespues['hora_fin'] ?? '',
+                    ]);
+                }
+            }
+
+            return $resultado;
+        } catch (PDOException $e) {
+            $conex->rollBack();
+            error_log("Error editando asignación: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function eliminarAsignacionP(int $id): bool {
+        $conex = $this->getConex1();
+        try {
+            $sql = "DELETE FROM asignacion_carril WHERE id_asignacion = :id";
+            $stmt = $conex->prepare($sql);
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            error_log("Error eliminando asignación: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function desactivarAsignacionP(int $id): bool {
+        $conex = $this->getConex1();
+        try {
+            $sql = "UPDATE asignacion_carril SET activa = 0 WHERE id_asignacion = :id";
+            $stmt = $conex->prepare($sql);
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            error_log("Error desactivando asignación: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function reactivarAsignacionP(int $id): bool {
+        $conex = $this->getConex1();
+        try {
+            $sql = "UPDATE asignacion_carril SET activa = 1 WHERE id_asignacion = :id";
+            $stmt = $conex->prepare($sql);
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            error_log("Error reactivando asignación: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function completarAsignacionP(int $id): bool {
+        $conex = $this->getConex1();
+        try {
+            $asignacion = $this->obtenerAsignacionPorId($id);
+
+            if (!$asignacion || $asignacion['activa'] == 0) {
+                return false;
+            }
+
+            $sql = "UPDATE asignacion_carril SET 
+                    activa = 0,
+                    fecha_completacion = NOW(),
+                    estado = 'completada'
+                    WHERE id_asignacion = :id";
+            $stmt = $conex->prepare($sql);
+            $resultado = $stmt->execute([':id' => $id]);
+
+            if ($resultado && $asignacion) {
+                $this->notificarEventoAsignacion('finalizar_asignacion', [
+                    'id_grupo'      => $asignacion['id_grupo'],
+                    'carril_numero' => $asignacion['carril_numero'] ?? 'desconocido',
+                ]);
+            }
+
+            return $resultado;
+        } catch (PDOException $e) {
+            error_log("Error completando asignación: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function cambiarEstadoAsignacionP(int $id, string $estado): bool {
+        $conex = $this->getConex1();
+        try {
+            $sql = "UPDATE asignacion_carril SET estado = :estado WHERE id_asignacion = :id";
+            $stmt = $conex->prepare($sql);
+            return $stmt->execute([':id' => $id, ':estado' => $estado]);
+        } catch (PDOException $e) {
+            error_log("Error cambiando estado: " . $e->getMessage());
+            return false;
         }
     }
 

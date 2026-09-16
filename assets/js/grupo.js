@@ -28,7 +28,6 @@ async function peticionAjax(accion, datos = null) {
         if (!respuesta.ok) throw new Error('Error de comunicación con el servidor');
         return await respuesta.json();
     } catch (error) {
-        console.error("Error Fetch:", error);
         if (typeof UI !== 'undefined') {
             UI.error('Error del Servidor', 'No se pudo procesar la solicitud.');
         }
@@ -36,14 +35,19 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
-// ============================================
-// FUNCIÓN AUXILIAR: ESCAPE HTML
-// ============================================
 function escapeHtml(str) {
     if (!str) return '';
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+}
+
+function debounce(fn, delay) {
+    let timer = null;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
 }
 
 class ValidadorTiempoReal {
@@ -71,7 +75,7 @@ class ValidadorTiempoReal {
                 }
             }
         };
-        
+
         this.inicializar();
     }
 
@@ -116,9 +120,7 @@ class ValidadorTiempoReal {
                     this.errores[nombre].push(regla.mensajes.requerido);
                     valido = false;
                 }
-            } else if (tipo === 'checkbox') {
-            
-            } else {
+            } else if (tipo !== 'checkbox') {
                 if (!valor || valor.trim() === '') {
                     this.errores[nombre].push(regla.mensajes.requerido);
                     valido = false;
@@ -165,7 +167,7 @@ class ValidadorTiempoReal {
     async verificarDuplicado(nombre) {
         const idExcluir = document.getElementById('id_grupo_original')?.value || '';
         const campo = document.getElementById('nombre');
-        
+
         try {
             const formData = new FormData();
             formData.append('accion', 'verificarDuplicado');
@@ -190,7 +192,7 @@ class ValidadorTiempoReal {
                 this.errores['nombre'] = ['Este nombre ya existe'];
             }
         } catch (error) {
-            console.error('Error verificando duplicado:', error);
+            return;
         }
     }
 
@@ -226,7 +228,7 @@ class ValidadorTiempoReal {
         const edadMax = document.getElementById('edad_max');
         const feedback = document.getElementById('edad-error');
 
-        if (!edadMin || !edadMax || !feedback) return;
+        if (!edadMin || !edadMax || !feedback) return true;
 
         const min = parseInt(edadMin.value);
         const max = parseInt(edadMax.value);
@@ -241,8 +243,8 @@ class ValidadorTiempoReal {
             feedback.style.display = 'none';
             edadMin.classList.remove('is-invalid');
             edadMax.classList.remove('is-invalid');
-            edadMin.classList.add('is-valid');
-            edadMax.classList.add('is-valid');
+            if (min) edadMin.classList.add('is-valid');
+            if (max) edadMax.classList.add('is-valid');
             return true;
         }
     }
@@ -250,7 +252,7 @@ class ValidadorTiempoReal {
     validarFormulario(form) {
         let valido = true;
         const campos = form.querySelectorAll('[data-validate]');
-        
+
         campos.forEach(campo => {
             if (!this.validarCampo(campo)) {
                 valido = false;
@@ -272,11 +274,13 @@ class ValidadorTiempoReal {
 }
 
 function cerrarModalGrupo() {
+    if (!modalGrupo) return;
     modalGrupo.classList.add('hidden');
     modalGrupo.firstElementChild.classList.add('scale-95', 'opacity-0');
 }
 
 function cerrarModalAsignacion() {
+    if (!modalAsignacion) return;
     modalAsignacion.classList.add('hidden');
     modalAsignacion.firstElementChild.classList.add('scale-95', 'opacity-0');
 }
@@ -294,13 +298,13 @@ function cerrarModalVerGrupo() {
 
 document.addEventListener('keydown', (e) => {
     if (e.key === "Escape") {
-        if (!modalGrupo.classList.contains('hidden')) {
+        if (modalGrupo && !modalGrupo.classList.contains('hidden')) {
             cerrarModalGrupo();
         }
-        if (!modalAsignacion.classList.contains('hidden')) {
+        if (modalAsignacion && !modalAsignacion.classList.contains('hidden')) {
             cerrarModalAsignacion();
         }
-        if (!modalVerGrupo.classList.contains('hidden')) {
+        if (modalVerGrupo && !modalVerGrupo.classList.contains('hidden')) {
             cerrarModalVerGrupo();
         }
     }
@@ -309,12 +313,12 @@ document.addEventListener('keydown', (e) => {
 async function cargarCategorias() {
     const select = document.getElementById('filtroCategoria');
     if (!select) return;
-    
+
     select.innerHTML = '<option value="">Todas las categorías</option>';
-    
+
     try {
         const categorias = await peticionAjax('listarCategorias');
-        
+
         if (Array.isArray(categorias)) {
             categorias.forEach(cat => {
                 const option = document.createElement('option');
@@ -324,7 +328,7 @@ async function cargarCategorias() {
             });
         }
     } catch (error) {
-        console.error('Error cargando categorías:', error);
+        return;
     }
 }
 
@@ -374,7 +378,6 @@ async function abrirModalGrupo(idGrupo = null) {
         }
 
     } catch (err) {
-        console.error("Error cargando entrenadores:", err);
         selectEntrenador.innerHTML = `<option value="">Error al cargar entrenadores</option>`;
     }
 
@@ -424,57 +427,60 @@ async function abrirModalAsignacion(idGrupo = null) {
     await cargarAtletasDisponibles();
 }
 
+function renderListaAtletas(atletas, container) {
+    if (!atletas || atletas.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <i class="fas fa-users text-4xl mb-3 block opacity-30"></i>
+                <span class="text-sm">No hay atletas disponibles para asignar</span>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `<div class="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">`;
+    atletas.forEach(atleta => {
+        const edad = atleta.edad || 'N/A';
+        const categoria = atleta.categoria_nombre || 'Sin categoría';
+        html += `
+            <label class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer transition">
+                <input type="checkbox" name="atletas[]" value="${atleta.id_atleta}"
+                       class="form-checkbox h-4 w-4 text-indigo-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded">
+                <span class="ml-3 text-sm flex-1">
+                    <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
+                    <span class="text-gray-500 dark:text-gray-400 text-xs ml-2">${edad} años</span>
+                    <span class="text-emerald-600 dark:text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
+                </span>
+                <span class="text-gray-500 dark:text-gray-400 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
+            </label>
+        `;
+    });
+    html += `</div>`;
+
+    container.innerHTML = html;
+
+    document.querySelectorAll('input[name="atletas[]"]').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            if (window.validadorTiempoReal) {
+                window.validadorTiempoReal.validarAtletasSeleccionados();
+            }
+            actualizarContadorAtletas();
+        });
+    });
+
+    actualizarContadorAtletas();
+}
+
 async function cargarAtletasDisponibles() {
     const container = document.getElementById('atletas-disponibles');
+    if (!container) return;
+
     container.innerHTML = '<div class="text-center py-4 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin"></i> Cargando atletas...</div>';
 
     try {
         const atletas = await peticionAjax('listarAtletasDisponibles');
-
-        if (!atletas || atletas.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                    <i class="fas fa-users text-4xl mb-3 block opacity-30"></i>
-                    <span class="text-sm">No hay atletas disponibles para asignar</span>
-                </div>
-            `;
-            return;
-        }
-
-        let html = `<div class="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">`;
-        atletas.forEach(atleta => {
-            const edad = atleta.edad || 'N/A';
-            const categoria = atleta.categoria_nombre || 'Sin categoría';
-            html += `
-                <label class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer transition">
-                    <input type="checkbox" name="atletas[]" value="${atleta.id_atleta}" 
-                           class="form-checkbox h-4 w-4 text-indigo-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded">
-                    <span class="ml-3 text-sm flex-1">
-                        <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
-                        <span class="text-gray-500 dark:text-gray-400 text-xs ml-2">${edad} años</span>
-                        <span class="text-emerald-600 dark:text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
-                    </span>
-                    <span class="text-gray-500 dark:text-gray-400 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
-                </label>
-            `;
-        });
-        html += `</div>`;
-
-        container.innerHTML = html;
-
-        document.querySelectorAll('input[name="atletas[]"]').forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                if (window.validadorTiempoReal) {
-                    window.validadorTiempoReal.validarAtletasSeleccionados();
-                }
-                actualizarContadorAtletas();
-            });
-        });
-
-        actualizarContadorAtletas();
-
+        renderListaAtletas(atletas, container);
     } catch (error) {
-        console.error('Error cargando atletas:', error);
         container.innerHTML = '<div class="text-center py-4 text-red-600 dark:text-red-400">Error al cargar atletas disponibles</div>';
     }
 }
@@ -489,62 +495,20 @@ function actualizarContadorAtletas() {
 
 async function filtrarAtletasPorCategoria() {
     const idCategoria = document.getElementById('filtroCategoria')?.value;
-    
+    const container = document.getElementById('atletas-disponibles');
+    if (!container) return;
+
     if (!idCategoria) {
         await cargarAtletasDisponibles();
         return;
     }
-    
-    const container = document.getElementById('atletas-disponibles');
+
     container.innerHTML = '<div class="text-center py-4 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin"></i> Cargando atletas...</div>';
-    
+
     try {
         const atletas = await peticionAjax(`listarAtletasPorCategoria&id_categoria=${idCategoria}`);
-        
-        if (!atletas || atletas.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                    <i class="fas fa-users text-4xl mb-3 block opacity-30"></i>
-                    <span class="text-sm">No hay atletas disponibles en esta categoría</span>
-                </div>
-            `;
-            return;
-        }
-        
-        let html = `<div class="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">`;
-        atletas.forEach(atleta => {
-            const edad = atleta.edad || 'N/A';
-            const categoria = atleta.categoria_nombre || 'Sin categoría';
-            html += `
-                <label class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer transition">
-                    <input type="checkbox" name="atletas[]" value="${atleta.id_atleta}" 
-                           class="form-checkbox h-4 w-4 text-indigo-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded">
-                    <span class="ml-3 text-sm flex-1">
-                        <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
-                        <span class="text-gray-500 dark:text-gray-400 text-xs ml-2">${edad} años</span>
-                        <span class="text-emerald-600 dark:text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
-                    </span>
-                    <span class="text-gray-500 dark:text-gray-400 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
-                </label>
-            `;
-        });
-        html += `</div>`;
-        
-        container.innerHTML = html;
-        
-        document.querySelectorAll('input[name="atletas[]"]').forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                if (window.validadorTiempoReal) {
-                    window.validadorTiempoReal.validarAtletasSeleccionados();
-                }
-                actualizarContadorAtletas();
-            });
-        });
-        
-        actualizarContadorAtletas();
-        
+        renderListaAtletas(atletas, container);
     } catch (error) {
-        console.error('Error filtrando atletas:', error);
         container.innerHTML = '<div class="text-center py-4 text-red-600 dark:text-red-400">Error al filtrar atletas</div>';
     }
 }
@@ -552,9 +516,13 @@ async function filtrarAtletasPorCategoria() {
 async function filtrarAtletasPorEdad() {
     const edadMin = document.getElementById('edad_min')?.value;
     const edadMax = document.getElementById('edad_max')?.value;
+    const container = document.getElementById('atletas-disponibles');
+    if (!container) return;
 
     if (!edadMin || !edadMax) {
-        await cargarAtletasDisponibles();
+        if (typeof UI !== 'undefined') {
+            UI.advertencia('Filtro incompleto', 'Debes ingresar tanto la edad mínima como la máxima.');
+        }
         return;
     }
 
@@ -565,64 +533,41 @@ async function filtrarAtletasPorEdad() {
         return;
     }
 
-    const container = document.getElementById('atletas-disponibles');
     container.innerHTML = '<div class="text-center py-4 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin"></i> Filtrando atletas...</div>';
 
     try {
         const atletas = await peticionAjax(`listarAtletasPorEdad&edad_min=${edadMin}&edad_max=${edadMax}`);
-
-        if (!atletas || atletas.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                    <i class="fas fa-search text-4xl mb-3 block opacity-30"></i>
-                    <span class="text-sm">No hay atletas en este rango de edad</span>
-                </div>
-            `;
-            return;
-        }
-
-        let html = `<div class="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">`;
-        atletas.forEach(atleta => {
-            const edad = atleta.edad || 'N/A';
-            const categoria = atleta.categoria_nombre || 'Sin categoría';
-            html += `
-                <label class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer transition">
-                    <input type="checkbox" name="atletas[]" value="${atleta.id_atleta}" 
-                           class="form-checkbox h-4 w-4 text-indigo-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded">
-                    <span class="ml-3 text-sm flex-1">
-                        <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(atleta.nombres)} ${escapeHtml(atleta.apellidos)}</span>
-                        <span class="text-gray-500 dark:text-gray-400 text-xs ml-2">${edad} años</span>
-                        <span class="text-emerald-600 dark:text-emerald-400 text-xs ml-2">${escapeHtml(categoria)}</span>
-                    </span>
-                    <span class="text-gray-500 dark:text-gray-400 text-xs">${escapeHtml(atleta.cedula || 'Sin cédula')}</span>
-                </label>
-            `;
-        });
-        html += `</div>`;
-
-        container.innerHTML = html;
-
-        document.querySelectorAll('input[name="atletas[]"]').forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                if (window.validadorTiempoReal) {
-                    window.validadorTiempoReal.validarAtletasSeleccionados();
-                }
-                actualizarContadorAtletas();
-            });
-        });
-
-        actualizarContadorAtletas();
-
+        renderListaAtletas(atletas, container);
     } catch (error) {
-        console.error('Error filtrando atletas:', error);
         container.innerHTML = '<div class="text-center py-4 text-red-600 dark:text-red-400">Error al filtrar atletas</div>';
     }
 }
 
+function aplicarFiltros() {
+    const idCategoria = document.getElementById('filtroCategoria')?.value;
+    const edadMin = document.getElementById('edad_min')?.value;
+    const edadMax = document.getElementById('edad_max')?.value;
+
+    if (edadMin && edadMax) {
+        filtrarAtletasPorEdad();
+        return;
+    }
+
+    if (idCategoria) {
+        filtrarAtletasPorCategoria();
+        return;
+    }
+
+    cargarAtletasDisponibles();
+}
+
 function limpiarFiltros() {
-    document.getElementById('filtroCategoria').value = '';
-    document.getElementById('edad_min').value = '';
-    document.getElementById('edad_max').value = '';
+    const cat = document.getElementById('filtroCategoria');
+    const min = document.getElementById('edad_min');
+    const max = document.getElementById('edad_max');
+    if (cat) cat.value = '';
+    if (min) min.value = '';
+    if (max) max.value = '';
     cargarAtletasDisponibles();
 }
 
@@ -637,7 +582,7 @@ async function abrirModalVerGrupo(idGrupo) {
     }
 
     const contenido = document.getElementById('detalleGrupoContenido');
-    
+
     contenido.innerHTML = `
         <div class="text-center py-8">
             <i class="fas fa-spinner fa-spin text-3xl text-indigo-500"></i>
@@ -652,7 +597,7 @@ async function abrirModalVerGrupo(idGrupo) {
 
     try {
         const grupo = await peticionAjax(`obtenerGrupo&id=${idGrupo}`);
-        
+
         if (!grupo) {
             contenido.innerHTML = `
                 <div class="text-center py-12">
@@ -665,12 +610,11 @@ async function abrirModalVerGrupo(idGrupo) {
 
         const atletas = await peticionAjax(`listarAtletasPorGrupo&id_grupo=${idGrupo}`);
         const atletasArray = Array.isArray(atletas) ? atletas : [];
-        
+
         grupoActualVer = grupo;
         renderizarDetalleGrupo(grupo, atletasArray);
 
     } catch (error) {
-        console.error('Error cargando detalles del grupo:', error);
         contenido.innerHTML = `
             <div class="text-center py-12">
                 <i class="fas fa-exclamation-circle text-4xl text-red-400 mb-4"></i>
@@ -688,7 +632,7 @@ async function desasignarAtleta(id_atleta, id_grupo) {
     formData.append('id_atleta', id_atleta);
 
     const resultado = await peticionAjax('desasignarAtleta', formData);
-    
+
     if (resultado && resultado.status === 'success') {
         if (typeof UI !== 'undefined') {
             UI.exito('Desasignado', 'El atleta ha sido removido del grupo.');
@@ -707,7 +651,7 @@ async function desasignarAtleta(id_atleta, id_grupo) {
 function renderizarDetalleGrupo(grupo, atletas) {
     const contenido = document.getElementById('detalleGrupoContenido');
 
-    const badgeEstado = grupo.activo == 1 
+    const badgeEstado = grupo.activo == 1
         ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">ACTIVO</span>`
         : `<span class="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20">ARCHIVADO</span>`;
 
@@ -733,7 +677,7 @@ function renderizarDetalleGrupo(grupo, atletas) {
                             </div>
                         </div>
                         ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
-                            <button onclick="desasignarAtleta(${atleta.id_atleta}, ${grupo.id_grupo})" 
+                            <button onclick="desasignarAtleta(${atleta.id_atleta}, ${grupo.id_grupo})"
                                     class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition duration-200 ml-2 flex-shrink-0"
                                     title="Remover del grupo">
                                 <i class="fas fa-user-minus text-base"></i>
@@ -886,7 +830,7 @@ function renderTablaGrupos() {
     let html = '';
     pagina.forEach(g => {
         const entrenadorText = g.entrenador_nombre ? `${escapeHtml(g.entrenador_nombre)} <span class="text-[10px] text-gray-500 dark:text-gray-400">(${escapeHtml(g.entrenador_cedula)})</span>` : '<span class="text-xs text-gray-500 dark:text-gray-400 italic">Sin entrenador asignado</span>';
-        
+
         let botonAccion = '';
         if (g.activo == 1) {
             botonAccion = `
@@ -944,7 +888,7 @@ function actualizarInfoYPieTabla(total, totalPaginas) {
     const pieTabla = document.getElementById('pieTabla');
 
     if (contador) contador.textContent = `(${gruposData.length})`;
-    
+
     if (infoTabla) {
         infoTabla.textContent = total === 0 ? '' : `Mostrando ${(tablaPagina - 1) * tablaPorPagina + 1}–${Math.min(tablaPagina * tablaPorPagina, total)} de ${total}`;
     }
@@ -1050,124 +994,122 @@ async function reactivarGrupo(id_grupo) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    window.validadorTiempoReal = new ValidadorTiempoReal();
+    if (typeof ValidadorTiempoReal !== 'undefined') {
+        window.validadorTiempoReal = new ValidadorTiempoReal();
+    }
 
     cargarTablaGrupos();
 
-    formGrupo.addEventListener('submit', async function (e) {
-        e.preventDefault();
+    const formGrupoEl = document.getElementById('formGrupo');
+    if (formGrupoEl) {
+        formGrupoEl.addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-        if (!window.validadorTiempoReal.validarFormulario(formGrupo)) {
-            if (typeof UI !== 'undefined') {
-                UI.advertencia('Datos Inválidos', 'Por favor, corrige los campos marcados en rojo.');
+            if (window.validadorTiempoReal && !window.validadorTiempoReal.validarFormulario(formGrupoEl)) {
+                if (typeof UI !== 'undefined') {
+                    UI.advertencia('Datos Inválidos', 'Por favor, corrige los campos marcados en rojo.');
+                }
+                const primerError = document.querySelector('.is-invalid');
+                if (primerError) {
+                    primerError.focus();
+                    primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
             }
-            const primerError = document.querySelector('.is-invalid');
-            if (primerError) {
-                primerError.focus();
-                primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            return;
-        }
 
-        const textoOriginal = btnGuardar.innerHTML;
-        btnGuardar.disabled = true;
-        btnGuardar.innerHTML = 'Procesando... <i class="fas fa-spinner fa-spin ml-2"></i>';
+            const textoOriginal = btnGuardar.innerHTML;
+            btnGuardar.disabled = true;
+            btnGuardar.innerHTML = 'Procesando... <i class="fas fa-spinner fa-spin ml-2"></i>';
 
-        const datosForm = new FormData(formGrupo);
-        datosForm.append('accion', 'guardarGrupo');
+            const datosForm = new FormData(formGrupoEl);
+            datosForm.append('accion', 'guardarGrupo');
 
-        const resultado = await peticionAjax('guardarGrupo', datosForm);
+            const resultado = await peticionAjax('guardarGrupo', datosForm);
 
-        if (resultado) {
-            if (resultado.status === 'success') {
-                if (typeof UI !== 'undefined') {
-                    UI.exito('Transacción Exitosa', resultado.message);
-                }
-                cerrarModalGrupo();
-                cargarTablaGrupos();
-            } else if (resultado.status === 'warning') {
-                let msjErrores = Object.values(resultado.errores).join("<br>");
-                if (typeof UI !== 'undefined') {
-                    UI.advertencia('Validación', msjErrores);
-                }
-            } else {
-                if (typeof UI !== 'undefined') {
-                    UI.error('Error', resultado.message);
-                }
-            }
-        }
-
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = textoOriginal;
-    });
-
-    formAsignacion.addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        if (!window.validadorTiempoReal.validarAtletasSeleccionados()) {
-            if (typeof UI !== 'undefined') {
-                UI.advertencia('Selección requerida', 'Debe seleccionar al menos un atleta para asignar.');
-            }
-            return;
-        }
-
-        const textoOriginal = btnAsignar.innerHTML;
-        btnAsignar.disabled = true;
-        btnAsignar.innerHTML = 'Asignando... <i class="fas fa-spinner fa-spin ml-2"></i>';
-
-        const datosForm = new FormData(formAsignacion);
-        datosForm.append('accion', 'asignarAtletas');
-
-        const resultado = await peticionAjax('asignarAtletas', datosForm);
-
-        if (resultado) {
-            if (resultado.status === 'success') {
-                if (typeof UI !== 'undefined') {
-                    UI.exito('Asignación Exitosa', resultado.message);
-                }
-                cerrarModalAsignacion();
-                cargarTablaGrupos();
-            } else if (resultado.status === 'warning') {
-                let msjErrores = Object.values(resultado.errores).join("<br>");
-                if (typeof UI !== 'undefined') {
-                    UI.advertencia('Validación', msjErrores);
-                }
-            } else {
-                if (typeof UI !== 'undefined') {
-                    UI.error('Error', resultado.message);
+            if (resultado) {
+                if (resultado.status === 'success') {
+                    if (typeof UI !== 'undefined') {
+                        UI.exito('Transacción Exitosa', resultado.message);
+                    }
+                    cerrarModalGrupo();
+                    cargarTablaGrupos();
+                } else if (resultado.status === 'warning') {
+                    let msjErrores = Object.values(resultado.errores).join("<br>");
+                    if (typeof UI !== 'undefined') {
+                        UI.advertencia('Validación', msjErrores);
+                    }
+                } else {
+                    if (typeof UI !== 'undefined') {
+                        UI.error('Error', resultado.message);
+                    }
                 }
             }
-        }
 
-        btnAsignar.disabled = false;
-        btnAsignar.innerHTML = textoOriginal;
-    });
-
-    const filtroEstado = document.getElementById('filtroEstado');
-    if (filtroEstado) {
-        filtroEstado.addEventListener('change', cargarTablaGrupos);
-    }
-
-    const btnFiltrarEdad = document.getElementById('btnFiltrarEdad');
-    if (btnFiltrarEdad) {
-        btnFiltrarEdad.addEventListener('click', filtrarAtletasPorEdad);
-    }
-    const btnLimpiarFiltros = document.getElementById('btnLimpiarFiltros');
-    if (btnLimpiarFiltros) {
-        btnLimpiarFiltros.addEventListener('click', function() {
-            document.getElementById('edad_min').value = '';
-            document.getElementById('edad_max').value = '';
-            cargarAtletasDisponibles();
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = textoOriginal;
         });
     }
 
-    async function obtenerGruposParaSelect() {
-    try {
-        const grupos = await peticionAjax('listarGruposConConteo');
-        return grupos || [];
-    } catch (error) {
-        console.error('Error obteniendo grupos:', error);
-        return [];
+    const formAsignacionEl = document.getElementById('formAsignacion');
+    if (formAsignacionEl) {
+        formAsignacionEl.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            if (window.validadorTiempoReal && !window.validadorTiempoReal.validarAtletasSeleccionados()) {
+                if (typeof UI !== 'undefined') {
+                    UI.advertencia('Selección requerida', 'Debe seleccionar al menos un atleta para asignar.');
+                }
+                return;
+            }
+
+            const textoOriginal = btnAsignar.innerHTML;
+            btnAsignar.disabled = true;
+            btnAsignar.innerHTML = 'Asignando... <i class="fas fa-spinner fa-spin ml-2"></i>';
+
+            const datosForm = new FormData(formAsignacionEl);
+            datosForm.append('accion', 'asignarAtletas');
+
+            const resultado = await peticionAjax('asignarAtletas', datosForm);
+
+            if (resultado) {
+                if (resultado.status === 'success') {
+                    if (typeof UI !== 'undefined') {
+                        UI.exito('Asignación Exitosa', resultado.message);
+                    }
+                    cerrarModalAsignacion();
+                    cargarTablaGrupos();
+                } else if (resultado.status === 'warning') {
+                    let msjErrores = Object.values(resultado.errores).join("<br>");
+                    if (typeof UI !== 'undefined') {
+                        UI.advertencia('Validación', msjErrores);
+                    }
+                } else {
+                    if (typeof UI !== 'undefined') {
+                        UI.error('Error', resultado.message);
+                    }
+                }
+            }
+
+            btnAsignar.disabled = false;
+            btnAsignar.innerHTML = textoOriginal;
+        });
     }
-}
+
+    const filtroEstadoEl = document.getElementById('filtroEstado');
+    if (filtroEstadoEl) {
+        filtroEstadoEl.addEventListener('change', cargarTablaGrupos);
+    }
+
+    const edadMinEl = document.getElementById('edad_min');
+    const edadMaxEl = document.getElementById('edad_max');
+    if (edadMinEl && edadMaxEl) {
+        const triggerFiltroEdad = debounce(() => {
+            if (edadMinEl.value && edadMaxEl.value) {
+                filtrarAtletasPorEdad();
+            }
+        }, 400);
+
+        edadMinEl.addEventListener('input', triggerFiltroEdad);
+        edadMaxEl.addEventListener('input', triggerFiltroEdad);
+    }
 });

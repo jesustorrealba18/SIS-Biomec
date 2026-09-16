@@ -621,17 +621,26 @@ async function descargarListaEntrenadoresDirecta() {
     if (!selEntrenador) return;
     
     var idEntrenador = selEntrenador.value;
-    if (!idEntrenador) {
-        UI.advertencia('Seleccione un entrenador', 'Para descargar la ficha individual, debe seleccionar un entrenador especifico.');
-        return;
-    }
+    var nombreEntrenador = selEntrenador.options[selEntrenador.selectedIndex] 
+        ? selEntrenador.options[selEntrenador.selectedIndex].text 
+        : '';
     
     var form = new FormData();
     form.append('accion', 'generar_pdf');
     form.append('tipo_reporte', 'lista_entrenadores');
-    form.append('id_entrenador', idEntrenador);
     
-    UI.exito('Generando PDF', 'La ficha del entrenador se descargara automaticamente.');
+    if (idEntrenador) {
+        form.append('id_entrenador', idEntrenador);
+    } else {
+        form.append('id_entrenador', '');
+    }
+    
+    var mensaje = idEntrenador 
+        ? 'La ficha del entrenador se descargara automaticamente.' 
+        : 'La lista completa de entrenadores se descargara automaticamente.';
+    
+    UI.exito('Generando PDF', mensaje);
+    
     try {
         var res = await fetch(API_URL, { method: 'POST', body: form });
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -648,7 +657,12 @@ async function descargarListaEntrenadoresDirecta() {
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a'); 
         a.href = url;
-        a.download = 'ficha_entrenador_' + idEntrenador + '.pdf';
+       
+        var nombreArchivo = idEntrenador 
+            ? 'ficha_entrenador_' + idEntrenador + '.pdf'
+            : 'lista_entrenadores_' + new Date().toISOString().slice(0,10) + '.pdf';
+        
+        a.download = nombreArchivo;
         document.body.appendChild(a); 
         a.click(); 
         document.body.removeChild(a); 

@@ -12,7 +12,7 @@ $id_entrenador_sesion = (int)$_SESSION['id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $accion = $_GET['accion'] ?? '';
-    
+
     $accionesGet = [
         'listarSesiones' => function() use ($objSesiones) {
             $id_grupo = !empty($_GET['id_grupo']) ? (int)$_GET['id_grupo'] : null;
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'listarDrillsActivos' => function() {
             $objDrills = new Drills();
             return $objDrills->listarDrills(['estado' => 'Activo']);
-        }
+        },
     ];
 
     if (isset($accionesGet[$accion])) {
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode($accionesGet[$accion]());
         exit;
     }
-    
+
     require_once 'vista/sesiones.php';
     exit;
 }
@@ -64,15 +64,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $funcionesPost = [
         'guardar' => function() use ($objSesiones, $id_entrenador_sesion) {
             Autorizacion::exigir('sesiones', 'crear');
-            
-            $errores = $objSesiones->validarDatos($_POST);
+
+            $objSesiones->setDatos($_POST);
+
+            $series = isset($_POST['series']) ? json_decode($_POST['series'], true) : [];
+            $objSesiones->setSeries(is_array($series) ? $series : []);
+
+            $errores = $objSesiones->validarDatos();
             if ($errores) {
                 return ['status' => 'warning', 'errores' => $errores];
             }
-            
-            $series = isset($_POST['series']) ? json_decode($_POST['series'], true) : [];
-            
-            if ($objSesiones->registrarSesion($_POST, $series)) {
+
+            if ($objSesiones->registrarSesion()) {
                 Bitacora::registrar($id_entrenador_sesion, 'Modulo Sesiones', 'INSERT', null, 'sesiones', null, 'Planificada para grupo: ' . $_POST['id_grupo']);
                 return ['status' => 'success', 'message' => 'Sesión planificada exitosamente.'];
             }
@@ -80,17 +83,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         },
         'editar' => function() use ($objSesiones, $id_entrenador_sesion) {
             Autorizacion::exigir('sesiones', 'editar');
-            
+
             $id_sesion = (int)($_POST['id_sesion'] ?? 0);
-            $errores = $objSesiones->validarDatos($_POST, $id_sesion);
-            
+            if ($id_sesion <= 0) {
+                return ['status' => 'error', 'message' => 'ID de sesión no proporcionado.'];
+            }
+
+            $objSesiones->setDatos($_POST);
+
+            $series = isset($_POST['series']) ? json_decode($_POST['series'], true) : [];
+            $objSesiones->setSeries(is_array($series) ? $series : []);
+
+            $errores = $objSesiones->validarDatos($id_sesion);
             if ($errores) {
                 return ['status' => 'warning', 'errores' => $errores];
             }
-            
-            $series = isset($_POST['series']) ? json_decode($_POST['series'], true) : [];
-            
-            if ($objSesiones->editarSesion($id_sesion, $_POST, $series)) {
+
+            if ($objSesiones->editarSesion()) {
                 Bitacora::registrar($id_entrenador_sesion, 'Modulo Sesiones', 'UPDATE', $id_sesion, 'datos sesion', null, 'Modificación de planificación');
                 return ['status' => 'success', 'message' => 'Sesión modificada exitosamente.'];
             }
@@ -98,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         },
         'iniciarSesion' => function() use ($objSesiones, $id_entrenador_sesion) {
             Autorizacion::exigir('sesiones', 'editar');
-            
+
             $objSesiones->setDatos($_POST);
             if ($objSesiones->InicializarSesion()) {
                 $id_sesion = $objSesiones->getCampo('id_sesion');
@@ -109,24 +118,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         },
         'completarSesion' => function() use ($objSesiones, $id_entrenador_sesion) {
             Autorizacion::exigir('sesiones', 'editar');
-            
-            $id_sesion = (int)($_POST['id_sesion'] ?? 0);
-            $detalle = $objSesiones->obtenerDetalleSesion($id_sesion);
-            $volumenPlanificado = $detalle['volumen_planificado'] ?? 0;
-            
-            $errores = $objSesiones->validarCierreSesion($_POST, $volumenPlanificado);
-            if ($errores) {
-                return ['status' => 'warning', 'errores' => $errores];
-            }
-            
-            $datosCierre = [
-                'id_sesion' => $id_sesion,
-                'volumen_ejecutado' => (int)($_POST['volumen_ejecutado'] ?? 0),
-                'observaciones' => $_POST['observaciones'] ?? '',
-                'estado' => 'Completada'
-            ];
-            
-            if ($objSesiones->completarSesion($datosCierre)) {
+
+            $objSesiones->setDatos($_POST);
+
+            if ($objSesiones->completarSesion()) {
+                $id_sesion = (int)($_POST['id_sesion'] ?? 0);
                 Bitacora::registrar($id_entrenador_sesion, 'Modulo Sesiones', 'UPDATE', $id_sesion, 'estado/ejecucion', null, 'Estado cambiado a Completada');
                 return ['status' => 'success', 'message' => 'Sesión completada exitosamente.'];
             }
@@ -134,15 +130,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         },
         'cancelarSesion' => function() use ($objSesiones, $id_entrenador_sesion) {
             Autorizacion::exigir('sesiones', 'eliminar');
-            
-            $id_sesion = (int)($_POST['id_sesion'] ?? 0);
-            
-            if ($objSesiones->cancelarSesion($id_sesion)) {
+
+            $objSesiones->setDatos($_POST);
+
+            if ($objSesiones->cancelarSesion()) {
+                $id_sesion = (int)($_POST['id_sesion'] ?? 0);
                 Bitacora::registrar($id_entrenador_sesion, 'Modulo Sesiones', 'DELETE_LOGIC', $id_sesion, 'estado', null, 'Cancelada');
                 return ['status' => 'success', 'message' => 'Sesión cancelada exitosamente.'];
             }
             return ['status' => 'error', 'message' => 'Error al cancelar la sesión.'];
-        }
+        },
     ];
 
     if (isset($funcionesPost[$accion])) {
@@ -153,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
-    
+
     echo json_encode(['status' => 'error', 'message' => 'Acción no válida']);
     exit;
 }

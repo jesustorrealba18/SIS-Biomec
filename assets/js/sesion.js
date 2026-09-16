@@ -5,7 +5,6 @@ const formSesion = document.getElementById('formSesion');
 const formCompletarSesion = document.getElementById('formCompletar');
 const tablaPorPagina = 10;
 
-// Constante necesaria para peticiones HTTP
 const API_URL = 'index.php?p=sesiones';
 
 let gruposCache = [];
@@ -246,8 +245,7 @@ async function cargarTablaSesiones() {
     tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2 block text-indigo-500"></i>Cargando sesiones...</td></tr>`;
 
     let respuesta = await peticionAjax(`listarSesiones&id_grupo=${filtroGrupo}&estado=${filtroEstado}`);
-    
-    // Normalizar la respuesta
+
     let datos = [];
     if (Array.isArray(respuesta)) {
         datos = respuesta;
@@ -329,7 +327,6 @@ async function cargarTablaSesiones() {
          </tr>
     `).join('');
 
-    // Renderizar paginación
     renderPaginacionSesiones(totalPaginas);
 }
 
@@ -351,12 +348,10 @@ function renderPaginacionSesiones(totalPaginas) {
     const btnActivo = 'bg-indigo-600 text-white';
     const btnInactivo = 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700';
 
-    // Botón Anterior
     if (tablaPagina > 1) {
         html += `<button onclick="tablaPagina--; cargarTablaSesiones()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-left"></i></button>`;
     }
 
-    // Números de página
     const maxVisible = 5;
     let start = Math.max(1, tablaPagina - Math.floor(maxVisible / 2));
     let end = Math.min(totalPaginas, start + maxVisible - 1);
@@ -380,7 +375,6 @@ function renderPaginacionSesiones(totalPaginas) {
         html += `<button onclick="tablaPagina=${totalPaginas}; cargarTablaSesiones()" class="${btnClass} ${btnInactivo}">${totalPaginas}</button>`;
     }
 
-    // Botón Siguiente
     if (tablaPagina < totalPaginas) {
         html += `<button onclick="tablaPagina++; cargarTablaSesiones()" class="${btnClass} ${btnInactivo}"><i class="fas fa-chevron-right"></i></button>`;
     }
@@ -433,13 +427,11 @@ function abrirModalSesion(id_sesion = null) {
             document.getElementById('observaciones').value = det.observaciones || '';
             document.getElementById('duracion_minutos').value = det.duracion_minutos || '';
 
-            // ========== NUEVO: Bloquear campos si la sesión está en curso ==========
             if (det.estado === 'Parcial') {
                 document.getElementById('id_grupo').disabled = true;
                 document.getElementById('fecha').disabled = true;
                 document.getElementById('id_entrenador').disabled = true;
-                document.getElementById('id_microciclo').disabled = true; // opcional
-                // También puedes deshabilitar el botón de agregar/remover series si quieres
+                document.getElementById('id_microciclo').disabled = true; 
                 document.querySelector('#tbodySeries .agregar-serie-btn')?.setAttribute('disabled', 'true');
             } else {
                 document.getElementById('id_grupo').disabled = false;
@@ -447,7 +439,6 @@ function abrirModalSesion(id_sesion = null) {
                 document.getElementById('id_entrenador').disabled = false;
                 document.getElementById('id_microciclo').disabled = false;
             }
-            // ======================================================================
 
             document.getElementById('tbodySeries').innerHTML = '';
 
@@ -1028,7 +1019,6 @@ async function cargarRecursosIniciales() {
     }
 }
 
-// Configurar eventos a filtros de la vista
 function setupEventosFiltros() {
     const filtroGrupo = document.getElementById('filtroGrupo');
     const filtroTipo = document.getElementById('filtroTipoSesion');

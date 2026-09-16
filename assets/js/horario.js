@@ -1,4 +1,3 @@
-// ==================== CONFIGURACIÓN DE PAGINACIÓN ====================
 let horarioData = [];
 let tablaFiltro = '';
 let tablaSortCol = '';
@@ -6,7 +5,6 @@ let tablaSortDir = '';
 let tablaPagina = 1;
 const tablaPorPagina = 10;
 
-// ==================== VARIABLES EXISTENTES ====================
 const modalHorario = document.getElementById('modalHorario');
 const modalVer = document.getElementById('modalVerHorario'); 
 const formHorario = document.getElementById('formHorario');
@@ -17,7 +15,6 @@ const pieTabla = document.getElementById('pieTabla');
 
 const API_URL = 'index.php?p=horario';
 
-// ==================== FUNCIONES DE NORMALIZACIÓN (sin cambios) ====================
 function normalizarHora(hora) {
     if (!hora) return '';
     
@@ -124,7 +121,6 @@ function corregirHoraInput(hora) {
     }
 }
 
-// ==================== PETICIÓN AJAX (sin cambios) ====================
 async function peticionAjax(accion, datos = null) {
     const opciones = { 
         method: datos ? 'POST' : 'GET',
@@ -147,7 +143,6 @@ async function peticionAjax(accion, datos = null) {
     }
 }
 
-// ==================== FUNCIONES DE CIERRE DE MODALES (sin cambios) ====================
 function cerrarModalHorario() {
     if (modalHorario && modalHorario.firstElementChild) {
         modalHorario.firstElementChild.classList.add('scale-95', 'opacity-0');
@@ -173,7 +168,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// ==================== ABRIR MODAL (sin cambios) ====================
 async function abrirModalHorario(id_bloque = null) {
     formHorario.reset(); 
     try { Validador.limpiarEstilos(formHorario); } catch(e) {}
@@ -214,7 +208,6 @@ async function abrirModalHorario(id_bloque = null) {
     }, 10);
 }
 
-// ==================== VER DETALLE (sin cambios) ====================
 async function verDetalle(id) {
     const horario = await peticionAjax(`obtenerBloque&id=${id}`);
     if (!horario) return;
@@ -236,14 +229,12 @@ async function verDetalle(id) {
     }, 10);
 }
 
-// ==================== RENDERIZAR TABLA CON PAGINACIÓN ====================
 function renderTabla() {
     const tbody = document.getElementById('listaHorario');
     if (!tbody) return;
 
     let datos = horarioData.slice();
 
-    // Filtro
     if (tablaFiltro) {
         const q = tablaFiltro.toLowerCase().trim();
         datos = datos.filter(h => {
@@ -254,7 +245,6 @@ function renderTabla() {
         });
     }
 
-    // Ordenamiento
     if (tablaSortCol) {
         const col = tablaSortCol;
         const dir = tablaSortDir === 'asc' ? 1 : -1;
@@ -278,13 +268,11 @@ function renderTabla() {
         }
     }
 
-    // Paginación
     const totalPaginas = Math.max(1, Math.ceil(total / tablaPorPagina));
     if (tablaPagina > totalPaginas) tablaPagina = totalPaginas;
     const inicio = (tablaPagina - 1) * tablaPorPagina;
     const pagina = datos.slice(inicio, inicio + tablaPorPagina);
 
-    // Generar filas
     if (pagina.length === 0 && total > 0) {
         tbody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-gray-500 dark:text-gray-400"><span class="text-xs uppercase tracking-wider">Sin resultados para la búsqueda</span></td></tr>`;
     } else if (pagina.length === 0) {
@@ -337,7 +325,6 @@ function renderTabla() {
     renderPaginacion(totalPaginas);
 }
 
-// ==================== RENDER PAGINACIÓN ====================
 function renderPaginacion(totalPaginas) {
     if (!pieTabla || totalPaginas <= 1) { 
         if (pieTabla) pieTabla.innerHTML = ''; 
@@ -375,7 +362,6 @@ function renderPaginacion(totalPaginas) {
     pieTabla.innerHTML = html;
 }
 
-// ==================== CARGAR TABLA DE HORARIOS ====================
 async function cargarTablaHorario() {
     const tbody = document.getElementById('listaHorario');
     if (!tbody) return;
@@ -384,7 +370,6 @@ async function cargarTablaHorario() {
 
     const horarios = await peticionAjax('listarHorario'); 
 
-    // RESETEAR variables de paginación al cargar nuevos datos
     tablaFiltro = '';
     tablaSortCol = '';
     tablaSortDir = '';
@@ -410,7 +395,6 @@ async function cargarTablaHorario() {
     renderTabla();
 }
 
-// ==================== BUSCADOR ====================
 const inputBusqueda = document.getElementById('busquedaHorario');
 if (inputBusqueda) {
     inputBusqueda.addEventListener('input', function(e) {
@@ -420,7 +404,6 @@ if (inputBusqueda) {
     });
 }
 
-// ==================== ORDENAMIENTO POR CLICK EN CABECERA ====================
 document.querySelectorAll('[data-sort]').forEach(th => {
     th.addEventListener('click', () => {
         const col = th.getAttribute('data-sort');
@@ -435,7 +418,6 @@ document.querySelectorAll('[data-sort]').forEach(th => {
     });
 });
 
-// ==================== FUNCIONES DE VALIDACIÓN (sin cambios) ====================
 function normalizarHorasFormulario() {
     const horaInicio = document.getElementById('hora_inicio');
     const horaFin = document.getElementById('hora_fin');
@@ -488,7 +470,6 @@ function agregarValidacionTiempoReal() {
     if (horaFin) validarCampoHora(horaFin);
 }
 
-// ==================== EVENTOS DOM ====================
 document.addEventListener('DOMContentLoaded', () => {
     try { 
         if (typeof Validador !== 'undefined') Validador.vincularTiempoReal(formHorario); 
@@ -571,7 +552,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ==================== ELIMINAR HORARIO (sin cambios) ====================
 async function eliminarHorario(id_bloque) {
     const confirmacion = confirm("¿Está seguro de eliminar este bloque de horario? Esta acción no se puede deshacer.");
     

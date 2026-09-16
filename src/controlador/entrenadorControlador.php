@@ -1,8 +1,8 @@
 <?php
 
 if (empty($_SESSION['id'])) {
-    header('Location: ?p=login'); 
-    exit; 
+    header('Location: ?p=login');
+    exit;
 }
 
 use GrupoProyecto\SisBiomec\modelo\entrenador;
@@ -18,22 +18,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($accion === 'guardar') {
         $tipoAccion = isset($_POST['action_type']) ? $_POST['action_type'] : 'registrar';
         Autorizacion::exigir('atletas', $tipoAccion === 'actualizar' ? 'editar' : 'crear');
-        
+
+        $objEntrenador->setDatos($_POST);
+
         $excluirCedula = ($tipoAccion === 'editar') ? ($_POST['cedula'] ?? null) : null;
-        
-        $errores = $objEntrenador->validarDatos($_POST, $excluirCedula);
+
+        $errores = $objEntrenador->validarDatos($excluirCedula);
 
         if (!empty($errores)) {
             echo json_encode(['status' => 'warning', 'errores' => $errores]);
             exit;
         }
 
-        $resultado = false; 
-        
+        $resultado = false;
         if ($tipoAccion === 'editar') {
-            $resultado = $objEntrenador->editarEntrenador($_POST);
+            $resultado = $objEntrenador->editarEntrenador();
         } else {
-            $resultado = $objEntrenador->registrarEntrenador($_POST);
+            $resultado = $objEntrenador->registrarEntrenador();
         }
 
         if ($resultado) {
@@ -56,15 +57,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($accion === 'eliminar') {
         Autorizacion::exigir('atletas', 'eliminar');
-        $id_entrenador = isset($_POST['id_entrenador']) ? $_POST['id_entrenador'] : null;
+        $id_entrenador = isset($_POST['id_entrenador']) ? (int)$_POST['id_entrenador'] : 0;
 
-        if ($id_entrenador) {
+        if ($id_entrenador > 0) {
             $resultado = $objEntrenador->eliminarEntrenador($id_entrenador);
             if ($resultado) {
-                Bitacora::registrar($_SESSION['id'], 'Entrenadores', 'DELETE', (int)$id_entrenador, 'entrenador', null, null);
-                echo json_encode(['status' => 'success', 'message' => 'Entrenador eliminado correctamente.']);
+                Bitacora::registrar( $_SESSION['id'], 'Entrenadores', 'UPDATE', $id_entrenador, 'entrenador', 'Activo', 'Inactivo'
+                );
+                echo json_encode(['status' => 'success', 'message' => 'Entrenador desactivado correctamente.']);
             } else {
-                echo json_encode(['status' => 'error', 'message' => 'No se pudo eliminar el entrenador.']);
+                echo json_encode(['status' => 'error', 'message' => 'No se pudo desactivar el entrenador.']);
+            }
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'ID de entrenador no proporcionado.']);
+        }
+        exit;
+    }
+
+    if ($accion === 'reactivar') {
+        Autorizacion::exigir('atletas', 'editar');
+        $id_entrenador = isset($_POST['id_entrenador']) ? (int)$_POST['id_entrenador'] : 0;
+
+        if ($id_entrenador > 0) {
+            $resultado = $objEntrenador->reactivarEntrenador($id_entrenador);
+            if ($resultado) {
+                Bitacora::registrar($_SESSION['id'], 'Entrenadores', 'UPDATE', $id_entrenador, 'entrenador', 'Inactivo', 'Activo'
+                );
+                echo json_encode(['status' => 'success', 'message' => 'Entrenador reactivado correctamente.']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'No se pudo reactivar el entrenador.']);
             }
         } else {
             echo json_encode(['status' => 'error', 'message' => 'ID de entrenador no proporcionado.']);
@@ -87,6 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode($objEntrenador->obtenerPorId((int)$_GET['id']));
         exit;
     }
-  
+
     require_once 'vista/entrenador.php';
 }
