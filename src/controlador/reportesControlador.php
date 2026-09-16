@@ -425,41 +425,151 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $idAtleta = (int)($_POST['id_atleta'] ?? 0);
                     $fechaIni = $_POST['fecha_ini'] ?? '';
                     $fechaFin = $_POST['fecha_fin'] ?? '';
-                    $datos = $objReporte->cargaSRPE($idGrupo, $idAtleta, $fechaIni, $fechaFin);
-                    $titulo = 'Monitoreo de Carga (sRPE)';
+                    
+                    // Formato de fechas para humanos
+                    $fechaIniStr = date('d-m-Y', strtotime($fechaIni));
+                    $fechaFinStr = date('d-m-Y', strtotime($fechaFin));
 
+                    $datos = $objReporte->cargaSRPE($idGrupo, $idAtleta, $fechaIni, $fechaFin);
+                    $titulo = 'Monitoreo de Carga (sRPE) y Bienestar (Wellness)';
+
+                    // 1. Motor Estadístico y Científico (Método de Foster)
+                    $n = count($datos);
+                    $totalSRPE = 0;
+                    $sumaRPE = 0;
+                    $sumaSueno = 0;
+                    $sumaEstres = 0;
+                    $registrosWellness = 0;
+                    $arraySRPE = [];
+
+                    foreach ($datos as $d) {
+                        $srpeVal = (int)$d['srpe'];
+                        $totalSRPE += $srpeVal;
+                        $sumaRPE += (int)$d['rpe'];
+                        $arraySRPE[] = $srpeVal;
+
+                        if (!empty($d['horas_sueno'])) {
+                            $sumaSueno += (float)$d['horas_sueno'];
+                            $sumaEstres += (int)$d['estres_percibido'];
+                            $registrosWellness++;
+                        }
+                    }
+
+                    $avgRPE = $n > 0 ? $sumaRPE / $n : 0;
+                    $avgSueno = $registrosWellness > 0 ? $sumaSueno / $registrosWellness : 0;
+                    $avgEstres = $registrosWellness > 0 ? $sumaEstres / $registrosWellness : 0;
+
+                    // Cálculo Avanzado: Monotonía y Fatiga (Strain)
+                    $mediaSRPE = $n > 0 ? $totalSRPE / $n : 0;
+                    $varianzaSRPE = 0;
+                    foreach($arraySRPE as $val) {
+                        $varianzaSRPE += pow($val - $mediaSRPE, 2);
+                    }
+                    $sdSRPE = $n > 0 ? sqrt($varianzaSRPE / $n) : 0;
+                    $monotonia = $sdSRPE > 0 ? $mediaSRPE / $sdSRPE : 0;
+                    $strain = $totalSRPE * $monotonia;
+
+                    // 2. Diagnóstico del sistema (Semáforo Inteligente)
+                    $colorBg = '#ecfdf5'; $colorBorder = '#a7f3d0'; $colorText = '#047857';
+                    $diagTitulo = 'RECUPERACIÓN ÓPTIMA';
+                    $diagTexto = 'La relación entre el esfuerzo percibido y las métricas de recuperación está en parámetros seguros. Monotonía controlada.';
+
+                    // Alertas basadas en RPE, Sueño y Monotonía
+                    if ($avgRPE >= 8 && $registrosWellness > 0 && $avgSueno < 6) {
+                        $colorBg = '#fef2f2'; $colorBorder = '#fecaca'; $colorText = '#b91c1c';
+                        $diagTitulo = 'ALERTA CRÍTICA DE FATIGA Y SUEÑO';
+                        $diagTexto = 'Alta percepción de esfuerzo combinada con deficiencia severa de sueño. Existe un riesgo inminente de sobreentrenamiento (OTS) o lesión. Disminuir carga de inmediato.';
+                    } elseif ($monotonia > 2.0) {
+                        $colorBg = '#fef2f2'; $colorBorder = '#fecaca'; $colorText = '#b91c1c';
+                        $diagTitulo = 'ALERTA POR MONOTONÍA ALTA (>' . number_format($monotonia, 2) . ')';
+                        $diagTexto = 'El entrenamiento carece de variabilidad (cargas muy planas día tras día). Urge aplicar el principio de ondulación de cargas para evitar estancamiento y lesiones.';
+                    } elseif ($avgRPE >= 7 || ($registrosWellness > 0 && $avgSueno <= 6.5)) {
+                        $colorBg = '#fffbeb'; $colorBorder = '#fde68a'; $colorText = '#b45309';
+                        $diagTitulo = 'PRECAUCIÓN - CARGA ELEVADA';
+                        $diagTexto = 'Esfuerzo alto o recuperación moderada. Monitorear de cerca cómo asimilan las próximas sesiones.';
+                    }
+
+                    $htmlSemaforo = '
+                        <div style="background:'.$colorBg.'; border:1px solid '.$colorBorder.'; color:'.$colorText.'; padding:12px; border-radius:8px; margin-bottom:15px; font-size:11px;">
+                            <div style="margin-bottom:4px; font-size:12px;"><strong>' . $diagTitulo . '</strong></div>
+                            <div>' . $diagTexto . '</div>
+                        </div>';
+
+                    // 3. Tarjetas KPI
+                    $htmlKPIs = '
+                        <table style="width:100%; margin-bottom:20px; text-align:center; border-spacing: 10px 0; border-collapse: separate;">
+                            <tr>
+                                <td style="background:#f9fafb; padding:12px; border:1px solid #e5e7eb; border-radius:8px; width:25%;">
+                                    <span style="font-size:10px; color:#6b7280; text-transform:uppercase; font-weight:bold;">Carga (sRPE)</span><br>
+                                    <span style="font-size:18px; font-weight:bold; color:#4f46e5;">' . number_format($totalSRPE) . ' <span style="font-size:10px; font-weight:normal; color:#6b7280;">UA</span></span>
+                                </td>
+                                <td style="background:#f9fafb; padding:12px; border:1px solid #e5e7eb; border-radius:8px; width:25%;">
+                                    <span style="font-size:10px; color:#6b7280; text-transform:uppercase; font-weight:bold;">Intensidad (RPE)</span><br>
+                                    <span style="font-size:18px; font-weight:bold; color:#1f2937;">' . number_format($avgRPE, 1) . ' <span style="font-size:10px; font-weight:normal; color:#6b7280;">/ 10</span></span>
+                                </td>
+                                <td style="background:#f9fafb; padding:12px; border:1px solid #e5e7eb; border-radius:8px; width:25%;">
+                                    <span style="font-size:10px; color:#6b7280; text-transform:uppercase; font-weight:bold;">Sueño Medio</span><br>
+                                    <span style="font-size:18px; font-weight:bold; color:#1f2937;">' . ($registrosWellness > 0 ? number_format($avgSueno, 1) : '-') . ' <span style="font-size:10px; font-weight:normal; color:#6b7280;">hrs</span></span>
+                                </td>
+                                <td style="background:#f9fafb; padding:12px; border:1px solid #e5e7eb; border-radius:8px; width:25%;">
+                                    <span style="font-size:10px; color:#6b7280; text-transform:uppercase; font-weight:bold;">Fatiga (Strain)</span><br>
+                                    <span style="font-size:18px; font-weight:bold; color:#1f2937;">' . number_format($strain, 0) . ' <span style="font-size:10px; font-weight:normal; color:#6b7280;">UA</span></span>
+                                </td>
+                            </tr>
+                        </table>';
+
+                    // 4. Filas de la Tabla Colorizadas
                     $filas = '';
                     foreach ($datos as $d) {
-                        $colorRPE = (int)$d['rpe'] >= 8 ? '#ef4444' : ((int)$d['rpe'] >= 6 ? '#f59e0b' : '#10b981');
-                        $filas .= '<tr>'
-                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . $d['fecha'] . '</td>'
-                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;">' . htmlspecialchars($d['nombre_atleta']) . '</td>'
-                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;text-align:center;font-weight:bold;color:' . $colorRPE . ';">' . $d['rpe'] . '</td>'
-                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;text-align:center;">' . ($d['srpe'] ?: '-') . '</td>'
-                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;text-align:center;">' . ($d['horas_sueno'] ?: '-') . '</td>'
-                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;text-align:center;">' . ($d['calidad_sueno'] ?: '-') . '</td>'
-                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;text-align:center;">' . ($d['estres_percibido'] ?: '-') . '</td>'
-                            . '<td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;text-align:center;">' . ($d['sensacion_muscular'] ?: '-') . '</td>'
+                        $fechaDMY = date('d-m-Y', strtotime($d['fecha']));
+                        $rpeVal = (int)$d['rpe'];
+                        
+                        // Lógica de color para RPE
+                        $rpeBg = $rpeVal >= 8 ? '#fef2f2' : ($rpeVal >= 5 ? '#fffbeb' : '#ecfdf5');
+                        $rpeColor = $rpeVal >= 8 ? '#b91c1c' : ($rpeVal >= 5 ? '#b45309' : '#047857');
+                        
+                        // Lógica de datos de sueño
+                        $hSueno = $d['horas_sueno'] ? number_format((float)$d['horas_sueno'], 1) . 'h' : '-';
+                        $cSueno = $d['calidad_sueno'] ? ' (Cal: ' . $d['calidad_sueno'] . ')' : '';
+                        
+                        // Lógica de Badges para Wellness
+                        $estresTxt = $d['estres_percibido'] ? 'Est: ' . $d['estres_percibido'] : '';
+                        $muscTxt = $d['sensacion_muscular'] ? 'Mús: ' . $d['sensacion_muscular'] : '';
+                        $wellnessCell = '-';
+                        if ($estresTxt || $muscTxt) {
+                            $wellnessCell = '<span style="background:#f3f4f6; color:#4b5563; padding:3px 6px; border-radius:4px; font-size:9px; border:1px solid #d1d5db; white-space:nowrap;">' . trim($estresTxt . '  |  ' . $muscTxt) . '</span>';
+                        }
+
+                        $filas .= '<tr style="background:#ffffff;">'
+                            . '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;">' . $fechaDMY . '</td>'
+                            . '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:bold;">' . htmlspecialchars($d['nombre_atleta']) . '</td>'
+                            . '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;"><span style="background:'.$rpeBg.'; color:'.$rpeColor.'; padding:3px 8px; border-radius:4px; font-weight:bold;">' . $rpeVal . '</span></td>'
+                            . '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#4f46e5;font-family:monospace;font-size:12px;">' . ($d['srpe'] ?: '-') . '</td>'
+                            . '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;color:#4b5563;">' . ($d['metros_nadados'] ? $d['metros_nadados'] . 'm' : '-') . '</td>'
+                            . '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;font-weight:bold;">' . $hSueno . '<span style="font-size:9px;color:#6b7280;font-weight:normal;">' . $cSueno . '</span></td>'
+                            . '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;">' . $wellnessCell . '</td>'
                             . '</tr>';
                     }
 
-                    $imgTag = $graficaImagen ? '<img src="' . $graficaImagen . '" style="width:100%;max-width:650px;margin:0 auto 20px;display:block;">' : '';
+                    $imgTag = $graficaImagen ? '<img src="' . $graficaImagen . '" style="width:100%;max-width:650px;margin:0 auto 20px;display:block; border:1px solid #e5e7eb; padding:10px; border-radius:8px;">' : '';
 
+                    // 5. Estructura Documento PDF
                     $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
                         . 'body{font-family:Helvetica,Arial,sans-serif;margin:30px;color:#1f2937;} '
-                        . 'h1{color:#4f46e5;font-size:18px;margin-bottom:4px;} '
-                        . 'h2{color:#374151;font-size:13px;font-weight:normal;margin-bottom:20px;} '
-                        . 'table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:20px;} '
-                        . 'th{background:#4f46e5;color:#fff;padding:6px 8px;text-align:left;font-size:10px;} '
-                        . 'td{padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:10px;} '
-                        . 'tr:nth-child(even) td{background:#f9fafb;} '
-                        . 'footer{margin-top:30px;font-size:9px;color:#9ca3af;text-align:center;} '
+                        . 'h1{color:#4f46e5;font-size:20px;margin-bottom:4px;text-transform:uppercase;} '
+                        . 'h2{color:#374151;font-size:13px;font-weight:normal;margin-bottom:20px;border-bottom:2px solid #e5e7eb;padding-bottom:10px;} '
+                        . 'table.main-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:20px;} '
+                        . 'th.main-th{background:#4f46e5;color:#fff;padding:10px;text-align:left;font-size:11px;} '
+                        . 'td{font-size:11px;} '
+                        . 'footer{margin-top:40px;font-size:9px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:10px;} '
                         . '</style></head><body>'
                         . '<h1>' . $titulo . '</h1>'
-                        . '<h2>Periodo: ' . $fechaIni . ' a ' . $fechaFin . '</h2>'
+                        . '<h2>Periodo Evaluado: <strong>' . $fechaIniStr . ' al ' . $fechaFinStr . '</strong></h2>'
+                        . $htmlSemaforo
+                        . $htmlKPIs
                         . $imgTag
-                        . '<table><thead><tr><th>Fecha</th><th>Atleta</th><th style="text-align:center;">RPE</th><th style="text-align:center;">sRPE</th><th style="text-align:center;">Sueno (h)</th><th style="text-align:center;">Calidad</th><th style="text-align:center;">Estres</th><th style="text-align:center;">Muscular</th></tr></thead><tbody>' . $filas . '</tbody></table>'
-                        . '<footer>Generado el ' . $fechaGeneracion . ' por ' . htmlspecialchars($generadoPor) . '</footer>'
+                        . '<table class="main-table"><thead><tr><th class="main-th">Fecha</th><th class="main-th">Atleta</th><th class="main-th" style="text-align:center;">RPE</th><th class="main-th" style="text-align:center;">Carga (sRPE)</th><th class="main-th" style="text-align:center;">Volumen</th><th class="main-th" style="text-align:center;">Sueño</th><th class="main-th" style="text-align:center;">Wellness</th></tr></thead><tbody>' . $filas . '</tbody></table>'
+                        . '<footer>Documento oficial generado el ' . $fechaGeneracion . ' por ' . htmlspecialchars($generadoPor) . ' - Sistema de Gestión de Rendimiento Deportivo</footer>'
                         . '</body></html>';
                     break;
 

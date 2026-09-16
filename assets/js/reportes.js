@@ -478,6 +478,37 @@ async function aplicarFiltros() {
         // Pasamos ambos sets de datos al motor visual
         renderEvolucionMarcas(datosMarcas, comparativa);
         return;
+    }else if (reporteActivo === 'carga_srpe') {
+        var params = {
+            id_grupo: document.getElementById('fGrupo') ? document.getElementById('fGrupo').value : 0,
+            id_atleta: document.getElementById('fAtleta') ? document.getElementById('fAtleta').value : 0,
+            fecha_ini: document.getElementById('fFechaIni') ? document.getElementById('fFechaIni').value : '',
+            fecha_fin: document.getElementById('fFechaFin') ? document.getElementById('fFechaFin').value : ''
+        };
+
+        if (!params.id_grupo && !params.id_atleta) {
+            UI.advertencia('Filtros incompletos', 'Debe seleccionar un Grupo de Entrenamiento o un Atleta específico.');
+            return;
+        }
+
+        var datos = await peticionAjax('carga_srpe', params);
+        if (!datos) return;
+        datosGlobales = datos;
+
+        if (datos.length === 0) {
+            document.getElementById('contenedorGrafica').classList.add('hidden');
+            document.getElementById('contenedorTabla').classList.add('hidden');
+            document.getElementById('estadoVacio').classList.remove('hidden');
+            return;
+        }
+
+        document.getElementById('estadoVacio').classList.add('hidden');
+        document.getElementById('contenedorGrafica').classList.remove('hidden');
+        document.getElementById('contenedorTabla').classList.remove('hidden');
+        
+        // Llamamos al nuevo motor visual
+        renderCargaSRPE(datos);
+        return;
     }
     
     // Resto de filtros para otros reportes...
@@ -851,6 +882,197 @@ function renderResumenSesionesGrupo(datos) {
                 <td class="p-3 text-center text-gray-600 dark:text-gray-400 font-mono text-xs" data-label="Brazadas">${brazadas}</td>
                 <td class="p-3 text-center font-bold text-teal-600 dark:text-teal-400 font-mono text-xs" data-label="SWOLF">${swolf}</td>
                 <td class="p-3 text-gray-500 dark:text-gray-400 text-[11px]" data-label="Observaciones">${d.observaciones || 'Ninguna'}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderCargaSRPE(datos) {
+    if (graficaActual) graficaActual.destroy();
+    
+    // 1. Motor Estadístico sRPE y Wellness
+    let n = datos.length;
+    let totalSRPE = 0;
+    let sumaRPE = 0;
+    let sumaSueno = 0;
+    let sumaEstres = 0;
+    let registrosWellness = 0;
+
+    datos.forEach(d => {
+        totalSRPE += parseInt(d.srpe) || 0;
+        sumaRPE += parseInt(d.rpe) || 0;
+        
+        // Si el atleta llenó los datos de bienestar
+        if (d.horas_sueno) {
+            sumaSueno += parseFloat(d.horas_sueno);
+            sumaEstres += parseInt(d.estres_percibido) || 0;
+            registrosWellness++;
+        }
+    });
+
+    let avgRPE = n > 0 ? (sumaRPE / n).toFixed(1) : 0;
+    let avgSueno = registrosWellness > 0 ? (sumaSueno / registrosWellness).toFixed(1) : '-';
+    let avgEstres = registrosWellness > 0 ? (sumaEstres / registrosWellness).toFixed(1) : '-';
+    
+    // Diagnóstico del sistema (Semáforo de Recuperación)
+    let estado = { 
+        bg: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800', 
+        icono: 'fa-battery-full', 
+        titulo: 'Recuperación Óptima',
+        texto: 'La relación entre el esfuerzo percibido y las métricas de recuperación se encuentra dentro de los parámetros seguros.' 
+    };
+    
+    // Reglas Clínicas de Fatiga: Mucho esfuerzo y poco descanso
+    if (avgRPE >= 8 && avgSueno !== '-' && avgSueno < 6) {
+        estado = { 
+            bg: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800', 
+            icono: 'fa-battery-empty text-red-500', 
+            titulo: 'Alerta de Fatiga Severa',
+            texto: 'Alta percepción de esfuerzo combinada con deficiencia de sueño. Existe un riesgo inminente de sobreentrenamiento o lesión.' 
+        };
+    } else if (avgRPE >= 7 || (avgSueno !== '-' && avgSueno <= 6.5)) {
+         estado = { 
+            bg: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800', 
+            icono: 'fa-battery-half text-amber-500', 
+            titulo: 'Precaución - Carga Elevada',
+            texto: 'Esfuerzo alto o recuperación moderada. Se recomienda monitorear de cerca las próximas cargas de entrenamiento.' 
+        };
+    }
+
+    // 2. Construir Dashboard HTML con KPIs
+    let tituloHTML = `
+        <div class="flex justify-between items-center mb-1">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white">Análisis de Carga (sRPE) y Bienestar Diario</h3>
+            <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold">${n} registros</span>
+        </div>
+        
+        <!-- Semáforo de Fatiga -->
+        <div class="mb-5 mt-4 p-4 rounded-xl border shadow-sm flex items-start gap-4 ${estado.bg}">
+            <div class="mt-1"><i class="fas ${estado.icono} text-2xl"></i></div>
+            <div>
+                <h4 class="font-black text-sm uppercase tracking-wider mb-1">${estado.titulo}</h4>
+                <p class="text-xs font-medium opacity-90">${estado.texto}</p>
+            </div>
+        </div>
+
+        <!-- Tarjetas de KPI -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]">
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Carga Acumulada</p>
+                <p class="text-xl font-black text-indigo-600 dark:text-indigo-400">${totalSRPE} <span class="text-xs font-normal text-gray-500">UA</span></p>
+            </div>
+            <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]">
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Intensidad (RPE)</p>
+                <p class="text-xl font-black text-gray-800 dark:text-white">${avgRPE} <span class="text-xs font-normal text-gray-500">/ 10</span></p>
+            </div>
+            <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]">
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Sueño Promedio</p>
+                <p class="text-xl font-black text-gray-800 dark:text-white">${avgSueno} <span class="text-xs font-normal text-gray-500">hrs</span></p>
+            </div>
+            <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]">
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Estrés Promedio</p>
+                <p class="text-xl font-black text-gray-800 dark:text-white">${avgEstres} <span class="text-xs font-normal text-gray-500">/ 10</span></p>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('tituloGrafica').innerHTML = tituloHTML;
+    document.getElementById('subtituloGrafica').textContent = '';
+
+    // 3. Renderizar Gráfica de Eje Dual (Barras para Volumen, Línea para Intensidad)
+    var labels = datos.map(d => d.fecha);
+    var dataSRPE = datos.map(d => parseInt(d.srpe) || 0); // Eje Y Izquierdo (Carga)
+    var dataRPE = datos.map(d => parseInt(d.rpe) || 0);   // Eje Y Derecho (Intensidad)
+
+    var ctx = document.getElementById('graficaReporte').getContext('2d');
+    graficaActual = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Intensidad RPE (0-10)',
+                    data: dataRPE,
+                    type: 'line',
+                    borderColor: '#f59e0b', // Naranja
+                    backgroundColor: '#f59e0b',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    yAxisID: 'y1',
+                    tension: 0.3
+                },
+                {
+                    label: 'Carga sRPE (Unidades)',
+                    data: dataSRPE,
+                    type: 'bar',
+                    backgroundColor: 'rgba(79, 70, 229, 0.6)', // Índigo
+                    borderRadius: 4,
+                    yAxisID: 'y'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                x: { grid: { display: false } },
+                y: { 
+                    type: 'linear', 
+                    display: true, 
+                    position: 'left',
+                    title: { display: true, text: 'Unidades Arbitrarias (sRPE)' }
+                },
+                y1: { 
+                    type: 'linear', 
+                    display: true, 
+                    position: 'right', 
+                    min: 0, 
+                    max: 10,
+                    grid: { drawOnChartArea: false }, // Evita que se crucen las líneas guía
+                    title: { display: true, text: 'Esfuerzo Percibido (RPE)' }
+                }
+            }
+        }
+    });
+
+    // 4. Renderizar Tabla de Detalle Colorizada
+    document.getElementById('theadReporte').innerHTML = `
+        <tr>
+            <th class="p-3">Fecha</th>
+            <th class="p-3">Atleta</th>
+            <th class="p-3 text-center">RPE</th>
+            <th class="p-3 text-center">sRPE</th>
+            <th class="p-3 text-center" title="Volumen Nadado">Metros</th>
+            <th class="p-3 text-center" title="Horas y Calidad de Sueño">Sueño (hrs)</th>
+            <th class="p-3 text-center">Wellness</th>
+        </tr>
+    `;
+
+    document.getElementById('tbodyReporte').innerHTML = datos.map(function(d) {
+        // Colores para el RPE
+        let rpeVal = parseInt(d.rpe);
+        let rpeColor = rpeVal >= 8 ? 'bg-red-100 text-red-700' : (rpeVal >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700');
+        
+        // Formateo de métricas Wellness
+        let hSueno = d.horas_sueno ? parseFloat(d.horas_sueno).toFixed(1) + 'h' : '-';
+        let cSueno = d.calidad_sueno ? `Cal: ${d.calidad_sueno}/10` : '';
+        let estresBadge = d.estres_percibido ? `<span class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded border dark:border-gray-700 text-[10px]">Estrés: ${d.estres_percibido}</span>` : '';
+        let muscBadge = d.sensacion_muscular ? `<span class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded border dark:border-gray-700 text-[10px] ml-1">Músculo: ${d.sensacion_muscular}</span>` : '';
+
+        return `
+            <tr class="hover:bg-gray-50 dark:hover:bg-indigo-900/10 transition-colors border-b border-gray-100 dark:border-[#252345]">
+                <td class="p-3 text-gray-900 dark:text-white text-sm whitespace-nowrap" data-label="Fecha">${d.fecha}</td>
+                <td class="p-3 text-gray-700 dark:text-gray-300 text-xs font-bold" data-label="Atleta">${d.nombre_atleta}</td>
+                <td class="p-3 text-center" data-label="RPE">
+                    <span class="px-2 py-1 rounded-md text-xs font-bold ${rpeColor}">${rpeVal}</span>
+                </td>
+                <td class="p-3 text-center text-indigo-600 dark:text-indigo-400 font-mono font-bold text-sm" data-label="sRPE">${d.srpe || '-'}</td>
+                <td class="p-3 text-center text-gray-600 dark:text-gray-400 font-mono text-xs" data-label="Metros">${d.metros_nadados ? d.metros_nadados + 'm' : '-'}</td>
+                <td class="p-3 text-center text-gray-600 dark:text-gray-400 font-mono text-xs" data-label="Sueño">
+                    ${hSueno} <span class="text-[10px] opacity-70 block">${cSueno}</span>
+                </td>
+                <td class="p-3 text-center" data-label="Wellness">${estresBadge} ${muscBadge}</td>
             </tr>
         `;
     }).join('');
