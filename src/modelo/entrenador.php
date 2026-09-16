@@ -71,6 +71,7 @@ class entrenador extends Conexion {
     $this->fechaValida($fecha, 'fecha_nacimiento');
     $this->fechaNoFutura($fecha, 'fecha_nacimiento');
     $this->edadMinima($fecha, 'fecha_nacimiento', 18);
+    $this->edadMaxima($fecha, 'fecha_nacimiento', 100);
 
     $this->requerido($genero, 'genero');
     $this->enEnum($genero, 'genero', ['M', 'F']);

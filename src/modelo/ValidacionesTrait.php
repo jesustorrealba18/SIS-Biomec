@@ -69,12 +69,9 @@ trait ValidacionesTrait {
         return true;
     }
 
-    /**
-     * Validar edad mínima
-     */
     protected function edadMinima(string $valor, string $campo, int $edadMinima = 18): bool {
         if (empty($valor)) {
-            return true; // No validamos si está vacío, se valida con requerido
+            return true; 
         }
         
         $fecha = \DateTime::createFromFormat('Y-m-d', $valor);
@@ -90,6 +87,33 @@ trait ValidacionesTrait {
             $this->agregarError($campo, "Debe tener al menos {$edadMinima} años de edad.");
             return false;
         }
+        return true;
+    }
+
+    protected function edadMaxima(string $valor, string $campo, int $edadMaxima = 100): bool {
+        if (empty($valor)) {
+            return true; 
+        }
+
+        $fecha = \DateTime::createFromFormat('Y-m-d', $valor);
+        if (!$fecha) {
+            return true; 
+        }
+
+        $anio = (int)$fecha->format('Y');
+        if ($anio < 1900) {
+            $this->agregarError($campo, "La fecha de nacimiento no es válida.");
+            return false;
+        }
+
+        $hoy = new \DateTime();
+        $edad = $hoy->diff($fecha)->y;
+
+        if ($edad > $edadMaxima) {
+            $this->agregarError($campo, "La fecha de nacimiento no es válida (edad máxima permitida: {$edadMaxima} años).");
+            return false;
+        }
+
         return true;
     }
 
@@ -150,7 +174,6 @@ trait ValidacionesTrait {
     }
 
     protected function decimalValido(string $valor, string $campo): bool {
-        // Permite números enteros o decimales con punto (ej: 12 o 12.55)
         if (!preg_match('/^[0-9]+(\.[0-9]+)?$/', trim($valor))) {
             $this->agregarError($campo, "El campo {$campo} debe ser un número decimal válido.");
             return false;

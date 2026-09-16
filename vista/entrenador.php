@@ -238,9 +238,8 @@ if (isset($_SESSION['id'])) {
 
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1">Fecha Nacimiento *</label>
-                            <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" 
-                                   data-validar="requerido|mayor18" data-nombre="Fecha de Nacimiento" 
-                                   class="input-adapt w-full p-3 rounded-xl">
+                            <input type="date" name="fecha_nacimiento" id="fecha_nacimiento"
+                                data-validar="requerido|fecha_logica|mayor_edad" data-nombre="Fecha de nacimiento" class="input-adapt w-full p-3 rounded-xl">
                         </div>
 
                         <div class="space-y-1">
