@@ -1,8 +1,5 @@
 <?php
-// =====================================================================
-// CONTROLADOR: CONTROL CLÍNICO DE LESIONES (RF-10)
-// Protegido contra caídas en JMeter mediante Buffering (ob_start)
-// =====================================================================
+
 use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
 use GrupoProyecto\SisBiomec\modelo\Lesion;
@@ -20,20 +17,15 @@ if (empty($_SESSION['id'])) {
 $objLesion = new Lesion();
 $id_usuario = $_SESSION['id'];
 
-// =====================================================================
-// RUTAS GET (Listados y Detalles)
-// =====================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $accion = $_GET['accion'] ?? '';
 
-    // Selector de atletas para el formulario y filtros
     if ($accion === 'listarAtletasSelect') {
         header('Content-Type: application/json');
         echo json_encode((new Atleta())->listar());
         exit;
     }
 
-    // Listado principal (Soporta modo activos e inactivos/papelera)
     if ($accion === 'listarLesiones') {
         header('Content-Type: application/json');
         $estadoClinico = trim($_GET['estado'] ?? '');
@@ -41,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $tipo = trim($_GET['tipo'] ?? '');
         $zona = trim($_GET['zona'] ?? '');
         
-        // RECIBE EL MODO EXPLÍCITO DESDE JS
         $modo = $_GET['modo'] ?? 'activos';
         $incluirInactivos = ($modo === 'papelera');
         
@@ -50,7 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    // Detalle para edición o vista completa
     if ($accion === 'obtenerDetalleLesion') {
         header('Content-Type: application/json');
         $id = (int)($_GET['id'] ?? 0);
@@ -61,23 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         exit;
     }
-
-   /*  if ($accion === 'verDetalle') {
-        ob_start(); // Buffer para proteger el JSON
-        $id_lesion = (int)($_GET['id_lesion'] ?? 0);
-        
-        //$detalleLesion = $objLesion->obtenerPorId($id_lesion);// esta linea me genera problema no existe en el modelo
-        $detalleLesion = $objLesion->obtenerDetallePorId($id_lesion);
-        // --- INYECCIÓN DE INTELIGENCIA ---
-        if ($detalleLesion) {
-            $promedioRPE = $objLesion->obtenerPromedioRPEPrevio($detalleLesion['id_atleta'], $detalleLesion['fecha_evento']);
-            $detalleLesion['rpe_promedio_3_dias'] = round($promedioRPE, 1);
-        }
-        
-        ob_end_clean();
-        echo json_encode(['status' => 'success', 'data' => $detalleLesion]);
-        exit;
-    } */
 
     if ($accion === 'obtenerRiesgosActivos') {
     header('Content-Type: application/json');
@@ -91,19 +64,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     exit;
 }
 
-// =====================================================================
-// RUTAS POST (Transacciones ACID)
-// =====================================================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
-    //$accion = $_POST['accion'] ?? '';
 
     $accion = $_GET['accion'] ?? $_POST['accion'] ?? '';
     
-    // Iniciamos el buffer de salida para proteger el JSON
     ob_start(); 
 
-    // 1. REGISTRAR
     if ($accion === 'registrar') {
         Autorizacion::exigir('lesiones', 'registrar');
         $res = $objLesion->registrarLesion($_POST);
@@ -120,7 +88,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // 2. ACTUALIZAR
     if ($accion === 'actualizar') {
         Autorizacion::exigir('lesiones', 'editar');
         $id = (int)($_POST['id_lesion'] ?? 0);
@@ -136,7 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($res) {
             Bitacora::registrar($id_usuario, 'Lesiones', 'UPDATE', $id, 'Actualización de diagnóstico/estado', null, json_encode($_POST));
-            Notificacion::NotificarLesiones('UPDATE', $_POST, (int)$_POST['id_atleta'], $id);
+            $id_atleta =$objLesion->getCampo("id_atleta");
+            Notificacion::NotificarLesiones('UPDATE', $_POST, (int)$id_atleta, $id);
             echo json_encode(['status' => 'success', 'message' => 'Informe clínico actualizado.']);
         } else {
             $err = $objLesion->obtenerErrores();
@@ -145,9 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // 3. ELIMINADO LÓGICO (Mover a Papelera)
     if ($accion === 'anular') {
-        // CORRECCIÓN: Se exige el permiso "eliminar" como está en tu Base de Datos
         Autorizacion::exigir('lesiones', 'eliminar');
         $id = (int)($_POST['id_lesion'] ?? 0);
         $motivo = trim($_POST['motivo'] ?? '');
@@ -175,7 +141,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // 4. REACTIVAR (Sacar de la Papelera)
     if ($accion === 'reactivar') {
         Autorizacion::exigir('lesiones', 'reactivar');
         $id = (int)($_POST['id_lesion'] ?? 0);
@@ -201,30 +166,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
-
-    // 5. ELIMINACIÓN FÍSICA PERMANENTE (Solo permitida si ya estaba en papelera)
-   /*  if ($accion === 'eliminardb') {
-        Autorizacion::exigir('lesiones', 'eliminardb');
-        $id = (int)($_POST['id_lesion'] ?? 0);
-        
-        if ($id <= 0) { 
-            ob_end_clean(); 
-            echo json_encode(['status' => 'error', 'message' => 'ID inválido']); 
-            exit; 
-        }
-        
-        $res = $objLesion->eliminarfisico($id);
-        ob_end_clean();
-        
-        if ($res) {
-            Bitacora::registrar($id_usuario, 'Lesiones', 'DELETE_PHYSICAL', $id, 'Eliminación física en base de datos', null, 'Registro borrado permanentemente');
-            echo json_encode(['status' => 'success', 'message' => 'Registro eliminado físicamente del sistema.']);
-        } else {
-            $err = $objLesion->obtenerErrores();
-            echo json_encode(['status' => 'error', 'message' => reset($err) ?: 'Error: No se pudo eliminar físicamente.']);
-        }
-        exit;
-    } */
 
     ob_end_clean();
     echo json_encode(['status' => 'error', 'message' => 'Acción POST no soportada.']);

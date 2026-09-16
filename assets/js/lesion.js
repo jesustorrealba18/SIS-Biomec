@@ -447,6 +447,12 @@ function abrirModal(id_lesion = null) {
     document.getElementById('accion').value = 'registrar';
     document.getElementById('tituloModal').innerText = 'Registrar Nueva Lesión';
     document.getElementById('campoEstadoEdicion').style.display = 'none';
+
+    const selectAtleta = document.getElementById('id_atleta');
+    if (selectAtleta) {
+        selectAtleta.disabled = false;
+        selectAtleta.classList.remove('bg-gray-100', 'cursor-not-allowed', 'opacity-75');
+    }
     
     if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formulario);
     
@@ -472,6 +478,12 @@ async function cargarDatosParaEdicion(id_lesion) {
     Object.keys(data).forEach(key => {
         if (document.getElementById(key)) document.getElementById(key).value = data[key];
     });
+
+    const selectAtleta = document.getElementById('id_atleta');
+    if (selectAtleta) {
+        selectAtleta.disabled = true;
+        selectAtleta.classList.add('bg-gray-100', 'cursor-not-allowed', 'opacity-75');
+    }
     
     document.getElementById('accion').value = 'actualizar';
     document.getElementById('campoEstadoEdicion').style.display = 'block';
@@ -538,6 +550,7 @@ async function softDelete(id_lesion) {
     if (resultado && resultado.status === 'success') {
         UI.exito('Movido a Papelera', resultado.message);
         cargarTabla();
+        cargarRiesgosActivos(); 
     } else {
         UI.error('No se pudo anular', resultado?.message);
     }
@@ -554,6 +567,7 @@ async function reactivar(id_lesion) {
     if (resultado && resultado.status === 'success') {
         UI.exito('Restaurado', resultado.message);
         cargarTabla();
+        cargarRiesgosActivos(); 
     } else {
         UI.error('Error', resultado?.message);
     }
