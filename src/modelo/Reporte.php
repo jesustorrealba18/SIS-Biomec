@@ -10,17 +10,23 @@ class Reporte extends Conexion
     public function evolucionMarcas(int $idAtleta, string $estilo, int $distancia, string $piscina, string $fechaIni, string $fechaFin): array
     {
         try {
-            $sql = "SELECT fecha, tiempo_final_seg, es_pb, estilo, distancia_m, tipo_piscina,
-                           IF(id_evento IS NOT NULL, 'Competencia', 'Control') AS contexto,
-                           tiempo_reaccion_seg, brazadas_por_largo, observaciones
-                    FROM marcas
-                    WHERE id_atleta = :atleta
-                      AND estilo = :estilo
-                      AND distancia_m = :distancia
-                      AND tipo_piscina = :piscina
-                      AND estado = 'Activo'
-                      AND fecha BETWEEN :fecha_ini AND :fecha_fin
-                    ORDER BY fecha ASC";
+            $sql = "SELECT m.id_marca, m.fecha, m.tiempo_final_seg, m.es_pb,
+                       m.estilo, m.distancia_m, m.tipo_piscina,
+                       IF(m.id_evento IS NOT NULL, 'Competencia', 'Control') AS contexto,
+                       m.tiempo_reaccion_seg, m.observaciones, m.id_sesion,
+                       sw.num_brazadas,
+                       sw.swolf,
+                       ROUND(m.tiempo_final_seg / m.distancia_m, 3) AS seg_por_metro,
+                       ROUND((m.tiempo_final_seg / m.distancia_m) * 100, 2) AS tiempo_100m
+                FROM marcas m
+                LEFT JOIN marcas_swolf sw ON sw.id_marca = m.id_marca
+                WHERE m.id_atleta = :atleta
+                  AND m.estilo = :estilo
+                  AND m.distancia_m = :distancia
+                  AND m.tipo_piscina = :piscina
+                  AND m.estado = 'Activo'
+                  AND m.fecha BETWEEN :fecha_ini AND :fecha_fin
+                ORDER BY m.fecha ASC, m.id_marca ASC";
 
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':atleta', $idAtleta, PDO::PARAM_INT);
@@ -34,6 +40,52 @@ class Reporte extends Conexion
         } catch (PDOException $e) {
             error_log("Reporte::evolucionMarcas - " . $e->getMessage());
             return [];
+        }
+    }
+
+    public function splitsDeMarca(int $idMarca): array
+    {
+        try {
+            $sql = "SELECT parcial_numero, distancia_parcial_m, tiempo_parcial_seg, tiempo_viraje_seg
+                    FROM marcas_splits
+                    WHERE id_marca = :id
+                    ORDER BY parcial_numero ASC";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':id', $idMarca, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Reporte::splitsDeMarca - " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function comparativaCategoria(int $idAtleta, string $estilo, int $distancia, string $piscina): ?array
+    {
+        try {
+            $sql = "SELECT 
+                        MIN(m.tiempo_final_seg) as record_categoria,
+                        AVG(m.tiempo_final_seg) as promedio_categoria,
+                        COUNT(DISTINCT m.id_atleta) as atletas_evaluados
+                    FROM marcas m
+                    INNER JOIN atletas a ON m.id_atleta = a.id_atleta
+                    WHERE m.estilo = :estilo 
+                      AND m.distancia_m = :distancia
+                      AND m.tipo_piscina = :piscina
+                      AND m.estado = 'Activo'
+                      AND a.id_categoria = (SELECT id_categoria FROM atletas WHERE id_atleta = :atleta)";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':estilo', $estilo, PDO::PARAM_STR);
+            $stmt->bindValue(':distancia', $distancia, PDO::PARAM_INT);
+            $stmt->bindValue(':piscina', $piscina, PDO::PARAM_STR);
+            $stmt->bindValue(':atleta', $idAtleta, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Reporte::comparativaCategoria - " . $e->getMessage());
+            return null;
         }
     }
 

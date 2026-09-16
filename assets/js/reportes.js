@@ -114,6 +114,25 @@ function fechaHaceUnMes() {
     return d.toISOString().split('T')[0];
 }
 
+function fechaHace6Meses() {
+    var d = new Date();
+    d.setMonth(d.getMonth() - 6);
+    return d.toISOString().split('T')[0];
+}
+
+function destruirGrafica() {
+    if (graficaActual) {
+        graficaActual.destroy();
+        graficaActual = null;
+    }
+}
+
+function coloresTema() {
+    return document.documentElement.classList.contains('dark')
+        ? { texto: '#e2e8f0', grid: '#334155' }
+        : { texto: '#475569', grid: '#e2e8f0' };
+}
+
 function labelFiltro(label, forId, contenido) {
     return '<div class="space-y-1.5"><label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest" for="' + forId + '">' + label + '</label>' + contenido + '</div>';
 }
@@ -238,7 +257,7 @@ function renderFiltros(tipo) {
           + labelFiltro('Estilo', 'fEstilo', selectHtml('fEstilo', opcionesEstilos()))
           + labelFiltro('Distancia', 'fDistancia', selectHtml('fDistancia', opcionesDistancias()))
           + labelFiltro('Piscina', 'fPiscina', selectHtml('fPiscina', opcionesPiscinas()))
-          + labelFiltro('Desde', 'fFechaIni', inputFecha('fFechaIni', fechaHaceUnMes()))
+          + labelFiltro('Desde', 'fFechaIni', inputFecha('fFechaIni', fechaHace6Meses()))
           + labelFiltro('Hasta', 'fFechaFin', inputFecha('fFechaFin', fechaHoy()))
           + botonAplicar();
     } else if (tipo === 'asistencia_grupo' || tipo === 'volumen_semanal') {
@@ -417,6 +436,48 @@ async function aplicarFiltros() {
         
         renderResumenSesionesGrupo(datos);
         return;
+    }else if (reporteActivo === 'evolucion_marcas') {
+        var paramsMarcas = {
+            id_atleta: document.getElementById('fAtleta') ? document.getElementById('fAtleta').value : 0,
+            estilo: document.getElementById('fEstilo') ? document.getElementById('fEstilo').value : '',
+            distancia: document.getElementById('fDistancia') ? document.getElementById('fDistancia').value : 0,
+            piscina: document.getElementById('fPiscina') ? document.getElementById('fPiscina').value : '',
+            fecha_ini: document.getElementById('fFechaIni') ? document.getElementById('fFechaIni').value : '',
+            fecha_fin: document.getElementById('fFechaFin') ? document.getElementById('fFechaFin').value : ''
+        };
+
+        if (!paramsMarcas.id_atleta || !paramsMarcas.estilo || !paramsMarcas.distancia) {
+            UI.advertencia('Filtros incompletos', 'Atleta, Estilo y Distancia son obligatorios.');
+            return;
+        }
+
+        // 1. Buscar el historial de marcas del atleta
+        var datosMarcas = await peticionAjax('evolucion_marcas', paramsMarcas);
+        if (!datosMarcas) return;
+        datosGlobales = datosMarcas;
+
+        if (datosMarcas.length === 0) {
+            document.getElementById('contenedorGrafica').classList.add('hidden');
+            document.getElementById('contenedorTabla').classList.add('hidden');
+            document.getElementById('estadoVacio').classList.remove('hidden');
+            return;
+        }
+
+        // 2. Novedad: Buscar la comparativa con la categoría del club
+        var comparativa = await peticionAjax('comparativa_categoria', {
+            id_atleta: paramsMarcas.id_atleta,
+            estilo: paramsMarcas.estilo,
+            distancia: paramsMarcas.distancia,
+            piscina: paramsMarcas.piscina
+        });
+        
+        document.getElementById('estadoVacio').classList.add('hidden');
+        document.getElementById('contenedorGrafica').classList.remove('hidden');
+        document.getElementById('contenedorTabla').classList.remove('hidden');
+        
+        // Pasamos ambos sets de datos al motor visual
+        renderEvolucionMarcas(datosMarcas, comparativa);
+        return;
     }
     
     // Resto de filtros para otros reportes...
@@ -473,6 +534,327 @@ function renderResumenSesionesGrupo(datos) {
     }).join('');
 }
 
+/* function renderEvolucionMarcas(datos) {
+    if (graficaActual) graficaActual.destroy();
+
+    // 1. Ejecutar motor estadístico
+    let stats = calcularEstadisticasMarcas(datos);
+    
+    // 2. Construir el Dashboard de KPIs y Alerta
+    let tituloHTML = `
+        <div class="flex justify-between items-center mb-1">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white">Análisis de Rendimiento</h3>
+            <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold">N = ${stats ? stats.n : 0} pruebas</span>
+        </div>
+        <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-4">Evaluación estadística y técnica del nadador.</p>
+    `;
+
+    if (stats) {
+        // Lógica visual para KPIs
+        let cvColor = stats.cv < 2.5 ? 'text-emerald-500' : (stats.cv > 5 ? 'text-red-500' : 'text-amber-500');
+        let tendenciaIcono = stats.pendiente <= -0.05 ? '<i class="fas fa-arrow-down text-emerald-500"></i>' 
+                           : (stats.pendiente >= 0.05 ? '<i class="fas fa-arrow-up text-red-500"></i>' 
+                           : '<i class="fas fa-arrow-right text-amber-500"></i>');
+
+        tituloHTML += `
+            <!-- Semáforo de Toma de Decisiones -->
+            <div class="mb-5 p-4 rounded-xl flex items-start gap-4 shadow-sm ${stats.estado.bg}">
+                <div class="mt-1"><i class="fas ${stats.estado.icono} text-2xl"></i></div>
+                <div>
+                    <h4 class="font-black text-sm uppercase tracking-wider mb-1">Diagnóstico del Sistema</h4>
+                    <p class="text-xs font-medium opacity-90 leading-relaxed">${stats.estado.texto}</p>
+                </div>
+            </div>
+
+            <!-- Tarjetas KPI -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Mejor Tiempo (PB)</p>
+                    <p class="text-xl font-black text-indigo-600 dark:text-indigo-400">${formatoTiempoJS(stats.min)}</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Promedio</p>
+                    <p class="text-xl font-black text-gray-800 dark:text-white">${formatoTiempoJS(stats.media)}</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]" title="Coeficiente de Variación (<2.5% = Muy Regular)">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Estabilidad (CV%)</p>
+                    <p class="text-xl font-black ${cvColor}">${stats.cv.toFixed(2)}%</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]" title="Tendencia de progresión en segundos por prueba">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Tendencia</p>
+                    <p class="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2">
+                        ${stats.pendiente.toFixed(2)}s ${tendenciaIcono}
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    // Inyectar títulos y KPIs antes de la gráfica
+    document.getElementById('tituloGrafica').innerHTML = tituloHTML;
+    document.getElementById('subtituloGrafica').textContent = '';
+
+    // 3. Renderizar Gráfica
+    var labels = datos.map(d => d.fecha);
+    var tiempos = datos.map(d => parseFloat(d.tiempo_final_seg));
+    var pointColors = datos.map(d => d.es_pb == 1 ? '#f59e0b' : '#4f46e5');
+    var pointRadius = datos.map(d => d.es_pb == 1 ? 6 : 4);
+
+    var ctx = document.getElementById('graficaReporte').getContext('2d');
+    graficaActual = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Tiempo (seg)',
+                data: tiempos,
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                borderWidth: 3,
+                pointBackgroundColor: pointColors,
+                pointRadius: pointRadius,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            var idx = context.dataIndex;
+                            var esPb = datos[idx].es_pb == 1 ? ' 🏆 (PB)' : '';
+                            return 'Tiempo: ' + formatoTiempoJS(context.raw) + esPb;
+                        }
+                    }
+                }
+            },
+            scales: { x: { grid: { display: false } }, y: { title: { display: true, text: 'Segundos' } } }
+        }
+    });
+
+    // 4. Renderizar Tabla Extendida (Aprovechando los nuevos datos del backend)
+    document.getElementById('theadReporte').innerHTML = `
+        <tr>
+            <th class="p-3">Fecha</th>
+            <th class="p-3 text-center">Contexto</th>
+            <th class="p-3 text-center">Tiempo</th>
+            <th class="p-3 text-center" title="Ritmo cada 100m">Ritmo/100m</th>
+            <th class="p-3 text-center">Brazadas</th>
+            <th class="p-3 text-center" title="Índice de Eficiencia">SWOLF</th>
+            <th class="p-3">Observaciones</th>
+        </tr>
+    `;
+
+    document.getElementById('tbodyReporte').innerHTML = datos.map(function(d) {
+        var pbBadge = d.es_pb == 1 ? ' <span class="text-amber-500 ml-1" title="Personal Best"><i class="fas fa-trophy"></i></span>' : '';
+        var contextoBadge = d.contexto === 'Competencia' ? '<span class="text-indigo-600 font-bold dark:text-indigo-400">Competición</span>' : '<span class="text-gray-500">Control</span>';
+        
+        // Datos técnicos (pueden venir nulos si no hubo registro de SWOLF)
+        var ritmo = d.tiempo_100m ? formatoTiempoJS(d.tiempo_100m) : '-';
+        var brazadas = d.num_brazadas ? d.num_brazadas : '-';
+        var swolf = d.swolf ? d.swolf : '-';
+
+        return `
+            <tr onclick="verSplits(${d.id_marca}, '${d.fecha}', '${d.tiempo_final_seg}')" class="hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors border-b border-gray-100 dark:border-[#252345] cursor-pointer" title="Haga clic para ver los parciales (splits)">
+                <td class="p-3 text-gray-900 dark:text-white text-sm whitespace-nowrap" data-label="Fecha">${d.fecha}</td>
+                <td class="p-3 text-center text-xs" data-label="Contexto">${contextoBadge}</td>
+                <td class="p-3 text-center text-gray-900 dark:text-white font-mono font-bold text-sm whitespace-nowrap" data-label="Tiempo">
+                    ${formatoTiempoJS(d.tiempo_final_seg)} ${pbBadge}
+                </td>
+                <td class="p-3 text-center text-gray-600 dark:text-gray-400 font-mono text-xs" data-label="Ritmo/100m">${ritmo}</td>
+                <td class="p-3 text-center text-gray-600 dark:text-gray-400 font-mono text-xs" data-label="Brazadas">${brazadas}</td>
+                <td class="p-3 text-center font-bold text-teal-600 dark:text-teal-400 font-mono text-xs" data-label="SWOLF">${swolf}</td>
+                <td class="p-3 text-gray-500 dark:text-gray-400 text-[11px]" data-label="Observaciones">${d.observaciones || 'Ninguna'}</td>
+            </tr>
+        `;
+    }).join('');
+} */
+
+
+    function renderEvolucionMarcas(datos, comparativa) {
+    if (graficaActual) graficaActual.destroy();
+
+    // 1. Ejecutar motor estadístico para el atleta
+    let stats = calcularEstadisticasMarcas(datos);
+    
+    // 2. Construir el Dashboard
+    let tituloHTML = `
+        <div class="flex justify-between items-center mb-1">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white">Análisis de Rendimiento y Splits</h3>
+            <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold">N = ${stats ? stats.n : 0} pruebas</span>
+        </div>
+        <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-4">Haz clic sobre cualquier marca en la tabla inferior para ver su análisis de parciales (Splits).</p>
+    `;
+
+    if (stats) {
+        // --- INICIO CÁLCULO DE COMPARATIVA (LA BARRA NUEVA) ---
+        let barraComparativaHTML = '';
+        if (comparativa && comparativa.promedio_categoria) {
+            let pbAtleta = stats.min; // El mejor tiempo (PB) del atleta
+            let promCat = parseFloat(comparativa.promedio_categoria);
+            let recCat = parseFloat(comparativa.record_categoria);
+            let evaluados = comparativa.atletas_evaluados;
+
+            // En natación, si (Promedio - Mi Tiempo) es positivo, soy más rápido.
+            let diffSeg = promCat - pbAtleta; 
+            let diffPct = (diffSeg / promCat) * 100;
+            
+            let colorBarra = diffPct >= 0 
+                ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' 
+                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800';
+            
+            let iconoDir = diffPct >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+            
+            let textoBarra = diffPct >= 0 
+                ? `¡Estás un <strong>${diffPct.toFixed(1)}% por encima</strong> del promedio! (<strong>-${diffSeg.toFixed(2)}s</strong>)`
+                : `Estás un <strong>${Math.abs(diffPct).toFixed(1)}% por debajo</strong> del promedio. (<strong>+${Math.abs(diffSeg).toFixed(2)}s</strong>)`;
+
+            barraComparativaHTML = `
+                <div class="mb-5 p-3 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between shadow-sm ${colorBarra}">
+                    <div class="flex items-center gap-3 mb-2 md:mb-0">
+                        <div class="bg-white/50 dark:bg-black/20 p-2 rounded-lg"><i class="fas ${iconoDir} text-lg"></i></div>
+                        <span class="text-xs font-medium">
+                            Tu PB: <span class="font-black font-mono text-sm">${formatoTiempoJS(pbAtleta)}</span> <span class="mx-2 opacity-50">|</span>
+                            Promedio Categoría: <span class="font-bold font-mono">${formatoTiempoJS(promCat)}</span> 
+                            <span class="text-[10px] opacity-80 block md:inline">(${evaluados} atleta(s) evaluados en tu categoría)</span>
+                        </span>
+                    </div>
+                    <div class="text-xs text-left md:text-right">
+                        ${textoBarra}
+                        <div class="text-[10px] mt-0.5 opacity-80">Récord absoluto de la categoría en el club: <strong>${formatoTiempoJS(recCat)}</strong></div>
+                    </div>
+                </div>
+            `;
+            tituloHTML += barraComparativaHTML;
+        }
+        // --- FIN CÁLCULO DE COMPARATIVA ---
+
+        // Lógica visual para KPIs
+        let cvColor = stats.cv < 2.5 ? 'text-emerald-500' : (stats.cv > 5 ? 'text-red-500' : 'text-amber-500');
+        let tendenciaIcono = stats.pendiente <= -0.05 ? '<i class="fas fa-arrow-down text-emerald-500"></i>' 
+                           : (stats.pendiente >= 0.05 ? '<i class="fas fa-arrow-up text-red-500"></i>' 
+                           : '<i class="fas fa-arrow-right text-amber-500"></i>');
+
+        tituloHTML += `
+            <!-- Semáforo de Toma de Decisiones -->
+            <div class="mb-5 p-4 rounded-xl flex items-start gap-4 shadow-sm ${stats.estado.bg}">
+                <div class="mt-1"><i class="fas ${stats.estado.icono} text-2xl"></i></div>
+                <div>
+                    <h4 class="font-black text-sm uppercase tracking-wider mb-1">Diagnóstico del Sistema</h4>
+                    <p class="text-xs font-medium opacity-90 leading-relaxed">${stats.estado.texto}</p>
+                </div>
+            </div>
+
+            <!-- Tarjetas KPI -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Mejor Tiempo (PB)</p>
+                    <p class="text-xl font-black text-indigo-600 dark:text-indigo-400">${formatoTiempoJS(stats.min)}</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Promedio Periodo</p>
+                    <p class="text-xl font-black text-gray-800 dark:text-white">${formatoTiempoJS(stats.media)}</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]" title="Coeficiente de Variación (<2.5% = Muy Regular)">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Estabilidad (CV%)</p>
+                    <p class="text-xl font-black ${cvColor}">${stats.cv.toFixed(2)}%</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]" title="Tendencia de progresión en segundos por prueba">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Tendencia</p>
+                    <p class="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2">
+                        ${stats.pendiente.toFixed(2)}s ${tendenciaIcono}
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    // Inyectar títulos y KPIs antes de la gráfica
+    document.getElementById('tituloGrafica').innerHTML = tituloHTML;
+    document.getElementById('subtituloGrafica').textContent = '';
+
+    // 3. Renderizar Gráfica
+    var labels = datos.map(d => d.fecha);
+    var tiempos = datos.map(d => parseFloat(d.tiempo_final_seg));
+    var pointColors = datos.map(d => d.es_pb == 1 ? '#f59e0b' : '#4f46e5');
+    var pointRadius = datos.map(d => d.es_pb == 1 ? 6 : 4);
+
+    var ctx = document.getElementById('graficaReporte').getContext('2d');
+    graficaActual = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Tiempo (seg)',
+                data: tiempos,
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                borderWidth: 3,
+                pointBackgroundColor: pointColors,
+                pointRadius: pointRadius,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            var idx = context.dataIndex;
+                            var esPb = datos[idx].es_pb == 1 ? ' 🏆 (PB)' : '';
+                            return 'Tiempo: ' + formatoTiempoJS(context.raw) + esPb;
+                        }
+                    }
+                }
+            },
+            scales: { x: { grid: { display: false } }, y: { title: { display: true, text: 'Segundos' } } }
+        }
+    });
+
+    // 4. Renderizar Tabla Extendida (Interactiva para Splits)
+    document.getElementById('theadReporte').innerHTML = `
+        <tr>
+            <th class="p-3">Fecha</th>
+            <th class="p-3 text-center">Contexto</th>
+            <th class="p-3 text-center">Tiempo</th>
+            <th class="p-3 text-center" title="Ritmo cada 100m">Ritmo/100m</th>
+            <th class="p-3 text-center">Brazadas</th>
+            <th class="p-3 text-center" title="Índice de Eficiencia">SWOLF</th>
+            <th class="p-3">Observaciones</th>
+        </tr>
+    `;
+
+    document.getElementById('tbodyReporte').innerHTML = datos.map(function(d) {
+        var pbBadge = d.es_pb == 1 ? ' <span class="text-amber-500 ml-1" title="Personal Best"><i class="fas fa-trophy"></i></span>' : '';
+        var contextoBadge = d.contexto === 'Competencia' ? '<span class="text-indigo-600 font-bold dark:text-indigo-400">Competición</span>' : '<span class="text-gray-500">Control</span>';
+        
+        var ritmo = d.tiempo_100m ? formatoTiempoJS(d.tiempo_100m) : '-';
+        var brazadas = d.num_brazadas ? d.num_brazadas : '-';
+        var swolf = d.swolf ? d.swolf : '-';
+
+        return `
+            <tr onclick="verSplits(${d.id_marca}, '${d.fecha}', '${d.tiempo_final_seg}')" class="hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors border-b border-gray-100 dark:border-[#252345] cursor-pointer" title="Haga clic para ver los parciales (splits)">
+                <td class="p-3 text-gray-900 dark:text-white text-sm whitespace-nowrap" data-label="Fecha">${d.fecha}</td>
+                <td class="p-3 text-center text-xs" data-label="Contexto">${contextoBadge}</td>
+                <td class="p-3 text-center text-gray-900 dark:text-white font-mono font-bold text-sm whitespace-nowrap" data-label="Tiempo">
+                    ${formatoTiempoJS(d.tiempo_final_seg)} ${pbBadge}
+                </td>
+                <td class="p-3 text-center text-gray-600 dark:text-gray-400 font-mono text-xs" data-label="Ritmo/100m">${ritmo}</td>
+                <td class="p-3 text-center text-gray-600 dark:text-gray-400 font-mono text-xs" data-label="Brazadas">${brazadas}</td>
+                <td class="p-3 text-center font-bold text-teal-600 dark:text-teal-400 font-mono text-xs" data-label="SWOLF">${swolf}</td>
+                <td class="p-3 text-gray-500 dark:text-gray-400 text-[11px]" data-label="Observaciones">${d.observaciones || 'Ninguna'}</td>
+            </tr>
+        `;
+    }).join('');
+}
 // Funciones existentes de descarga...
 async function descargarPDF() {
     if (!reporteActivo) return;
@@ -749,6 +1131,145 @@ async function descargarDetalleGrupoDirecta() {
         console.error('Error Detalle Grupo:', e); 
         UI.error('Error', 'No se pudo generar el PDF.'); 
     }
+}
+
+// Convierte segundos puros (ej. 65.2) a formato natación (1:05.20)
+function formatoTiempoJS(segundos) {
+    if (segundos === null || segundos === '' || isNaN(segundos)) return '-';
+    let s = parseFloat(segundos);
+    let min = Math.floor(s / 60);
+    let sec = (s % 60).toFixed(2);
+    if (sec < 10 && min > 0) sec = '0' + sec;
+    return min > 0 ? `${min}:${sec}` : `${sec}`;
+}
+
+// Motor estadístico para el reporte de marcas
+function calcularEstadisticasMarcas(datos) {
+    let tiempos = datos.map(d => parseFloat(d.tiempo_final_seg)).filter(v => !isNaN(v));
+    let n = tiempos.length;
+    if (n === 0) return null;
+
+    let media = tiempos.reduce((a, b) => a + b, 0) / n;
+    let orden = [...tiempos].sort((a, b) => a - b);
+    let min = orden[0]; // PB del periodo
+    
+    // Coeficiente de Variación (CV%)
+    let varianza = tiempos.reduce((a, b) => a + Math.pow(b - media, 2), 0) / n;
+    let sd = Math.sqrt(varianza);
+    let cv = (sd / media) * 100;
+
+    // Tendencia (Regresión lineal simple)
+    let xs = datos.map((_, i) => i);
+    let mx = xs.reduce((a, b) => a + b, 0) / n;
+    let my = media;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) {
+        num += (xs[i] - mx) * (tiempos[i] - my);
+        den += Math.pow(xs[i] - mx, 2);
+    }
+    let pendiente = den ? num / den : 0; // Negativo = mejora
+
+    // Sistema Experto de Decisión (Semáforo)
+    let estado = { color: 'gray', bg: 'bg-gray-100 text-gray-700', texto: 'Datos insuficientes para diagnóstico.', icono: 'fa-info-circle' };
+
+    if (n >= 3) {
+        let ultimas = tiempos.slice(-3);
+        // Reglas de negocio deportivas
+        let retroceso = tiempos[n - 1] > tiempos[n - 2] && tiempos[n - 2] > tiempos[n - 3];
+        let estancado = Math.abs(ultimas[0] - ultimas[2]) <= 0.3 && !retroceso;
+
+        if (retroceso) {
+            estado = { color: 'red', bg: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800', texto: 'ALERTA DE RETROCESO: 2 o más marcas empeorando. Verificar fatiga neuromuscular, horas de sueño (sRPE) o técnica.', icono: 'fa-exclamation-triangle' };
+        } else if (estancado) {
+            estado = { color: 'yellow', bg: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800', texto: 'ESTANCAMIENTO DETECTADO: Tiempos planos. Considerar ajuste en la carga de entrenamiento o microciclo de choque.', icono: 'fa-hand-paper' };
+        } else if (pendiente < 0) {
+            estado = { color: 'green', bg: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', texto: 'PROGRESANDO: Curva de asimilación positiva. El plan de entrenamiento está dando resultados óptimos.', icono: 'fa-check-circle' };
+        }
+    }
+
+    // Cálculo de mejora (% y segundos) comparando la primera vs última marca del periodo
+    let mejoraSeg = tiempos[0] - tiempos[n - 1]; // Positivo = mejoró (bajó el tiempo)
+    let mejoraPct = tiempos[0] > 0 ? (mejoraSeg / tiempos[0]) * 100 : 0;
+
+    // Promedios técnicos (filtrando valores nulos o ceros)
+    let swolfs = datos.map(d => parseFloat(d.swolf)).filter(v => !isNaN(v) && v > 0);
+    let avgSwolf = swolfs.length ? (swolfs.reduce((a, b) => a + b, 0) / swolfs.length).toFixed(1) : '-';
+
+    let reaccion = datos.map(d => parseFloat(d.tiempo_reaccion_seg)).filter(v => !isNaN(v) && v > 0);
+    let avgReac = reaccion.length ? (reaccion.reduce((a, b) => a + b, 0) / reaccion.length).toFixed(2) + 's' : '-';
+
+    return { n, media, min, sd, cv, pendiente, estado, mejoraPct, avgSwolf, avgReac };
+}
+
+
+// Función para mostrar parciales y calcular Split Neto
+async function verSplits(idMarca, fecha, tiempoTotal) {
+    var splits = await peticionAjax('splits_marca', { id_marca: idMarca });
+    
+    if (!splits || splits.length === 0) {
+        UI.info('Sin parciales', 'Esta marca no tiene splits registrados en el sistema.');
+        return;
+    }
+
+    // Cálculo del Split Neto (solo si hay más de 1 parcial)
+    var badgeSplit = '<span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold">No aplicable</span>';
+    
+    if (splits.length > 1) {
+        var primero = parseFloat(splits[0].tiempo_parcial_seg);
+        var ultimo = parseFloat(splits[splits.length - 1].tiempo_parcial_seg);
+        var splitNeto = (ultimo - primero).toFixed(2);
+        
+        if (splitNeto < 0) {
+            badgeSplit = `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold">Split Negativo (${splitNeto}s) - ¡Excelente cierre!</span>`;
+        } else {
+            badgeSplit = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">Split Positivo (+${splitNeto}s) - Caída de ritmo</span>`;
+        }
+    }
+
+    var htmlTabla = `
+        <div class="mb-4 text-left">
+            <div class="flex justify-between items-center mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <div>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase">Tiempo Total</p>
+                    <p class="text-lg font-black text-indigo-600">${formatoTiempoJS(tiempoTotal)}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Gestión de Carrera</p>
+                    ${badgeSplit}
+                </div>
+            </div>
+            <div class="overflow-hidden rounded-lg border border-gray-200">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-100 text-gray-600 text-[10px] uppercase tracking-wider">
+                        <tr>
+                            <th class="p-2 text-center border-b">Parcial</th>
+                            <th class="p-2 border-b">Distancia</th>
+                            <th class="p-2 text-center border-b">Tiempo</th>
+                            <th class="p-2 text-center border-b">Viraje</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        ${splits.map(s => `
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-2 text-center font-bold text-gray-500">${s.parcial_numero}</td>
+                                <td class="p-2 font-medium">${s.distancia_parcial_m}m</td>
+                                <td class="p-2 text-center font-mono font-bold text-gray-900">${formatoTiempoJS(s.tiempo_parcial_seg)}</td>
+                                <td class="p-2 text-center font-mono text-gray-500 text-xs">${s.tiempo_viraje_seg ? s.tiempo_viraje_seg + 's' : '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+
+    Swal.fire({
+        title: `<span class="text-lg">Análisis de Parciales <br><span class="text-sm text-gray-500 font-normal">${fecha}</span></span>`,
+        html: htmlTabla,
+        width: '500px',
+        showCloseButton: true,
+        confirmButtonColor: '#4f46e5',
+        confirmButtonText: 'Cerrar'
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {

@@ -46,6 +46,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         jsonSalida($objReporte->evolucionMarcas($idAtleta, $estilo, $distancia, $piscina, $fechaIni, $fechaFin));
     }
 
+    if ($accion === 'splits_marca') {
+    $idMarca = (int)($_GET['id_marca'] ?? 0);
+    jsonSalida($objReporte->splitsDeMarca($idMarca));
+    }
+
+    if ($accion === 'comparativa_categoria') {
+        $idAtleta = (int)($_GET['id_atleta'] ?? 0);
+        $estilo = $_GET['estilo'] ?? '';
+        $distancia = (int)($_GET['distancia'] ?? 0);
+        $piscina = $_GET['piscina'] ?? '';
+        jsonSalida($objReporte->comparativaCategoria($idAtleta, $estilo, $distancia, $piscina));
+    }
+
     if ($accion === 'asistencia_grupo') {
         $idGrupo = (int)($_GET['id_grupo'] ?? 0);
         $fechaIni = $_GET['fecha_ini'] ?? '';
@@ -155,39 +168,164 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $piscina = $_POST['piscina'] ?? '';
                     $fechaIni = $_POST['fecha_ini'] ?? '';
                     $fechaFin = $_POST['fecha_fin'] ?? '';
-                    $datos = $objReporte->evolucionMarcas($idAtleta, $estilo, $distancia, $piscina, $fechaIni, $fechaFin);
-                    $atleta = $objReporte->fichaAtleta($idAtleta);
-                    $nombreAtleta = $atleta ? ($atleta['nombres'] . ' ' . $atleta['apellidos']) : 'Atleta';
-                    $titulo = "Evolucion de Marcas - {$estilo} {$distancia}m ({$piscina})";
+                    
+                    // Formato de fechas para el encabezado
+                    $fechaIniStr = date('d-m-Y', strtotime($fechaIni));
+                    $fechaFinStr = date('d-m-Y', strtotime($fechaFin));
 
-                    $filas = '';
-                    foreach ($datos as $d) {
-                        $pbBadge = ($d['es_pb'] == 1) ? '<span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:bold;">PB</span>' : '';
-                        $filas .= '<tr>'
-                            . '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">' . $d['fecha'] . '</td>'
-                            . '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">' . formatoTiempo($d['tiempo_final_seg']) . '</td>'
-                            . '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;text-align:center;">' . $pbBadge . '</td>'
-                            . '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">' . $d['contexto'] . '</td>'
-                            . '</tr>';
+                    // 1. Consultas a la Base de Datos
+                    $datos = $objReporte->evolucionMarcas($idAtleta, $estilo, $distancia, $piscina, $fechaIni, $fechaFin);
+                    $comparativa = $objReporte->comparativaCategoria($idAtleta, $estilo, $distancia, $piscina);
+                    $atleta = $objReporte->fichaAtleta($idAtleta);
+                    
+                    $nombreAtleta = $atleta ? ($atleta['nombres'] . ' ' . $atleta['apellidos']) : 'Atleta';
+                    $titulo = "Evolución de Marcas - {$estilo} {$distancia}m ({$piscina})";
+
+                    // 2. Motor Estadístico en PHP (Replicando la lógica de JS)
+                    $n = count($datos);
+                    $min = null;
+                    $suma = 0;
+                    $tiempos = [];
+                    foreach($datos as $d) {
+                        $t = (float)$d['tiempo_final_seg'];
+                        $tiempos[] = $t;
+                        $suma += $t;
+                        if($min === null || $t < $min) $min = $t;
+                    }
+                    $media = $n > 0 ? $suma / $n : 0;
+                    
+                    // Cálculo de Estabilidad (CV%)
+                    $varianza = 0;
+                    foreach($tiempos as $t) {
+                        $varianza += pow($t - $media, 2);
+                    }
+                    $varianza = $n > 0 ? $varianza / $n : 0;
+                    $sd = sqrt($varianza);
+                    $cv = $media > 0 ? ($sd / $media) * 100 : 0;
+
+                    // Cálculo de Tendencia (Pendiente lineal)
+                    $mx = $n > 1 ? ($n - 1) / 2 : 0; 
+                    $num = 0; $den = 0;
+                    foreach($tiempos as $i => $t) {
+                        $num += ($i - $mx) * ($t - $media);
+                        $den += pow($i - $mx, 2);
+                    }
+                    $pendiente = $den != 0 ? $num / $den : 0;
+
+                    // 3. Construcción del Dashboard HTML (KPIs y Comparativa)
+                    $htmlComparativa = '';
+                    if ($comparativa && $comparativa['promedio_categoria']) {
+                        $promCat = (float)$comparativa['promedio_categoria'];
+                        $recCat = (float)$comparativa['record_categoria'];
+                        $evaluados = $comparativa['atletas_evaluados'];
+                        
+                        $diffSeg = $promCat - $min;
+                        $diffPct = $promCat > 0 ? ($diffSeg / $promCat) * 100 : 0;
+                        
+                        $colorBg = $diffPct >= 0 ? '#ecfdf5' : '#fef2f2';
+                        $colorBorder = $diffPct >= 0 ? '#a7f3d0' : '#fecaca';
+                        $colorText = $diffPct >= 0 ? '#047857' : '#b91c1c';
+                        
+                        $textoBarra = $diffPct >= 0 
+                            ? '¡Estás un <strong>' . number_format($diffPct, 1) . '% por encima</strong> del promedio! (<strong>-' . number_format($diffSeg, 2) . 's</strong>)'
+                            : 'Estás un <strong>' . number_format(abs($diffPct), 1) . '% por debajo</strong> del promedio. (<strong>+' . number_format(abs($diffSeg), 2) . 's</strong>)';
+                            
+                        $htmlComparativa = '
+                            <div style="background:'.$colorBg.'; border:1px solid '.$colorBorder.'; color:'.$colorText.'; padding:12px; border-radius:8px; margin-bottom:15px; font-size:11px;">
+                                <div style="margin-bottom:4px;"><strong>Tu PB:</strong> ' . formatoTiempo($min) . ' &nbsp;|&nbsp; <strong>Promedio Categoría:</strong> ' . formatoTiempo($promCat) . ' <span style="font-size:10px;">(' . $evaluados . ' atleta(s) evaluados)</span></div>
+                                <div>' . $textoBarra . '<br><span style="font-size:10px;color:#4b5563;">Récord absoluto de la categoría en el club: <strong>' . formatoTiempo($recCat) . '</strong></span></div>
+                            </div>';
                     }
 
-                    $imgTag = $graficaImagen ? '<img src="' . $graficaImagen . '" style="width:100%;max-width:650px;margin:0 auto 20px;display:block;">' : '';
+                    $cvColor = $cv < 2.5 ? '#10b981' : ($cv > 5 ? '#ef4444' : '#f59e0b');
+                    $tendenciaTxt = $pendiente <= -0.05 ? 'Mejorando' : ($pendiente >= 0.05 ? 'Empeorando' : 'Estable');
+                    
+                    $htmlKPIs = '
+                        <table style="width:100%; margin-bottom:20px; text-align:center; border-spacing: 10px 0; border-collapse: separate;">
+                            <tr>
+                                <td style="background:#f9fafb; padding:12px; border:1px solid #e5e7eb; border-radius:8px; width:25%;">
+                                    <span style="font-size:10px; color:#6b7280; text-transform:uppercase; font-weight:bold;">Mejor Tiempo (PB)</span><br>
+                                    <span style="font-size:18px; font-weight:bold; color:#4f46e5;">' . formatoTiempo($min) . '</span>
+                                </td>
+                                <td style="background:#f9fafb; padding:12px; border:1px solid #e5e7eb; border-radius:8px; width:25%;">
+                                    <span style="font-size:10px; color:#6b7280; text-transform:uppercase; font-weight:bold;">Promedio</span><br>
+                                    <span style="font-size:18px; font-weight:bold; color:#1f2937;">' . formatoTiempo($media) . '</span>
+                                </td>
+                                <td style="background:#f9fafb; padding:12px; border:1px solid #e5e7eb; border-radius:8px; width:25%;">
+                                    <span style="font-size:10px; color:#6b7280; text-transform:uppercase; font-weight:bold;">Estabilidad (CV)</span><br>
+                                    <span style="font-size:18px; font-weight:bold; color:'.$cvColor.';">' . number_format($cv, 2) . '%</span>
+                                </td>
+                                <td style="background:#f9fafb; padding:12px; border:1px solid #e5e7eb; border-radius:8px; width:25%;">
+                                    <span style="font-size:10px; color:#6b7280; text-transform:uppercase; font-weight:bold;">Tendencia</span><br>
+                                    <span style="font-size:18px; font-weight:bold; color:#1f2937;">' . number_format($pendiente, 2) . 's <span style="font-size:10px; font-weight:normal;">(' . $tendenciaTxt . ')</span></span>
+                                </td>
+                            </tr>
+                        </table>';
 
+                    // 4. Construcción de la Tabla de Marcas con Splits incrustados
+                    $filas = '';
+                    foreach ($datos as $d) {
+                        $fechaDMY = date('d-m-Y', strtotime($d['fecha']));
+                        $pbBadge = ($d['es_pb'] == 1) ? '<span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:bold;margin-left:5px;">PB</span>' : '';
+                        
+                        $filas .= '<tr style="background:#ffffff;">'
+                            . '<td style="padding:8px 10px; border-bottom:1px solid #e5e7eb; border-top:1px solid #e5e7eb;">' . $fechaDMY . '</td>'
+                            . '<td style="padding:8px 10px; border-bottom:1px solid #e5e7eb; border-top:1px solid #e5e7eb; font-weight:bold; font-family:monospace; font-size:12px;">' . formatoTiempo($d['tiempo_final_seg']) . $pbBadge . '</td>'
+                            . '<td style="padding:8px 10px; border-bottom:1px solid #e5e7eb; border-top:1px solid #e5e7eb; text-align:center;">' . ($d['tiempo_100m'] ? formatoTiempo($d['tiempo_100m']) : '-') . '</td>'
+                            . '<td style="padding:8px 10px; border-bottom:1px solid #e5e7eb; border-top:1px solid #e5e7eb; text-align:center;">' . ($d['num_brazadas'] ?: '-') . '</td>'
+                            . '<td style="padding:8px 10px; border-bottom:1px solid #e5e7eb; border-top:1px solid #e5e7eb; text-align:center; font-weight:bold; color:#0d9488;">' . ($d['swolf'] ?: '-') . '</td>'
+                            . '<td style="padding:8px 10px; border-bottom:1px solid #e5e7eb; border-top:1px solid #e5e7eb;">' . htmlspecialchars($d['contexto']) . '</td>'
+                            . '</tr>';
+                            
+                        // Buscar Splits para esta marca
+                        $splits = $objReporte->splitsDeMarca($d['id_marca']);
+                        if (!empty($splits)) {
+                            $splitNetoHtml = '<span style="color:#6b7280;">No aplicable</span>';
+                            if (count($splits) > 1) {
+                                $primero = (float)$splits[0]['tiempo_parcial_seg'];
+                                $ultimo = (float)$splits[count($splits)-1]['tiempo_parcial_seg'];
+                                $neto = $ultimo - $primero;
+                                if ($neto < 0) {
+                                    $splitNetoHtml = '<span style="color:#047857; font-weight:bold;">Split Negativo (' . number_format($neto, 2) . 's) - ¡Excelente!</span>';
+                                } else {
+                                    $splitNetoHtml = '<span style="color:#b91c1c; font-weight:bold;">Split Positivo (+' . number_format($neto, 2) . 's) - Caída de ritmo</span>';
+                                }
+                            }
+                            
+                            $filas .= '<tr style="background:#f8fafc;"><td colspan="6" style="padding:8px 20px 15px 20px; border-bottom:2px solid #cbd5e1;">';
+                            $filas .= '<div style="font-size:10px; color:#4b5563; margin-bottom:6px;"><strong>Análisis de Parciales:</strong> ' . $splitNetoHtml . '</div>';
+                            $filas .= '<table style="width:80%; font-size:10px; border-collapse:collapse; border:1px solid #e2e8f0; margin-left:20px;">';
+                            $filas .= '<tr style="background:#e2e8f0;"><th style="padding:4px 8px; text-align:center;">Parcial</th><th style="padding:4px 8px;">Distancia</th><th style="padding:4px 8px; text-align:center;">Tiempo</th><th style="padding:4px 8px; text-align:center;">Viraje</th></tr>';
+                            foreach ($splits as $s) {
+                                $filas .= '<tr>'
+                                    . '<td style="padding:4px 8px; border-bottom:1px solid #e2e8f0; text-align:center;">' . $s['parcial_numero'] . '</td>'
+                                    . '<td style="padding:4px 8px; border-bottom:1px solid #e2e8f0;">' . $s['distancia_parcial_m'] . 'm</td>'
+                                    . '<td style="padding:4px 8px; border-bottom:1px solid #e2e8f0; text-align:center; font-weight:bold; font-family:monospace;">' . formatoTiempo($s['tiempo_parcial_seg']) . '</td>'
+                                    . '<td style="padding:4px 8px; border-bottom:1px solid #e2e8f0; text-align:center;">' . ($s['tiempo_viraje_seg'] ? $s['tiempo_viraje_seg'].'s' : '-') . '</td>'
+                                    . '</tr>';
+                            }
+                            $filas .= '</table></td></tr>';
+                        }
+                    }
+
+                    $imgTag = $graficaImagen ? '<img src="' . $graficaImagen . '" style="width:100%;max-width:650px;margin:0 auto 20px;display:block; border:1px solid #e5e7eb; padding:10px; border-radius:8px;">' : '';
+
+                    // 5. Ensamblaje final del documento HTML
                     $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
-                        . 'body{font-family:Helvetica,Arial,sans-serif;margin:30px;color:#1f2937;} '
-                        . 'h1{color:#4f46e5;font-size:18px;margin-bottom:4px;} '
-                        . 'h2{color:#374151;font-size:13px;font-weight:normal;margin-bottom:20px;} '
-                        . 'table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:20px;} '
-                        . 'th{background:#4f46e5;color:#fff;padding:8px 10px;text-align:left;} '
-                        . 'td{padding:6px 10px;border-bottom:1px solid #e5e7eb;} '
-                        . 'tr:nth-child(even) td{background:#f9fafb;} '
-                        . 'footer{margin-top:30px;font-size:9px;color:#9ca3af;text-align:center;} '
+                        . 'body{font-family:Helvetica,Arial,sans-serif;margin:30px;color:#1f2937;}'
+                        . 'h1{color:#4f46e5;font-size:20px;margin-bottom:4px;text-transform:uppercase;}'
+                        . 'h2{color:#374151;font-size:13px;font-weight:normal;margin-bottom:20px;border-bottom:2px solid #e5e7eb;padding-bottom:10px;}'
+                        . 'table.main-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:20px;}'
+                        . 'th.main-th{background:#4f46e5;color:#fff;padding:10px;text-align:left;font-size:11px;}'
+                        . 'footer{margin-top:40px;font-size:9px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:10px;}'
                         . '</style></head><body>'
                         . '<h1>' . $titulo . '</h1>'
-                        . '<h2>Atleta: ' . htmlspecialchars($nombreAtleta) . ' | Periodo: ' . $fechaIni . ' a ' . $fechaFin . '</h2>'
+                        . '<h2>Atleta: <strong>' . htmlspecialchars($nombreAtleta) . '</strong> | Periodo: ' . $fechaIniStr . ' al ' . $fechaFinStr . '</h2>'
+                        . $htmlComparativa
+                        . $htmlKPIs
                         . $imgTag
-                        . '<table><thead><tr><th>Fecha</th><th>Tiempo</th><th style="text-align:center;">PB</th><th>Contexto</th></tr></thead><tbody>' . $filas . '</tbody></table>'
-                        . '<footer>Generado el ' . $fechaGeneracion . ' por ' . htmlspecialchars($generadoPor) . '</footer>'
+                        . '<table class="main-table"><thead><tr><th class="main-th">Fecha</th><th class="main-th">Tiempo Final</th><th class="main-th" style="text-align:center;">Ritmo/100m</th><th class="main-th" style="text-align:center;">Brazadas</th><th class="main-th" style="text-align:center;">SWOLF</th><th class="main-th">Contexto</th></tr></thead><tbody>' . $filas . '</tbody></table>'
+                        . '<footer>Documento oficial generado el ' . $fechaGeneracion . ' por ' . htmlspecialchars($generadoPor) . ' - Sistema de Gestión de Rendimiento Deportivo</footer>'
                         . '</body></html>';
                     break;
 
