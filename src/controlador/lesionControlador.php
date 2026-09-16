@@ -203,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // 5. ELIMINACIÓN FÍSICA PERMANENTE (Solo permitida si ya estaba en papelera)
-    if ($accion === 'eliminardb') {
+   /*  if ($accion === 'eliminardb') {
         Autorizacion::exigir('lesiones', 'eliminardb');
         $id = (int)($_POST['id_lesion'] ?? 0);
         
@@ -224,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['status' => 'error', 'message' => reset($err) ?: 'Error: No se pudo eliminar físicamente.']);
         }
         exit;
-    }
+    } */
 
     ob_end_clean();
     echo json_encode(['status' => 'error', 'message' => 'Acción POST no soportada.']);

@@ -895,7 +895,7 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
     /**
      * Eliminación física: Borra permanentemente la lesión y sus alertas.
      */
-    public function eliminarfisico(int $id_lesion): bool {
+/*     public function eliminarfisico(int $id_lesion): bool {
         try {
             $this->pdo->beginTransaction();
 
@@ -924,7 +924,7 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
             $this->agregarError('bd', 'Error interno al eliminar físicamente.');
             return false;
         }
-    }
+    } */
 
    
 /*     public function eliminarLesionLogicamente(int $id_lesion, string $motivo): bool {
