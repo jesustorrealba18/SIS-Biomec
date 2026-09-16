@@ -139,9 +139,184 @@ class MedicionAntropometrica extends Conexion {
         $this->datos['imc'] = round($peso_kg / ($talla_m * $talla_m), 1);
     }
 
+    /**
+     * Centraliza el mapeo de parámetros para evitar repetirlos en Insert y Update.
+     */
+    private function obtenerMapaParametros(bool $esActualizacion = false): array {
+        $mapa = [
+            ':fecha'                  => ['fecha', PDO::PARAM_STR],
+            ':peso_kg'                => ['peso_kg', PDO::PARAM_STR],
+            ':talla_cm'               => ['talla_cm', PDO::PARAM_STR],
+            ':envergadura_cm'         => ['envergadura_cm', PDO::PARAM_STR],
+            ':perimetro_abdominal_cm' => ['perimetro_abdominal_cm', PDO::PARAM_STR],
+            ':imc'                    => ['imc', PDO::PARAM_STR],
+            ':porcentaje_grasa'       => ['porcentaje_grasa', PDO::PARAM_STR],
+            ':responsable'            => ['responsable', PDO::PARAM_STR],
+        ];
+
+        if ($esActualizacion) {
+            $mapa[':id_medicion'] = ['id_medicion', PDO::PARAM_INT];
+        } else {
+            // Solo en inserción se asigna el atleta (no se debe cambiar al editar)
+            $mapa[':id_atleta'] = ['id_atleta', PDO::PARAM_INT];
+        }
+        return $mapa;
+    }
+
+    /**
+     * SRP: Responsabilidad única de evaluar y registrar alertas por pérdida de peso.
+     */
+    private function gestionarAlertasPeso(int $id_medicion, bool $esActualizacion): void {
+        // Desactivar alerta anterior si es actualización
+        if ($esActualizacion) {
+            $sqlDesact = "UPDATE alertas_biologicas SET activo = 0 WHERE modulo_origen = 'ANTROPOMETRÍA' AND id_registro_origen = :id";
+            $this->pdo->prepare($sqlDesact)->execute([':id' => $id_medicion]);
+        }
+
+        // Buscar medición anterior
+        $sqlAnt = "SELECT peso_kg FROM mediciones_antropometricas 
+                   WHERE id_atleta = :id_atleta AND deleted_at IS NULL AND fecha < :fecha
+                   ORDER BY fecha DESC LIMIT 1";
+        $stmtAnt = $this->pdo->prepare($sqlAnt);
+        $stmtAnt->execute([
+            ':id_atleta' => $this->datos['id_atleta'],
+            ':fecha'     => $this->datos['fecha'] // En insert suele ser "hoy", en update puede variar
+        ]);
+        $anterior = $stmtAnt->fetch(PDO::FETCH_ASSOC);
+
+        if ($anterior) {
+            $pesoNuevo = (float)$this->datos['peso_kg'];
+            $pesoViejo = (float)$anterior['peso_kg'];
+            $variacion = (($pesoNuevo - $pesoViejo) / $pesoViejo) * 100;
+
+            if ($variacion <= -2.0) {
+                $prefijo = $esActualizacion ? "Actualización: Pérdida de peso crítica confirmada" : "Pérdida de peso crítica detectada:";
+                $mensaje = "{$prefijo} " . round($variacion, 2) . "% respecto a la medición anterior.";
+                
+                $sqlAlert = "INSERT INTO alertas_biologicas (id_atleta, modulo_origen, id_registro_origen, tipo_alerta, gravedad, mensaje, activo) 
+                             VALUES (:id, 'ANTROPOMETRÍA', :id_reg, 'PÉRDIDA_PESO_SEVERA', 3, :mensaje, 1)";
+                $stmtAlert = $this->pdo->prepare($sqlAlert);
+                $stmtAlert->execute([':id' => $this->datos['id_atleta'], ':id_reg' => $id_medicion, ':mensaje' => $mensaje]);
+
+                $this->alertaGenerada = ['mensaje' => $mensaje, 'id_medicion' => $id_medicion];
+            }
+        }
+    }
+
+
+    private function insertarMedicionBD(): bool {
+        try {
+            $this->pdo->beginTransaction();
+
+            $sqlInsert = "INSERT INTO mediciones_antropometricas 
+                            (id_atleta, fecha, peso_kg, talla_cm, envergadura_cm, perimetro_abdominal_cm, imc, porcentaje_grasa, responsable) 
+                        VALUES 
+                            (:id_atleta, :fecha, :peso_kg, :talla_cm, :envergadura_cm, :perimetro_abdominal_cm, :imc, :porcentaje_grasa, :responsable)";
+            $stmtIn = $this->pdo->prepare($sqlInsert);
+            $this->autoBind($stmtIn, $this->obtenerMapaParametros(false), $this->datos);
+            $stmtIn->execute();
+            
+            $id_medicion = $this->pdo->lastInsertId();
+
+            // Delegamos la validación de alertas
+            $this->gestionarAlertasPeso((int)$id_medicion, false);
+
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error transaccional en insertarMedicionBD: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function actualizarMedicionBD(): bool {
+        try {
+            $this->pdo->beginTransaction();
+
+            // FÍJATE QUE EXCLUIMOS "id_atleta" DEL UPDATE. NUNCA SE DEBE CAMBIAR AL ATLETA.
+            $sql = "UPDATE mediciones_antropometricas SET
+                        fecha = :fecha, peso_kg = :peso_kg, talla_cm = :talla_cm,
+                        envergadura_cm = :envergadura_cm, perimetro_abdominal_cm = :perimetro_abdominal_cm,
+                        imc = :imc, porcentaje_grasa = :porcentaje_grasa, responsable = :responsable
+                    WHERE id_medicion = :id_medicion";
+            $stmt = $this->pdo->prepare($sql);
+            $this->autoBind($stmt, $this->obtenerMapaParametros(true), $this->datos);
+            $stmt->execute();
+
+            // Delegamos la validación de alertas
+            $this->gestionarAlertasPeso((int)$this->datos['id_medicion'], true);
+
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error en actualizarMedicionBD: " . $e->getMessage());
+            return false;
+        }
+    }
+
+
+    // --- PUNTO DE ENTRADA PÚBLICO: ANULAR ---
+    public function anularMedicion(int $id_medicion, string $motivo): bool {
+        if ($id_medicion <= 0 || empty(trim($motivo))) {
+            $this->agregarError('anulacion', 'Datos inválidos para anular la medición.');
+            return false;
+        }
+        return $this->ejecutarAnulacionBD($id_medicion, trim($motivo));
+    }
+
+    // --- EJECUCIÓN PRIVADA: ANULAR ---
+    private function ejecutarAnulacionBD(int $id_medicion, string $motivo): bool {
+        try {
+            $this->pdo->beginTransaction();
+            $sql = "UPDATE mediciones_antropometricas SET deleted_at = NOW(), motivo_eliminacion = :motivo WHERE id_medicion = :id_medicion";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':id_medicion' => $id_medicion, ':motivo' => $motivo]);
+
+            $sqlAlertas = "UPDATE alertas_biologicas SET activo = 0 WHERE modulo_origen = 'ANTROPOMETRÍA' AND id_registro_origen = :id";
+            $this->pdo->prepare($sqlAlertas)->execute([':id' => $id_medicion]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error transaccional en ejecutarAnulacionBD: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // --- PUNTO DE ENTRADA PÚBLICO: REACTIVAR ---
+    public function reactivarMedicion(int $id_medicion): bool {
+        if ($id_medicion <= 0) {
+            $this->agregarError('reactivacion', 'ID de medición inválido.');
+            return false;
+        }
+        return $this->ejecutarReactivacionBD($id_medicion);
+    }
+
+    // --- EJECUCIÓN PRIVADA: REACTIVAR ---
+    private function ejecutarReactivacionBD(int $id_medicion): bool {
+        try {
+            $this->pdo->beginTransaction();
+            $sql = "UPDATE mediciones_antropometricas SET deleted_at = NULL, motivo_eliminacion = NULL WHERE id_medicion = :id_medicion";
+            $this->pdo->prepare($sql)->execute([':id_medicion' => $id_medicion]);
+
+            $sqlAlertas = "UPDATE alertas_biologicas SET activo = 1 WHERE modulo_origen = 'ANTROPOMETRÍA' AND id_registro_origen = :id";
+            $this->pdo->prepare($sqlAlertas)->execute([':id' => $id_medicion]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Error transaccional en ejecutarReactivacionBD: " . $e->getMessage());
+            return false;
+        }
+    }
+
   
 
-private function insertarMedicionBD(): bool {
+/* private function insertarMedicionBD(): bool {
         try {
             $this->pdo->beginTransaction();
 
@@ -286,50 +461,10 @@ private function insertarMedicionBD(): bool {
             error_log("Error en actualizarMedicionBD: " . $e->getMessage());
             return false;
         }
-    }
+    } */
 
    
-    private function ejecutarConsultaListado(): array {
-        try {
-            $sql = "SELECT m.id_medicion, m.fecha, m.peso_kg, m.talla_cm,
-                           m.envergadura_cm, m.perimetro_abdominal_cm, 
-                           m.imc, m.porcentaje_grasa, m.responsable,
-                           CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta, a.cedula
-                    FROM mediciones_antropometricas m
-                    INNER JOIN atletas a ON m.id_atleta = a.id_atleta
-                    WHERE 1 = 1";
-
-            if ($this->datos['filtro_id_atleta'] > 0) {
-                $sql .= " AND m.id_atleta = :id_atleta";
-            }
-            if ($this->datos['filtro_fecha_inicio'] !== '') {
-                $sql .= " AND m.fecha >= :fecha_inicio";
-            }
-            if ($this->datos['filtro_fecha_fin'] !== '') {
-                $sql .= " AND m.fecha <= :fecha_fin";
-            }
-            $sql .= " ORDER BY m.fecha DESC";
-
-            $stmt = $this->pdo->prepare($sql);
-
-            if ($this->datos['filtro_id_atleta'] > 0) {
-                $stmt->bindValue(':id_atleta', $this->datos['filtro_id_atleta'], PDO::PARAM_INT);
-            }
-            if ($this->datos['filtro_fecha_inicio'] !== '') {
-                $stmt->bindValue(':fecha_inicio', $this->datos['filtro_fecha_inicio'], PDO::PARAM_STR);
-            }
-            if ($this->datos['filtro_fecha_fin'] !== '') {
-                $stmt->bindValue(':fecha_fin', $this->datos['filtro_fecha_fin'], PDO::PARAM_STR);
-            }
-
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error en ejecutarConsultaListado: " . $e->getMessage());
-            return [];
-        }
-    }
-
+  
    
     private function ejecutarConsultaDetalle(): ?array {
         try {
@@ -423,7 +558,7 @@ private function insertarMedicionBD(): bool {
     }
 }
 
-
+/* 
 public function anularMedicion(int $id_medicion, string $motivo): bool {
         try {
             $this->pdo->beginTransaction();
@@ -457,7 +592,7 @@ public function anularMedicion(int $id_medicion, string $motivo): bool {
             $this->pdo->rollBack();
             return false;
         }
-    }
+    } */
 
 
 public function listarMediciones(int $id_atleta = 0, string $fecha_inicio = '', string $fecha_fin = '', string $modo = 'activos'): array {
@@ -625,6 +760,48 @@ public function obtenerAlertasActivas(): array {
         return [];
     }
 }
+
+  private function ejecutarConsultaListado(): array {
+        try {
+            $sql = "SELECT m.id_medicion, m.fecha, m.peso_kg, m.talla_cm,
+                           m.envergadura_cm, m.perimetro_abdominal_cm, 
+                           m.imc, m.porcentaje_grasa, m.responsable,
+                           CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta, a.cedula
+                    FROM mediciones_antropometricas m
+                    INNER JOIN atletas a ON m.id_atleta = a.id_atleta
+                    WHERE 1 = 1";
+
+            if ($this->datos['filtro_id_atleta'] > 0) {
+                $sql .= " AND m.id_atleta = :id_atleta";
+            }
+            if ($this->datos['filtro_fecha_inicio'] !== '') {
+                $sql .= " AND m.fecha >= :fecha_inicio";
+            }
+            if ($this->datos['filtro_fecha_fin'] !== '') {
+                $sql .= " AND m.fecha <= :fecha_fin";
+            }
+            $sql .= " ORDER BY m.fecha DESC";
+
+            $stmt = $this->pdo->prepare($sql);
+
+            if ($this->datos['filtro_id_atleta'] > 0) {
+                $stmt->bindValue(':id_atleta', $this->datos['filtro_id_atleta'], PDO::PARAM_INT);
+            }
+            if ($this->datos['filtro_fecha_inicio'] !== '') {
+                $stmt->bindValue(':fecha_inicio', $this->datos['filtro_fecha_inicio'], PDO::PARAM_STR);
+            }
+            if ($this->datos['filtro_fecha_fin'] !== '') {
+                $stmt->bindValue(':fecha_fin', $this->datos['filtro_fecha_fin'], PDO::PARAM_STR);
+            }
+
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error en ejecutarConsultaListado: " . $e->getMessage());
+            return [];
+        }
+    }
+
 
 
 
