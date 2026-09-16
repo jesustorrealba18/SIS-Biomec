@@ -351,6 +351,8 @@ private function guardarSplits(int $idMarca, array $splits, array $virajes): voi
         return;
     }
 
+    ksort($splits);
+
     // Actualizado para incluir tiempo_viraje_seg
     $sql = "INSERT INTO marcas_splits (id_marca, parcial_numero, distancia_parcial_m, tiempo_parcial_seg, tiempo_viraje_seg) 
             VALUES (:id_marca, :numero, :distancia_parcial, :tiempo_parcial, :tiempo_viraje)";
@@ -1026,7 +1028,7 @@ private function obtenerSplitsDeMarca(int $idAtleta, string $estilo, int $distan
                   AND m.tipo_piscina = :tipo_piscina
                   AND m.es_pb = 1
                   AND m.estado = 'Activo'
-                ORDER BY ms.parcial_numero ASC";
+                ORDER BY ms.distancia_parcial_m ASC";
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':id_atleta', $idAtleta, PDO::PARAM_INT);
