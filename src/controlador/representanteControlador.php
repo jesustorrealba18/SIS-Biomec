@@ -73,6 +73,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
    
     Autorizacion::exigir('representantes', 'gestionar');
     $excluirCedula = !empty($_POST['cedula_original']) ? $_POST['cedula_original'] : null;
+
+    if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
+        $directorioDestino = 'assets/uploads/representantes/'; // Asegúrate de que esta carpeta exista y tenga permisos
+        
+        // Crear directorio si no existe
+        if (!is_dir($directorioDestino)) {
+            mkdir($directorioDestino, 0777, true);
+        }
+
+        $extension = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
+        $tiposPermitidos = ['image/jpeg', 'image/png', 'image/jpg'];
+        $tipoReal = mime_content_type($_FILES['foto']['tmp_name']);
+
+        // Validación de tipo y tamaño (máx 2MB)
+        if (in_array($tipoReal, $tiposPermitidos) && $_FILES['foto']['size'] <= 2097152) {
+            $nombreArchivo = 'rep_' . time() . '_' . uniqid() . '.' . $extension;
+            $rutaFinal = $directorioDestino . $nombreArchivo;
+            
+            if (move_uploaded_file($_FILES['foto']['tmp_name'], $rutaFinal)) {
+                // Inyectamos la ruta en el $_POST para que el modelo la atrape
+                $_POST['foto'] = $rutaFinal; 
+            }
+        } else {
+            echo json_encode(['status' => 'warning', 'errores' => ['foto' => 'La imagen debe ser JPG/PNG y pesar máximo 2MB.']]);
+            exit;
+        }
+    }
+    // ---> FIN LÓGICA DE FOTO <---
    
     $resultado = false; 
 

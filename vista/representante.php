@@ -253,6 +253,11 @@
         .dark .modal-header {
             border-bottom-color: #1f2937;
         }
+
+         /* Para el calendario (date) en modo oscuro */
+        .dark .input-adapt::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
@@ -415,6 +420,13 @@
                             </div>
                         </div>
 
+                        <div class="space-y-2">
+                            <label class="block text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1 mb-1">Fecha de Nacimiento *</label>
+                            <!-- <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Fecha de Nacimiento</label> -->
+                            <input type="date" name="fecha_nacimiento" id="fecha_nacimiento"
+                                data-validar="requerido|fecha_logica|mayor_edad" data-nombre="Fecha de nacimiento" class="input-adapt w-full p-3 rounded-xl">
+                        </div>
+
                         <div>
                             <label class="block text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1 mb-1">CORREO ELECTRÓNICO *</label>
                             <input type="email" id="correo" name="correo" 
@@ -459,6 +471,20 @@
                                 </div>
                             </div>
                             <p class="text-[9px] text-gray-500 dark:text-gray-500 mt-2">* Se muestran atletas sin representante asignado.</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Fotografía</label>
+                            <div class="flex items-center gap-3">
+                                <div id="fotoPreviewRep" class="w-16 h-16 rounded-full bg-gray-200 dark:bg-[#0f0d23] border-2 border-gray-300 dark:border-gray-800 overflow-hidden flex items-center justify-center shrink-0 transition-colors duration-300">
+                                    <i class="fas fa-camera text-gray-400 dark:text-gray-600 text-lg"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <input type="file" name="foto" id="foto_rep" accept="image/jpeg,image/png"
+                                        class="text-sm text-gray-600 dark:text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-500/10 file:text-indigo-600 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-500/20 w-full">
+                                    <p class="text-[10px] text-gray-500 dark:text-gray-500 mt-1">JPG/PNG, máx 2MB</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

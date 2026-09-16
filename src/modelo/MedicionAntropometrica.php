@@ -117,14 +117,14 @@ class MedicionAntropometrica extends Conexion {
         return $this->actualizarMedicionBD();
     }
 
-    public function eliminarMedicion(int $id_medicion): bool {
+   /*  public function eliminarMedicion(int $id_medicion): bool {
         if ($id_medicion <= 0) {
             return false;
         }
 
         $this->datos['id_medicion'] = $id_medicion;
         return $this->eliminarMedicionBD();
-    }
+    } */
 
   
 
@@ -313,7 +313,7 @@ private function insertarMedicionBD(): bool {
     /**
      * Operación SQL atómica para ELIMINACIÓN
      */
-    private function eliminarMedicionBD(): bool {
+   /*  private function eliminarMedicionBD(): bool {
         try {
             $sql = "DELETE FROM mediciones_antropometricas WHERE id_medicion = :id_medicion";
             $stmt = $this->pdo->prepare($sql);
@@ -323,7 +323,7 @@ private function insertarMedicionBD(): bool {
             error_log("Error en eliminarMedicionBD: " . $e->getMessage());
             return false;
         }
-    }
+    } */
 
     /**
      * Operación SQL atómica para LISTADOS

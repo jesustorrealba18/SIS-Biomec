@@ -336,7 +336,7 @@ async function cargarAtletas() {
             }
         } else { 
             if (PERMISOS_MODULO.reactivar) botones += `<button onclick="reactivar(${reg.id_lesion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Restaurar de la papelera"><i class="fas fa-undo-alt text-xs"></i></button>`;
-            if (PERMISOS_MODULO.eliminardb) botones += `<button onclick="eliminarFisico(${reg.id_lesion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Destrucción total"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
+            // if (PERMISOS_MODULO.eliminardb) botones += `<button onclick="eliminarFisico(${reg.id_lesion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Destrucción total"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
         }
         
         filas += `
@@ -559,7 +559,7 @@ async function reactivar(id_lesion) {
     }
 }
 
-async function eliminarFisico(id_lesion) {
+/* async function eliminarFisico(id_lesion) {
     const confirm = await UI.confirmar(
         'Destrucción Permanente', 
         'Esta acción purgará el dato de la base de datos irreversiblemente. ¿Está completamente seguro?'
@@ -576,7 +576,7 @@ async function eliminarFisico(id_lesion) {
     } else {
         UI.error('Acción Bloqueada', resultado?.message);
     }
-}
+} */
 
 
 

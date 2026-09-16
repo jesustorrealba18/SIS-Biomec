@@ -459,7 +459,7 @@ class Atleta extends Conexion {
                       )
                     ORDER BY a.nombres ASC"; */
 
-$sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos,
+$sql = "SELECT a.id_atleta, a.cedula, a.nombres, a.apellidos,foto,
                    (CASE WHEN ar.id_representante = :id_rep1 THEN 1 ELSE 0 END) as seleccionado,
                    IFNULL(ar.autorizacion_medica, 0) as aut_medica,
                    IFNULL(ar.autorizacion_imagen, 0) as aut_imagen
