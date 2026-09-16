@@ -19,7 +19,7 @@ class Representante extends Conexion {
         'autorizacion_medica', 'fecha_aut_medica', 
         'autorizacion_imagen', 'fecha_aut_imagen', 
         'recibe_notificaciones', 
-        'aut_medica', 'aut_imagen'
+        'aut_medica', 'aut_imagen','fecha_nacimiento', 'foto'
     ];
 
     
@@ -101,6 +101,25 @@ private function validarDatos(): bool {
         if (!empty(trim($telEmer))) {
             $this->soloNumeros($telEmer, 'telefono_emergencia');
             $this->longitud($telEmer, 'telefono_emergencia', 11, 11);
+        }
+
+        $fechaNac = $this->datos['fecha_nacimiento'] ?? '';
+
+        // --- VALIDACIÓN DE FECHA DE NACIMIENTO (REPRESENTANTE MAYOR DE EDAD) ---
+        if ($this->requerido($fechaNac, 'fecha_nacimiento')) {
+            // Validar estructura base (YYYY-MM-DD)
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaNac)) {
+                $this->agregarError('fecha_nacimiento', 'Formato de fecha de nacimiento inválido.');
+            } else {
+                // Lógica de mayoría de edad
+                $fechaNacimientoObj = new \DateTime($fechaNac);
+                $hoy = new \DateTime();
+                $edad = $hoy->diff($fechaNacimientoObj)->y;
+                
+                if ($edad < 18) {
+                    $this->agregarError('fecha_nacimiento', 'El representante debe ser mayor de 18 años.');
+                }
+            }
         }
 
         // --- VALIDACIÓN DE CORREO ---
@@ -281,7 +300,7 @@ private function validarDatos(): bool {
         try {
             $this->pdo->beginTransaction();
 
-            $sql = "INSERT INTO representantes (
+            /* $sql = "INSERT INTO representantes (
                         cedula, nombres, apellidos, parentesco, 
                         telefono_principal, telefono_secundario, 
                         correo, direccion, id_usuario
@@ -289,7 +308,17 @@ private function validarDatos(): bool {
                         :cedula, :nombres, :apellidos, :parentesco, 
                         :tel_prin, :tel_sec, 
                         :correo, :direccion, :id_usuario
-                    )";
+                    )"; */
+
+        $sql = "INSERT INTO representantes (
+            cedula, nombres, apellidos, parentesco, 
+            telefono_principal, telefono_secundario, 
+            correo, direccion, id_usuario, fecha_nacimiento, foto
+        ) VALUES (
+            :cedula, :nombres, :apellidos, :parentesco, 
+            :tel_prin, :tel_sec, 
+            :correo, :direccion, :id_usuario, :fecha_nacimiento, :foto
+        )";
             
             $stmt = $this->pdo->prepare($sql);
             
@@ -303,7 +332,9 @@ private function validarDatos(): bool {
                 ':tel_sec'    => ['telefono_emergencia', \PDO::PARAM_STR],
                 ':correo'     => ['correo', \PDO::PARAM_STR],
                 ':direccion'  => ['direccion_residencia', \PDO::PARAM_STR],
-                ':id_usuario' => ['id_usuario_local', \PDO::PARAM_INT] // Usará $locales
+                ':id_usuario' => ['id_usuario_local', \PDO::PARAM_INT], // Usará $locales
+                ':fecha_nacimiento' => ['fecha_nacimiento', \PDO::PARAM_STR], // NUEVO
+                ':foto'             => ['foto', \PDO::PARAM_STR]
             ];
 
             
@@ -387,11 +418,19 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
             $conex->beginTransaction();
 
           
-            $sql = "UPDATE representantes SET 
+            /* $sql = "UPDATE representantes SET 
                         cedula = :cedula, nombres = :nombres, apellidos = :apellidos, 
                         parentesco = :parentesco, telefono_principal = :tel_prin, 
                         telefono_secundario = :tel_sec, correo = :correo, direccion = :direccion
-                    WHERE id_representante = :id_rep";
+                    WHERE id_representante = :id_rep"; */
+
+            $sql = "UPDATE representantes SET 
+            cedula = :cedula, nombres = :nombres, apellidos = :apellidos, 
+            parentesco = :parentesco, telefono_principal = :tel_prin, 
+            telefono_secundario = :tel_sec, correo = :correo, direccion = :direccion,
+            fecha_nacimiento = :fecha_nacimiento,
+            foto = COALESCE(:foto, foto) -- Retiene la foto anterior si :foto es NULL
+        WHERE id_representante = :id_rep";
                     
             $stmt = $conex->prepare($sql);
             $id_representante = (int)($this->datos['cedula_original'] ?? 0);
@@ -405,6 +444,8 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
                 ':tel_sec'    => ['telefono_emergencia', \PDO::PARAM_STR],
                 ':correo'     => ['correo', \PDO::PARAM_STR],
                 ':direccion'  => ['direccion_residencia', \PDO::PARAM_STR],
+                ':fecha_nacimiento' => ['fecha_nacimiento', \PDO::PARAM_STR], // NUEVO
+                ':foto'             => ['foto', \PDO::PARAM_STR],
                 ':id_rep'     => ['id_rep_local', \PDO::PARAM_INT]
             ];
 

@@ -153,6 +153,31 @@ class Validador {
                     let maxNum = parseFloat(input.getAttribute('data-max-num'));
                     if (parseFloat(valor) > maxNum) errores.push(`- <b>${nombreCampo}</b> no debe superar un valor lógico de ${maxNum}.`);
                 }
+
+                // Validación: Mayor de edad (entre 18 y 120 años)
+if (reglas.includes('mayor_edad') && valor !== '') {
+    const partes = valor.split('-');
+    if (partes.length === 3) {
+        const fechaNac = new Date(partes[0], partes[1] - 1, partes[2]);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        // Cálculo exacto de edad
+        let edad = hoy.getFullYear() - fechaNac.getFullYear();
+        const m = hoy.getMonth() - fechaNac.getMonth();
+        if (m < 0 || (m === 0 && hoy.getDate() < fechaNac.getDate())) {
+            edad--;
+        }
+
+        if (edad < 18) {
+            errores.push(`- <b>${nombreCampo}</b> indica que la persona es menor de edad. Debe tener al menos 18 años.`);
+        } else if (edad > 120) {
+            errores.push(`- <b>${nombreCampo}</b> indica una edad superior a 120 años, lo cual no es válido.`);
+        }
+    } else {
+        errores.push(`- <b>${nombreCampo}</b> tiene un formato de fecha corrupto.`);
+    }
+}
             }
         });
 
@@ -173,6 +198,7 @@ class Validador {
         telefono:        'Formato: 0412-1234567 (7 a 20 dígitos)',
         texto:           'Contiene caracteres no permitidos',
         fecha_logica:    'Fecha fuera de rango permitido',
+        mayor_edad: 'Debe tener entre 18 y 120 años',
         fecha_reciente:  'Fecha fuera del rango permitido (máximo 1 mes atrás)'
     };
 
@@ -188,6 +214,7 @@ class Validador {
         telefono:        'Ejemplo: 0412-1234567',
         texto:           'Letras, números y signos de puntuación básicos',
         fecha_logica:    'Fecha no futura, máxima 120 años atrás',
+        mayor_edad: 'Edad entre 18 y 120 años',
         fecha_reciente:  'Fecha reciente, máximo 1 mes atrás'
     };
 
@@ -264,6 +291,33 @@ class Validador {
                 else if (fechaInput < limite) { valido = false; if (!errorEspecifico) errorEspecifico = 'Máximo permitido: hace 1 mes'; }
             }
         }
+
+        // Validación: Mayor de edad (entre 18 y 120 años) - Tiempo real
+if (reglas.includes('mayor_edad') && valor !== '') {
+    const partes = valor.split('-');
+    if (partes.length === 3) {
+        const fechaNac = new Date(partes[0], partes[1] - 1, partes[2]);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        let edad = hoy.getFullYear() - fechaNac.getFullYear();
+        const m = hoy.getMonth() - fechaNac.getMonth();
+        if (m < 0 || (m === 0 && hoy.getDate() < fechaNac.getDate())) {
+            edad--;
+        }
+
+        if (edad < 18) {
+            valido = false;
+            if (!errorEspecifico) errorEspecifico = 'Debe ser mayor de 18 años';
+        } else if (edad > 120) {
+            valido = false;
+            if (!errorEspecifico) errorEspecifico = 'La edad no puede superar los 120 años';
+        }
+    } else {
+        valido = false;
+        if (!errorEspecifico) errorEspecifico = 'Formato de fecha inválido';
+    }
+}
 
         if (campo.hasAttribute('data-min')) {
             const min = parseInt(campo.getAttribute('data-min'));
