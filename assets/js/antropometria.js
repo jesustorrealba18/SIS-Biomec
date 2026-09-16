@@ -119,7 +119,7 @@ async function cargarTablaAntropometria() {
                 if (PERMISOS_ANTROPOMETRIA.eliminar) botones += `<button onclick="anularMedicion(${id_medicion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Anular"><i class="fas fa-trash-alt text-xs"></i></button>`;
             } else {
                 if (PERMISOS_ANTROPOMETRIA.reactivar) botones += `<button onclick="reactivarMedicion(${id_medicion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Restaurar"><i class="fas fa-undo-alt text-xs"></i></button>`;
-                if (PERMISOS_ANTROPOMETRIA.eliminardb) botones += `<button onclick="eliminarFisicoMedicion(${id_medicion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Eliminar permanentemente"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
+                // if (PERMISOS_ANTROPOMETRIA.eliminardb) botones += `<button onclick="eliminarFisicoMedicion(${id_medicion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Eliminar permanentemente"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
             }
         }
 
@@ -422,7 +422,7 @@ async function reactivarMedicion(id_medicion) {
     }
 }
 
-async function eliminarFisicoMedicion(id_medicion) {
+/* async function eliminarFisicoMedicion(id_medicion) {
     const confirm = await (typeof UI !== 'undefined' && UI.confirmar ? 
         UI.confirmar('Eliminación permanente', 'Esta acción es irreversible. ¿Está seguro?', { icon: 'error' }) :
         Swal.fire({
@@ -448,7 +448,7 @@ async function eliminarFisicoMedicion(id_medicion) {
     } else {
         UI.error('Error', resultado?.message);
     }
-}
+} */
 
 // ================== ALERTAS: ATLETAS CON MEDICIÓN VENCIDA ==================
 async function cargarAlertasAntropometria() {
