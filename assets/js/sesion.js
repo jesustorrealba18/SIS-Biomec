@@ -496,7 +496,7 @@ async function verDetalleSesion(id_sesion) {
                 const volumen = (parseInt(serie.repeticiones) || 0) * (parseInt(serie.distancia_m) || 0);
                 if (serie.bloque === 'Calentamiento') volCalentamiento += volumen;
                 else if (serie.bloque === 'Principal') volPrincipal += volumen;
-                else if (serie.bloque === 'VuletaCalma') volVueltaCalma += volumen;
+                else if (serie.bloque === 'VueltaCalma') volVueltaCalma += volumen;
             });
         }
 
@@ -650,7 +650,7 @@ function agregarFilaSerie(datos = null) {
             <select name="serie_bloque[]" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white bloque-select" onchange="calcularVolumenTotalSesion()">
                 <option value="Calentamiento" ${datos && datos.bloque === 'Calentamiento' ? 'selected' : ''}>Calentamiento</option>
                 <option value="Principal" ${datos && datos.bloque === 'Principal' ? 'selected' : (!datos && filasExistentes === 0 ? 'selected' : '')}>Principal</option>
-                <option value="VuletaCalma" ${datos && datos.bloque === 'VuletaCalma' ? 'selected' : (!datos && filasExistentes === 1 ? 'selected' : '')}>Vuelta Calma</option>
+                <option value="VueltaCalma" ${datos && datos.bloque === 'VueltaCalma' ? 'selected' : (!datos && filasExistentes === 1 ? 'selected' : '')}>Vuelta Calma</option>
             </select>
          </td>
 
@@ -751,7 +751,7 @@ function calcularVolumenTotalSesion() {
 
         if (bloque === 'Calentamiento') volCalentamiento += subtotal;
         else if (bloque === 'Principal') volPrincipal += subtotal;
-        else if (bloque === 'VuletaCalma') volVueltaCalma += subtotal;
+        else if (bloque === 'VueltaCalma') volVueltaCalma += subtotal;
     });
 
     const volTotal = volCalentamiento + volPrincipal + volVueltaCalma;

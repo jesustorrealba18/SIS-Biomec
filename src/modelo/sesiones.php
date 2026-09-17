@@ -20,7 +20,7 @@ class Sesiones extends Conexion {
         'Fuerza', 'Flexibilidad', 'Competencia',
     ];
 
-    private const BLOQUES_VALIDOS = ['Calentamiento', 'Principal', 'VuletaCalma'];
+    private const BLOQUES_VALIDOS = ['Calentamiento', 'Principal', 'VueltaCalma'];
     private const ZONAS_VALIDAS = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5'];
 
     private array $datos = [];
@@ -625,7 +625,7 @@ class Sesiones extends Conexion {
                 $cal += $vol;
             } elseif (($serie['bloque'] ?? '') === 'Principal') {
                 $prin += $vol;
-            } elseif (($serie['bloque'] ?? '') === 'VuletaCalma') {
+            } elseif (($serie['bloque'] ?? '') === 'VueltaCalma') {
                 $vuelta += $vol;
             }
         }
