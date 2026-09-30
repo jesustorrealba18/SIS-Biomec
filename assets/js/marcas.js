@@ -58,8 +58,12 @@ async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
     if (datos) opciones.body = datos; 
 
+    const urlFinal = datos 
+        ? `${API_URL}&accion=${accion}` 
+        : `${API_URL}&accion=${accion}&_t=${new Date().getTime()}`;
+
     try {
-        const respuesta = await fetch(`${API_URL}&accion=${accion}`, opciones);
+        const respuesta = await fetch(urlFinal, opciones);
         if (!respuesta.ok) throw new Error('Error de comunicación con el servidor');
         return await respuesta.json();
     } catch (error) {
@@ -67,6 +71,16 @@ async function peticionAjax(accion, datos = null) {
         UI.error('Error del Servidor', 'No se pudo procesar la solicitud.');
         return null;
     }
+
+  /*   try {
+        const respuesta = await fetch(`${API_URL}&accion=${accion}`, opciones);
+        if (!respuesta.ok) throw new Error('Error de comunicación con el servidor');
+        return await respuesta.json();
+    } catch (error) {
+        console.error("Error Fetch:", error);
+        UI.error('Error del Servidor', 'No se pudo procesar la solicitud.');
+        return null;
+    } */
 }
 
 function obtenerFechaLocal() {
@@ -1101,7 +1115,24 @@ const infoTiempo = NormalizadorPiscina.procesarTiempo(marca.tiempo_final_seg, ma
             ? `<span class="bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase shadow-[0_0_10px_rgba(245,158,11,0.2)]" title="¡Mejor Marca Personal!"><i class="fas fa-star mr-1"></i>PB</span>` 
             : '';
 
-        const botonAccion = (estadoFiltro === 'Activo' && puedeEliminar)
+            const botonAccion = (estadoFiltro === 'Activo' && puedeEliminar)
+            ? `<button data-accion="eliminar" data-id="${marca.id_marca}" class="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt pointer-events-none"></i></button>`
+            : (estadoFiltro === 'Inactivo' && puedeRestaurar)
+            ? `<button data-accion="reactivar" data-id="${marca.id_marca}" class="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo pointer-events-none"></i></button>`
+            : '';
+
+        const botonEditar = (estadoFiltro === 'Activo' && puedeEditar)
+            ? `<button data-accion="editar" data-id="${marca.id_marca}" class="text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar Registro de Tiempo"><i class="fas fa-edit text-base pointer-events-none"></i></button>`
+            : '';
+
+        const accionesHTML = (botonEditar || botonAccion) ? `${botonEditar}${botonAccion}` : '';
+        const justificacionHTML = (estadoFiltro === 'Inactivo' && marca.motivo_eliminacion)
+            ? `<div class="text-[9px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1 w-48 leading-tight">
+                <i class="fas fa-exclamation-circle"></i> Anulado: ${marca.motivo_eliminacion}
+               </div>`
+            : '';
+
+/*         const botonAccion = (estadoFiltro === 'Activo' && puedeEliminar)
             ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
             : (estadoFiltro === 'Inactivo' && puedeRestaurar)
             ? `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`
@@ -1117,7 +1148,7 @@ const infoTiempo = NormalizadorPiscina.procesarTiempo(marca.tiempo_final_seg, ma
                 <i class="fas fa-exclamation-circle"></i> Anulado: ${marca.motivo_eliminacion}
                </div>`
             : '';
-
+ */
         let clasesFila = "hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345]";
         html += `
             <tr id="fila-marca-${marca.id_marca}" data-id-marca="${marca.id_marca}" class="${clasesFila}">
@@ -1138,7 +1169,28 @@ const infoTiempo = NormalizadorPiscina.procesarTiempo(marca.tiempo_final_seg, ma
                         ${badgePB}
                     </div>
                 </td>
+               <td class="p-4 align-middle">
+                    <span class="bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
+                        ${marca.nivel_evento}
+                    </span>
+                    ${justificacionHTML}
+                </td>
+                <td class="p-4 text-xs font-mono text-gray-600 dark:text-gray-400 align-middle" data-sort="${marca.fecha}">
+                    ${fechaLatina}
+                </td>
                 <td class="p-4 align-middle">
+                    <div class="flex flex-wrap items-center gap-2 md:justify-end">
+                        <button data-accion="ver" data-id="${marca.id_marca}" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Análisis de Rendimiento">
+                            <i class="fas fa-chart-line text-base pointer-events-none"></i>
+                        </button>
+                        ${accionesHTML}
+                    </div>
+                </td>
+            </tr> 
+        `;
+    });
+
+   /*  `<td class="p-4 align-middle">
                     <span class="bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
                         ${marca.nivel_evento}
                     </span>
@@ -1155,9 +1207,7 @@ const infoTiempo = NormalizadorPiscina.procesarTiempo(marca.tiempo_final_seg, ma
                         ${accionesHTML}
                     </div>
                 </td>
-            </tr>
-        `;
-    });
+            </tr>` */
 
     tbody.innerHTML = html;
 
@@ -2349,7 +2399,7 @@ async function reactivarMarca(id_marca) {
 }); */
 
 
-window.addEventListener('error', function(e) {
+/* window.addEventListener('error', function(e) {
     // Si el error es un ReferenceError causado por manipular el DOM en F12
     if (e.message.includes('is not defined')) {
         e.preventDefault(); // Oculta el error rojo nativo de la consola
@@ -2360,6 +2410,37 @@ window.addEventListener('error', function(e) {
         // Detenemos la propagación para intentar frenar el "fantasma" de DataTables
         e.stopPropagation();
         return true;
+    }
+}); */
+
+
+// =====================================================================
+// BLINDAJE DE EVENTOS: Delegación para DataTables (Evita DOM Hacking F12)
+// =====================================================================
+document.getElementById('tablaMarcasContainer').addEventListener('click', function(e) {
+    // Solo actuamos si el clic fue dentro de uno de nuestros botones de acción
+    const btn = e.target.closest('button[data-accion]');
+    if (!btn) return;
+    
+    const accion = btn.getAttribute('data-accion');
+    const idRaw = btn.getAttribute('data-id');
+    const idValido = parseInt(idRaw); // Casteo estricto del lado del cliente
+
+    // 🛡️ Filtrado estricto en frontend: Si alteran el HTML con letras, falla aquí
+    if (isNaN(idValido) || idValido <= 0) {
+        UI.error('Operación Bloqueada', 'Se ha detectado una alteración estructural en el identificador del registro.');
+        return;
+    }
+
+    // Enrutador
+    if (accion === 'ver') {
+        verDetallesMarca(idValido);
+    } else if (accion === 'editar') {
+        abrirModalMarca(idValido);
+    } else if (accion === 'eliminar') {
+        eliminarMarca(idValido);
+    } else if (accion === 'reactivar') {
+        reactivarMarca(idValido);
     }
 });
 
