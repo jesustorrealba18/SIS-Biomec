@@ -227,7 +227,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Notificacion::NotificarMarcas('RESTORE', $datosFiltrados, $id);
             echo json_encode(['status' => 'success']);
         } else {
-            echo json_encode(['status' => 'error', 'message' => 'No se pudo restaurar la marca.']);
+               $errores = $objMarca->obtenerErrores();
+            
+            if (!empty($errores)) {
+                echo json_encode(['status' => 'warning', 'message' => reset($errores),'errores' => $errores]);
+            } else {
+                echo json_encode(['status' => 'error','message' => 'El servidor no pudo consolidar Restaurar el registro.'
+                ]);
+            }
+
         }
         exit;
     }

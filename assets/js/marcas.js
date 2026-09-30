@@ -99,7 +99,9 @@ function cerrarModalMarca() {
     const inputBuscar = document.getElementById('inputBuscarAtleta');
     if(inputBuscar) {
         inputBuscar.value = '';
-        inputBuscar.classList.remove('text-emerald-400', 'font-bold');
+        inputBuscar.classList.remove('text-indigo-600', 'text-emerald-400', 'dark:text-emerald-400', 'font-bold');
+        
+        // inputBuscar.classList.remove('text-emerald-400', 'font-bold');
         inputBuscar.removeAttribute('readonly');
         document.getElementById('btnLimpiarAtleta').classList.add('hidden');
     }
@@ -143,11 +145,23 @@ async function abrirModalMarca(id_marca = null) {
         input.classList.remove('bg-slate-200', 'dark:bg-slate-700', 'cursor-not-allowed', 'opacity-80');
     }
 });
+
+// =====================================================================
+    // 🛠️ BLINDAJE VISUAL: Forzar siempre el Modo Manual por defecto al abrir
+    // =====================================================================
+    document.getElementById('contenedorTiemposManuales').classList.remove('hidden');
+    document.getElementById('btnIrCrono').classList.add('hidden');
+    document.getElementById('tiempo_final_humano').required = true;
+    
+    const btnGuardar = document.getElementById('btnGuardar');
+    btnGuardar.classList.remove('hidden');
+    document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-stopwatch text-emerald-400"></i> Registrar Control de Tiempo';
+    // =====================================================================
     
     document.getElementById('id_marca').value = '';
     document.getElementById('accion_form').value = 'registrar';
     
-    const btnGuardar = document.getElementById('btnGuardar');
+    // const btnGuardar = document.getElementById('btnGuardar');
     btnGuardar.innerHTML = 'GUARDAR REGISTRO <i class="fas fa-save ml-2"></i>';
     btnGuardar.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
     btnGuardar.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
@@ -211,8 +225,10 @@ async function abrirModalMarca(id_marca = null) {
         
         selectSesion.disabled = false;
         selectEvento.disabled = false;
-        selectSesion.classList.add('opacity-50', 'pointer-events-none', 'bg-[#0f0d23]');
-        selectEvento.classList.add('opacity-50', 'pointer-events-none', 'bg-[#0f0d23]');
+        selectSesion.classList.add('opacity-50', 'pointer-events-none', 'bg-gray-200', 'dark:bg-[#0f0d23]');
+        selectEvento.classList.add('opacity-50', 'pointer-events-none', 'bg-gray-200', 'dark:bg-[#0f0d23]');
+/*         selectSesion.classList.add('opacity-50', 'pointer-events-none', 'bg-[#0f0d23]');
+        selectEvento.classList.add('opacity-50', 'pointer-events-none', 'bg-[#0f0d23]'); */
         selectSesion.tabIndex = -1;
         selectEvento.tabIndex = -1;
 
@@ -222,7 +238,8 @@ async function abrirModalMarca(id_marca = null) {
         const nombreCompleto = `${data.atleta_nombres || data.nombres} ${data.atleta_apellidos || data.apellidos}`;
         inputAtleta.value = `${nombreCompleto} (C.I: ${data.atleta_cedula || data.cedula})`;
         inputAtleta.disabled = true; 
-        inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'text-emerald-400', 'font-bold');
+        inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'text-indigo-600', 'dark:text-emerald-400', 'font-bold');
+        // inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'text-emerald-400', 'font-bold');
         document.getElementById('btnLimpiarAtleta').classList.add('hidden');
 
         // 3. CONGELAR / CONFIGURAR FECHA
@@ -285,6 +302,7 @@ async function abrirModalMarca(id_marca = null) {
         }
 
         // Mutar visualmente el botón
+        document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-edit text-amber-500"></i> Editar Control de Tiempo';
         document.getElementById('accion_form').value = 'actualizar';
         btnGuardar.innerHTML = 'ACTUALIZAR REGISTRO <i class="fas fa-sync-alt ml-2"></i>';
         btnGuardar.classList.replace('bg-indigo-600', 'bg-emerald-600');
@@ -471,12 +489,14 @@ function resetearContexto() {
     const selectSesion = document.getElementById('id_sesion');
    // 1. Liberar Evento (Limpiamos disabled, tabIndex y TODAS las clases de bloqueo)
     selectEvento.disabled = false;
-    selectEvento.classList.remove('opacity-30', 'opacity-50', 'cursor-not-allowed', 'pointer-events-none', 'bg-[#0f0d23]');
+    // selectEvento.classList.remove('opacity-30', 'opacity-50', 'cursor-not-allowed', 'pointer-events-none', 'bg-[#0f0d23]');
+    selectEvento.classList.remove('opacity-30', 'opacity-50', 'cursor-not-allowed', 'pointer-events-none', 'bg-gray-200', 'dark:bg-[#0f0d23]', 'bg-[#0f0d23]');
     selectEvento.tabIndex = 0;
     
     // 2. Liberar Sesión
     selectSesion.disabled = false;
-    selectSesion.classList.remove('opacity-30', 'opacity-50', 'cursor-not-allowed', 'pointer-events-none', 'bg-[#0f0d23]');
+    selectSesion.classList.remove('opacity-30', 'opacity-50', 'cursor-not-allowed', 'pointer-events-none', 'bg-gray-200', 'dark:bg-[#0f0d23]', 'bg-[#0f0d23]');
+    // selectSesion.classList.remove('opacity-30', 'opacity-50', 'cursor-not-allowed', 'pointer-events-none', 'bg-[#0f0d23]');
     selectSesion.tabIndex = 0;
     
     // Liberar Fecha
@@ -2297,7 +2317,9 @@ async function reactivarMarca(id_marca) {
             UI.exito('Restaurado', 'El registro vuelve a estar activo.');
             cargarTablaMarcas();
         } else {
-            UI.error('Error', 'No se pudo procesar la reactivación.');
+            
+            UI.error('Error', resultado?.message || 'No se pudo procesar la reactivación.');
+
         }
     }
 }
@@ -2325,6 +2347,21 @@ async function reactivarMarca(id_marca) {
     cargarSelectsContexto();
     cargarTablaMarcas();
 }); */
+
+
+window.addEventListener('error', function(e) {
+    // Si el error es un ReferenceError causado por manipular el DOM en F12
+    if (e.message.includes('is not defined')) {
+        e.preventDefault(); // Oculta el error rojo nativo de la consola
+        
+        // Lanzamos tu alerta de diseño
+        UI.error('Operación Bloqueada', 'Se detectó una alteración manual en la estructura del botón.');
+        
+        // Detenemos la propagación para intentar frenar el "fantasma" de DataTables
+        e.stopPropagation();
+        return true;
+    }
+});
 
 // =====================================================================
 // INICIALIZADOR MODIFICADO CON RECEPCIÓN DE ATAJOS (DEEP LINKING)

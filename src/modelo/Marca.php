@@ -293,6 +293,11 @@ class Marca extends Conexion {
         }
 
         $infoMarca = $this->obtenerInfoBasicaMarca($id);
+
+        if (empty($infoMarca)) {
+        $this->agregarError('id_marca', 'Alerta de Seguridad: El registro que intenta archivar no existe en el sistema.');
+        return false;
+        }
         $this->datos['id_atleta'] = $infoMarca['id_atleta'] ?? null;
 
         return $this->eliminarMarca();
@@ -306,6 +311,12 @@ class Marca extends Conexion {
         }
 
         $infoMarca = $this->obtenerInfoBasicaMarca($id);
+
+        if (empty($infoMarca)) {
+        $this->agregarError('id_marca', 'Alerta de Seguridad: El registro que intenta restaurar no existe en el sistema.');
+        return false;
+        }
+
         $this->datos['id_atleta'] = $infoMarca['id_atleta'] ?? null;
 
         return $this->reactivarMarca();
@@ -691,9 +702,15 @@ private function actualizarMarca(): bool
             $stmt->bindValue(':id', (int)$this->datos['id_marca'], PDO::PARAM_INT);
             $stmt->bindValue(':motivo', trim($this->datos['motivo_eliminacion']), PDO::PARAM_STR);
            
+        $stmt->execute();
+        
+        // BLINDAJE: Si no se modificó ninguna fila, el registro ya estaba inactivo
+        if ($stmt->rowCount() === 0) {
+            $this->agregarError('id_marca', 'Operación rechazada: El registro no sufrió cambios (es posible que ya se encuentre archivado).');
+            return false;
+        }
 
-
-            return  $stmt->execute();
+        return true;
                        
         } catch (PDOException $e) {
              if ($e->getCode() == 23000) {
@@ -716,6 +733,12 @@ private function actualizarMarca(): bool
             
             $stmt->bindValue(':id', (int)$this->datos['id_marca'], PDO::PARAM_INT);
             $stmt->execute();
+
+            // BLINDAJE 2: Verificamos si se actualizó el estado realmente
+        if ($stmt->rowCount() === 0) {
+            $this->agregarError('id_marca', 'Operación rechazada: El registro no sufrió cambios (es posible que ya se encuentre activo).');
+            return false;
+        }
            
             return true;
             
