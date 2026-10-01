@@ -298,7 +298,11 @@ class Marca extends Conexion {
         $this->agregarError('id_marca', 'Alerta de Seguridad: El registro que intenta archivar no existe en el sistema.');
         return false;
         }
-        $this->datos['id_atleta'] = $infoMarca['id_atleta'] ?? null;
+        // Hidratamos el estado encapsulado con la info completa para usarla internamente
+        $this->datos['id_atleta']   = $infoMarca['id_atleta'] ?? null;
+        $this->datos['estilo']      = $infoMarca['estilo'] ?? null;
+        $this->datos['distancia_m'] = $infoMarca['distancia_m'] ?? null;
+        $this->datos['tipo_piscina']= $infoMarca['tipo_piscina'] ?? null;
 
         return $this->eliminarMarca();
    }
@@ -317,7 +321,11 @@ class Marca extends Conexion {
         return false;
         }
 
-        $this->datos['id_atleta'] = $infoMarca['id_atleta'] ?? null;
+       // Hidratamos el estado encapsulado con la info completa para usarla internamente
+        $this->datos['id_atleta']   = $infoMarca['id_atleta'] ?? null;
+        $this->datos['estilo']      = $infoMarca['estilo'] ?? null;
+        $this->datos['distancia_m'] = $infoMarca['distancia_m'] ?? null;
+        $this->datos['tipo_piscina']= $infoMarca['tipo_piscina'] ?? null;
 
         return $this->reactivarMarca();
    }
@@ -395,7 +403,7 @@ private function guardarSplits(int $idMarca, array $splits, array $virajes): voi
 /**
  * Determina si una marca es Personal Best (PB)
  */
-private function calcularPB(int $idAtleta, string $estilo, int $distancia, string $tipoPiscina, float $tiempoFinal, ?int $idMarcaExcluir = null): int
+/* private function calcularPB(int $idAtleta, string $estilo, int $distancia, string $tipoPiscina, float $tiempoFinal, ?int $idMarcaExcluir = null): int
 {
     $sql = "SELECT MIN(tiempo_final_seg) as mejor_tiempo 
             FROM marcas 
@@ -425,9 +433,59 @@ private function calcularPB(int $idAtleta, string $estilo, int $distancia, strin
     $historial = $stmt->fetch(PDO::FETCH_ASSOC);
 
     return (empty($historial['mejor_tiempo']) || $tiempoFinal < (float)$historial['mejor_tiempo']) ? 1 : 0;
-}
+} */
 
-private function registrarMarca(): bool
+    /**
+     * Motor Auto-Reparable de Personal Best (PB)
+     * Resetea la categoría exacta y vuelve a coronar la mejor marca activa. recalcularPB
+     */
+    private function recalcularPB(int $idAtleta, string $estilo, int $distancia, string $tipoPiscina): void {
+        // 1. Despojar del título de PB a TODAS las marcas del atleta en esta categoría
+        $sqlReset = "UPDATE marcas 
+                     SET es_pb = 0 
+                     WHERE id_atleta = :id_atleta 
+                       AND estilo = :estilo 
+                       AND distancia_m = :distancia 
+                       AND tipo_piscina = :tipo_piscina";
+        
+        $stmtReset = $this->pdo->prepare($sqlReset);
+        $stmtReset->execute([
+            ':id_atleta' => $idAtleta,
+            ':estilo' => $estilo,
+            ':distancia' => $distancia,
+            ':tipo_piscina' => $tipoPiscina
+        ]);
+
+        // 2. Buscar la verdadera mejor marca Activa (Menor tiempo, y la más antigua en caso de empate)
+        $sqlMejor = "SELECT id_marca 
+                     FROM marcas 
+                     WHERE id_atleta = :id_atleta 
+                       AND estilo = :estilo 
+                       AND distancia_m = :distancia 
+                       AND tipo_piscina = :tipo_piscina 
+                       AND estado = 'Activo'
+                     ORDER BY tiempo_final_seg ASC, fecha ASC 
+                     LIMIT 1";
+        
+        $stmtMejor = $this->pdo->prepare($sqlMejor);
+        $stmtMejor->execute([
+            ':id_atleta' => $idAtleta,
+            ':estilo' => $estilo,
+            ':distancia' => $distancia,
+            ':tipo_piscina' => $tipoPiscina
+        ]);
+        
+        $mejorMarca = $stmtMejor->fetch(PDO::FETCH_ASSOC);
+
+        // 3. Coronar al ganador único
+        if ($mejorMarca) {
+            $sqlCoronar = "UPDATE marcas SET es_pb = 1 WHERE id_marca = :id_marca";
+            $stmtCoronar = $this->pdo->prepare($sqlCoronar);
+            $stmtCoronar->execute([':id_marca' => $mejorMarca['id_marca']]);
+        }
+    }
+
+/* private function registrarMarca(): bool
 {
     try {
         $this->pdo->beginTransaction();
@@ -468,9 +526,7 @@ private function registrarMarca(): bool
             $this->autoBind($stmt, $mapaPrincipal, $this->datos, ['es_pb_local' => $es_pb]);
             
             $stmt->execute(); 
-           /*  $id_marca_insertada = $this->pdo->lastInsertId();
-            $this->datos['id_marca'] = $id_marca_insertada; // Guardamos el ID generado para notificaciones y splits
-           */
+        
 
         $idMarca = $this->pdo->lastInsertId();
         $this->datos['id_marca'] = $idMarca;
@@ -500,7 +556,59 @@ private function registrarMarca(): bool
             return false;
     }
 }
+ */
 
+
+private function registrarMarca(): bool
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            // Insertamos la tabla principal forzando el PB a 0 temporalmente
+            $sqlInsert = "INSERT INTO marcas (id_atleta, id_sesion, id_evento, estilo, distancia_m, tipo_piscina, tiempo_final_seg, tiempo_reaccion_seg, es_pb, fecha, observaciones) 
+                          VALUES (:id_atleta, :id_sesion, :id_evento, :estilo, :distancia, :piscina, :tiempo, :reaccion, :es_pb, :fecha, :obs)";
+            
+            $stmt = $this->pdo->prepare($sqlInsert);
+            $mapaPrincipal = [
+                ':id_atleta' => ['id_atleta', PDO::PARAM_INT],
+                ':id_sesion' => ['id_sesion', PDO::PARAM_INT],
+                ':id_evento' => ['id_evento', PDO::PARAM_INT],
+                ':estilo'    => ['estilo', PDO::PARAM_STR],
+                ':distancia' => ['distancia_m', PDO::PARAM_INT],
+                ':piscina'   => ['tipo_piscina', PDO::PARAM_STR],
+                ':tiempo'    => ['tiempo_final_seg', PDO::PARAM_STR],
+                ':reaccion'  => ['tiempo_reaccion_seg', PDO::PARAM_STR],
+                ':es_pb'     => ['es_pb_local', PDO::PARAM_INT], 
+                ':fecha'     => ['fecha', PDO::PARAM_STR],
+                ':obs'       => ['observaciones', PDO::PARAM_STR]
+            ];
+
+            // Pasamos es_pb_local estricto en 0
+            $this->autoBind($stmt, $mapaPrincipal, $this->datos, ['es_pb_local' => 0]);
+            $stmt->execute(); 
+
+            $idMarca = $this->pdo->lastInsertId();
+            $this->datos['id_marca'] = $idMarca;
+
+            $this->guardarSwolf($idMarca, (int)($this->datos['brazadas_por_largo'] ?? 0), $this->datos['tipo_piscina'], (int)$this->datos['distancia_m'], (float)$this->datos['tiempo_final_seg']);
+            $this->guardarSplits($idMarca, $this->datos['splits'] ?? [], $this->datos['virajes'] ?? []);
+
+            // NUEVO: Ordenar que se re-evalúe matemáticamente el PB de esta prueba
+            $this->recalcularPB((int)$this->datos['id_atleta'], $this->datos['estilo'], (int)$this->datos['distancia_m'], $this->datos['tipo_piscina']);
+
+            $this->pdo->commit();
+            return true;
+
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados (Atleta, Sesión o Evento) fueron alterados y no existen en el sistema.');
+                return false;
+            }
+            error_log("ERROR REAL DE SQL: " . $e->getMessage()); 
+            return false;
+        }
+    }
 
     // =====================================================================
     // LOGICA PRIVADA DE TELEMETRÍA (SRP)
@@ -597,7 +705,7 @@ private function registrarMarca(): bool
     }
 }
 
-private function actualizarMarca(): bool
+/* private function actualizarMarca(): bool
 {
     try {
         $this->pdo->beginTransaction();
@@ -682,7 +790,79 @@ private function actualizarMarca(): bool
             error_log("Error en actualizacion de marca: " . $e->getMessage());
             return false;
     }
-}
+} */
+
+
+    private function actualizarMarca(): bool
+    {
+        try {
+            $this->pdo->beginTransaction();
+            $idMarca = (int)$this->datos['id_marca'];
+
+            // 1. Obtener datos viejos para ver si hubo un cambio de prueba/categoría
+            $infoAntigua = $this->obtenerInfoBasicaMarca($idMarca);
+
+            // 2. Ejecutar UPDATE principal forzando el PB a 0 temporalmente
+            $sqlUpdate = "UPDATE marcas SET 
+                           estilo = :estilo, distancia_m = :distancia, tipo_piscina = :piscina, tiempo_final_seg = :tiempo, 
+                           tiempo_reaccion_seg = :reaccion, es_pb = :es_pb, fecha = :fecha, observaciones = :obs
+                          WHERE id_marca = :id_marca_condicion";
+            
+            $stmt = $this->pdo->prepare($sqlUpdate);
+            $mapaPrincipal = [
+                ':estilo'    => ['estilo', PDO::PARAM_STR],
+                ':distancia' => ['distancia_m', PDO::PARAM_INT],
+                ':piscina'   => ['tipo_piscina', PDO::PARAM_STR],
+                ':tiempo'    => ['tiempo_final_seg', PDO::PARAM_STR],
+                ':reaccion'  => ['tiempo_reaccion_seg', PDO::PARAM_STR],     
+                ':es_pb'     => ['es_pb_local', PDO::PARAM_INT], 
+                ':fecha'     => ['fecha', PDO::PARAM_STR],
+                ':obs'       => ['observaciones', PDO::PARAM_STR],
+                ':id_marca_condicion' => ['id_marca_condicion', PDO::PARAM_INT]
+            ];
+            $this->autoBind($stmt, $mapaPrincipal, $this->datos, [
+                'es_pb_local' => 0, 
+                'id_marca_condicion' => $idMarca
+            ]);
+            $stmt->execute();
+
+            // 3. Limpieza y Re-inserción de submétricas
+            $stmtDelSwolf = $this->pdo->prepare("DELETE FROM marcas_swolf WHERE id_marca = :id");
+            $stmtDelSwolf->bindValue(':id', $idMarca, PDO::PARAM_INT);
+            $stmtDelSwolf->execute();
+
+            $stmtDelSplits = $this->pdo->prepare("DELETE FROM marcas_splits WHERE id_marca = :id");
+            $stmtDelSplits->bindValue(':id', $idMarca, PDO::PARAM_INT);
+            $stmtDelSplits->execute();
+
+            $this->guardarSwolf($idMarca, (int)($this->datos['brazadas_por_largo'] ?? 0), $this->datos['tipo_piscina'], (int)$this->datos['distancia_m'], (float)$this->datos['tiempo_final_seg']);
+            $this->guardarSplits($idMarca, $this->datos['splits'] ?? [], $this->datos['virajes'] ?? []);
+
+            // 4. NUEVO: Ordenar que se re-evalúe matemáticamente el PB de la prueba ACTUAL editada
+            $this->recalcularPB((int)$this->datos['id_atleta'], $this->datos['estilo'], (int)$this->datos['distancia_m'], $this->datos['tipo_piscina']);
+
+            // 5. NUEVO: Si editaron la distancia/estilo/piscina, recalcular también la categoría VIEJA
+            if (!empty($infoAntigua) && (
+                $infoAntigua['estilo'] !== $this->datos['estilo'] || 
+                $infoAntigua['distancia_m'] != $this->datos['distancia_m'] || 
+                $infoAntigua['tipo_piscina'] !== $this->datos['tipo_piscina']
+            )) {
+                $this->recalcularPB((int)$infoAntigua['id_atleta'], $infoAntigua['estilo'], (int)$infoAntigua['distancia_m'], $infoAntigua['tipo_piscina']);
+            }
+
+            $this->pdo->commit();
+            return true;
+
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Los datos vinculados fueron alterados y no existen en el sistema.');
+                return false;
+            }
+            error_log("Error en actualizacion de marca: " . $e->getMessage());
+            return false;
+        }
+    }
 
 
 
@@ -691,7 +871,7 @@ private function actualizarMarca(): bool
     // MÉTODOS DE CONSULTA Y ESTADO (Listados y Soft Delete)
     // =====================================================================
     
-    private function eliminarMarca(): bool {
+ private function eliminarMarca(): bool {
         try {
             $sql = "UPDATE marcas 
                     SET estado = 'Inactivo', motivo_eliminacion = :motivo 
@@ -709,6 +889,13 @@ private function actualizarMarca(): bool
             $this->agregarError('id_marca', 'Operación rechazada: El registro no sufrió cambios (es posible que ya se encuentre archivado).');
             return false;
         }
+
+       $this->recalcularPB(
+                (int)$this->datos['id_atleta'], 
+                $this->datos['estilo'], 
+                (int)$this->datos['distancia_m'], 
+                $this->datos['tipo_piscina']
+            );
 
         return true;
                        
@@ -739,6 +926,15 @@ private function actualizarMarca(): bool
             $this->agregarError('id_marca', 'Operación rechazada: El registro no sufrió cambios (es posible que ya se encuentre activo).');
             return false;
         }
+
+        // Recálculo del PB consumiendo el estado encapsulado puro
+            $this->recalcularPB(
+                (int)$this->datos['id_atleta'], 
+                $this->datos['estilo'], 
+                (int)$this->datos['distancia_m'], 
+                $this->datos['tipo_piscina']
+            );
+        
            
             return true;
             
@@ -752,7 +948,10 @@ private function actualizarMarca(): bool
             error_log("Error en reactivarMarca: " . $e->getMessage());
             return false;
         }
-    }
+    } 
+
+
+        
 
     public function listarMarcas(string $estado = 'Activo', int $id_atleta = 0, int $distancia = 0, string $estilo = '', string $piscina = ''): array {
         
@@ -973,7 +1172,7 @@ public function obtenerDetallePorId(int $id_marca): ?array {
      */
     public function obtenerInfoBasicaMarca(int $id_marca): array {
         try {
-            $sql = "SELECT id_atleta, distancia_m, estilo, tiempo_final_seg 
+            $sql = "SELECT id_atleta, distancia_m, estilo, tipo_piscina, tiempo_final_seg 
                     FROM marcas 
                     WHERE id_marca = :id";
             $stmt = $this->pdo->prepare($sql);

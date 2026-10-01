@@ -972,7 +972,7 @@ formMarca.addEventListener('submit', async (e) => {
     // =================================================================
     const modoCrono = localStorage.getItem('sgrd_crono_mode') || 'manual';
     
-    if (modoCrono === 'live') {
+    if (modoCrono === 'live' && accionActual === 'registrar') {
         const registrosCompletos = CronometroSeguro.obtenerArrayRegistros();
         
         if (!registrosCompletos || registrosCompletos.length === 0) {
