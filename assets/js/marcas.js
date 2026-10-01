@@ -4,6 +4,8 @@
 const modalMarca = document.getElementById('modalMarca');
 const formMarca = document.getElementById('formMarca');
 const btnGuardar = document.getElementById('btnGuardar');
+// 1. VARIABLE GLOBAL PARA CACHÉ DE METAS
+window.metasEventoActivo = [];
 
 const API_URL = 'index.php?p=marcas'; 
 
@@ -101,6 +103,8 @@ function cerrarModalMarca() {
     
     // 1. Resetear el formulario tradicional
     formMarca.reset();
+    restaurarSelectsPrueba();        // <- NUEVO: Restauramos selects
+    window.metasEventoActivo = [];   // <- NUEVO: Purgamos caché de metas
     resetearContexto();
     
     // 2. Limpiar el contenedor dinámico de Splits (RF-06)
@@ -369,6 +373,8 @@ function seleccionarAtleta(atleta) {
     
     dropdown.classList.add('hidden');
     btnLimpiar.classList.remove('hidden');
+
+    evaluarMetasAtleta(atleta.id_atleta);
 }
 
 // Asegurar que el botón limpiar esté definido (si no existe, se crea)
@@ -379,6 +385,7 @@ if (typeof btnLimpiar !== 'undefined' && btnLimpiar) {
         inputBuscar.classList.remove('text-indigo-600', 'dark:text-emerald-400', 'font-bold');
         inputBuscar.removeAttribute('readonly');
         btnLimpiar.classList.add('hidden');
+        restaurarSelectsPrueba();
         inputBuscar.focus();
     };
 }
@@ -429,6 +436,7 @@ function configurarExclusividadSelects() {
     const inputFecha = document.getElementById('fecha');
 
     selectSesion.addEventListener('change', function() {
+        window.metasEventoActivo = [];
         if (this.value !== "") {
             // 1. Bloqueamos evento
             selectEvento.value = "";
@@ -448,7 +456,7 @@ function configurarExclusividadSelects() {
         }
     });
 
-    selectEvento.addEventListener('change', function() {
+    /* selectEvento.addEventListener('change', function() {
         if (this.value !== "") {
             // 1. Bloqueamos sesión
             selectSesion.value = "";
@@ -466,6 +474,46 @@ function configurarExclusividadSelects() {
             // 3. Cargar atletas
             cargarAtletasPorContexto('evento', this.value);
         } else {
+            resetearContexto();
+        }
+    }); */
+
+    selectEvento.addEventListener('change', async function() {
+        if (this.value !== "") {
+            // 1. Bloqueamos sesión (Tu código actual)
+            selectSesion.value = "";
+            selectSesion.disabled = true;
+            selectSesion.classList.add('opacity-30', 'cursor-not-allowed');
+            
+            // 2. Lógica de Fecha (Tu código actual)
+            const optionSeleccionada = this.options[this.selectedIndex];
+            const inputFecha = document.getElementById('fecha');
+            inputFecha.value = ""; 
+            inputFecha.min = optionSeleccionada.getAttribute('data-inicio');
+            inputFecha.max = optionSeleccionada.getAttribute('data-fin');
+            inputFecha.readOnly = false; 
+            inputFecha.classList.remove('opacity-70', 'pointer-events-none');
+            
+            // 3. Cargar atletas (Tu código actual)
+            cargarAtletasPorContexto('evento', this.value);
+
+            // ==========================================
+            // 4. NUEVO: DESCARGAR METAS DEL EVENTO
+            // ==========================================
+            try {
+                // Consultamos al controlador de eventos
+                const resp = await fetch(`index.php?p=eventos&accion=obtenerDetalle&id=${this.value}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    window.metasEventoActivo = data.metas || []; // Guardamos las metas en caché
+                }
+            } catch (e) {
+                console.error('Error sincronizando metas:', e);
+                window.metasEventoActivo = [];
+            }
+
+        } else {
+            window.metasEventoActivo = []; // Vaciamos si deseleccionan
             resetearContexto();
         }
     });
@@ -2443,6 +2491,100 @@ document.getElementById('tablaMarcasContainer').addEventListener('click', functi
         reactivarMarca(idValido);
     }
 });
+
+
+
+
+// 2. FUNCIÓN DE RESTAURACIÓN DE FÁBRICA
+function restaurarSelectsPrueba() {
+    const selectEstilo = document.getElementById('estilo');
+    const selectDistancia = document.getElementById('distancia_m');
+    
+    // Limpiamos colores de feedback visual
+    selectEstilo.classList.remove('bg-indigo-50', 'dark:bg-indigo-900/20', 'bg-emerald-50', 'dark:bg-emerald-900/20');
+    selectDistancia.classList.remove('bg-indigo-50', 'dark:bg-indigo-900/20', 'bg-emerald-50', 'dark:bg-emerald-900/20');
+
+    // Restauramos HTML idéntico al de marcas_6.php
+    selectEstilo.innerHTML = `
+        <option value="" disabled selected>Seleccione estilo...</option>
+        <option value="Libre">Libre (Crawl)</option>
+        <option value="Espalda">Espalda</option>
+        <option value="Braza">Braza (Pecho)</option>
+        <option value="Mariposa">Mariposa</option>
+        <option value="Combinado">Combinado (Medley)</option>
+    `;
+
+    selectDistancia.innerHTML = `
+        <option value="" disabled selected>Seleccione distancia...</option>
+        <option value="50">50 Metros</option>
+        <option value="100">100 Metros</option>
+        <option value="200">200 Metros</option>
+        <option value="400">400 Metros</option>
+        <option value="800">800 Metros</option>
+        <option value="1500">1500 Metros</option>
+    `;
+    
+    // Forzamos el evento change para limpiar la caja de splits (si había alguna)
+    selectDistancia.dispatchEvent(new Event('change'));
+}
+
+
+function evaluarMetasAtleta(idAtleta) {
+    const selectEstilo = document.getElementById('estilo');
+    const selectDistancia = document.getElementById('distancia_m');
+
+    // 1. Siempre partimos de un lienzo limpio y estándar
+    restaurarSelectsPrueba();
+
+    // 2. Si no es un evento, o el evento no tenía ninguna meta registrada, terminamos (Queda manual)
+    const idEventoActivo = document.getElementById('id_evento').value;
+    if (!idEventoActivo || window.metasEventoActivo.length === 0) return;
+
+    // 3. Filtramos las metas exactas de ESTE atleta
+    const metasAtleta = window.metasEventoActivo.filter(m => m.id_atleta == idAtleta);
+
+    if (metasAtleta.length === 0) {
+        // Escenario A: 0 METAS. 
+        // No hacemos nada, el usuario elige manualmente de la lista estándar restaurada.
+        return;
+        
+    } else if (metasAtleta.length === 1) {
+        // Escenario B: 1 META. Autocompletado directo.
+        selectEstilo.value = metasAtleta[0].estilo;
+        selectDistancia.value = metasAtleta[0].distancia;
+        
+        // Efecto visual: Pintamos los inputs para indicar que el sistema lo hizo
+        selectEstilo.classList.add('bg-indigo-50', 'dark:bg-indigo-900/20');
+        selectDistancia.classList.add('bg-indigo-50', 'dark:bg-indigo-900/20');
+        
+        // CRÍTICO: Disparamos 'change' para que se dibujen las cajas de splits dinámicos de marcas
+        selectDistancia.dispatchEvent(new Event('change'));
+        
+    } else {
+        // Escenario C: MÚLTIPLES METAS. Acortamos la lista para mostrar solo sus pruebas.
+        selectEstilo.innerHTML = '<option value="" disabled selected>Seleccione estilo inscrito...</option>';
+        selectDistancia.innerHTML = '<option value="" disabled selected>Seleccione distancia inscrita...</option>';
+        
+        const estilosUnicos = [...new Set(metasAtleta.map(m => m.estilo))];
+        const distanciasUnicas = [...new Set(metasAtleta.map(m => m.distancia))];
+
+        estilosUnicos.forEach(e => {
+            const label = (e === 'Libre') ? 'Libre (Crawl)' : (e === 'Braza') ? 'Braza (Pecho)' : (e === 'Combinado') ? 'Combinado (Medley)' : e;
+            selectEstilo.add(new Option(label, e));
+        });
+
+        distanciasUnicas.forEach(d => {
+            selectDistancia.add(new Option(`${d} Metros`, d));
+        });
+        
+        // Efecto visual: Indicamos que la lista fue filtrada para él
+        selectEstilo.classList.add('bg-emerald-50', 'dark:bg-emerald-900/20');
+        selectDistancia.classList.add('bg-emerald-50', 'dark:bg-emerald-900/20');
+    }
+}
+
+
+
 
 // =====================================================================
 // INICIALIZADOR MODIFICADO CON RECEPCIÓN DE ATAJOS (DEEP LINKING)
