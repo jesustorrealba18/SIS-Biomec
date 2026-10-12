@@ -140,7 +140,6 @@ if (isset($_SESSION['id'])) {
 
                 <!-- GRID DE CARDS -->
                 <div id="gridCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    <!-- Reportes Existentes -->
                     <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('evolucion_marcas')">
                         <div class="flex items-start justify-between mb-4">
                             <div class="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xl">
@@ -251,7 +250,6 @@ if (isset($_SESSION['id'])) {
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Informacion completa del grupo con lista detallada de atletas asignados.</p>
                     </div>
 
-                    <!-- NUEVOS REPORTES DE SESIONES -->
                     <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('detalle_sesion')">
                         <div class="flex items-start justify-between mb-4">
                             <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center text-amber-600 dark:text-amber-400 text-xl">
@@ -273,6 +271,19 @@ if (isset($_SESSION['id'])) {
                         <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Resumen de Sesiones por Grupo (PDF)</h3>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Resumen de volumen y sesiones por grupo en un periodo con grafica de barras.</p>
                     </div>
+
+                    <!-- ============ NUEVA TARJETA: Horario Semanal por Grupo ============ -->
+                    <div class="card-reporte tarjeta transition-colors duration-300" onclick="mostrarReporte('horario_semanal_grupo')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-lime-100 dark:bg-lime-500/15 flex items-center justify-center text-lime-600 dark:text-lime-400 text-xl">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400 dark:text-gray-600 mt-1"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-1">Horario Semanal por Grupo (PDF)</h3>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Muestra los carriles y horarios asignados a un grupo durante la semana.</p>
+                    </div>
+                    <!-- ==================== FIN NUEVA TARJETA ==================== -->
                 </div>
 
                 <!-- SECCION DINAMICA -->

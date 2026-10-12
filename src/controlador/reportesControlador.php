@@ -139,6 +139,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         jsonSalida($objReporte->resumenSesionesGrupo($idGrupo, $estado, $fechaIni, $fechaFin));
     }
 
+    /* ============ NUEVO: acción para obtener el horario semanal ============ */
+    if ($accion === 'horario_semanal_grupo') {
+        $idGrupo = (int)($_GET['id_grupo'] ?? 0);
+        if ($idGrupo <= 0) {
+            jsonSalida(['error' => 'ID de grupo no válido']);
+        }
+        jsonSalida($objReporte->horarioSemanalGrupo($idGrupo));
+    }
+    /* ==================== FIN NUEVO ==================== */
+
     require_once 'vista/reportes.php';
 }
 
@@ -1152,6 +1162,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $html .= '<footer>Generado el ' . $fechaGeneracion . ' por ' . htmlspecialchars($generadoPor) . '</footer>';
                     $html .= '</body></html>';
                     break;
+
+                /* ============ NUEVO: caso PDF para horario semanal ============ */
+                case 'horario_semanal_grupo':
+                    $idGrupo = (int)($_POST['id_grupo'] ?? 0);
+                    $datos = $objReporte->horarioSemanalGrupo($idGrupo);
+
+                    if ($datos['nombre_grupo'] === 'Grupo no encontrado' || $datos['nombre_grupo'] === 'Error') {
+                        jsonSalida(['status' => 'error', 'message' => 'No se pudo obtener el horario del grupo.']);
+                    }
+
+                    $titulo = 'Horario Semanal - ' . htmlspecialchars($datos['nombre_grupo']);
+                    $subtitulo = 'Entrenador: ' . htmlspecialchars($datos['entrenador_nombre'] ?? 'Sin asignar');
+
+                    $dias = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+
+                    // Recolectar bloques horarios únicos
+                    $bloquesHorarios = [];
+                    foreach ($datos['horario'] as $asignacionesDia) {
+                        foreach ($asignacionesDia as $asig) {
+                            $clave = $asig['hora_inicio'] . ' - ' . $asig['hora_fin'];
+                            $bloquesHorarios[$clave] = ['inicio' => $asig['hora_inicio'], 'fin' => $asig['hora_fin']];
+                        }
+                    }
+                    uasort($bloquesHorarios, function($a, $b) {
+                        return strcmp($a['inicio'], $b['inicio']);
+                    });
+
+                    $htmlTabla = '<table style="width:100%; border-collapse: collapse; font-size: 9px; margin-top: 15px;">';
+                    $htmlTabla .= '<thead><tr>';
+                    $htmlTabla .= '<th style="background:#4f46e5; color:#fff; padding:6px 4px; text-align:left; width: 70px;">Hora</th>';
+                    foreach ($dias as $dia) {
+                        $htmlTabla .= '<th style="background:#4f46e5; color:#fff; padding:6px 4px; text-align:center;">' . $dia . '</th>';
+                    }
+                    $htmlTabla .= '</tr></thead><tbody>';
+
+                    if (empty($bloquesHorarios)) {
+                        $htmlTabla .= '<tr><td colspan="8" style="text-align:center; padding:20px; color:#6b7280;">Este grupo no tiene asignaciones de carril activas.</td></tr>';
+                    } else {
+                        foreach ($bloquesHorarios as $clave => $horas) {
+                            $htmlTabla .= '<tr>';
+                            $htmlTabla .= '<td style="padding:4px 6px; border-bottom:1px solid #e5e7eb; font-weight:bold; background:#f3f4f6; font-size:8px; text-align:center;">' 
+                                        . $horas['inicio'] . '<br>' . $horas['fin'] . '</td>';
+                            
+                            foreach ($dias as $dia) {
+                                $contenido = '—';
+                                if (!empty($datos['horario'][$dia])) {
+                                    foreach ($datos['horario'][$dia] as $asig) {
+                                        if ($asig['hora_inicio'] === $horas['inicio'] && $asig['hora_fin'] === $horas['fin']) {
+                                            $contenido = '<span style="background:#eef2ff; color:#4f46e5; padding:2px 6px; border-radius:6px; font-weight:bold;">Carril ' . $asig['carril_numero'] . '</span>';
+                                            break;
+                                        }
+                                    }
+                                }
+                                $htmlTabla .= '<td style="padding:4px 2px; border-bottom:1px solid #e5e7eb; text-align:center; font-size:9px;">' . $contenido . '</td>';
+                            }
+                            $htmlTabla .= '</tr>';
+                        }
+                    }
+                    $htmlTabla .= '</tbody></table>';
+
+                    $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+                        body{font-family:Helvetica,Arial,sans-serif;margin:30px;color:#1f2937;}
+                        h1{color:#4f46e5;font-size:18px;margin-bottom:4px;}
+                        h2{color:#374151;font-size:12px;font-weight:normal;margin-bottom:4px;}
+                        table{width:100%;border-collapse:collapse;font-size:9px;margin-top:15px;}
+                        th{background:#4f46e5;color:#fff;padding:6px 4px;text-align:left;font-size:9px;}
+                        td{padding:4px 6px;border-bottom:1px solid #e5e7eb;font-size:9px;}
+                        tr:nth-child(even) td{background:#f9fafb;}
+                        footer{margin-top:30px;font-size:9px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:15px;}
+                        .info-grupo{background:#f9fafb;border-radius:8px;padding:12px;margin:12px 0;font-size:11px;}
+                        .info-grupo strong{color:#4f46e5;}
+                    </style></head><body>';
+
+                    $html .= '<h1>' . $titulo . '</h1>';
+                    $html .= '<h2>' . $subtitulo . '</h2>';
+                    $html .= '<div class="info-grupo"><strong>Total de bloques asignados:</strong> ' . ($datos['total_asignaciones'] ?? 0) . ' asignaciones activas en la semana</div>';
+                    $html .= $htmlTabla;
+                    $html .= '<footer>Generado el ' . $fechaGeneracion . ' por ' . htmlspecialchars($generadoPor) . '</footer>';
+                    $html .= '</body></html>';
+                    break;
+                /* ==================== FIN NUEVO ==================== */
 
                 default:
                     jsonSalida(['status' => 'error', 'message' => 'Tipo de reporte no reconocido.']);

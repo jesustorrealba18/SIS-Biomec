@@ -24,7 +24,9 @@ const TITULOS = {
     lista_grupos: { titulo: 'Lista de Grupos', sub: 'Directorio completo de grupos de entrenamiento - Descarga directa en PDF' },
     detalle_grupo: { titulo: 'Detalle del Grupo', sub: 'Informacion completa del grupo con lista de atletas asignados - Descarga directa en PDF' },
     detalle_sesion: { titulo: 'Detalle de Sesion', sub: 'Informacion completa de la sesion con series y volumen - Descarga directa en PDF' },
-    resumen_sesiones_grupo: { titulo: 'Resumen de Sesiones por Grupo', sub: 'Resumen de volumen y sesiones por grupo en un periodo - Descarga directa en PDF' }
+    resumen_sesiones_grupo: { titulo: 'Resumen de Sesiones por Grupo', sub: 'Resumen de volumen y sesiones por grupo en un periodo - Descarga directa en PDF' },
+    // NUEVO
+    horario_semanal_grupo: { titulo: 'Horario Semanal por Grupo', sub: 'Distribucion de carriles y horarios de entrenamiento por dia' }
 };
 
 async function peticionAjax(accion, params = {}) {
@@ -230,6 +232,16 @@ function mostrarReporte(tipo) {
         return;
     }
 
+    // NUEVO
+    if (tipo === 'horario_semanal_grupo') {
+        renderFiltrosHorarioSemanal();
+        document.getElementById('contenedorGrafica').classList.add('hidden');
+        document.getElementById('contenedorTabla').classList.add('hidden');
+        document.getElementById('estadoVacio').classList.add('hidden');
+        document.getElementById('btnDescargarPDF').classList.remove('hidden');
+        return;
+    }
+
     document.getElementById('btnDescargarPDF').classList.remove('hidden');
     renderFiltros(tipo);
     seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -319,6 +331,13 @@ function renderFiltrosResumenSesionesGrupo() {
         + labelFiltro('Desde', 'fFechaIni', inputFecha('fFechaIni', fechaHaceUnMes()))
         + labelFiltro('Hasta', 'fFechaFin', inputFecha('fFechaFin', fechaHoy()))
         + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="aplicarFiltros()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-filter"></i> Aplicar Filtros</button></div>';
+}
+
+// NUEVO: filtros del horario semanal
+function renderFiltrosHorarioSemanal() {
+    document.getElementById('contenedorFiltros').innerHTML =
+        labelFiltro('Grupo', 'fGrupoHorario', selectHtml('fGrupoHorario', opcionesGrupos()))
+        + '<div class="sm:col-span-2 lg:col-span-4 flex justify-end"><button onclick="cargarHorarioSemanal()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-2"><i class="fas fa-eye"></i> Ver Horario</button></div>';
 }
 
 function opcionesEntrenadores(selected) {
@@ -565,148 +584,7 @@ function renderResumenSesionesGrupo(datos) {
     }).join('');
 }
 
-/* function renderEvolucionMarcas(datos) {
-    if (graficaActual) graficaActual.destroy();
-
-    // 1. Ejecutar motor estadístico
-    let stats = calcularEstadisticasMarcas(datos);
-    
-    // 2. Construir el Dashboard de KPIs y Alerta
-    let tituloHTML = `
-        <div class="flex justify-between items-center mb-1">
-            <h3 class="text-lg font-bold text-gray-800 dark:text-white">Análisis de Rendimiento</h3>
-            <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold">N = ${stats ? stats.n : 0} pruebas</span>
-        </div>
-        <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-4">Evaluación estadística y técnica del nadador.</p>
-    `;
-
-    if (stats) {
-        // Lógica visual para KPIs
-        let cvColor = stats.cv < 2.5 ? 'text-emerald-500' : (stats.cv > 5 ? 'text-red-500' : 'text-amber-500');
-        let tendenciaIcono = stats.pendiente <= -0.05 ? '<i class="fas fa-arrow-down text-emerald-500"></i>' 
-                           : (stats.pendiente >= 0.05 ? '<i class="fas fa-arrow-up text-red-500"></i>' 
-                           : '<i class="fas fa-arrow-right text-amber-500"></i>');
-
-        tituloHTML += `
-            <!-- Semáforo de Toma de Decisiones -->
-            <div class="mb-5 p-4 rounded-xl flex items-start gap-4 shadow-sm ${stats.estado.bg}">
-                <div class="mt-1"><i class="fas ${stats.estado.icono} text-2xl"></i></div>
-                <div>
-                    <h4 class="font-black text-sm uppercase tracking-wider mb-1">Diagnóstico del Sistema</h4>
-                    <p class="text-xs font-medium opacity-90 leading-relaxed">${stats.estado.texto}</p>
-                </div>
-            </div>
-
-            <!-- Tarjetas KPI -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Mejor Tiempo (PB)</p>
-                    <p class="text-xl font-black text-indigo-600 dark:text-indigo-400">${formatoTiempoJS(stats.min)}</p>
-                </div>
-                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Promedio</p>
-                    <p class="text-xl font-black text-gray-800 dark:text-white">${formatoTiempoJS(stats.media)}</p>
-                </div>
-                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]" title="Coeficiente de Variación (<2.5% = Muy Regular)">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Estabilidad (CV%)</p>
-                    <p class="text-xl font-black ${cvColor}">${stats.cv.toFixed(2)}%</p>
-                </div>
-                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-100 dark:border-[#252345]" title="Tendencia de progresión en segundos por prueba">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Tendencia</p>
-                    <p class="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2">
-                        ${stats.pendiente.toFixed(2)}s ${tendenciaIcono}
-                    </p>
-                </div>
-            </div>
-        `;
-    }
-
-    // Inyectar títulos y KPIs antes de la gráfica
-    document.getElementById('tituloGrafica').innerHTML = tituloHTML;
-    document.getElementById('subtituloGrafica').textContent = '';
-
-    // 3. Renderizar Gráfica
-    var labels = datos.map(d => d.fecha);
-    var tiempos = datos.map(d => parseFloat(d.tiempo_final_seg));
-    var pointColors = datos.map(d => d.es_pb == 1 ? '#f59e0b' : '#4f46e5');
-    var pointRadius = datos.map(d => d.es_pb == 1 ? 6 : 4);
-
-    var ctx = document.getElementById('graficaReporte').getContext('2d');
-    graficaActual = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Tiempo (seg)',
-                data: tiempos,
-                borderColor: '#4f46e5',
-                backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                borderWidth: 3,
-                pointBackgroundColor: pointColors,
-                pointRadius: pointRadius,
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            var idx = context.dataIndex;
-                            var esPb = datos[idx].es_pb == 1 ? ' 🏆 (PB)' : '';
-                            return 'Tiempo: ' + formatoTiempoJS(context.raw) + esPb;
-                        }
-                    }
-                }
-            },
-            scales: { x: { grid: { display: false } }, y: { title: { display: true, text: 'Segundos' } } }
-        }
-    });
-
-    // 4. Renderizar Tabla Extendida (Aprovechando los nuevos datos del backend)
-    document.getElementById('theadReporte').innerHTML = `
-        <tr>
-            <th class="p-3">Fecha</th>
-            <th class="p-3 text-center">Contexto</th>
-            <th class="p-3 text-center">Tiempo</th>
-            <th class="p-3 text-center" title="Ritmo cada 100m">Ritmo/100m</th>
-            <th class="p-3 text-center">Brazadas</th>
-            <th class="p-3 text-center" title="Índice de Eficiencia">SWOLF</th>
-            <th class="p-3">Observaciones</th>
-        </tr>
-    `;
-
-    document.getElementById('tbodyReporte').innerHTML = datos.map(function(d) {
-        var pbBadge = d.es_pb == 1 ? ' <span class="text-amber-500 ml-1" title="Personal Best"><i class="fas fa-trophy"></i></span>' : '';
-        var contextoBadge = d.contexto === 'Competencia' ? '<span class="text-indigo-600 font-bold dark:text-indigo-400">Competición</span>' : '<span class="text-gray-500">Control</span>';
-        
-        // Datos técnicos (pueden venir nulos si no hubo registro de SWOLF)
-        var ritmo = d.tiempo_100m ? formatoTiempoJS(d.tiempo_100m) : '-';
-        var brazadas = d.num_brazadas ? d.num_brazadas : '-';
-        var swolf = d.swolf ? d.swolf : '-';
-
-        return `
-            <tr onclick="verSplits(${d.id_marca}, '${d.fecha}', '${d.tiempo_final_seg}')" class="hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors border-b border-gray-100 dark:border-[#252345] cursor-pointer" title="Haga clic para ver los parciales (splits)">
-                <td class="p-3 text-gray-900 dark:text-white text-sm whitespace-nowrap" data-label="Fecha">${d.fecha}</td>
-                <td class="p-3 text-center text-xs" data-label="Contexto">${contextoBadge}</td>
-                <td class="p-3 text-center text-gray-900 dark:text-white font-mono font-bold text-sm whitespace-nowrap" data-label="Tiempo">
-                    ${formatoTiempoJS(d.tiempo_final_seg)} ${pbBadge}
-                </td>
-                <td class="p-3 text-center text-gray-600 dark:text-gray-400 font-mono text-xs" data-label="Ritmo/100m">${ritmo}</td>
-                <td class="p-3 text-center text-gray-600 dark:text-gray-400 font-mono text-xs" data-label="Brazadas">${brazadas}</td>
-                <td class="p-3 text-center font-bold text-teal-600 dark:text-teal-400 font-mono text-xs" data-label="SWOLF">${swolf}</td>
-                <td class="p-3 text-gray-500 dark:text-gray-400 text-[11px]" data-label="Observaciones">${d.observaciones || 'Ninguna'}</td>
-            </tr>
-        `;
-    }).join('');
-} */
-
-
-    function renderEvolucionMarcas(datos, comparativa) {
+function renderEvolucionMarcas(datos, comparativa) {
     if (graficaActual) graficaActual.destroy();
 
     // 1. Ejecutar motor estadístico para el atleta
@@ -1077,6 +955,117 @@ function renderCargaSRPE(datos) {
         `;
     }).join('');
 }
+
+/* ============ NUEVO: Horario semanal por grupo ============ */
+async function cargarHorarioSemanal() {
+    var selGrupo = document.getElementById('fGrupoHorario');
+    if (!selGrupo || !selGrupo.value) {
+        UI.advertencia('Selección requerida', 'Debe seleccionar un grupo para ver su horario.');
+        return;
+    }
+
+    var datos = await peticionAjax('horario_semanal_grupo', { id_grupo: selGrupo.value });
+    if (!datos || datos.nombre_grupo === 'Error' || !datos.horario) {
+        UI.error('Error', 'No se pudo cargar el horario del grupo.');
+        return;
+    }
+
+    document.getElementById('contenedorGrafica').classList.add('hidden');
+    document.getElementById('contenedorTabla').classList.remove('hidden');
+    document.getElementById('estadoVacio').classList.add('hidden');
+
+    var dias = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+
+    // Recolectar bloques horarios únicos
+    var bloques = {};
+    dias.forEach(function(dia) {
+        if (datos.horario[dia]) {
+            datos.horario[dia].forEach(function(asig) {
+                var clave = asig.hora_inicio + ' - ' + asig.hora_fin;
+                bloques[clave] = { inicio: asig.hora_inicio, fin: asig.hora_fin };
+            });
+        }
+    });
+
+    // Ordenar bloques por hora de inicio
+    var bloquesOrdenados = Object.keys(bloques).sort(function(a, b) {
+        return bloques[a].inicio.localeCompare(bloques[b].inicio);
+    });
+
+    var thead = '<tr><th class="p-3 text-left">Hora</th>';
+    dias.forEach(function(dia) {
+        thead += '<th class="p-3 text-center">' + dia + '</th>';
+    });
+    thead += '</tr>';
+    document.getElementById('theadReporte').innerHTML = thead;
+
+    var tbody = '';
+    if (bloquesOrdenados.length === 0) {
+        tbody = '<tr><td colspan="8" class="text-center p-8 text-gray-500">Este grupo no tiene asignaciones de carril activas.</td></tr>';
+    } else {
+        bloquesOrdenados.forEach(function(clave) {
+            var horas = bloques[clave];
+            tbody += '<tr class="hover:bg-gray-50 dark:hover:bg-white/5">';
+            tbody += '<td class="p-3 text-left font-bold text-gray-700 dark:text-gray-300 text-xs" data-label="Hora">' + horas.inicio + '<br><span class="text-gray-400 font-normal">' + horas.fin + '</span></td>';
+            
+            dias.forEach(function(dia) {
+                var contenido = '—';
+                if (datos.horario[dia]) {
+                    datos.horario[dia].forEach(function(asig) {
+                        if (asig.hora_inicio === horas.inicio && asig.hora_fin === horas.fin) {
+                            contenido = '<span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-bold">Carril ' + asig.carril_numero + '</span>';
+                        }
+                    });
+                }
+                tbody += '<td class="p-3 text-center" data-label="' + dia + '">' + contenido + '</td>';
+            });
+            tbody += '</tr>';
+        });
+    }
+    
+    document.getElementById('tbodyReporte').innerHTML = tbody;
+}
+
+async function descargarHorarioSemanalDirecta() {
+    var selGrupo = document.getElementById('fGrupoHorario');
+    if (!selGrupo || !selGrupo.value) {
+        UI.advertencia('Selección requerida', 'Debe seleccionar un grupo para generar el PDF.');
+        return;
+    }
+
+    var form = new FormData();
+    form.append('accion', 'generar_pdf');
+    form.append('tipo_reporte', 'horario_semanal_grupo');
+    form.append('id_grupo', selGrupo.value);
+
+    UI.exito('Generando PDF', 'El horario del grupo se descargará automáticamente.');
+    try {
+        var res = await fetch(API_URL, { method: 'POST', body: form });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        
+        var ct = res.headers.get('content-type');
+        if (ct && ct.includes('application/json')) { 
+            var err = await res.json(); 
+            UI.error('Error', err.message || 'No se pudo generar el horario.'); 
+            return; 
+        }
+        
+        var blob = await res.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); 
+        a.href = url; 
+        a.download = 'horario_semanal_grupo_' + selGrupo.value + '.pdf';
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a); 
+        URL.revokeObjectURL(url);
+    } catch (e) { 
+        console.error('Error Horario Semanal:', e); 
+        UI.error('Error', 'No se pudo generar el PDF.'); 
+    }
+}
+/* ==================== FIN NUEVO ==================== */
+
 // Funciones existentes de descarga...
 async function descargarPDF() {
     if (!reporteActivo) return;
@@ -1087,9 +1076,9 @@ async function descargarPDF() {
     if (reporteActivo === 'lista_grupos') { await descargarListaGruposDirecta(); return; }
     if (reporteActivo === 'detalle_grupo') { await descargarDetalleGrupoDirecta(); return; }
     if (reporteActivo === 'detalle_sesion') { await descargarDetalleSesionDirecta(); return; }
+    // NUEVO
+    if (reporteActivo === 'horario_semanal_grupo') { await descargarHorarioSemanalDirecta(); return; }
     if (reporteActivo === 'resumen_sesiones_grupo') {
-        // Para resumen de sesiones, ya se genera con el botón de aplicar filtros
-        // Pero podemos descargar el PDF con los datos actuales
         var canvas = document.getElementById('graficaReporte');
         var img = (canvas && graficaActual) ? canvas.toDataURL('image/png') : '';
         var form = new FormData();
