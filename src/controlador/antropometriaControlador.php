@@ -79,6 +79,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($accion === 'verHistorial') {
         header('Content-Type: application/json');
         $id_atleta = isset($_GET['id_atleta']) ? (int)$_GET['id_atleta'] : 0;
+
+        if ($id_atleta <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Identificador de atleta inválido o alterado.']);
+            exit;
+        }
         
         // Obtenemos las mediciones (por defecto el modelo las trae DESC)
         $mediciones = $objAntropometria->listarMediciones($id_atleta);

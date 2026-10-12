@@ -67,7 +67,7 @@ class MedicionAntropometrica extends Conexion {
                 $this->agregarError('fecha', 'El sistema solo permite registrar evaluaciones con hasta 1 mes de antigüedad.');
             }
         }
-        if (!empty($this->datos['peso_kg']) && (float)$this->datos['peso_kg'] <= 0) {
+        /* if (!empty($this->datos['peso_kg']) && (float)$this->datos['peso_kg'] <= 0) {
             $this->agregarError('peso_kg', 'El peso debe ser mayor a 0 kg.');
         }
         if (!empty($this->datos['talla_cm']) && (float)$this->datos['talla_cm'] <= 0) {
@@ -78,6 +78,23 @@ class MedicionAntropometrica extends Conexion {
         }
         if (!empty($this->datos['perimetro_abdominal_cm']) && (float)$this->datos['perimetro_abdominal_cm'] <= 0) {
             $this->agregarError('perimetro_abdominal_cm', 'El perímetro abdominal debe ser mayor a 0 cm.');
+        } */
+
+        // --- BLINDAJE CONTRA F12: LÍMITES BIOLÓGICOS LÓGICOS ---
+        if (!empty($this->datos['peso_kg']) && ((float)$this->datos['peso_kg'] < 20 || (float)$this->datos['peso_kg'] > 200)) {
+            $this->agregarError('peso_kg', 'El peso debe ser congruente (entre 20 kg y 200 kg).');
+        }
+        if (!empty($this->datos['talla_cm']) && ((float)$this->datos['talla_cm'] < 100 || (float)$this->datos['talla_cm'] > 250)) {
+            $this->agregarError('talla_cm', 'La talla debe ser congruente (entre 100 cm y 250 cm).');
+        }
+        if (!empty($this->datos['envergadura_cm']) && ((float)$this->datos['envergadura_cm'] < 100 || (float)$this->datos['envergadura_cm'] > 250)) {
+            $this->agregarError('envergadura_cm', 'La envergadura debe ser congruente (entre 100 cm y 250 cm).');
+        }
+        if (!empty($this->datos['perimetro_abdominal_cm']) && ((float)$this->datos['perimetro_abdominal_cm'] < 40 || (float)$this->datos['perimetro_abdominal_cm'] > 150)) {
+            $this->agregarError('perimetro_abdominal_cm', 'El perímetro abdominal debe ser congruente (entre 40 cm y 150 cm).');
+        }
+        if (!empty($this->datos['porcentaje_grasa']) && ((float)$this->datos['porcentaje_grasa'] < 3 || (float)$this->datos['porcentaje_grasa'] > 50)) {
+            $this->agregarError('porcentaje_grasa', 'El porcentaje de grasa debe ser congruente (entre 3% y 50%).');
         }
 
         return empty($this->obtenerErrores());

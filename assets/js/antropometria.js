@@ -111,7 +111,7 @@ async function cargarTablaAntropometria() {
             ? '<span class="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded text-xs border border-red-200 dark:border-red-500/30"><i class="fas fa-trash-alt"></i> Anulado</span>'
             : '<span class="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded text-xs border border-emerald-200 dark:border-emerald-500/30"><i class="fas fa-check"></i> Activo</span>';
 
-        let botones = `<button onclick="verHistorial(${r.id_atleta}, '${nombre}')" class="bg-gray-200 dark:bg-[#252345] hover:bg-indigo-600 text-gray-700 dark:text-white w-8 h-8 rounded-lg transition-colors" title="Ver Historial"><i class="fas fa-chart-line text-xs"></i></button>`;
+       /*  let botones = `<button onclick="verHistorial(${r.id_atleta}, '${nombre}')" class="bg-gray-200 dark:bg-[#252345] hover:bg-indigo-600 text-gray-700 dark:text-white w-8 h-8 rounded-lg transition-colors" title="Ver Historial"><i class="fas fa-chart-line text-xs"></i></button>`;
 
         if (id_medicion) {
             if (!deleted_at) {
@@ -120,6 +120,16 @@ async function cargarTablaAntropometria() {
             } else {
                 if (PERMISOS_ANTROPOMETRIA.reactivar) botones += `<button onclick="reactivarMedicion(${id_medicion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Restaurar"><i class="fas fa-undo-alt text-xs"></i></button>`;
                 // if (PERMISOS_ANTROPOMETRIA.eliminardb) botones += `<button onclick="eliminarFisicoMedicion(${id_medicion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Eliminar permanentemente"><i class="fas fa-skull-crossbones text-xs"></i></button>`;
+            }
+        } */
+
+            let botones = `<button data-action="historial" data-id="${r.id_atleta}" data-nombre="${nombre}" class="bg-gray-200 dark:bg-[#252345] hover:bg-indigo-600 text-gray-700 dark:text-white w-8 h-8 rounded-lg transition-colors" title="Ver Historial"><i class="fas fa-chart-line text-xs pointer-events-none"></i></button>`;
+
+        if (id_medicion) {
+            if (!deleted_at) {
+                if (PERMISOS_ANTROPOMETRIA.editar) botones += `<button data-action="editar" data-id="${id_medicion}" class="bg-gray-200 dark:bg-[#252345] hover:bg-amber-600 text-amber-600 dark:text-amber-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Editar"><i class="fas fa-edit text-xs pointer-events-none"></i></button>`;
+            } else {
+                if (PERMISOS_ANTROPOMETRIA.reactivar) botones += `<button data-action="reactivar" data-id="${id_medicion}" class="bg-gray-200 dark:bg-[#252345] hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 hover:text-white w-8 h-8 rounded-lg ml-1 transition-colors" title="Restaurar"><i class="fas fa-undo-alt text-xs pointer-events-none"></i></button>`;
             }
         }
 
@@ -472,8 +482,11 @@ async function cargarAlertasAntropometria() {
 
         let botonMedir = '';
         if (PERMISOS_ANTROPOMETRIA.registrar) {
-            botonMedir = `<button onclick="abrirModalMedicionConAtleta(${a.id_atleta})" class="btn-blink bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition">
+            /* botonMedir = `<button onclick="abrirModalMedicionConAtleta(${a.id_atleta})" class="btn-blink bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition">
                             <i class="fas fa-ruler-combined"></i> Medir ahora
+                        </button>`; */
+                        botonMedir = `<button data-action="medir-alerta" data-id="${a.id_atleta}" class="btn-blink bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition">
+                            <i class="fas fa-ruler-combined pointer-events-none"></i> Medir ahora
                         </button>`;
         } else {
             botonMedir = `<span class="text-gray-400 text-xs">Sin permiso</span>`;
@@ -559,9 +572,10 @@ async function cargarAlertasBiologicas() {
                     <p class="text-xs text-gray-500">${alert.tipo_alerta}: ${alert.mensaje}</p>
                     <p class="text-[10px] text-gray-400 mt-0.5">${new Date(alert.fecha_creacion).toLocaleString()}</p>
                 </div>
-                <a href="javascript:verHistorial(${alert.id_atleta}, '${alert.nombres} ${alert.apellidos}')" 
-                   class="text-indigo-600 hover:text-indigo-800 text-sm font-bold">
-                   Ver Evolución &rarr;
+                
+                <a data-action="historial-link" data-id="${alert.id_atleta}" data-nombre="${alert.nombres} ${alert.apellidos}"
+                    class="text-indigo-600 hover:text-indigo-800 text-sm font-bold cursor-pointer">
+                    Ver Evolución &rarr;
                 </a>
             </li>
         `;
@@ -626,6 +640,19 @@ async function verHistorial(id_atleta, nombreCompleto) {
                     <td class="p-3 text-gray-500 dark:text-gray-400 text-xs">${r.responsable}</td>
                     <td class="p-3 text-center flex justify-center gap-2">
                         ${typeof PERMISOS_ANTROPOMETRIA !== 'undefined' && PERMISOS_ANTROPOMETRIA.registrar ? `
+                        <button data-action="editar" data-id="${r.id_medicion}" class="text-orange-600 dark:text-orange-400 hover:text-orange-700 transition-colors" title="Corregir Registro">
+                            <i class="fas fa-edit pointer-events-none"></i>
+                        </button>` : ''}
+                        ${typeof PERMISOS_ANTROPOMETRIA !== 'undefined' && PERMISOS_ANTROPOMETRIA.eliminar ? `
+                        <button data-action="anular" data-id="${r.id_medicion}" class="text-red-600 dark:text-red-400 hover:text-red-700 transition-colors" title="Eliminar Registro">
+                            <i class="fas fa-trash pointer-events-none"></i>
+                        </button>
+                        ` : ''}
+                    </td>
+                `;
+
+                /* `<td class="p-3 text-center flex justify-center gap-2">
+                        ${typeof PERMISOS_ANTROPOMETRIA !== 'undefined' && PERMISOS_ANTROPOMETRIA.registrar ? `
                         <button onclick="prepararEdicion(${r.id_medicion})" 
                                 class="text-orange-600 dark:text-orange-400 hover:text-orange-700 transition-colors" 
                                 title="Corregir Registro">
@@ -638,8 +665,7 @@ async function verHistorial(id_atleta, nombreCompleto) {
                             <i class="fas fa-trash"></i>
                         </button>
                         ` : ''}
-                    </td>
-                `;
+                    </td>` */
                 tbody.appendChild(tr);
 
                 labels.push(formatearFecha(r.fecha));
@@ -863,6 +889,25 @@ function estimarGrasaCorporal() {
         UI.exito('Estimación aplicada', `Se calculó un ~${grasaEstimada.toFixed(1)}% de grasa basado en la antropometría.`);
     }
 }
+
+
+// Escuchar todos los clics dinámicos generados en las tablas DataTables
+document.addEventListener('click', (e) => {
+    // Si el clic fue en un botón con data-action
+    const btn = e.target.closest('button[data-action], a[data-action]');
+    if (!btn) return;
+
+    e.preventDefault();
+    const action = btn.getAttribute('data-action');
+    const id = btn.getAttribute('data-id');
+
+    if (action === 'historial') verHistorial(id, btn.getAttribute('data-nombre'));
+    if (action === 'editar') prepararEdicion(id);
+    if (action === 'reactivar') reactivarMedicion(id);
+    if (action === 'anular') anularMedicion(id);
+    if (action === 'medir-alerta') abrirModalMedicionConAtleta(id);
+    if (action === 'historial-link') verHistorial(id, btn.getAttribute('data-nombre'));
+});
 
 // ================== INICIALIZACIÓN ==================
 document.addEventListener('DOMContentLoaded', async () => {
