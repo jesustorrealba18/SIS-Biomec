@@ -346,7 +346,7 @@ const esVistaAtleta = !document.getElementById('contenedor_atleta');
     modalRPE.classList.remove('hidden');
 } */
 
-function abrirModalRPE(id_rpe = null) {
+function abrirModalRPE(id_rpe = null, idSesionPreseleccionada = null) {
 
     const selSesion = document.getElementById('id_sesion_rpe');
 if (selSesion) selSesion.required = true; 
@@ -369,12 +369,13 @@ if (selSesion) selSesion.required = true;
         cargarDatosParaEdicionRPE(id_rpe);
     } else if (esVistaAtleta) {
         // Vista atleta → cargar SOLO sus sesiones pendientes con asistencia
-        cargarSesionesPendientes(0);
+        cargarSesionesPendientes(0, idSesionPreseleccionada);
+        //cargarSesionesPendientes(0);
     }
 
     modalRPE.classList.remove('hidden');
 }
-
+/* 
 async function cargarSesionesPendientes(id_atleta) {
     const selectSesion = document.getElementById('id_sesion_rpe');
     if (!selectSesion) return;
@@ -411,20 +412,61 @@ async function cargarSesionesPendientes(id_atleta) {
         selectSesion.innerHTML = '<option value="">✅ No tienes sesiones pendientes por evaluar</option>';
     }
 
-/*     if (Array.isArray(sesiones) && sesiones.length > 0) {
-        let opciones = '<option value="">Seleccione la sesión a evaluar...</option>';
-        sesiones.forEach(s => {
-            opciones += `<option value="${s.id_sesion}" 
-                            data-fecha="${s.fecha}" 
-                            data-duracion="${s.duracion_minutos || ''}" 
-                            data-volumen="${s.volumen_ejecutado || ''}">
-                ${formatearFecha(s.fecha)} - ${s.tipo_sesion} (${s.volumen_ejecutado}m)
-            </option>`;
-        });
-        selectSesion.innerHTML = opciones;
-    } else {
+} */
+
+    async function cargarSesionesPendientes(id_atleta, idSesionPreseleccionada = null) {
+    const selectSesion = document.getElementById('id_sesion_rpe');
+    if (!selectSesion) return;
+
+    if (!esVistaAtleta && !id_atleta) {
+        selectSesion.innerHTML = '<option value="">Seleccione primero al atleta...</option>';
+        return;
+    }
+
+    selectSesion.innerHTML = '<option value="">Buscando sesiones completadas...</option>';
+    const paramId = esVistaAtleta ? 0 : id_atleta;
+
+    const sesiones = await peticionAjaxRPE('listarSesionesPendientes', null, 'GET', { id_atleta: paramId });
+
+    if (!Array.isArray(sesiones)) {
+        selectSesion.innerHTML = '<option value="">⚠️ Error al cargar sesiones</option>';
+        return;
+    }
+
+    if (sesiones.length === 0) {
         selectSesion.innerHTML = '<option value="">✅ No tienes sesiones pendientes por evaluar</option>';
-    } */
+        // Feedback si venía de una notificación que ya no aplica
+        if (idSesionPreseleccionada && typeof UI !== 'undefined' && UI.advertencia) {
+            UI.advertencia('Sin sesiones pendientes',
+                'Es posible que ya hayas registrado tu RPE o que no tengas asistencia registrada para esa sesión.');
+        }
+        return;
+    }
+
+    let opciones = '<option value="">Seleccione la sesión a evaluar...</option>';
+    let encontrada = false;
+
+    sesiones.forEach(s => {
+        const esLaBuscada = idSesionPreseleccionada && String(s.id_sesion) === String(idSesionPreseleccionada);
+        if (esLaBuscada) encontrada = true;
+
+        opciones += `<option value="${s.id_sesion}" ${esLaBuscada ? 'selected' : ''}
+                        data-fecha="${s.fecha}" 
+                        data-duracion="${s.duracion_minutos || ''}" 
+                        data-volumen="${s.volumen_ejecutado || ''}">
+            ${formatearFecha(s.fecha)} - ${s.tipo_sesion} (${s.volumen_ejecutado}m)
+        </option>`;
+    });
+    selectSesion.innerHTML = opciones;
+
+    // Auto-completar si se preseleccionó con éxito
+    if (encontrada) {
+        selectSesion.value = String(idSesionPreseleccionada);
+        autocompletarDatosSesion();
+    } else if (idSesionPreseleccionada && typeof UI !== 'undefined' && UI.advertencia) {
+        UI.advertencia('Sesión no disponible',
+            'La sesión solicitada ya fue evaluada o no tienes asistencia registrada en ella.');
+    }
 }
 
 /* async function cargarDatosParaEdicionRPE(id_rpe) {
@@ -962,7 +1004,27 @@ function autocompletarDatosSesion() {
     }
 }
 
+// =====================================================================
+// DEEP LINK: Si la URL trae ?p=cargaBienestar&id_sesion=X → abrir modal
+// =====================================================================
+function procesarDeepLinkSesionRPE() {
+    const params = new URLSearchParams(window.location.search);
+    const idSesionUrl = params.get('id_sesion');
+    if (!idSesionUrl) return;
+
+    // Solo auto-abrir para atletas (el backend resuelve el id_atleta por sesión)
+    if (!esVistaAtleta) return;
+
+    // Limpiar el query param para que un refresh no re-abra el modal
+    const urlLimpia = window.location.pathname + '?p=cargaBienestar';
+    window.history.replaceState({}, document.title, urlLimpia);
+
+    // Abrir modal con la sesión preseleccionada
+    abrirModalRPE(null, idSesionUrl);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    procesarDeepLinkSesionRPE();
     await cargarAtletasRPE();
     cargarTablaRPE();
     if (PERMISOS_RPE.ver_inconsistencias)  cargarTablaInconsistenciasRPE();
