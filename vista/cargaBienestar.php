@@ -63,7 +63,7 @@ $pagina = 'cargaBienestar';
 
          /* Para el calendario (date) en modo oscuro */
         .dark .input-adapt::-webkit-calendar-picker-indicator {
-            filter: invert(1);
+            filter: invert(0);
         }
 
         /* ===== TARJETAS ===== */
@@ -354,9 +354,9 @@ if (isset($_SESSION['id'])) {
                         <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Monitoreo de fatiga, sueño y percepción de esfuerzo (RF-11)</p>
                     </div>
                     <div class="flex flex-wrap gap-3">
-                        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'registrar')): ?>
 
                         <!-- Toggle papelera -->
+                         <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'eliminar')): ?>
                         <button id="toggleEstadoRPEBtn" class="group relative flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] hover:border-red-500/50 transition-all duration-200">
                             <i id="toggleIconoRPE" class="fas fa-trash-alt text-gray-500 dark:text-gray-400 group-hover:text-red-400 transition-colors"></i>
                             <span id="toggleTextoRPE" class="text-xs font-medium text-gray-700 dark:text-gray-300">Activos</span>
@@ -364,7 +364,10 @@ if (isset($_SESSION['id'])) {
                                 <span id="estadoBadgeRPE" class="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500 text-[10px] font-bold text-white">A</span>
                             </div>
                         </button>
+                        <?php endif; ?>
                         <!-- Botón nuevo registro -->
+                        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'registrar')): ?>
+
                         <button onclick="abrirModalRPE()" class="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fas fa-plus-circle text-sm"></i> Nuevo Registro
                         </button>
@@ -412,7 +415,7 @@ if (isset($_SESSION['id'])) {
                     </div>
                 </div>
 
-<?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'registrar')): ?>
+<?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'ver_recomendaciones')): ?>
 
 <!-- ===== RECOMENDACIONES DE CARGA (IA) ===== -->
 <div id="recomendacionesPanel" class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg transition-colors duration-300 p-4 sm:p-6 hidden">
@@ -503,7 +506,7 @@ if (isset($_SESSION['id'])) {
                         </div>
                     </div>
                 </div>
-<?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'registrar')): ?>
+<?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'ver_inconsistencias')): ?>
                 <!-- Sección de Inconsistencias Biológicas -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-lg transition-colors duration-300 p-4 sm:p-6">
                     <div class="flex justify-between items-center flex-wrap gap-3 mb-4">
@@ -617,12 +620,34 @@ if (isset($_SESSION['id'])) {
                     <input type="hidden" name="accion" id="accionRPE" value="registrar">
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                        <!-- Si es Atleta, ocultamos el selector. Si es Entrenador/Admin, lo mostramos -->
+                        <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::tieneRol('Atleta')): ?>
+                            <!-- Campo oculto para que el JS no falle, aunque el backend lo sobreescribe -->
+                            <input type="hidden" name="id_atleta" id="id_atleta_rpe" value="">
+                        <?php else: ?>
+                            <div class="md:col-span-2" id="contenedor_atleta">
+                                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Atleta *</label>
+                                <select name="id_atleta" id="id_atleta_rpe" class="w-full input-adapt rounded-xl px-4 py-3 cursor-pointer" required>
+                                    <option value="">Seleccione atleta...</option>
+                                </select>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- Selector de Sesiones Pendientes -->
                         <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-2"><i class="fas fa-check-circle"></i> Sesión a Evaluar *</label>
+                            <select name="id_sesion" id="id_sesion_rpe" class="w-full input-adapt border-emerald-500 rounded-xl px-4 py-3 cursor-pointer" required onchange="autocompletarDatosSesion()">
+                                <option value="">Cargando sesiones...</option>
+                            </select>
+                            <p class="text-[10px] text-gray-500 mt-1">Selecciona la sesión finalizada de la cual quieres reportar tu esfuerzo.</p>
+                        </div>
+                        <!-- <div class="md:col-span-2">
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Atleta *</label>
                             <select name="id_atleta" id="id_atleta_rpe" class="w-full input-adapt rounded-xl px-4 py-3 cursor-pointer" required>
                                 <option value="">Seleccione atleta...</option>
                             </select>
-                        </div>
+                        </div> -->
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Fecha *</label>
                             <input type="date" name="fecha" id="fecha_rpe" data-validar="requerido|fecha_reciente" data-nombre="Fecha" class="w-full input-adapt rounded-xl px-4 py-3" required>
@@ -777,7 +802,9 @@ if (isset($_SESSION['id'])) {
             editar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'editar') ? 'true' : 'false'; ?>,
             eliminar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'eliminar') ? 'true' : 'false'; ?>,
             eliminardb: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'eliminardb') ? 'true' : 'false'; ?>,
-            reactivar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'reactivar') ? 'true' : 'false'; ?>
+            reactivar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'reactivar') ? 'true' : 'false'; ?>,
+            ver_inconsistencias: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'ver_inconsistencias') ? 'true' : 'false'; ?>,
+            ver_recomendaciones: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('rpe', 'ver_recomendaciones') ? 'true' : 'false'; ?>
         };
     </script>
 
