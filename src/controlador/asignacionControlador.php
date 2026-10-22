@@ -41,6 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($_POST['accion'] === 'reactivar') {
             Autorizacion::exigir('asignacion', 'gestionar');
             $id = isset($_POST['id_asignacion']) ? (int)$_POST['id_asignacion'] : 0;
+
+            $asignacion = $objAsignacion->obtenerAsignacionPorId($id);
+            if ($asignacion && !empty($asignacion['fecha_vigencia_fin']) && $asignacion['fecha_vigencia_fin'] < date('Y-m-d')) {
+                echo json_encode(['status' => 'error', 'message' => 'No se puede reactivar: la fecha de vigencia fin ya pasó.']);
+                exit;
+            }
+
             if ($objAsignacion->reactivarAsignacion($id)) {
                 echo json_encode(['status' => 'success', 'message' => 'Asignación reactivada correctamente.']);
             } else {
@@ -89,9 +96,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_POST['fecha_vigencia_fin'] = $_POST['fecha_vigente_fin'];
     }
 
-    $objAsignacion->setDatos($_POST);
+    $carrilesSeleccionados = [];
+    if (!empty($_POST['carriles_seleccionados'])) {
+        $decoded = json_decode($_POST['carriles_seleccionados'], true);
+        if (is_array($decoded)) {
+            $carrilesSeleccionados = array_map('intval', $decoded);
+        }
+    }
 
     $idOriginal = !empty($_POST['id_asignacion']) ? (string)$_POST['id_asignacion'] : null;
+
+    if (!$idOriginal && count($carrilesSeleccionados) > 1) {
+        $resultados = [];
+        $erroresAcumulados = [];
+
+        foreach ($carrilesSeleccionados as $idCarril) {
+            $_POST['id_carril'] = $idCarril;
+            $objAsignacion->setDatos($_POST);
+            $errs = $objAsignacion->validarDatos();
+
+            if (!empty($errs)) {
+                foreach ($errs as $campo => $msg) {
+                    $erroresAcumulados[] = "Carril {$idCarril}: {$msg}";
+                }
+                continue;
+            }
+
+            if ($objAsignacion->registrarAsignacion()) {
+                $resultados[] = $idCarril;
+            } else {
+                $erroresAcumulados[] = "Carril {$idCarril}: error al guardar en BD";
+            }
+        }
+
+        if (!empty($erroresAcumulados)) {
+            echo json_encode([
+                'status' => 'warning',
+                'errores' => ['general' => implode('<br>', $erroresAcumulados)]
+            ]);
+            exit;
+        }
+
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Se crearon ' . count($resultados) . ' asignaciones correctamente.'
+        ]);
+        exit;
+    }
+
+    if (!empty($carrilesSeleccionados)) {
+        $_POST['id_carril'] = $carrilesSeleccionados[0];
+    }
+
+    $objAsignacion->setDatos($_POST);
+
     $errores = $objAsignacion->validarDatos($idOriginal);
 
     if (!empty($errores)) {
@@ -202,6 +260,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $horaInicio = $_GET['hora_inicio'] ?? null;
         $horaFin = $_GET['hora_fin'] ?? null;
         echo json_encode($objAsignacion->obtenerCarrilesDisponibles($dia, $horaInicio, $horaFin));
+        exit;
+    }
+
+    if (isset($_GET['accion']) && $_GET['accion'] === 'estadoCarrilesPorBloque') {
+        header('Content-Type: application/json');
+        $idBloque = (int)($_GET['id_bloque'] ?? 0);
+        $fechaInicio = $_GET['fecha_inicio'] ?? null;
+        $fechaFin = $_GET['fecha_fin'] ?? null;
+        echo json_encode($objAsignacion->obtenerEstadoCarrilesPorBloque($idBloque, $fechaInicio, $fechaFin));
         exit;
     }
 

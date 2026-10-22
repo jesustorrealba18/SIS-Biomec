@@ -20,7 +20,6 @@
         .dark ::-webkit-scrollbar-thumb { background: #252345; }
         ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
 
-        /* ===== INPUTS ADAPTATIVOS ===== */
         .input-adapt {
             background-color: #ffffff;
             border: 1px solid #d1d5db;
@@ -40,13 +39,10 @@
         .dark .input-adapt:focus {
             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
-        /* Para el calendario (date) en modo oscuro */
         .dark .input-adapt::-webkit-calendar-picker-indicator {
             filter: invert(1);
         }
-     
 
-        /* ===== TABS ===== */
         /* ===== STEPPER ===== */
         .stepper {
             display: flex;
@@ -207,7 +203,6 @@
             color: #60a5fa;
         }
 
-        /* ===== RESPONSIVE TABLE ===== */
         @media (max-width: 768px) {
             .tabla-responsive thead { display: none; }
             .tabla-responsive tbody tr {
@@ -246,6 +241,14 @@
 
         .menu-transition {
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .carril-card {
+            transition: all 0.2s ease;
+        }
+        .carril-card:hover:not(.ocupado) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
         }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
@@ -375,9 +378,9 @@ if (isset($_SESSION['id'])) {
         </div>
     </div>
 
-    <!-- ===== MODAL REGISTRAR/EDITAR ===== -->
+
     <div id="modalAsignacion" class="fixed inset-0 z-50 hidden bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-2xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8 transition-colors duration-300">
+        <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-3xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8 transition-colors duration-300">
             <div class="flex justify-between items-center mb-6 border-b border-gray-200 dark:border-gray-800 pb-4">
                 <div class="flex items-center gap-3">
                     <div class="bg-indigo-600 p-2 rounded-lg text-white"><i class="fas fa-exchange-alt"></i></div>
@@ -392,30 +395,19 @@ if (isset($_SESSION['id'])) {
                 <input type="hidden" id="id_asignacion" name="id_asignacion" value="">
 
                 <div class="space-y-5">
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Carril</label>
-                        <select name="id_carril" id="id_carril" data-validar="requerido" data-nombre="Carril" class="input-adapt w-full p-3 rounded-xl">
-                            <option value="">Seleccione un carril...</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Bloque Horario</label>
-                        <select name="id_bloque_horario" id="id_bloque_horario" data-validar="requerido" data-nombre="Bloque horario" class="input-adapt w-full p-3 rounded-xl">
-                            <option value="">Seleccione un horario...</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Grupo</label>
-                        <select name="id_grupo" id="id_grupo" data-validar="requerido" data-nombre="Grupo" class="input-adapt w-full p-3 rounded-xl">
-                            <option value="">Seleccione un grupo...</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Día Específico (Opcional)</label>
-                        <input type="date" name="dia_especifico" id="dia_especifico" class="input-adapt w-full p-3 rounded-xl">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/5">
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Bloque Horario</label>
+                            <select name="id_bloque_horario" id="id_bloque_horario" data-validar="requerido" data-nombre="Bloque horario" class="input-adapt w-full p-3 rounded-xl">
+                                <option value="">Seleccione un horario...</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Grupo</label>
+                            <select name="id_grupo" id="id_grupo" data-validar="requerido" data-nombre="Grupo" class="input-adapt w-full p-3 rounded-xl">
+                                <option value="">Seleccione un grupo...</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -427,6 +419,39 @@ if (isset($_SESSION['id'])) {
                             <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Fecha de Fin</label>
                             <input type="date" name="fecha_vigente_fin" id="fecha_vigente_fin" data-validar="requerido" data-nombre="Fecha fin" class="input-adapt w-full p-3 rounded-xl">
                         </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">Día Específico (Opcional)</label>
+                        <input type="date" name="dia_especifico" id="dia_especifico" class="input-adapt w-full p-3 rounded-xl">
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <label class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest">
+                                <i class="fas fa-swimmer mr-1"></i> Selecciona los carriles
+                            </label>
+                            <div class="flex items-center gap-3 text-[10px] uppercase font-bold tracking-wider">
+                                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-500"></span> Libre</span>
+                                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-red-500"></span> Ocupado</span>
+                                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-indigo-500"></span> Seleccionado</span>
+                            </div>
+                        </div>
+
+                        <!-- Piscina -->
+                        <div id="piscinaMapa" class="p-4 rounded-2xl bg-gradient-to-br from-cyan-50 to-blue-100 dark:from-cyan-900/20 dark:to-blue-900/20 border-2 border-dashed border-cyan-300 dark:border-cyan-700">
+                            <div class="text-center mb-3 text-xs text-cyan-700 dark:text-cyan-400 font-bold uppercase tracking-wider">
+                                <i class="fas fa-water mr-1"></i> Piscina
+                            </div>
+                            <div id="carrilesContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                <div class="col-span-full text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Selecciona un bloque horario y fechas para ver los carriles disponibles
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="carriles_seleccionados" id="carriles_seleccionados" value="">
+                        <p id="contadorSeleccionados" class="text-xs text-indigo-600 dark:text-indigo-400 font-bold"></p>
                     </div>
 
                     <div class="flex items-center gap-3 p-4 bg-gray-100 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/5">
@@ -443,7 +468,6 @@ if (isset($_SESSION['id'])) {
         </div>
     </div>
 
-    <!-- ===== MODAL VER DETALLE ===== -->
     <div id="modalVerAsignacion" class="fixed inset-0 z-50 hidden bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-lg rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 transition-colors duration-300">
             <div class="p-6">
@@ -489,7 +513,6 @@ if (isset($_SESSION['id'])) {
         </div>
     </div>
 
-    <!-- ===== MODAL HISTORIAL DE COMPLETADAS ===== -->
     <div id="modalHistorial" class="fixed inset-0 z-50 hidden bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-4xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[90vh] overflow-y-auto transition-colors duration-300">
             <div class="p-6">
@@ -525,7 +548,6 @@ if (isset($_SESSION['id'])) {
         </div>
     </div>
 
-    <!-- ===== MODALES VER DETALLE CARRIL ===== -->
     <div id="modalVerCarril" class="fixed inset-0 z-50 hidden bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-md rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 transition-colors duration-300">
             <div class="p-6">
@@ -555,7 +577,6 @@ if (isset($_SESSION['id'])) {
         </div>
     </div>
 
-    <!-- ===== MODALES VER DETALLE BLOQUE ===== -->
     <div id="modalVerBloque" class="fixed inset-0 z-50 hidden bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-md rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 transition-colors duration-300">
             <div class="p-6">
@@ -589,7 +610,6 @@ if (isset($_SESSION['id'])) {
         </div>
     </div>
 
-    <!-- ===== MODALES VER DETALLE GRUPO ===== -->
     <div id="modalVerGrupo" class="fixed inset-0 z-50 hidden bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-md rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 transition-colors duration-300">
             <div class="p-6">
