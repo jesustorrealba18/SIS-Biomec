@@ -21,7 +21,7 @@ const kpiSuenoPromedio = document.getElementById('kpi_sueno_promedio');
 const kpiSrpeSemanal = document.getElementById('kpi_srpe_semanal');
 
 // ================== PETICIONES AJAX ==================
-async function peticionAjaxRPE(accion, datos = null, metodo = 'GET', params = {}) {
+/* async function peticionAjaxRPE(accion, datos = null, metodo = 'GET', params = {}) {
     let url = `${API_RPE}&accion=${accion}`;
     if (metodo === 'GET' && Object.keys(params).length) {
         url += '&' + new URLSearchParams(params).toString();
@@ -44,10 +44,66 @@ async function peticionAjaxRPE(accion, datos = null, metodo = 'GET', params = {}
         if (typeof UI !== 'undefined') UI.error('Error de comunicación', 'No se pudo conectar con el servidor.');
         return null;
     }
+} */
+
+    // ================== PETICIONES AJAX ==================
+async function peticionAjaxRPE(accion, datos = null, metodo = 'GET', params = {}) {
+    let url = `${API_RPE}&accion=${accion}`;
+    if (metodo === 'GET' && Object.keys(params).length) {
+        url += '&' + new URLSearchParams(params).toString();
+    }
+    const opciones = { method: metodo };
+    if (datos) {
+        if (datos instanceof FormData) {
+            opciones.body = datos;
+        } else {
+            opciones.body = JSON.stringify(datos);
+            opciones.headers = { 'Content-Type': 'application/json' };
+        }
+    }
+
+    let respuesta;
+    try {
+        respuesta = await fetch(url, opciones);
+    } catch (redError) {
+        console.error('[RPE] Error de red:', redError);
+        if (typeof UI !== 'undefined' && UI.error) {
+            UI.error('Error de comunicación', 'No se pudo conectar con el servidor.');
+        }
+        return { status: 'error', message: 'Error de red', _handled: true };
+    }
+
+    // Leer el cuerpo como texto y parsear (funciona con 200, 403, 500, etc.)
+    const texto = await respuesta.text();
+    let json = null;
+    try { json = texto ? JSON.parse(texto) : null; } catch (e) { /* body no-JSON */ }
+
+    // ⚠️ SI NO ES 2xx → mostrar alerta con el mensaje REAL del backend
+    if (!respuesta.ok) {
+        const mensaje = json?.message || `Error HTTP ${respuesta.status}`;
+
+        if (typeof UI !== 'undefined') {
+            if (respuesta.status === 403 || respuesta.status === 401) {
+                UI.error('⛔ Acceso denegado', mensaje);
+            } else if (respuesta.status === 422) {
+                UI.advertencia ? UI.advertencia('⚠️ Datos inválidos', mensaje)
+                               : UI.error('Datos inválidos', mensaje);
+            } else {
+                UI.error('Error del servidor', mensaje);
+            }
+        }
+        console.warn('[SEGURIDAD-RPE] Intento bloqueado:', respuesta.status, mensaje);
+
+        return json
+            ? { ...json, _handled: true }
+            : { status: 'error', message: mensaje, _handled: true };
+    }
+
+    return json;
 }
 
 // ================== CARGAR ATLETAS EN SELECTS ==================
-async function cargarAtletasRPE() {
+/* async function cargarAtletasRPE() {
     const atletas = await peticionAjaxRPE('listarAtletasSelect');
     if (!Array.isArray(atletas)) return;
     let opcionesForm = '<option value="">Seleccione atleta...</option>';
@@ -59,6 +115,38 @@ async function cargarAtletasRPE() {
     });
     document.getElementById('id_atleta_rpe').innerHTML = opcionesForm;
     if (filtroAtleta) filtroAtleta.innerHTML = opcionesFiltro;
+} */
+
+    async function cargarAtletasRPE() {
+    const selectForm   = document.getElementById('id_atleta_rpe');
+    const selectFiltro = document.getElementById('filtroAtletaRPE');
+
+    // Vista atleta: id_atleta_rpe es un <input type="hidden"> → no poblar
+    const esHiddenInput = selectForm && selectForm.tagName === 'INPUT';
+
+    // Si NO hay nada que poblar, salimos
+    if (esHiddenInput && !selectFiltro) return;
+
+    const atletas = await peticionAjaxRPE('listarAtletasSelect');
+    if (!Array.isArray(atletas)) return;
+
+    let opcionesForm   = '<option value="">Seleccione atleta...</option>';
+    let opcionesFiltro = '<option value="">👤 Todos los Atletas</option>';
+
+    atletas.forEach(a => {
+        const txt = `${a.nombres} ${a.apellidos} - ${a.cedula}`;
+        opcionesForm   += `<option value="${a.id_atleta}">${txt}</option>`;
+        opcionesFiltro += `<option value="${a.id_atleta}">${txt}</option>`;
+    });
+
+    // Solo poblamos el form si es un <select>
+    if (selectForm && selectForm.tagName === 'SELECT') {
+        selectForm.innerHTML = opcionesForm;
+    }
+    // El filtro solo existe en vista entrenador/admin
+    if (selectFiltro) {
+        selectFiltro.innerHTML = opcionesFiltro;
+    }
 }
 
 // ================== TABLA PRINCIPAL (DataTables) ==================
@@ -204,6 +292,19 @@ function cerrarModalRPE() {
     modalRPE.classList.add('hidden');
     formRPE.reset();
     document.getElementById('id_rpe').value = '';
+
+    // ✅ Restaurar estado del select de sesión
+    const selectSesion = document.getElementById('id_sesion_rpe');
+if (selectSesion) {
+    selectSesion.disabled = false;
+    selectSesion.required = true;                    // ← NUEVO
+    selectSesion.innerHTML = '<option value="">Seleccione la sesión a evaluar...</option>';
+}
+
+    // ✅ Liberar la fecha (por si quedó readOnly)
+    const fechaInput = document.getElementById('fecha_rpe');
+    if (fechaInput) fechaInput.readOnly = false;
+
     if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formRPE);
 }
 
@@ -219,8 +320,8 @@ function cerrarModalRPE() {
     if (id_rpe) cargarDatosParaEdicionRPE(id_rpe);
     modalRPE.classList.remove('hidden');
 } */
-
-function abrirModalRPE(id_rpe = null) {
+const esVistaAtleta = !document.getElementById('contenedor_atleta');
+/* function abrirModalRPE(id_rpe = null) {
     formRPE.reset();
     document.getElementById('id_rpe').value = '';
     document.getElementById('accionRPE').value = 'registrar';
@@ -233,12 +334,149 @@ function abrirModalRPE(id_rpe = null) {
     // Si hay ID, cargar datos para edición
     if (id_rpe) {
         cargarDatosParaEdicionRPE(id_rpe);
+    }else {
+        // MODO NUEVO REGISTRO
+        if (esVistaAtleta) {
+            // Si es atleta, carga sus sesiones directamente enviando id_atleta=0
+            // El backend ya sabe quién es.
+            cargarSesionesPendientes(0); 
+        }
     }
     
     modalRPE.classList.remove('hidden');
+} */
+
+function abrirModalRPE(id_rpe = null, idSesionPreseleccionada = null) {
+
+    const selSesion = document.getElementById('id_sesion_rpe');
+if (selSesion) selSesion.required = true; 
+
+    formRPE.reset();
+    document.getElementById('id_rpe').value = '';
+    document.getElementById('accionRPE').value = 'registrar';
+    document.getElementById('modalTituloRPE').innerHTML = 'Registrar Carga Interna (RPE)';
+    document.getElementById('btnGuardarRPE').innerHTML = 'Guardar Registro <i class="fas fa-save ml-2"></i>';
+    document.getElementById('btnGuardarRPE').classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+    document.getElementById('btnGuardarRPE').classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+
+    if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formRPE);
+
+    // Desbloquear fecha por si venía bloqueada de un intento anterior
+    const fechaInput = document.getElementById('fecha_rpe');
+    if (fechaInput) fechaInput.readOnly = false;
+
+    if (id_rpe) {
+        cargarDatosParaEdicionRPE(id_rpe);
+    } else if (esVistaAtleta) {
+        // Vista atleta → cargar SOLO sus sesiones pendientes con asistencia
+        cargarSesionesPendientes(0, idSesionPreseleccionada);
+        //cargarSesionesPendientes(0);
+    }
+
+    modalRPE.classList.remove('hidden');
+}
+/* 
+async function cargarSesionesPendientes(id_atleta) {
+    const selectSesion = document.getElementById('id_sesion_rpe');
+    if (!selectSesion) return;
+    
+    // Si no es vista de atleta y no han elegido atleta, no buscamos
+    if (!esVistaAtleta && !id_atleta) {
+        selectSesion.innerHTML = '<option value="">Seleccione primero al atleta...</option>';
+        return;
+    }
+
+    selectSesion.innerHTML = '<option value="">Buscando sesiones completadas...</option>';
+    
+    // Si es vista atleta, enviamos 0 y el backend decide
+    const paramId = esVistaAtleta ? 0 : id_atleta; 
+    
+    const sesiones = await peticionAjaxRPE('listarSesionesPendientes', null, 'GET', { id_atleta: paramId });
+    if (!Array.isArray(sesiones)) {
+    selectSesion.innerHTML = '<option value="">⚠️ Error al cargar sesiones</option>';
+    return;
+    }
+
+    if (sesiones.length > 0) {
+         let opciones = '<option value="">Seleccione la sesión a evaluar...</option>';
+        sesiones.forEach(s => {
+            opciones += `<option value="${s.id_sesion}" 
+                            data-fecha="${s.fecha}" 
+                            data-duracion="${s.duracion_minutos || ''}" 
+                            data-volumen="${s.volumen_ejecutado || ''}">
+                ${formatearFecha(s.fecha)} - ${s.tipo_sesion} (${s.volumen_ejecutado}m)
+            </option>`;
+        });
+        selectSesion.innerHTML = opciones;
+    } else {
+        selectSesion.innerHTML = '<option value="">✅ No tienes sesiones pendientes por evaluar</option>';
+    }
+
+} */
+
+    async function cargarSesionesPendientes(id_atleta, idSesionPreseleccionada = null) {
+    const selectSesion = document.getElementById('id_sesion_rpe');
+    if (!selectSesion) return;
+
+    if (!esVistaAtleta && !id_atleta) {
+        selectSesion.innerHTML = '<option value="">Seleccione primero al atleta...</option>';
+        return;
+    }
+
+    selectSesion.innerHTML = '<option value="">Buscando sesiones completadas...</option>';
+    const paramId = esVistaAtleta ? 0 : id_atleta;
+
+    const sesiones = await peticionAjaxRPE('listarSesionesPendientes', null, 'GET', { id_atleta: paramId });
+
+    if (!Array.isArray(sesiones)) {
+        selectSesion.innerHTML = '<option value="">⚠️ Error al cargar sesiones</option>';
+        return;
+    }
+
+    if (sesiones.length === 0) {
+        selectSesion.innerHTML = '<option value="">✅ No tienes sesiones pendientes por evaluar</option>';
+        // Feedback si venía de una notificación que ya no aplica
+        if (idSesionPreseleccionada && typeof UI !== 'undefined' && UI.advertencia) {
+            UI.advertencia('Sin sesiones pendientes',
+                'Es posible que ya hayas registrado tu RPE o que no tengas asistencia registrada para esa sesión.');
+        }
+        return;
+    }
+
+    let opciones = '<option value="">Seleccione la sesión a evaluar...</option>';
+    let encontrada = false;
+
+    sesiones.forEach(s => {
+        const esLaBuscada = idSesionPreseleccionada && String(s.id_sesion) === String(idSesionPreseleccionada);
+        if (esLaBuscada) encontrada = true;
+
+        opciones += `<option value="${s.id_sesion}" ${esLaBuscada ? 'selected' : ''}
+                        data-fecha="${s.fecha}" 
+                        data-duracion="${s.duracion_minutos || ''}" 
+                        data-volumen="${s.volumen_ejecutado || ''}">
+            ${formatearFecha(s.fecha)} - ${s.tipo_sesion} (${s.volumen_ejecutado}m)
+        </option>`;
+    });
+    selectSesion.innerHTML = opciones;
+
+    // Auto-completar si se preseleccionó con éxito
+    if (encontrada) {
+        selectSesion.value = String(idSesionPreseleccionada);
+        autocompletarDatosSesion();
+    } else if (idSesionPreseleccionada && typeof UI !== 'undefined' && UI.advertencia) {
+        UI.advertencia('Sesión no disponible',
+            'La sesión solicitada ya fue evaluada o no tienes asistencia registrada en ella.');
+    }
 }
 
-async function cargarDatosParaEdicionRPE(id_rpe) {
+/* async function cargarDatosParaEdicionRPE(id_rpe) {
+
+    const selectSesion = document.getElementById('id_sesion_rpe');
+    if (selectSesion) {
+        selectSesion.innerHTML = '<option value="">(Sesión ya vinculada)</option>';
+        selectSesion.disabled = true;
+    }
+
     const btn = document.getElementById('btnGuardarRPE');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
     btn.disabled = true;
@@ -273,6 +511,66 @@ async function cargarDatosParaEdicionRPE(id_rpe) {
     btn.classList.replace('bg-indigo-600', 'bg-emerald-600');
     btn.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-500');
     btn.disabled = false;
+} */
+
+    async function cargarDatosParaEdicionRPE(id_rpe) {
+    const btn = document.getElementById('btnGuardarRPE');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+    btn.disabled = true;
+
+    const data = await peticionAjaxRPE('obtenerRPE', null, 'GET', { id: id_rpe });
+
+    /* if (!data || data.status === 'error') {
+        if (typeof UI !== 'undefined') UI.error('Error', data?.message || 'No se pudo cargar el registro.');
+        cerrarModalRPE();
+        return;
+    } */
+
+    if (!data || data.status === 'error') {
+        if (!data?._handled && typeof UI !== 'undefined') {
+            UI.error('No se pudo cargar el registro', data?.message || 'Registro no disponible.');
+        }
+        cerrarModalRPE();
+        return;
+    }
+
+    // ✅ FIX: poblar el select con la sesión ACTUAL y NO deshabilitarlo
+ const selectSesion = document.getElementById('id_sesion_rpe');
+if (selectSesion) {
+    if (data.id_sesion) {
+        selectSesion.innerHTML = `<option value="${data.id_sesion}" 
+            data-fecha="${data.fecha}"
+            data-duracion="${data.duracion_minutos || ''}"
+            data-volumen="${data.metros_nadados || ''}" selected>
+            Sesión #${data.id_sesion} (ya vinculada)
+        </option>`;
+        selectSesion.required = true;
+    } else {
+        // Registro legacy sin sesión → no bloquear el submit
+        selectSesion.innerHTML = '<option value="" selected>(Sin sesión - registro histórico)</option>';
+        selectSesion.required = false;
+    }
+}
+
+    document.getElementById('id_rpe').value = data.id_rpe;
+    document.getElementById('id_atleta_rpe').value = data.id_atleta;
+    document.getElementById('fecha_rpe').value = data.fecha;
+    document.getElementById('rpe_valor').value = data.rpe;
+    document.getElementById('duracion_minutos').value = data.duracion_minutos || '';
+    document.getElementById('metros_nadados').value = data.metros_nadados || '';
+    document.getElementById('horas_sueno').value = data.horas_sueno || '';
+    document.getElementById('calidad_sueno').value = data.calidad_sueno || '';
+    document.getElementById('sensacion_muscular').value = data.sensacion_muscular || '';
+    document.getElementById('estres_percibido').value = data.estres_percibido || '';
+    document.getElementById('observaciones_rpe').value = data.observaciones || '';
+
+    document.getElementById('accionRPE').value = 'actualizar';
+    document.getElementById('modalTituloRPE').innerHTML = 'Editar Registro RPE';
+
+    btn.innerHTML = 'Actualizar Registro <i class="fas fa-sync-alt ml-2"></i>';
+    btn.classList.replace('bg-indigo-600', 'bg-emerald-600');
+    btn.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-500');
+    btn.disabled = false;
 }
 
 formRPE.addEventListener('submit', async (e) => {
@@ -296,10 +594,14 @@ formRPE.addEventListener('submit', async (e) => {
         if (typeof UI !== 'undefined') UI.exito('Éxito', resultado.message);
         cerrarModalRPE();
         cargarTablaRPE();
-        cargarTablaInconsistenciasRPE();
-        cargarRecomendacionesEntrenador();
-    } else {
-        if (typeof UI !== 'undefined') UI.error('Error', resultado?.message || 'No se pudo guardar.');
+        /* cargarTablaInconsistenciasRPE();
+        cargarRecomendacionesEntrenador(); */
+        if (PERMISOS_RPE.ver_inconsistencias)  cargarTablaInconsistenciasRPE();
+        if (PERMISOS_RPE.ver_recomendaciones)  cargarRecomendacionesEntrenador();
+    } else if (!resultado?._handled && typeof UI !== 'undefined') {
+    // Validaciones del backend (rpe fuera de rango, fecha futura, sesión sin asistencia, etc.)
+    UI.advertencia ? UI.advertencia('No se pudo guardar', resultado?.message || 'Revisa los datos.')
+                   : UI.error('No se pudo guardar', resultado?.message || 'Revisa los datos.');
     }
 });
 
@@ -327,10 +629,12 @@ async function softDeleteRPE(id_rpe) {
     if (resultado?.status === 'success') {
         if (typeof UI !== 'undefined') UI.exito('Anulado', resultado.message);
         cargarTablaRPE();
-        cargarTablaInconsistenciasRPE();
-        cargarRecomendacionesEntrenador();
-    } else {
-        if (typeof UI !== 'undefined') UI.error('Error', resultado?.message);
+        /* cargarTablaInconsistenciasRPE();
+        cargarRecomendacionesEntrenador(); */
+        if (PERMISOS_RPE.ver_inconsistencias)  cargarTablaInconsistenciasRPE();
+        if (PERMISOS_RPE.ver_recomendaciones)  cargarRecomendacionesEntrenador();
+    } else if (!resultado?._handled) {
+    UI.error('No se pudo completar', resultado?.message || 'Intenta de nuevo.');
     }
 }
 
@@ -354,10 +658,12 @@ async function reactivarRPE(id_rpe) {
     if (resultado?.status === 'success') {
         if (typeof UI !== 'undefined') UI.exito('Restaurado', resultado.message);
         cargarTablaRPE();
-        cargarTablaInconsistenciasRPE(); 
-        cargarRecomendacionesEntrenador();
-    } else {
-        if (typeof UI !== 'undefined') UI.error('Error', resultado?.message);
+       /*  cargarTablaInconsistenciasRPE(); 
+        cargarRecomendacionesEntrenador(); */
+        if (PERMISOS_RPE.ver_inconsistencias)  cargarTablaInconsistenciasRPE();
+        if (PERMISOS_RPE.ver_recomendaciones)  cargarRecomendacionesEntrenador();
+    } else if (!resultado?._handled) {
+    UI.error('No se pudo completar', resultado?.message || 'Intenta de nuevo.');
     }
 }
 
@@ -381,8 +687,8 @@ async function eliminarFisicoRPE(id_rpe) {
     if (resultado?.status === 'success') {
         if (typeof UI !== 'undefined') UI.exito('Purgado', resultado.message);
         cargarTablaRPE();
-    } else {
-        if (typeof UI !== 'undefined') UI.error('Error', resultado?.message);
+    } else if (!resultado?._handled) {
+    UI.error('No se pudo completar', resultado?.message || 'Intenta de nuevo.');
     }
 }
 
@@ -393,7 +699,13 @@ async function verDetalleRPE(id_rpe) {
     modal.classList.remove('hidden');
     contenedor.innerHTML = '<div class="text-center py-20 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-4xl text-indigo-500"></i></div>';
     const data = await peticionAjaxRPE('obtenerRPE', null, 'GET', { id: id_rpe });
-    if (!data) return cerrarModalVerRPE();
+    // if (!data) return cerrarModalVerRPE();
+     if (!data || data.status === 'error') {
+        if (!data?._handled && typeof UI !== 'undefined') {
+            UI.error('No se pudo cargar el detalle', data?.message || 'Registro no disponible.');
+        }
+        return cerrarModalVerRPE();
+    }
     const anulado = data.deleted_at ? `<div class="bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 p-3 rounded-xl mb-4"><i class="fas fa-trash-alt text-red-600 dark:text-red-400 mr-2"></i><strong class="text-red-600 dark:text-red-400">Anulado:</strong> <span class="text-gray-700 dark:text-gray-300">${data.justificacion_softdelete || 'Sin motivo'}</span></div>` : '';
     contenedor.innerHTML = `
         ${anulado}
@@ -426,13 +738,23 @@ function cerrarModalVerRPE() {
 // ================== INCONSISTENCIAS BIOLÓGICAS ==================
 async function cargarTablaInconsistenciasRPE() {
     const tbody = document.getElementById('listaInconsistenciasRPE');
+    if (!tbody) return; 
     tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-2xl"></i><br>Cargando alertas...</td></tr>`;
 
     const inconsistencias = await peticionAjaxRPE('listarInconsistencias');
-    if (!inconsistencias || inconsistencias.length === 0) {
+    if (!Array.isArray(inconsistencias)) {
+        // 403 u otro error ya mostrado por peticionAjaxRPE
+        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-red-500 dark:text-red-400"><i class="fas fa-exclamation-triangle mr-2"></i> No se pudieron cargar las alertas.</td></tr>`;
+        return;
+    }
+    if (inconsistencias.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-check-circle text-emerald-600 dark:text-emerald-400 mr-2"></i> No se detectaron inconsistencias biológicas.</td></tr>`;
         return;
     }
+    /* if (!inconsistencias || inconsistencias.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400"><i class="fas fa-check-circle text-emerald-600 dark:text-emerald-400 mr-2"></i> No se detectaron inconsistencias biológicas.</td></tr>`;
+        return;
+    } */
 
     let html = '';
     inconsistencias.forEach(inc => {
@@ -477,8 +799,8 @@ async function anularPorInconsistencia(id_registro) {
             if (typeof UI !== 'undefined') UI.exito('Anulado', res.message);
             cargarTablaRPE();
             cargarTablaInconsistenciasRPE();
-        } else {
-            if (typeof UI !== 'undefined') UI.error('Error', res?.message || 'No se pudo anular.');
+        } else if (!res?._handled && typeof UI !== 'undefined') {
+            UI.error('No se pudo anular', res?.message || 'Intenta nuevamente.');
         }
     }
 }
@@ -490,18 +812,7 @@ function formatearFecha(fechaISO) {
     return fecha.toLocaleDateString('es-ES');
 }
 
-// ================== INICIALIZACIÓN ==================
-document.addEventListener('DOMContentLoaded', async () => {
-    await cargarAtletasRPE();
-    cargarTablaRPE();
-    cargarTablaInconsistenciasRPE();
 
-    if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
-        Validador.vincularTiempoReal(formRPE);
-    }
-
-    actualizarUIRPE();
-});
 
 // ================== RECOMENDACIONES DE CARGA (DATATABLE) ==================
 let dataTableRecomendaciones = null;
@@ -513,14 +824,29 @@ async function cargarRecomendacionesEntrenador() {
 
     if (!panel || !tbody) return;
 
-    try {
-        const response = await fetch('index.php?p=cargaBienestar&accion=listarRecomendacionesEntrenador');
-        const data = await response.json();
+    // try {
+        /* const response = await fetch('index.php?p=cargaBienestar&accion=listarRecomendacionesEntrenador');
+        const data = await response.json(); */
 
-        if (data.status === 'error' || data.length === 0) {
+        const data = await peticionAjaxRPE('listarRecomendacionesEntrenador');
+
+        /* if (data.status === 'error' || data.length === 0) {
             panel.classList.add('hidden');
             return;
+        } */
+       /* if (!data || data.status === 'error' || !Array.isArray(data)) {
+        panel.classList.add('hidden');
+        return;
         }
+        if (data.length === 0) {
+            panel.classList.add('hidden');
+            return;
+        } */
+
+            if (!data || data.status === 'error' || !Array.isArray(data) || data.length === 0) {
+                panel.classList.add('hidden');
+                return;
+            }
 
         // Mostrar el panel
         panel.classList.remove('hidden');
@@ -572,13 +898,13 @@ async function cargarRecomendacionesEntrenador() {
             lengthMenu: [[5, 10, 25, -1], [5, 10, 25, 'Todos']]
         });
 
-    } catch (error) {
+   /*  } catch (error) {
         console.error(error);
         panel.classList.add('hidden');
-    }
+    } */
 }
 
-async function marcarRecomendacionLeida(id_recomendacion) {
+/* async function marcarRecomendacionLeida(id_recomendacion) {
     const formData = new FormData();
     formData.append('id_recomendacion', id_recomendacion);
     
@@ -600,6 +926,22 @@ async function marcarRecomendacionLeida(id_recomendacion) {
     } catch (error) {
         console.error(error);
         if (typeof UI !== 'undefined') UI.error('Error', 'Error de comunicación.');
+    }
+} */
+
+
+async function marcarRecomendacionLeida(id_recomendacion) {
+    const formData = new FormData();
+    formData.append('id_recomendacion', id_recomendacion);
+    formData.append('accion', 'marcarRecomendacionLeida');
+
+    const result = await peticionAjaxRPE('marcarRecomendacionLeida', formData, 'POST');
+
+    if (result?.status === 'success') {
+        await cargarRecomendacionesEntrenador();
+        cargarTablaRPE();
+    } else if (!result?._handled && typeof UI !== 'undefined') {
+        UI.error('No se pudo marcar como leída', result?.message || 'Intenta nuevamente.');
     }
 }
 
@@ -625,11 +967,70 @@ function configurarLimitesCalendario() {
     inputFecha.max = strHoy;
 }
 
+document.getElementById('id_atleta_rpe')?.addEventListener('change', function() {
+    if (this.tagName !== 'SELECT') return; // solo en vista admin
+    cargarSesionesPendientes(this.value);
+});
+
+// ================== AUTOCOMPLETAR DATOS DE LA SESIÓN SELECCIONADA ==================
+function autocompletarDatosSesion() {
+    const select = document.getElementById('id_sesion_rpe');
+    if (!select) return;
+
+    const opt = select.options[select.selectedIndex];
+    const fechaInput    = document.getElementById('fecha_rpe');
+    const duracionInput = document.getElementById('duracion_minutos');
+    const metrosInput   = document.getElementById('metros_nadados');
+
+    if (!opt || !opt.value) {
+        if (fechaInput) fechaInput.readOnly = false;
+        return;
+    }
+
+    const fecha    = opt.dataset.fecha;
+    const duracion = opt.dataset.duracion;
+    const volumen  = opt.dataset.volumen;
+
+    if (fecha && fechaInput) {
+        fechaInput.value = fecha;
+        fechaInput.readOnly = true;
+    }
+    // ✅ sin guard: sobrescribir siempre al cambiar de sesión
+    if (duracion && duracionInput) {
+        duracionInput.value = duracion;
+    }
+    if (volumen && metrosInput) {
+        metrosInput.value = volumen;
+    }
+}
+
+// =====================================================================
+// DEEP LINK: Si la URL trae ?p=cargaBienestar&id_sesion=X → abrir modal
+// =====================================================================
+function procesarDeepLinkSesionRPE() {
+    const params = new URLSearchParams(window.location.search);
+    const idSesionUrl = params.get('id_sesion');
+    if (!idSesionUrl) return;
+
+    // Solo auto-abrir para atletas (el backend resuelve el id_atleta por sesión)
+    if (!esVistaAtleta) return;
+
+    // Limpiar el query param para que un refresh no re-abra el modal
+    const urlLimpia = window.location.pathname + '?p=cargaBienestar';
+    window.history.replaceState({}, document.title, urlLimpia);
+
+    // Abrir modal con la sesión preseleccionada
+    abrirModalRPE(null, idSesionUrl);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    procesarDeepLinkSesionRPE();
     await cargarAtletasRPE();
     cargarTablaRPE();
-    cargarTablaInconsistenciasRPE();
-    cargarRecomendacionesEntrenador(); // <-- nuevo
+    if (PERMISOS_RPE.ver_inconsistencias)  cargarTablaInconsistenciasRPE();
+    if (PERMISOS_RPE.ver_recomendaciones)  cargarRecomendacionesEntrenador();
+    // cargarTablaInconsistenciasRPE();
+    // cargarRecomendacionesEntrenador(); // <-- nuevo
 
     if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
         Validador.vincularTiempoReal(formRPE);
@@ -671,3 +1072,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     actualizarUIRPE();
 });
 
+
+// ================== INICIALIZACIÓN ==================
+/* document.addEventListener('DOMContentLoaded', async () => {
+    await cargarAtletasRPE();
+    cargarTablaRPE();
+    cargarTablaInconsistenciasRPE();
+
+    if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
+        Validador.vincularTiempoReal(formRPE);
+    }
+
+    actualizarUIRPE();
+}); */

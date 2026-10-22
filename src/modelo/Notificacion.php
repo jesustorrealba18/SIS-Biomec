@@ -541,7 +541,7 @@ class Notificacion extends Conexion {
         }
     }
 
-    public static function notificarSesionCompletada(int $id_sesion, int $id_grupo, int $volumen_ejecutado): void {
+    /* public static function notificarSesionCompletada(int $id_sesion, int $id_grupo, int $volumen_ejecutado): void {
         try {
             $dbNegocio = new Conexion('sis_natacion');
             
@@ -562,13 +562,15 @@ class Notificacion extends Conexion {
             foreach ($atletas as $atleta) {
                 $id_usuario = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
                 if ($id_usuario) {
+                    
+                    // NUEVA LINEAS AGREGADAS PARA CONEXION CON EL MODULO RPE
                     self::enviar(
                         $id_usuario,
-                        "Sesión completada",
-                        "La sesión del grupo \"{$nombreGrupo}\" ha finalizado. Volumen total: {$volumen_ejecutado}m. ¡Buen trabajo!",
+                        "Sesión completada - RPE Pendiente", // Título actualizado
+                        "La sesión del grupo \"{$nombreGrupo}\" ha finalizado. Por favor ingresa y registra tu RPE.", // Mensaje actualizado
                         'fa-flag-checkered',
                         'emerald',
-                        "?p=sesiones&accion=ver&id={$id_sesion}"
+                        "?p=cargaBienestar" // Sugerencia: Enviar al atleta directo al módulo de RPE en lugar de ver la sesión
                     );
                 }
             }
@@ -597,7 +599,150 @@ class Notificacion extends Conexion {
             
         } catch (\PDOException $e) {
         }
+    } */
+
+      /*   public static function notificarSesionCompletada(int $id_sesion, int $id_grupo, int $volumen_ejecutado): void {
+    try {
+        $dbNegocio = new Conexion('sis_natacion');
+
+        $sqlGrupo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = :id_grupo";
+        $stmtG = $dbNegocio->getConex1()->prepare($sqlGrupo);
+        $stmtG->execute([':id_grupo' => $id_grupo]);
+        $grupo = $stmtG->fetch(PDO::FETCH_ASSOC);
+        $nombreGrupo = $grupo['nombre'] ?? 'tu grupo';
+
+        // ⚠️ FIX: SOLO atletas con asistencia (Presente / Tardanza)
+        $sqlAtletas = "SELECT DISTINCT a.correo, a.id_atleta
+                       FROM atletas a
+                       INNER JOIN asistencia asis ON asis.id_atleta = a.id_atleta
+                       WHERE asis.id_sesion = :id_sesion
+                         AND asis.estado IN ('Presente', 'Tardanza')
+                         AND a.estado = 1";
+        $stmtA = $dbNegocio->getConex1()->prepare($sqlAtletas);
+        $stmtA->execute([':id_sesion' => $id_sesion]);
+        $atletas = $stmtA->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($atletas as $atleta) {
+            $id_usuario = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
+            if ($id_usuario) {
+                // ⚠️ FIX: incluir id_sesion en el deep link para abrir modal con sesión pre-cargada
+                self::enviar(
+                    $id_usuario,
+                    "Sesión completada - RPE Pendiente",
+                    "La sesión del grupo \"{$nombreGrupo}\" ha finalizado. Por favor ingresa y registra tu RPE.",
+                    'fa-flag-checkered',
+                    'emerald',
+                    "?p=cargaBienestar&id_sesion={$id_sesion}"
+                );
+            }
+        }
+
+        // (Notificación al entrenador se mantiene igual, sin cambios)
+        $sqlEntrenador = "SELECT e.correo
+                          FROM entrenador e
+                          INNER JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
+                          WHERE g.id_grupo = :id_grupo";
+        $stmtE = $dbNegocio->getConex1()->prepare($sqlEntrenador);
+        $stmtE->execute([':id_grupo' => $id_grupo]);
+        $entrenador = $stmtE->fetch(PDO::FETCH_ASSOC);
+
+        if ($entrenador && !empty($entrenador['correo'])) {
+            $id_usuario_ent = self::obtenerIdUsuarioPorCorreo($entrenador['correo']);
+            if ($id_usuario_ent) {
+                self::enviar(
+                    $id_usuario_ent,
+                    "Sesión completada exitosamente",
+                    "Has completado la sesión del grupo \"{$nombreGrupo}\". Volumen ejecutado: {$volumen_ejecutado}m. Los atletas han sido notificados.",
+                    'fa-check-double',
+                    'indigo',
+                    "?p=sesiones&accion=ver&id={$id_sesion}"
+                );
+            }
+        }
+    } catch (PDOException $e) {
+        error_log("Error notificarSesionCompletada: " . $e->getMessage());
     }
+} */
+
+
+    public static function notificarSesionCompletada(int $id_sesion, int $id_grupo, int $volumen_ejecutado): void {
+    try {
+        $dbNegocio = new Conexion('sis_natacion');
+
+        $sqlGrupo = "SELECT nombre FROM grupos_entrenamiento WHERE id_grupo = :id_grupo";
+        $stmtG = $dbNegocio->getConex1()->prepare($sqlGrupo);
+        $stmtG->execute([':id_grupo' => $id_grupo]);
+        $grupo = $stmtG->fetch(PDO::FETCH_ASSOC);
+        $nombreGrupo = $grupo['nombre'] ?? 'tu grupo';
+
+        // ✅ FIX 1: 'Activo' (no 1)
+        // ✅ FIX 2: traemos a.id_usuario como fuente primaria del vínculo
+        $sqlAtletas = "SELECT DISTINCT a.correo, a.id_atleta, a.id_usuario
+                       FROM atletas a
+                       INNER JOIN asistencia asis ON asis.id_atleta = a.id_atleta
+                       WHERE asis.id_sesion = :id_sesion
+                         AND asis.estado IN ('Presente', 'Tardanza')
+                         AND a.estado = 'Activo'";
+        $stmtA = $dbNegocio->getConex1()->prepare($sqlAtletas);
+        $stmtA->execute([':id_sesion' => $id_sesion]);
+        $atletas = $stmtA->fetchAll(PDO::FETCH_ASSOC);
+
+        // 🔍 Traza de diagnóstico
+        error_log("[RPE-NOTIF] Sesión {$id_sesion} | Atletas presentes/tardanza: " . count($atletas));
+
+        foreach ($atletas as $atleta) {
+            // ✅ FIX 3: usar id_usuario del atleta; fallback a búsqueda por correo
+            $id_usuario = null;
+
+            if (!empty($atleta['id_usuario'])) {
+                $id_usuario = (int)$atleta['id_usuario'];
+            } else {
+                $id_usuario = self::obtenerIdUsuarioPorCorreo($atleta['correo']);
+            }
+
+            if (!$id_usuario) {
+                error_log("[RPE-NOTIF] ⚠️ Atleta {$atleta['id_atleta']} ({$atleta['correo']}) SIN usuario vinculado → omitido");
+                continue;
+            }
+
+            $ok = self::enviar(
+                $id_usuario,
+                "Sesión completada - RPE Pendiente",
+                "La sesión del grupo \"{$nombreGrupo}\" ha finalizado. Por favor ingresa y registra tu RPE.",
+                'fa-flag-checkered',
+                'emerald',
+                "?p=cargaBienestar&id_sesion={$id_sesion}"
+            );
+
+            error_log("[RPE-NOTIF] → Atleta {$atleta['id_atleta']} (usuario {$id_usuario}): " . ($ok ? 'OK' : 'FALLÓ'));
+        }
+
+        // Notificación al entrenador (sin cambios)
+        $sqlEntrenador = "SELECT e.correo
+                          FROM entrenador e
+                          INNER JOIN grupos_entrenamiento g ON g.id_entrenador = e.id_entrenador
+                          WHERE g.id_grupo = :id_grupo";
+        $stmtE = $dbNegocio->getConex1()->prepare($sqlEntrenador);
+        $stmtE->execute([':id_grupo' => $id_grupo]);
+        $entrenador = $stmtE->fetch(PDO::FETCH_ASSOC);
+
+        if ($entrenador && !empty($entrenador['correo'])) {
+            $id_usuario_ent = self::obtenerIdUsuarioPorCorreo($entrenador['correo']);
+            if ($id_usuario_ent) {
+                self::enviar(
+                    $id_usuario_ent,
+                    "Sesión completada exitosamente",
+                    "Has completado la sesión del grupo \"{$nombreGrupo}\". Volumen ejecutado: {$volumen_ejecutado}m. Los atletas han sido notificados.",
+                    'fa-check-double',
+                    'indigo',
+                    "?p=sesiones&accion=ver&id={$id_sesion}"
+                );
+            }
+        }
+    } catch (PDOException $e) {
+        error_log("Error notificarSesionCompletada: " . $e->getMessage());
+    }
+}
 
     public static function notificarSesionCancelada(int $id_sesion, int $id_grupo, string $fecha): void {
         try {

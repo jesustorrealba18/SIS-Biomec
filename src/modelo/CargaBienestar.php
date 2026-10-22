@@ -9,20 +9,19 @@ class CargaBienestar extends Conexion {
     use ValidacionesTrait;
     use AutoBinderTrait;
 
-    // =================================================================
-    // 1. CAMPOS PERMITIDOS (incluyen soft delete)
-    // =================================================================
+      public function __construct() {
+        parent::__construct('sis_natacion');
+    }
+    
     private array $datos = [];
     private array $camposPermitidos = [
         'id_rpe', 'id_atleta', 'fecha', 'rpe', 'horas_sueno', 'calidad_sueno',
         'sensacion_muscular', 'estres_percibido', 'observaciones',
         'metros_nadados', 'duracion_minutos', 'srpe',
-        'deleted_at', 'justificacion_softdelete'
+        'deleted_at', 'justificacion_softdelete','id_sesion'
     ];
 
-    // =================================================================
-    // 2. HIDRATACIÓN Y VALIDACIÓN INTERNA
-    // =================================================================
+   
     private function setAtributos(array $payload): void {
         foreach ($this->camposPermitidos as $campo) {
             if (isset($payload[$campo])) {
@@ -37,7 +36,6 @@ class CargaBienestar extends Conexion {
                 $this->datos[$campo] = null;
             }
         }
-        // Por defecto, el registro se crea como activo (no eliminado)
         if (!isset($this->datos['deleted_at'])) {
             $this->datos['deleted_at'] = null;
         }
@@ -46,7 +44,6 @@ class CargaBienestar extends Conexion {
     private function validarAtributosInternos(bool $paraActualizacion = false): bool {
         $this->resetearErrores();
 
-        // Obligatorios
         if (!$paraActualizacion || isset($this->datos['id_atleta'])) {
             $this->requerido((string)($this->datos['id_atleta'] ?? ''), 'id_atleta');
         }
@@ -57,7 +54,6 @@ class CargaBienestar extends Conexion {
             $this->requerido((string)($this->datos['rpe'] ?? ''), 'rpe');
         }
 
-        // RPE entre 1 y 10
         $rpe = $this->datos['rpe'] ?? null;
         if ($rpe !== null && $rpe !== '') {
             if (!is_numeric($rpe) || $rpe < 1 || $rpe > 10) {
@@ -65,10 +61,6 @@ class CargaBienestar extends Conexion {
             }
         }
 
-        // Fecha no futura
-        /* if (!empty($this->datos['fecha']) && $this->datos['fecha'] > date('Y-m-d')) {
-            $this->agregarError('fecha', 'La fecha no puede ser futura.');
-        } */
 
         if (!empty($this->datos['fecha'])) {
             $fechaMedicion = $this->datos['fecha'];
@@ -82,7 +74,6 @@ class CargaBienestar extends Conexion {
             }
         }
 
-        // Duración y metros (positivos)
         if (!empty($this->datos['duracion_minutos']) && (!is_numeric($this->datos['duracion_minutos']) || $this->datos['duracion_minutos'] < 0)) {
             $this->agregarError('duracion_minutos', 'La duración debe ser un número positivo.');
         }
@@ -90,7 +81,6 @@ class CargaBienestar extends Conexion {
             $this->agregarError('metros_nadados', 'Los metros nadados deben ser un número positivo.');
         }
 
-        // Campos de bienestar (1-10)
         $bienestarCampos = ['calidad_sueno', 'sensacion_muscular', 'estres_percibido'];
         foreach ($bienestarCampos as $campo) {
             $valor = $this->datos[$campo] ?? null;
@@ -99,7 +89,6 @@ class CargaBienestar extends Conexion {
             }
         }
 
-        // Horas de sueño (0-24)
         if (!empty($this->datos['horas_sueno']) && (!is_numeric($this->datos['horas_sueno']) || $this->datos['horas_sueno'] < 0 || $this->datos['horas_sueno'] > 24)) {
             $this->agregarError('horas_sueno', 'Las horas de sueño deben estar entre 0 y 24.');
         }
@@ -107,62 +96,7 @@ class CargaBienestar extends Conexion {
         return empty($this->obtenerErrores());
     }
 
-    // =================================================================
-    // 3. OPERACIONES DE LECTURA
-    // =================================================================
-
-    /**
-     * Lista registros RPE con filtros (similar a listarLesiones)
-     */
-   /*  public function listarRPE(string $fechaInicio = '', string $fechaFin = '', int $atleta_id = 0, bool $modoPapelera = false): array {
-        try {
-            $sql = "SELECT r.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta,
-                    CASE 
-                        WHEN r.rpe = 1 AND EXISTS (
-                            SELECT 1 FROM marcas m
-                            WHERE m.id_atleta = r.id_atleta
-                              AND m.fecha = r.fecha
-                              AND m.es_pb = 1
-                        ) THEN 1 ELSE 0 
-                    END AS inconsistencia
-                    FROM registro_rpe r
-                    JOIN atletas a ON r.id_atleta = a.id_atleta
-                    WHERE 1=1";
-            $params = [];
-
-            // Filtro por estado (activo/papelera)
-            if ($modoPapelera) {
-                $sql .= " AND r.deleted_at IS NOT NULL";
-            } else {
-                $sql .= " AND r.deleted_at IS NULL";
-            }
-
-            if ($atleta_id > 0) {
-                $sql .= " AND r.id_atleta = :atleta";
-                $params[':atleta'] = $atleta_id;
-            }
-            if (!empty($fechaInicio)) {
-                $sql .= " AND r.fecha >= :fecha_ini";
-                $params[':fecha_ini'] = $fechaInicio;
-            }
-            if (!empty($fechaFin)) {
-                $sql .= " AND r.fecha <= :fecha_fin";
-                $params[':fecha_fin'] = $fechaFin;
-            }
-
-            $sql .= " ORDER BY r.fecha DESC, a.apellidos ASC";
-            $stmt = $this->pdo->prepare($sql);
-            foreach ($params as $key => &$val) {
-                $stmt->bindValue($key, $val);
-            }
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error listarRPE: " . $e->getMessage());
-            return [];
-        }
-    }
- */
+   
     public function listarRPE(
     string $fechaInicio = '',
     string $fechaFin = '',
@@ -186,20 +120,16 @@ class CargaBienestar extends Conexion {
                 WHERE 1=1";
         $params = [];
 
-        // Filtro por estado (activo/papelera)
         if ($modoPapelera) {
             $sql .= " AND r.deleted_at IS NOT NULL";
         } else {
             $sql .= " AND r.deleted_at IS NULL";
         }
 
-        // ---- NUEVO: FILTRO POR ROL/USUARIO ----
         if (strpos($rol, 'Atleta') !== false) {
-            // El atleta solo ve sus propios registros
             $sql .= " AND a.id_usuario = :id_usuario_seguridad";
             $params[':id_usuario_seguridad'] = $id_usuario;
         } elseif (strpos($rol, 'Representante') !== false) {
-            // El representante ve los atletas que tiene asignados
             $sql .= " AND a.id_atleta IN (
                         SELECT ar.id_atleta 
                         FROM atleta_representante ar 
@@ -208,9 +138,7 @@ class CargaBienestar extends Conexion {
                     )";
             $params[':id_usuario_seguridad'] = $id_usuario;
         }
-        // Médicos y Administradores ven todos (sin filtro adicional)
 
-        // Filtros de fecha y atleta
         if ($atleta_id > 0) {
             $sql .= " AND r.id_atleta = :atleta";
             $params[':atleta'] = $atleta_id;
@@ -237,29 +165,39 @@ class CargaBienestar extends Conexion {
     }
 }
 
-    /**
-     * Obtiene un registro RPE por ID (incluye datos del atleta)
-     */
-    public function obtenerRPEPorId(int $id_rpe): ?array {
-        try {
-            $sql = "SELECT r.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta
-                    FROM registro_rpe r
-                    JOIN atletas a ON r.id_atleta = a.id_atleta
-                    WHERE r.id_rpe = :id";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':id', $id_rpe, PDO::PARAM_INT);
-            $stmt->execute();
-            $res = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $res ?: null;
-        } catch (PDOException $e) {
-            error_log("Error obtenerRPEPorId: " . $e->getMessage());
-            return null;
-        }
-    }
+    
 
-    /**
-     * Obtiene el RPE promedio de los últimos N días (solo activos)
-     */
+        public function obtenerRPEPorId(int $id_rpe, int $id_usuario = 0, string $rol = ''): ?array {
+    try {
+        $sql = "SELECT r.*, CONCAT(a.nombres,' ',a.apellidos) AS nombre_atleta
+                FROM registro_rpe r
+                JOIN atletas a ON r.id_atleta = a.id_atleta
+                WHERE r.id_rpe = :id";
+        $params = [':id' => $id_rpe];
+
+        if (strpos($rol, 'Atleta') !== false && $id_usuario > 0) {
+            $sql .= " AND a.id_usuario = :id_usuario";
+            $params[':id_usuario'] = $id_usuario;
+        } elseif (strpos($rol, 'Representante') !== false && $id_usuario > 0) {
+            $sql .= " AND a.id_atleta IN (
+                        SELECT ar.id_atleta FROM atleta_representante ar
+                        JOIN representantes rep ON ar.id_representante = rep.id_representante
+                        WHERE rep.id_usuario = :id_usuario
+                      )";
+            $params[':id_usuario'] = $id_usuario;
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $res ?: null;
+    } catch (PDOException $e) {
+        error_log("Error obtenerRPEPorId: " . $e->getMessage());
+        return null;
+    }
+}
+
+   
     public function obtenerRpePromedioUltimosDias(int $id_atleta, int $dias = 3): ?float {
         try {
             $sql = "SELECT AVG(rpe) as promedio
@@ -279,9 +217,7 @@ class CargaBienestar extends Conexion {
         }
     }
 
-   /**
-     * Detecta inconsistencias cruzando RPE = 1 con récords en marcas el mismo día.
-     */
+   
     public function auditarInconsistenciasBiologicas(int $id_atleta): array {
         try {
             $sql = "SELECT r.id_registro, r.fecha_registro, m.prueba 
@@ -302,99 +238,192 @@ class CargaBienestar extends Conexion {
         }
     }
 
-    // =================================================================
-    // 4. OPERACIONES DE ESCRITURA (ENVOLTORIOS PÚBLICOS)
-    // =================================================================
 
-    /**
-     * ENVOLTORIO PÚBLICO: Registra un nuevo RPE 
-     */
-    public function registrarRPE(array $payload): bool|array {
-        $this->setAtributos($payload);
-        
-        // 1. Validar atributos
-        if (!$this->validarAtributosInternos(false)) {
+public function registrarRPE(array $payload, int $id_usuario_logueado = 0, string $rol_logueado = ''): bool|array {
+    $esAtleta = strpos($rol_logueado, 'Atleta') !== false;
+
+    if ($esAtleta) {
+        $id_atleta_real = $this->obtenerIdAtletaPorUsuario($id_usuario_logueado);
+        if (!$id_atleta_real) {
+            $this->agregarError('id_atleta', 'Usuario sin atleta vinculado. Contacta al administrador.');
             return false;
         }
-
-        // 2. Reglas de negocio (Evitar duplicados)
-        if ($this->existeRegistroActivo((int)$this->datos['id_atleta'], $this->datos['fecha'])) {
-            $this->agregarError('fecha', 'Ya existe un registro RPE activo para este atleta en esta fecha.');
-            return false;
-        }
-
-        // 3. Delegar
-        return $this->ejecutarRegistrarRPE();
+        $payload['id_atleta'] = $id_atleta_real;   
     }
 
-    /**
-     * ENVOLTORIO PÚBLICO: Actualiza un registro RPE existente
-     */
-    public function actualizarRPE(array $payload, int $id_rpe): bool {
-        $this->setAtributos($payload);
-        $this->datos['id_rpe'] = $id_rpe;
-        
-        // 1. Validar atributos
-        if (!$this->validarAtributosInternos(true)) {
+    if (!empty($payload['id_sesion'])) {
+        $sesion = $this->obtenerSesionConAsistencia(
+            (int)$payload['id_sesion'],
+            (int)$payload['id_atleta']
+        );
+        if (!$sesion) {
+            $this->agregarError('id_sesion',
+                'La sesión no existe, no está completada o no tienes asistencia registrada.');
             return false;
         }
-
-        // 2. Reglas de negocio (Existencia y Duplicados)
-        if (!$this->existeRegistroPorId($id_rpe)) {
-            $this->agregarError('id_rpe', 'Registro no encontrado o ya está anulado.');
-            return false;
-        }
-
-        if ($this->existeRegistroActivo((int)$this->datos['id_atleta'], $this->datos['fecha'], $id_rpe)) {
-            $this->agregarError('fecha', 'Ya existe otro registro RPE activo para este atleta en esta fecha.');
-            return false;
-        }
-
-        // 3. Delegar
-        return $this->ejecutarActualizarRPE();
+        $payload['fecha'] = $sesion['fecha'];  
     }
 
-    // =================================================================
-    // 5. OPERACIONES DE BORRADO Y RESTAURACIÓN (ENVOLTORIOS PÚBLICOS)
-    // =================================================================
 
-    /**
-     * ENVOLTORIO PÚBLICO: Soft delete
-     */
-    public function anularRPE(int $id_rpe, string $motivo): bool {
-        if (!$this->existeRegistroPorId($id_rpe)) {
-            $this->agregarError('id_rpe', 'El registro no existe o ya se encuentra en la papelera.');
-            return false;
-        }
-        return $this->ejecutarAnularRPE($id_rpe, trim($motivo));
+    $this->setAtributos($payload);
+
+    if (!$this->validarAtributosInternos(false)) return false;
+
+    if ($this->existeRegistroActivo(
+        (int)$this->datos['id_atleta'],
+        (int)($this->datos['id_sesion'] ?? 0)
+    )) {
+        $this->agregarError('id_sesion', 'Ya registraste tu RPE para esta sesión específica.');
+        return false;
     }
 
-    /**
-     * ENVOLTORIO PÚBLICO: Reactiva un registro
-     */
-    public function reactivarRPE(int $id_rpe): bool {
-        if (!$this->existeRegistroEnPapelera($id_rpe)) {
-            $this->agregarError('id_rpe', 'El registro no se encuentra en la papelera.');
+    return $this->ejecutarRegistrarRPE();
+}
+
+private function obtenerSesionConAsistencia(int $id_sesion, int $id_atleta): ?array {
+    try {
+        $sql = "SELECT s.fecha, s.tipo_sesion, s.volumen_ejecutado, s.duracion_minutos
+                FROM sesiones s
+                INNER JOIN asistencia a ON a.id_sesion = s.id_sesion AND a.id_atleta = :atleta
+                WHERE s.id_sesion = :sesion
+                  AND s.estado = 'Completada'
+                  AND a.estado IN ('Presente', 'Tardanza')
+                LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':sesion' => $id_sesion, ':atleta' => $id_atleta]);
+        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $res ?: null;
+    } catch (PDOException $e) {
+        error_log("Error obtenerSesionConAsistencia: " . $e->getMessage());
+        return null;
+    }
+}
+
+
+public function actualizarRPE(array $payload, int $id_rpe, int $id_usuario_logueado = 0, string $rol_logueado = ''): bool {
+    $esAtleta = strpos($rol_logueado, 'Atleta') !== false;
+
+    if ($esAtleta) {
+        $id_atleta_real = $this->obtenerIdAtletaPorUsuario($id_usuario_logueado);
+        if (!$id_atleta_real) {
+            $this->agregarError('id_atleta', 'Usuario sin atleta vinculado.');
             return false;
         }
-        return $this->ejecutarReactivarRPE($id_rpe);
-    }
+        $payload['id_atleta'] = $id_atleta_real;
 
-    /**
-     * ENVOLTORIO PÚBLICO: Eliminación física
-     */
-    public function eliminarFisicoRPE(int $id_rpe): bool {
-        if (!$this->existeRegistroEnPapelera($id_rpe)) {
-            $this->agregarError('id_rpe', 'Solo se pueden eliminar físicamente los registros que están en la papelera.');
+        $registro = $this->obtenerRPEPorId($id_rpe);
+        if (!$registro) {
+            $this->agregarError('id_rpe', 'Registro no encontrado.');
             return false;
         }
-        return $this->ejecutarEliminarFisicoRPE($id_rpe);
+        if ((int)$registro['id_atleta'] !== $id_atleta_real) {
+            $this->agregarError('id_rpe', 'No tienes permiso para editar este registro.');
+            return false;
+        }
     }
 
-    // =================================================================
-    // MÉTODOS PRIVADOS DE EJECUCIÓN (Transacciones y SQL)
-    // =================================================================
+     $registroActual = $this->obtenerRPEPorId($id_rpe);
+    if ($registroActual) {
+        if (empty($payload['id_sesion']) && !empty($registroActual['id_sesion'])) {
+            $payload['id_sesion'] = $registroActual['id_sesion'];   // ← restaura el que había
+        }
+        if (!empty($payload['id_sesion'])) {
+            $sesion = $this->obtenerSesionConAsistencia(
+                (int)$payload['id_sesion'],
+                (int)($payload['id_atleta'] ?? $registroActual['id_atleta'])
+            );
+            if ($sesion) {
+                $payload['fecha'] = $sesion['fecha'];
+            }
+        }
+    }
 
+
+    $this->setAtributos($payload);
+    $this->datos['id_rpe'] = $id_rpe;
+
+    if (!$this->validarAtributosInternos(true)) return false;
+
+    if (!$this->existeRegistroPorId($id_rpe)) {
+        $this->agregarError('id_rpe', 'Registro no encontrado o ya está anulado.');
+        return false;
+    }
+
+    if ($this->existeRegistroActivo(
+        (int)$this->datos['id_atleta'],
+        (int)($this->datos['id_sesion'] ?? 0),
+        $id_rpe
+    )) {
+        $this->agregarError('id_sesion', 'Ya existe otro registro RPE activo para este atleta en esta sesión.');
+        return false;
+    }
+
+    return $this->ejecutarActualizarRPE();
+}
+
+    
+
+public function anularRPE(int $id_rpe, string $motivo, int $id_usuario = 0, string $rol = ''): bool {
+    if (!$this->existeRegistroPorId($id_rpe)) {
+        $this->agregarError('id_rpe', 'El registro no existe o ya está en la papelera.');
+        return false;
+    }
+    if (!$this->esDuenoDelRegistro($id_rpe, $id_usuario, $rol)) {
+        $this->agregarError('id_rpe', 'No tienes permiso sobre este registro.');
+        return false;
+    }
+    return $this->ejecutarAnularRPE($id_rpe, trim($motivo));
+}
+
+public function reactivarRPE(int $id_rpe, int $id_usuario = 0, string $rol = ''): bool {
+    if (!$this->existeRegistroEnPapelera($id_rpe)) {
+        $this->agregarError('id_rpe', 'El registro no se encuentra en la papelera.');
+        return false;
+    }
+    if (!$this->esDuenoDelRegistro($id_rpe, $id_usuario, $rol)) {
+        $this->agregarError('id_rpe', 'No tienes permiso sobre este registro.');
+        return false;
+    }
+    return $this->ejecutarReactivarRPE($id_rpe);
+}
+
+public function eliminarFisicoRPE(int $id_rpe, int $id_usuario = 0, string $rol = ''): bool {
+    if (!$this->existeRegistroEnPapelera($id_rpe)) {
+        $this->agregarError('id_rpe', 'Solo se pueden eliminar físicamente los registros de la papelera.');
+        return false;
+    }
+    if (!$this->esDuenoDelRegistro($id_rpe, $id_usuario, $rol)) {
+        $this->agregarError('id_rpe', 'No tienes permiso sobre este registro.');
+        return false;
+    }
+    return $this->ejecutarEliminarFisicoRPE($id_rpe);
+}
+
+private function esDuenoDelRegistro(int $id_rpe, int $id_usuario, string $rol): bool {
+    if (strpos($rol, 'Atleta') === false && strpos($rol, 'Representante') === false) {
+        return true;
+    }
+
+    $reg = $this->obtenerRPEPorId($id_rpe);   
+    if (!$reg) return false;
+
+    if (strpos($rol, 'Atleta') !== false) {
+        $id_real = $this->obtenerIdAtletaPorUsuario($id_usuario);
+        return $id_real && (int)$reg['id_atleta'] === $id_real;
+    }
+
+    if (strpos($rol, 'Representante') !== false) {
+        $sql = "SELECT 1 FROM atleta_representante ar
+                JOIN representantes rep ON ar.id_representante = rep.id_representante
+                WHERE rep.id_usuario = :u AND ar.id_atleta = :a LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':u' => $id_usuario, ':a' => $reg['id_atleta']]);
+        return (bool) $stmt->fetch();
+    }
+    return false;
+}
+
+    
     private function ejecutarRegistrarRPE(): bool|array {
         try {
             $this->pdo->beginTransaction();
@@ -406,11 +435,11 @@ class CargaBienestar extends Conexion {
             $this->datos['srpe'] = $srpe;
 
             $sql = "INSERT INTO registro_rpe (
-                        id_atleta, fecha, rpe, horas_sueno, calidad_sueno,
+                        id_atleta, fecha, rpe, id_sesion, horas_sueno, calidad_sueno,
                         sensacion_muscular, estres_percibido, observaciones,
                         metros_nadados, duracion_minutos, srpe, fecha_creacion
                     ) VALUES (
-                        :id_atleta, :fecha, :rpe, :horas_sueno, :calidad_sueno,
+                        :id_atleta, :fecha, :rpe, :id_sesion, :horas_sueno, :calidad_sueno,
                         :sensacion, :estres, :observaciones,
                         :metros, :duracion, :srpe, NOW()
                     )";
@@ -420,6 +449,7 @@ class CargaBienestar extends Conexion {
                 ':id_atleta'     => ['id_atleta', PDO::PARAM_INT],
                 ':fecha'         => ['fecha', PDO::PARAM_STR],
                 ':rpe'           => ['rpe', PDO::PARAM_INT],
+                ':id_sesion'           => ['id_sesion', PDO::PARAM_INT],
                 ':horas_sueno'   => ['horas_sueno', PDO::PARAM_STR],
                 ':calidad_sueno' => ['calidad_sueno', PDO::PARAM_INT],
                 ':sensacion'     => ['sensacion_muscular', PDO::PARAM_INT],
@@ -457,7 +487,7 @@ class CargaBienestar extends Conexion {
             $this->datos['srpe'] = $srpe;
 
             $sql = "UPDATE registro_rpe SET
-                        id_atleta = :id_atleta, fecha = :fecha, rpe = :rpe,
+                        id_atleta = :id_atleta, fecha = :fecha, rpe = :rpe,id_sesion = :id_sesion,
                         horas_sueno = :horas_sueno, calidad_sueno = :calidad_sueno,
                         sensacion_muscular = :sensacion, estres_percibido = :estres,
                         observaciones = :observaciones, metros_nadados = :metros,
@@ -469,6 +499,7 @@ class CargaBienestar extends Conexion {
                 ':id_atleta'     => ['id_atleta', PDO::PARAM_INT],
                 ':fecha'         => ['fecha', PDO::PARAM_STR],
                 ':rpe'           => ['rpe', PDO::PARAM_INT],
+                ':id_sesion'           => ['id_sesion', PDO::PARAM_INT],
                 ':horas_sueno'   => ['horas_sueno', PDO::PARAM_STR],
                 ':calidad_sueno' => ['calidad_sueno', PDO::PARAM_INT],
                 ':sensacion'     => ['sensacion_muscular', PDO::PARAM_INT],
@@ -539,18 +570,19 @@ class CargaBienestar extends Conexion {
         }
     }
 
-    // =================================================================
-    // MÉTODOS PRIVADOS DE REGLAS DE NEGOCIO (Consultas de validación)
-    // =================================================================
+   
+private function existeRegistroActivo(int $id_atleta, int $id_sesion, int $id_excluir = 0): bool {
+    if ($id_sesion <= 0) return false; 
 
-    private function existeRegistroActivo(int $id_atleta, string $fecha, int $id_excluir = 0): bool {
-        $sql = "SELECT id_rpe FROM registro_rpe 
-                WHERE id_atleta = :atleta AND fecha = :fecha 
-                AND id_rpe != :id_excluir AND deleted_at IS NULL";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':atleta' => $id_atleta, ':fecha' => $fecha, ':id_excluir' => $id_excluir]);
-        return (bool) $stmt->fetch();
-    }
+    $sql = "SELECT id_rpe FROM registro_rpe 
+            WHERE id_atleta = :atleta 
+            AND id_sesion = :id_sesion 
+            AND id_rpe != :id_excluir 
+            AND deleted_at IS NULL";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([':atleta' => $id_atleta, ':id_sesion' => $id_sesion, ':id_excluir' => $id_excluir]);
+    return (bool) $stmt->fetch();
+}
 
     private function existeRegistroPorId(int $id_rpe): bool {
         $sql = "SELECT id_rpe FROM registro_rpe WHERE id_rpe = :id AND deleted_at IS NULL";
@@ -566,21 +598,13 @@ class CargaBienestar extends Conexion {
         return (bool) $stmt->fetch();
     }
 
-    // =================================================================
-    // 6. MÉTODOS AUXILIARES (compatibilidad con frontend)
-    // =================================================================
-
-    /**
-     * Alias de registrarRPE para mantener compatibilidad con frontend existente.
-     */
+   
     public function guardarRPE(array $datos): bool {
         $resultado = $this->registrarRPE($datos);
         return is_array($resultado) ? $resultado['exito'] : $resultado;
     }
 
-    /**
-     * Alias de actualizarRPE con parámetros planos (para compatibilidad).
-     */
+   
     public function actualizarRPEPlano(array $datos): bool {
         $id = $datos['id_rpe'] ?? 0;
         return $this->actualizarRPE($datos, $id);
@@ -612,9 +636,7 @@ class CargaBienestar extends Conexion {
         }
     }
 
-    /**
-     * Calcula el sRPE total de los últimos N días (solo activos)
-     */
+   
     public function calcularSRPEUltimosDias(int $id_atleta, int $dias = 7): ?int {
         $sql = "SELECT SUM(srpe) AS total
                 FROM registro_rpe
@@ -627,9 +649,7 @@ class CargaBienestar extends Conexion {
         return $res && $res['total'] !== null ? (int)$res['total'] : null;
     }
 
-    /**
-     * Promedio de horas de sueño últimos 3 días
-     */
+   
     public function calcularSuenoPromedioUltimosDias(int $id_atleta, int $dias = 3): ?float {
         $sql = "SELECT AVG(horas_sueno) AS promedio
                 FROM registro_rpe
@@ -643,11 +663,8 @@ class CargaBienestar extends Conexion {
         return $res && $res['promedio'] !== null ? (float)$res['promedio'] : null;
     }
 
-    /**
-     * Evalúa la carga del atleta y genera una recomendación si es necesario
-     */
+   
     public function generarRecomendacionCarga(int $id_atleta): void {
-        // 1. Extraer métricas
         $srpeSemanal = $this->calcularSRPEUltimosDias($id_atleta, 7);
         $rpePromedio = $this->obtenerRpePromedioUltimosDias($id_atleta, 3);
         $suenoPromedio = $this->calcularSuenoPromedioUltimosDias($id_atleta, 3);
@@ -655,7 +672,6 @@ class CargaBienestar extends Conexion {
         $tipo = null;
         $mensaje = null;
 
-        // 2. Procesar (reglas de negocio)
         if ($srpeSemanal !== null && $srpeSemanal > 600) {
             $tipo = 'SOBRECARGA';
             $mensaje = "Carga subjetiva semanal muy alta ({$srpeSemanal} sRPE). Se recomienda reducir volumen en un 20% y priorizar sesiones regenerativas.";
@@ -664,7 +680,6 @@ class CargaBienestar extends Conexion {
             $mensaje = "RPE elevado (promedio {$rpePromedio}) con sueño insuficiente (promedio {$suenoPromedio}h). Evaluar fatiga y considerar descanso activo.";
         }
 
-        // 3. Si hay recomendación, escribir en la tabla
         if ($mensaje) {
             $sql = "INSERT INTO recomendaciones_carga (id_atleta, tipo, mensaje) VALUES (:id_atleta, :tipo, :mensaje)";
             $stmt = $this->pdo->prepare($sql);
@@ -676,9 +691,7 @@ class CargaBienestar extends Conexion {
         }
     }
 
-    /**
-     * Obtiene recomendaciones no leídas de los atletas asignados a un entrenador
-     */
+    
     public function obtenerRecomendacionesPorEntrenador(int $id_usuario): array {
         try {
             $sql = "SELECT DISTINCT
@@ -702,9 +715,7 @@ class CargaBienestar extends Conexion {
         }
     }
 
-    /**
-     * Marca una recomendación como leída
-     */
+    
     public function marcarRecomendacionLeida(int $id_recomendacion): bool {
         try {
             $sql = "UPDATE recomendaciones_carga SET leida = TRUE WHERE id_recomendacion = :id";
@@ -715,4 +726,73 @@ class CargaBienestar extends Conexion {
             return false;
         }
     }
+
+
+
+public function obtenerSesionesPendientesSeguro(
+    int $id_atleta_solicitado,
+    int $id_usuario_logueado,
+    bool $esAtleta             
+): array {
+    $id_atleta_final = $id_atleta_solicitado;
+
+    if ($esAtleta) {
+        $id_real = $this->obtenerIdAtletaPorUsuario($id_usuario_logueado);
+        if (!$id_real) {
+            error_log("RPE: usuario {$id_usuario_logueado} es Atleta pero no tiene atleta vinculado");
+            return [];
+        }
+        $id_atleta_final = $id_real;
+    }
+
+    if ($id_atleta_final <= 0) return [];
+
+    return $this->obtenerSesionesPendientes($id_atleta_final);
+}
+
+   
+
+private function obtenerSesionesPendientes(int $id_atleta): array {
+    try {
+        $sql = "SELECT 
+                    s.id_sesion, 
+                    s.fecha, 
+                    s.tipo_sesion, 
+                    s.volumen_ejecutado, 
+                    s.duracion_minutos,
+                    s.observaciones AS obs_sesion
+                FROM sesiones s
+                INNER JOIN asistencia asis 
+                    ON asis.id_sesion = s.id_sesion
+                WHERE asis.id_atleta = :id_atleta
+                  AND s.estado = 'Completada'
+                  AND asis.estado IN ('Presente', 'Tardanza')
+                  AND NOT EXISTS (
+                      SELECT 1 FROM registro_rpe rpe
+                      WHERE rpe.id_atleta  = asis.id_atleta
+                        AND rpe.id_sesion  = s.id_sesion
+                        AND rpe.deleted_at IS NULL
+                  )
+                ORDER BY s.fecha DESC 
+                LIMIT 15";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':id_atleta' => $id_atleta]);
+        $res = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // error_log(">>> RPE: sesiones atleta=$id_atleta → " . count($res));
+        return $res;
+    } catch (PDOException $e) {
+        error_log(">>> RPE ERROR obtenerSesionesPendientes: " . $e->getMessage());
+        return [];
+    }
+}
+
+private function obtenerIdAtletaPorUsuario(int $id_usuario): ?int {
+    $sql = "SELECT id_atleta FROM atletas WHERE id_usuario = :id";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([':id' => $id_usuario]);
+    $res = $stmt->fetch(\PDO::FETCH_ASSOC);
+    return $res ? (int)$res['id_atleta'] : null;
+}
+
+
 }
