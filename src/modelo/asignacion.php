@@ -100,6 +100,59 @@ class Asignacion extends Conexion {
             }
         }
 
+        // ===== VALIDACIÓN DE CHOQUE DE FECHAS =====
+        if (empty($this->errores) && $fecha_vigencia_inicio) {
+            $conex = $this->getConex1();
+            if ($conex) {
+                try {
+                    $diaEspecificoValue = empty($dia_especifico) ? null : $dia_especifico;
+                    $fechaFinVal = !empty($fecha_vigencia_fin) ? $fecha_vigencia_fin : '9999-12-31';
+
+                    if ($excluirId !== null) {
+                        $sqlCruce = "SELECT COUNT(*) FROM asignacion_carril 
+                                     WHERE id_asignacion != :id 
+                                     AND id_carril = :id_carril 
+                                     AND id_bloque_horario = :id_bloque_horario 
+                                     AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL))
+                                     AND activa = 1
+                                     AND (estado IS NULL OR estado != 'completada')
+                                     AND (fecha_vigencia_inicio <= :fecha_fin_val 
+                                          AND (fecha_vigencia_fin IS NULL OR fecha_vigencia_fin >= :fecha_inicio_val))";
+                        $stmtCruce = $conex->prepare($sqlCruce);
+                        $stmtCruce->bindParam(':id', $excluirId, PDO::PARAM_INT);
+                    } else {
+                        $sqlCruce = "SELECT COUNT(*) FROM asignacion_carril 
+                                     WHERE id_carril = :id_carril 
+                                     AND id_bloque_horario = :id_bloque_horario 
+                                     AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL))
+                                     AND activa = 1
+                                     AND (estado IS NULL OR estado != 'completada')
+                                     AND (fecha_vigencia_inicio <= :fecha_fin_val 
+                                          AND (fecha_vigencia_fin IS NULL OR fecha_vigencia_fin >= :fecha_inicio_val))";
+                        $stmtCruce = $conex->prepare($sqlCruce);
+                    }
+
+                    $stmtCruce->bindParam(':id_carril', $id_carril, PDO::PARAM_INT);
+                    $stmtCruce->bindParam(':id_bloque_horario', $id_bloque_horario, PDO::PARAM_INT);
+                    $stmtCruce->bindParam(':fecha_inicio_val', $fecha_vigencia_inicio, PDO::PARAM_STR);
+                    $stmtCruce->bindParam(':fecha_fin_val', $fechaFinVal, PDO::PARAM_STR);
+
+                    if ($diaEspecificoValue === null) {
+                        $stmtCruce->bindValue(':dia_especifico', null, PDO::PARAM_NULL);
+                    } else {
+                        $stmtCruce->bindParam(':dia_especifico', $diaEspecificoValue, PDO::PARAM_STR);
+                    }
+
+                    $stmtCruce->execute();
+                    if ($stmtCruce->fetchColumn() > 0) {
+                        $this->errores['fechas_cruce'] = 'Las fechas de vigencia chocan con otra asignación activa en el mismo carril, horario y día';
+                    }
+                } catch (PDOException $e) {
+                    error_log("Error validando cruce de fechas: " . $e->getMessage());
+                }
+            }
+        }
+
         return $this->obtenerErrores();
     }
 
@@ -428,6 +481,66 @@ class Asignacion extends Conexion {
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Error obteniendo carriles disponibles: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function obtenerEstadoCarrilesPorBloque(int $idBloque, ?string $fechaInicio = null, ?string $fechaFin = null): array {
+        $conex = $this->getConex1();
+        try {
+            $sqlCarriles = "SELECT id_carril, numero, capacidad_maxima FROM carriles WHERE activo = 1 ORDER BY numero ASC";
+            $stmtC = $conex->prepare($sqlCarriles);
+            $stmtC->execute();
+            $carriles = $stmtC->fetchAll(PDO::FETCH_ASSOC);
+
+            $sqlAsig = "SELECT a.id_asignacion, a.id_carril, a.id_grupo, 
+                               a.fecha_vigencia_inicio, a.fecha_vigencia_fin,
+                               a.dia_especifico, g.nombre as grupo_nombre
+                        FROM asignacion_carril a
+                        LEFT JOIN grupos_entrenamiento g ON a.id_grupo = g.id_grupo
+                        WHERE a.id_bloque_horario = :id_bloque 
+                          AND a.activa = 1 
+                          AND (a.estado IS NULL OR a.estado != 'completada')";
+            $params = [':id_bloque' => $idBloque];
+
+            if ($fechaInicio && $fechaFin) {
+                $sqlAsig .= " AND (
+                    (a.fecha_vigencia_inicio <= :fecha_fin 
+                     AND (a.fecha_vigencia_fin IS NULL OR a.fecha_vigencia_fin >= :fecha_inicio))
+                )";
+                $params[':fecha_inicio'] = $fechaInicio;
+                $params[':fecha_fin'] = $fechaFin;
+            }
+
+            $stmtA = $conex->prepare($sqlAsig);
+            $stmtA->execute($params);
+            $asignaciones = $stmtA->fetchAll(PDO::FETCH_ASSOC);
+
+            $ocupados = [];
+            foreach ($asignaciones as $a) {
+                $ocupados[(int)$a['id_carril']] = [
+                    'id_asignacion' => (int)$a['id_asignacion'],
+                    'grupo_nombre' => $a['grupo_nombre'],
+                    'fecha_inicio' => $a['fecha_vigencia_inicio'],
+                    'fecha_fin' => $a['fecha_vigencia_fin'],
+                    'dia_especifico' => $a['dia_especifico']
+                ];
+            }
+
+            $resultado = [];
+            foreach ($carriles as $c) {
+                $idC = (int)$c['id_carril'];
+                $resultado[] = [
+                    'id_carril' => $idC,
+                    'numero' => $c['numero'],
+                    'capacidad_maxima' => $c['capacidad_maxima'],
+                    'ocupado' => isset($ocupados[$idC]),
+                    'detalle_ocupacion' => $ocupados[$idC] ?? null
+                ];
+            }
+            return $resultado;
+        } catch (PDOException $e) {
+            error_log("Error obteniendo estado carriles: " . $e->getMessage());
             return [];
         }
     }
@@ -764,7 +877,22 @@ class Asignacion extends Conexion {
     private function reactivarAsignacionP(int $id): bool {
         $conex = $this->getConex1();
         try {
-            $sql = "UPDATE asignacion_carril SET activa = 1 WHERE id_asignacion = :id";
+            // Verificar que la fecha de fin no haya pasado
+            $sqlCheck = "SELECT fecha_vigencia_fin FROM asignacion_carril WHERE id_asignacion = :id";
+            $stmtCheck = $conex->prepare($sqlCheck);
+            $stmtCheck->execute([':id' => $id]);
+            $row = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                return false;
+            }
+
+            $fechaFin = $row['fecha_vigencia_fin'];
+            if (!empty($fechaFin) && $fechaFin < date('Y-m-d')) {
+                return false;
+            }
+
+            $sql = "UPDATE asignacion_carril SET activa = 1, estado = NULL WHERE id_asignacion = :id";
             $stmt = $conex->prepare($sql);
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) {

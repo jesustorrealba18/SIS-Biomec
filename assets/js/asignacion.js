@@ -5,6 +5,9 @@ let tablaSortDir = '';
 let tablaPagina = 1;
 const tablaPorPagina = 10;
 
+let carrilesSeleccionados = new Set();
+let carrilesEstadoActual = [];
+
 const modalAsignacion = document.getElementById('modalAsignacion');
 const modalVer = document.getElementById('modalVerAsignacion');
 const formAsignacion = document.getElementById('formAsignacion');
@@ -13,42 +16,42 @@ const totalAsignaciones = document.getElementById('totalAsignaciones');
 const infoTabla = document.getElementById('infoTabla');
 const pieTabla = document.getElementById('pieTabla');
 
-const API_URL = 'index.php?p=asignacion'; 
+const API_URL = 'index.php?p=asignacion';
 
 function validarCampoAsignacion(input) {
     const valor = input.value.trim();
     const nombre = input.dataset.nombre || input.name || 'Campo';
     const reglas = input.dataset.validar || '';
     let error = '';
-    
+
     input.classList.remove('border-red-500', 'border-2', 'border-green-500', 'border');
-    
+
     let errorContainer = input.parentElement.querySelector('.error-msg');
     if (!errorContainer) {
         errorContainer = document.createElement('span');
         errorContainer.className = 'error-msg text-red-400 text-[10px] mt-1 block';
         input.parentElement.appendChild(errorContainer);
     }
-    
+
     if (reglas.includes('requerido') && !valor) {
         error = `${nombre} es requerido`;
     }
-    
+
     if (input.type === 'date' && valor) {
         const fecha = new Date(valor);
         if (isNaN(fecha.getTime())) {
             error = `${nombre} debe ser una fecha válida`;
         }
     }
-    
+
     if (input.id === 'fecha_vigente_inicio' || input.id === 'fecha_vigente_fin') {
         const fechaInicio = document.getElementById('fecha_vigente_inicio');
         const fechaFin = document.getElementById('fecha_vigente_fin');
-        
+
         if (fechaInicio && fechaFin && fechaInicio.value && fechaFin.value) {
             const inicio = new Date(fechaInicio.value);
             const fin = new Date(fechaFin.value);
-            
+
             if (inicio > fin) {
                 if (input.id === 'fecha_vigente_fin') {
                     error = 'La fecha de fin debe ser mayor o igual a la fecha de inicio';
@@ -56,7 +59,7 @@ function validarCampoAsignacion(input) {
             }
         }
     }
-    
+
     if (error) {
         input.classList.add('border-red-500', 'border-2');
         errorContainer.textContent = error;
@@ -76,7 +79,6 @@ function validarCampoAsignacion(input) {
 
 function setupValidacionTiempoRealAsignacion() {
     const campos = [
-        { id: 'id_carril', reglas: 'requerido', nombre: 'Carril' },
         { id: 'id_bloque_horario', reglas: 'requerido', nombre: 'Bloque horario' },
         { id: 'id_grupo', reglas: 'requerido', nombre: 'Grupo' },
         { id: 'fecha_vigente_inicio', reglas: 'requerido', nombre: 'Fecha inicio' },
@@ -86,7 +88,7 @@ function setupValidacionTiempoRealAsignacion() {
     campos.forEach(({ id, reglas, nombre }) => {
         const input = document.getElementById(id);
         if (!input) return;
-        
+
         input.dataset.validar = reglas;
         input.dataset.nombre = nombre;
 
@@ -138,12 +140,17 @@ function validarFormularioCompletoAsignacion(form) {
         }
     });
 
+    if (carrilesSeleccionados.size === 0) {
+        hasError = true;
+        primerosErrores.push('Debes seleccionar al menos un carril en el mapa de la piscina.');
+    }
+
     return { hasError, errores: primerosErrores };
 }
 
 async function peticionAjax(accion, datos = null) {
     const opciones = { method: datos ? 'POST' : 'GET' };
-    if (datos) opciones.body = datos; 
+    if (datos) opciones.body = datos;
 
     try {
         const respuesta = await fetch(`${API_URL}&accion=${accion}`, opciones);
@@ -219,14 +226,14 @@ document.addEventListener('keydown', (e) => {
     if (e.key === "Escape") {
         if (modalAsignacion && !modalAsignacion.classList.contains('hidden')) cerrarModalAsignacion();
         if (modalVer && !modalVer.classList.contains('hidden')) cerrarModalVer();
-        
+
         const modalHistorial = document.getElementById('modalHistorial');
         if (modalHistorial && !modalHistorial.classList.contains('hidden')) cerrarModalHistorial();
-        
+
         const modalCarril = document.getElementById('modalVerCarril');
         const modalBloque = document.getElementById('modalVerBloque');
         const modalGrupo = document.getElementById('modalVerGrupo');
-        
+
         if (modalCarril && !modalCarril.classList.contains('hidden')) cerrarModalVerCarril();
         if (modalBloque && !modalBloque.classList.contains('hidden')) cerrarModalVerBloque();
         if (modalGrupo && !modalGrupo.classList.contains('hidden')) cerrarModalVerGrupo();
@@ -243,12 +250,12 @@ async function verDetalleCarril(id) {
     const verNumero = document.getElementById('verCarrilNumero');
     const verCapacidad = document.getElementById('verCarrilCapacidad');
     const verEstado = document.getElementById('verCarrilEstado');
-    
+
     if (verNumero) verNumero.innerText = carril.numero;
     if (verCapacidad) verCapacidad.innerText = carril.capacidad_maxima;
     if (verEstado) {
-        verEstado.innerHTML = carril.activo == 1 
-            ? '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-xs">Activo</span>' 
+        verEstado.innerHTML = carril.activo == 1
+            ? '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-xs">Activo</span>'
             : '<span class="px-2 py-1 bg-red-500/20 text-red-600 dark:text-red-400 rounded-full text-xs">Inactivo</span>';
     }
 
@@ -272,7 +279,7 @@ async function verDetalleBloque(id) {
     const verInicio = document.getElementById('verBloqueInicio');
     const verFin = document.getElementById('verBloqueFin');
     const verRango = document.getElementById('verBloqueRango');
-    
+
     if (verDia) verDia.innerText = bloque.dia_semana;
     if (verInicio) verInicio.innerText = bloque.hora_inicio;
     if (verFin) verFin.innerText = bloque.hora_fin;
@@ -300,17 +307,17 @@ async function verDetalleGrupo(id) {
     const verDescripcion = document.getElementById('verGrupoDescripcion');
     const verEntrenador = document.getElementById('verGrupoEntrenador');
     const verEstado = document.getElementById('verGrupoEstado');
-    
+
     if (verNombre) verNombre.innerText = grupo.nombre;
     if (verDescripcion) verDescripcion.innerText = grupo.descripcion || 'Sin descripción';
     if (verEntrenador) {
-        verEntrenador.innerHTML = grupo.entrenador_nombre 
-            ? `${grupo.entrenador_nombre} <span class="text-xs text-gray-500">(${grupo.entrenador_cedula})</span>` 
+        verEntrenador.innerHTML = grupo.entrenador_nombre
+            ? `${grupo.entrenador_nombre} <span class="text-xs text-gray-500">(${grupo.entrenador_cedula})</span>`
             : '<span class="text-gray-500">Sin entrenador asignado</span>';
     }
     if (verEstado) {
-        verEstado.innerHTML = grupo.activo == 1 
-            ? '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-xs">Activo</span>' 
+        verEstado.innerHTML = grupo.activo == 1
+            ? '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-xs">Activo</span>'
             : '<span class="px-2 py-1 bg-red-500/20 text-red-600 dark:text-red-400 rounded-full text-xs">Inactivo</span>';
     }
 
@@ -325,15 +332,6 @@ async function verDetalleGrupo(id) {
 
 async function cargarSelects() {
     try {
-        const carriles = await peticionAjax('listarCarriles');
-        const selectCarril = document.getElementById('id_carril');
-        if (selectCarril && carriles && Array.isArray(carriles)) {
-            selectCarril.innerHTML = '<option value="">Seleccione un carril</option>';
-            carriles.forEach(carril => {
-                selectCarril.innerHTML += `<option value="${carril.id_carril}">Carril ${carril.numero} (Cap: ${carril.capacidad_maxima})</option>`;
-            });
-        }
-
         const bloques = await peticionAjax('listarHorarios');
         const selectBloque = document.getElementById('id_bloque_horario');
         if (selectBloque && bloques && Array.isArray(bloques)) {
@@ -366,13 +364,131 @@ async function cargarSelects() {
     }
 }
 
+async function cargarMapaCarriles() {
+    const idBloque = document.getElementById('id_bloque_horario')?.value;
+    const fechaInicio = document.getElementById('fecha_vigente_inicio')?.value;
+    const fechaFin = document.getElementById('fecha_vigente_fin')?.value;
+    const container = document.getElementById('carrilesContainer');
+    const idAsignacionEditando = document.getElementById('id_asignacion')?.value;
+
+    if (!container) return;
+
+    if (!idBloque) {
+        container.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
+            <i class="fas fa-info-circle mr-1"></i> Selecciona un bloque horario para ver los carriles
+        </div>`;
+        return;
+    }
+
+    container.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando carriles...</div>`;
+
+    let url = `${API_URL}&accion=estadoCarrilesPorBloque&id_bloque=${idBloque}`;
+    if (fechaInicio && fechaFin) {
+        url += `&fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
+    }
+
+    try {
+        const resp = await fetch(url);
+        const carriles = await resp.json();
+        carrilesEstadoActual = carriles || [];
+
+        if (idAsignacionEditando) {
+            const asig = await peticionAjax(`obtenerAsignacion&id=${idAsignacionEditando}`);
+            if (asig && asig.id_carril) {
+                carrilesSeleccionados = new Set([parseInt(asig.id_carril)]);
+            }
+        }
+
+        renderMapaCarriles();
+    } catch (e) {
+        container.innerHTML = `<div class="col-span-full text-center py-8 text-red-500 text-xs">Error al cargar carriles</div>`;
+    }
+}
+
+function renderMapaCarriles() {
+    const container = document.getElementById('carrilesContainer');
+    if (!container) return;
+
+    if (!carrilesEstadoActual.length) {
+        container.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500 text-xs">No hay carriles disponibles</div>`;
+        actualizarContadorSeleccionados();
+        return;
+    }
+
+    container.innerHTML = carrilesEstadoActual.map(c => {
+        const seleccionado = carrilesSeleccionados.has(c.id_carril);
+        // Si está ocupado por OTRA asignación (no la que estamos editando), bloquear
+        const ocupadoPorOtra = c.ocupado && !seleccionado;
+
+        let bgClass, borderClass, iconClass, cursorClass, title;
+        if (ocupadoPorOtra) {
+            bgClass = 'bg-red-500/20 dark:bg-red-500/30';
+            borderClass = 'border-red-500';
+            iconClass = 'text-red-600 dark:text-red-400';
+            cursorClass = 'cursor-not-allowed opacity-70';
+            title = `Ocupado por: ${c.detalle_ocupacion?.grupo_nombre || 'Otro grupo'}`;
+        } else if (seleccionado) {
+            bgClass = 'bg-indigo-500/30 dark:bg-indigo-500/40';
+            borderClass = 'border-indigo-500 ring-2 ring-indigo-400';
+            iconClass = 'text-indigo-600 dark:text-indigo-300';
+            cursorClass = 'cursor-pointer';
+            title = `Carril ${c.numero} - Seleccionado`;
+        } else {
+            bgClass = 'bg-emerald-500/20 dark:bg-emerald-500/30';
+            borderClass = 'border-emerald-500';
+            iconClass = 'text-emerald-600 dark:text-emerald-400';
+            cursorClass = 'cursor-pointer hover:scale-105';
+            title = `Carril ${c.numero} - Libre (Cap: ${c.capacidad_maxima})`;
+        }
+
+        return `
+            <div onclick="${ocupadoPorOtra ? '' : `toggleCarril(${c.id_carril})`}"
+                 title="${title}"
+                 class="carril-card ${ocupadoPorOtra ? 'ocupado' : ''} relative aspect-square rounded-xl border-2 ${borderClass} ${bgClass} ${cursorClass} transition-all duration-200 flex flex-col items-center justify-center p-2 select-none">
+                <i class="fas fa-swimmer text-2xl ${iconClass} mb-1"></i>
+                <span class="text-xs font-bold text-gray-800 dark:text-white">Carril ${c.numero}</span>
+                <span class="text-[10px] text-gray-600 dark:text-gray-400">Cap: ${c.capacidad_maxima}</span>
+                ${ocupadoPorOtra ? '<i class="fas fa-lock absolute top-1 right-1 text-red-500 text-xs"></i>' : ''}
+                ${seleccionado ? '<i class="fas fa-check-circle absolute top-1 right-1 text-indigo-500 text-sm"></i>' : ''}
+            </div>
+        `;
+    }).join('');
+
+    actualizarHiddenSeleccionados();
+    actualizarContadorSeleccionados();
+}
+
+function toggleCarril(idCarril) {
+    if (carrilesSeleccionados.has(idCarril)) {
+        carrilesSeleccionados.delete(idCarril);
+    } else {
+        carrilesSeleccionados.add(idCarril);
+    }
+    renderMapaCarriles();
+}
+
+function actualizarHiddenSeleccionados() {
+    const hidden = document.getElementById('carriles_seleccionados');
+    if (hidden) hidden.value = Array.from(carrilesSeleccionados).join(',');
+}
+
+function actualizarContadorSeleccionados() {
+    const contador = document.getElementById('contadorSeleccionados');
+    if (contador) {
+        const n = carrilesSeleccionados.size;
+        contador.textContent = n === 0
+            ? 'Ningún carril seleccionado'
+            : `${n} carril${n !== 1 ? 'es' : ''} seleccionado${n !== 1 ? 's' : ''}`;
+    }
+}
+
 async function abrirModalAsignacion(id_asignacion = null) {
-    if (formAsignacion) formAsignacion.reset(); 
-    
-    try { 
-        if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formAsignacion); 
+    if (formAsignacion) formAsignacion.reset();
+
+    try {
+        if (typeof Validador !== 'undefined') Validador.limpiarEstilos(formAsignacion);
     } catch(e) {}
-    
+
     document.querySelectorAll('#formAsignacion .error-msg').forEach(el => {
         el.textContent = '';
         el.style.display = 'none';
@@ -380,7 +496,10 @@ async function abrirModalAsignacion(id_asignacion = null) {
     document.querySelectorAll('#formAsignacion input, #formAsignacion select').forEach(el => {
         el.classList.remove('border-red-500', 'border-green-500', 'border-2', 'border');
     });
-    
+
+    carrilesSeleccionados = new Set();
+    carrilesEstadoActual = [];
+
     const inputIdHidden = document.getElementById('id_asignacion');
     const modalTitulo = document.getElementById('modalTitulo');
 
@@ -390,38 +509,40 @@ async function abrirModalAsignacion(id_asignacion = null) {
         if (inputIdHidden) inputIdHidden.value = id_asignacion;
         if (modalTitulo) modalTitulo.textContent = 'Editar Asignación de Carril';
         if (btnGuardar) btnGuardar.innerHTML = 'EDITAR ASIGNACIÓN <i class="fas fa-sync-alt ml-2"></i>';
-        
+
         const asignacion = await peticionAjax(`obtenerAsignacion&id=${id_asignacion}`);
-        
+
         if (asignacion) {
-            const idCarril = document.getElementById('id_carril');
             const idBloque = document.getElementById('id_bloque_horario');
             const idGrupo = document.getElementById('id_grupo');
             const diaEspecifico = document.getElementById('dia_especifico');
             const fechaInicio = document.getElementById('fecha_vigente_inicio');
             const fechaFin = document.getElementById('fecha_vigente_fin');
             const activa = document.getElementById('activa');
-            
-            if (idCarril) idCarril.value = asignacion.id_carril;
+
             if (idBloque) idBloque.value = asignacion.id_bloque_horario;
             if (idGrupo) idGrupo.value = asignacion.id_grupo;
             if (diaEspecifico) diaEspecifico.value = asignacion.dia_especifico;
             if (fechaInicio) fechaInicio.value = asignacion.fecha_vigencia_inicio;
             if (fechaFin) fechaFin.value = asignacion.fecha_vigencia_fin;
             if (activa) activa.checked = asignacion.activa == 1;
+
+            if (asignacion.id_carril) {
+                carrilesSeleccionados.add(parseInt(asignacion.id_carril));
+            }
         }
     } else {
         if (inputIdHidden) inputIdHidden.value = '';
         if (modalTitulo) modalTitulo.textContent = 'Registrar Asignación de Carril';
         if (btnGuardar) btnGuardar.innerHTML = 'GUARDAR ASIGNACIÓN <i class="fas fa-save ml-2"></i>';
-        
+
         const activaCheck = document.getElementById('activa');
         if (activaCheck) activaCheck.checked = true;
-        
+
         const hoy = new Date().toISOString().split('T')[0];
         const fechaInicio = document.getElementById('fecha_vigente_inicio');
         if (fechaInicio) fechaInicio.value = hoy;
-        
+
         const fechaFin = document.getElementById('fecha_vigente_fin');
         if (fechaFin) {
             const fecha = new Date();
@@ -438,11 +559,13 @@ async function abrirModalAsignacion(id_asignacion = null) {
             }
         }, 10);
     }
+
+    setTimeout(() => cargarMapaCarriles(), 100);
 }
 
 async function verDetalle(id) {
     const asignacion = await peticionAjax(`obtenerAsignacion&id=${id}`);
-    
+
     if (!asignacion) {
         if (typeof UI !== 'undefined') {
             UI.error('Error', 'No se pudo cargar el detalle de la asignación');
@@ -463,30 +586,30 @@ async function verDetalle(id) {
     if (verCarril) {
         verCarril.innerText = asignacion.carril_numero || asignacion.id_carril || '—';
     }
-    
+
     if (verBloque) {
         const dia = asignacion.dia_semana || '';
         const inicio = asignacion.hora_inicio || '';
         const fin = asignacion.hora_fin || '';
         verBloque.innerHTML = `${dia} ${inicio} - ${fin}`.trim() || '—';
     }
-    
+
     if (verGrupo) {
         verGrupo.innerText = asignacion.grupo_nombre || asignacion.id_grupo || '—';
     }
-    
+
     if (verDia) {
         verDia.innerText = asignacion.dia_especifico || '—';
     }
-    
+
     if (verFechaInicio) {
         verFechaInicio.innerText = asignacion.fecha_vigencia_inicio || 'No definida';
     }
-    
+
     if (verFechaFin) {
         verFechaFin.innerText = asignacion.fecha_vigencia_fin || 'No definida';
     }
-    
+
     if (verEstado) {
         if (asignacion.estado === 'completada') {
             verEstado.innerHTML = '<span class="px-2 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-xs"><i class="fas fa-check-circle mr-1"></i> Completada</span>';
@@ -559,7 +682,7 @@ async function reactivarAsignacion(id_asignacion) {
     if (typeof Swal !== 'undefined') {
         const result = await Swal.fire({
             title: '¿Reactivar asignación?',
-            text: 'Esto activará nuevamente esta asignación.',
+            text: 'Solo se puede reactivar si la fecha de fin no ha pasado.',
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#f59e0b',
@@ -582,18 +705,54 @@ async function reactivarAsignacion(id_asignacion) {
     const resultado = await peticionAjax('reactivar', datos);
     if (resultado && resultado.status === 'success') {
         if (typeof Swal !== 'undefined') {
-            Swal.fire('Reactivada', 'La asignación ha sido reactivada.', 'success');
+            Swal.fire('Reactivada', resultado.message || 'La asignación ha sido reactivada.', 'success');
         } else if (typeof UI !== 'undefined') {
-            UI.exito('Reactivada', 'La asignación ha sido reactivada.');
+            UI.exito('Reactivada', resultado.message || 'La asignación ha sido reactivada.');
         }
         cargarTablaAsignaciones();
     } else {
         const errorMsg = resultado?.message || 'No se pudo reactivar la asignación.';
         if (typeof Swal !== 'undefined') {
-            Swal.fire('Error', errorMsg, 'error');
+            Swal.fire('No se puede reactivar', errorMsg, 'error');
         } else if (typeof UI !== 'undefined') {
             UI.error('Error', errorMsg);
         }
+    }
+}
+
+async function eliminarAsignacion(id_asignacion) {
+    if (typeof Swal !== 'undefined') {
+        const result = await Swal.fire({
+            title: '¿Desactivar asignación?',
+            text: 'La asignación quedará inactiva y el carril será liberado.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Sí, desactivar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!result.isConfirmed) return;
+    } else {
+        if (!confirm('¿Está seguro de desactivar esta asignación?')) return;
+    }
+
+    let datosDelete = new FormData();
+    datosDelete.append('accion', 'eliminar');
+    datosDelete.append('id_asignacion', id_asignacion);
+
+    const resultado = await peticionAjax('eliminar', datosDelete);
+    if (resultado && resultado.status === 'success') {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Desactivada', 'La asignación ha sido desactivada.', 'success');
+        } else if (typeof UI !== 'undefined') {
+            UI.exito('Desactivada', 'La asignación ha sido desactivada.');
+        }
+        cargarTablaAsignaciones();
+    } else {
+        const msg = resultado?.message || 'No se pudo desactivar la asignación.';
+        if (typeof Swal !== 'undefined') Swal.fire('Error', msg, 'error');
+        else if (typeof UI !== 'undefined') UI.error('Error', msg);
     }
 }
 
@@ -713,7 +872,7 @@ function renderTabla() {
 
     const total = datos.length;
     if (totalAsignaciones) totalAsignaciones.textContent = `${asignacionData.length} Asignaciones`;
-    
+
     if (infoTabla) {
         if (total === 0) {
             infoTabla.textContent = '0 registros';
@@ -743,17 +902,17 @@ function renderTabla() {
     } else {
         tbody.innerHTML = pagina.map(a => {
             const busqueda = `${a.carril_numero} ${a.dia_semana} ${a.grupo_nombre}`.toLowerCase();
-            
+
             let botonesAccion = '';
             const tienePermiso = typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar;
-            
+
             if (tienePermiso) {
                 botonesAccion += `
                     <button onclick="verDetalle(${a.id_asignacion})" class="text-emerald-400 hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-500/10 transition duration-200" title="Ver Detalle">
                         <i class="fas fa-eye text-base"></i>
                     </button>
                 `;
-                
+
                 if (a.activa == 1) {
                     botonesAccion += `
                         <button onclick="abrirModalAsignacion(${a.id_asignacion})" class="text-indigo-400 hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-500/10 transition duration-200" title="Editar Asignación">
@@ -761,7 +920,7 @@ function renderTabla() {
                         </button>
                     `;
                 }
-                
+
                 if (a.activa == 1) {
                     botonesAccion += `
                         <button onclick="completarAsignacion(${a.id_asignacion})" class="text-amber-400 hover:text-amber-300 p-2 rounded-lg hover:bg-amber-500/10 transition duration-200" title="Completar Asignación">
@@ -769,7 +928,7 @@ function renderTabla() {
                         </button>
                     `;
                 }
-                
+
                 if (a.activa == 0) {
                     botonesAccion += `
                         <button onclick="reactivarAsignacion(${a.id_asignacion})" class="text-blue-400 hover:text-blue-300 p-2 rounded-lg hover:bg-blue-500/10 transition duration-200" title="Reactivar Asignación">
@@ -777,7 +936,7 @@ function renderTabla() {
                         </button>
                     `;
                 }
-                
+
                 if (a.activa == 1) {
                     botonesAccion += `
                         <button onclick="eliminarAsignacion(${a.id_asignacion})" class="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition duration-200" title="Desactivar Asignación">
@@ -834,9 +993,9 @@ function renderTabla() {
 }
 
 function renderPaginacion(totalPaginas) {
-    if (!pieTabla || totalPaginas <= 1) { 
-        if (pieTabla) pieTabla.innerHTML = ''; 
-        return; 
+    if (!pieTabla || totalPaginas <= 1) {
+        if (pieTabla) pieTabla.innerHTML = '';
+        return;
     }
 
     let html = `<span class="text-xs text-gray-500 dark:text-gray-400">Página ${tablaPagina} de ${totalPaginas}</span><div class="flex gap-1">`;
@@ -873,7 +1032,7 @@ function renderPaginacion(totalPaginas) {
 async function cargarTablaAsignaciones() {
     const tbody = document.getElementById('listaAsignaciones');
     if (!tbody) return;
-    
+
     tbody.innerHTML = `<tr><td colspan="7" class="text-center p-12 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i><span class="text-xs uppercase tracking-wider block">Cargando asignaciones...</span></tr>`;
 
     const filtroEstado = document.getElementById('filtroEstado')?.value || 'Activo';
@@ -930,35 +1089,19 @@ document.querySelectorAll('[data-sort]').forEach(th => {
     });
 });
 
-async function eliminarAsignacion(id_asignacion) {
-    if (confirm("¿Está seguro de desactivar esta asignación?")) {
-        let datosDelete = new FormData();
-        datosDelete.append('accion', 'eliminar'); 
-        datosDelete.append('id_asignacion', id_asignacion);
-
-        const resultado = await peticionAjax('eliminar', datosDelete);
-        if (resultado && resultado.status === 'success') {
-            if (typeof UI !== 'undefined') UI.exito('Desactivada', 'La asignación ha sido desactivada.');
-            cargarTablaAsignaciones();
-        } else {
-            if (typeof UI !== 'undefined') UI.error('Error', resultado?.message || 'No se pudo desactivar la asignación.');
-        }
-    }
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     cargarTablaAsignaciones();
-    
+
     verificarAsignacionesVencidas();
-    
+
     try {
         setupValidacionTiempoRealAsignacion();
     } catch (e) {
     }
-    
-    try { 
+
+    try {
         if (typeof Validador !== 'undefined' && formAsignacion) {
-            Validador.vincularTiempoReal(formAsignacion); 
+            Validador.vincularTiempoReal(formAsignacion);
         }
     } catch (e) {}
 
@@ -969,23 +1112,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Listeners para recargar el mapa cuando cambien bloque o fechas
+    ['id_bloque_horario', 'fecha_vigente_inicio', 'fecha_vigente_fin'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => {
+                cargarMapaCarriles();
+            });
+        }
+    });
+
     if (formAsignacion) {
         formAsignacion.addEventListener('submit', async function (e) {
-            e.preventDefault(); 
-            
+            e.preventDefault();
+
             const { hasError, errores } = validarFormularioCompletoAsignacion(this);
-            
+
             if (hasError) {
-                const mensaje = errores.length > 0 
-                    ? errores.join('<br>') 
+                const mensaje = errores.length > 0
+                    ? errores.join('<br>')
                     : 'Por favor corrige los campos marcados en rojo.';
-                
+
                 if (typeof UI !== 'undefined') {
                     UI.advertencia('Datos Incompletos o Inválidos', mensaje);
                 } else {
                     alert('Por favor corrige los campos marcados en rojo:\n' + errores.join('\n'));
                 }
-                
+
                 const primerError = this.querySelector('.border-red-500');
                 if (primerError) {
                     primerError.focus();
@@ -993,17 +1146,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             }
-            
+
             let erroresJS = false;
             try {
                 if (typeof Validador !== 'undefined') {
                     erroresJS = Validador.validarFormulario(formAsignacion);
                 }
             } catch(e) {}
-            
+
             if (erroresJS) {
                 if (typeof UI !== 'undefined') UI.advertencia('Datos Inválidos', erroresJS);
-                return; 
+                return;
             }
 
             const textoOriginal = btnGuardar ? btnGuardar.innerHTML : '';
@@ -1013,6 +1166,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const datosForm = new FormData(formAsignacion);
+
+            // Enviar carriles seleccionados como JSON
+            datosForm.delete('carriles_seleccionados');
+            datosForm.append('carriles_seleccionados', JSON.stringify(Array.from(carrilesSeleccionados)));
+
             const resultado = await peticionAjax('guardar', datosForm);
 
             if (resultado) {
@@ -1027,7 +1185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (typeof UI !== 'undefined') UI.error('Error', resultado.message);
                 }
             }
-            
+
             if (btnGuardar) {
                 btnGuardar.disabled = false;
                 btnGuardar.innerHTML = textoOriginal;
