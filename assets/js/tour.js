@@ -829,7 +829,7 @@ if (document.getElementById('tbodyMacro') || window.location.search.includes('p=
                     }
                 },
                 {
-                    element: '#busquedaMacro',
+                    element: '#tablaMacro_wrapper .dataTables_filter input',
                     popover: {
                         title: 'Buscador de Macrociclos',
                         description: 'Filtra la tabla en tiempo real escribiendo el nombre del macrociclo que deseas consultar.',
@@ -1105,7 +1105,7 @@ if (document.getElementById('tbodyMacro') || window.location.search.includes('p=
                     }
                 },
                 {
-                    element: '#busquedaEvento',
+                    element: '#tablaEventos_wrapper .dataTables_filter input',
                     popover: {
                         title: 'Buscador de Eventos',
                         description: 'Filtra la lista en tiempo real escribiendo el nombre del evento o la sede.',

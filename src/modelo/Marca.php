@@ -156,6 +156,7 @@ class Marca extends Conexion {
         $id_sesion = $this->datos['id_sesion'] ?? null;
         $id_evento = $this->datos['id_evento'] ?? null;
         $id_atleta = $this->datos['id_atleta'] ?? null;
+        $fecha_ingresada = $this->datos['fecha'] ?? null;
 
         // Regla 1: Validar la regla XOR Estricta
         if (!empty($id_sesion) && !empty($id_evento)) {
@@ -198,7 +199,7 @@ class Marca extends Conexion {
         // Reglas 3 y 5 FUSIONADAS: Integridad de Inscripción y Cronológica (Evento)
         if (!empty($id_evento) && !empty($id_atleta)) {
             // Ya no usamos COUNT(*), simplemente pedimos las fechas si existe la inscripción
-            $sqlEvento = "SELECT e.fecha_inicio, e.fecha_fin 
+            $sqlEvento = "SELECT e.fecha_inicio, COALESCE(e.fecha_fin, e.fecha_inicio) AS fecha_fin 
                           FROM evento_inscripcion ei 
                           INNER JOIN eventos e ON ei.id_evento = e.id_evento 
                           WHERE ei.id_evento = :evento AND ei.id_atleta = :atleta";

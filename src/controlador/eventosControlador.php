@@ -54,6 +54,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
+    if ($accion === 'atletasConflicto') {
+        Autorizacion::exigir('eventos', 'ver');
+        header('Content-Type: application/json');
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        echo json_encode($objEvento->obtenerAtletasConConflicto($id));
+        exit;
+    }
+
     if ($accion === 'calendario') {
         Autorizacion::exigir('eventos', 'ver');
         header('Content-Type: application/json');
@@ -85,14 +93,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($accionPost === 'guardar') {
         Autorizacion::exigir('eventos', 'crear');
-        $errores = $objEvento->validarDatosEvento($_POST);
+        $datosEvento = $_POST;
+        $datosEvento['tiempos_corte'] = json_decode($_POST['tiempos_corte'] ?? '[]', true) ?: [];
+        $errores = $objEvento->validarDatosEvento($datosEvento);
 
         if (!empty($errores)) {
             echo json_encode(['status' => 'warning', 'errores' => $errores]);
             exit;
         }
 
-        if ($objEvento->registrarEvento($_POST)) {
+        if ($objEvento->registrarEvento($datosEvento)) {
             Bitacora::registrar(
                 $_SESSION['id'], 'Modulo Eventos', 'INSERT', null,
                 'evento', null, $_POST['nombre']
@@ -111,14 +121,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($accionPost === 'editar') {
         Autorizacion::exigir('eventos', 'editar');
-        $errores = $objEvento->validarDatosEvento($_POST);
+        $datosEvento = $_POST;
+        $datosEvento['tiempos_corte'] = json_decode($_POST['tiempos_corte'] ?? '[]', true) ?: [];
+        $errores = $objEvento->validarDatosEvento($datosEvento);
 
         if (!empty($errores)) {
             echo json_encode(['status' => 'warning', 'errores' => $errores]);
             exit;
         }
 
-        if ($objEvento->editarEvento($_POST)) {
+        if ($objEvento->editarEvento($datosEvento)) {
             Bitacora::registrar(
                 $_SESSION['id'], 'Modulo Eventos', 'UPDATE',
                 (int)$_POST['id_evento'], 'datos evento', null, $_POST['nombre']
@@ -203,23 +215,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $atletas_ids = json_decode($atletas_ids_json, true) ?: [];
 
         if (empty($atletas_ids)) {
-            echo json_encode(['status' => 'warning', 'errores' => ['atletas_ids' => 'Seleccione al menos un atleta.']]);
+            echo json_encode(['status' => 'warning', 'message' => 'Seleccione al menos un atleta.']);
             exit;
         }
 
-        if ($objEvento->inscribirAtletasLote($id_evento, $atletas_ids)) {
+        $conflictos = $objEvento->obtenerConflictosInscripcion($id_evento, $atletas_ids);
+
+        $conflictoMsgs = [];
+        foreach ($conflictos as $c) {
+            $rango = $c['fecha_inicio'] . ((!empty($c['fecha_fin']) && $c['fecha_fin'] !== $c['fecha_inicio']) ? ' al ' . $c['fecha_fin'] : '');
+            $conflictoMsgs[] = "{$c['nombre_atleta']} ya esta inscrito en \"{$c['nombre_evento']}\" ({$rango})";
+        }
+
+        $atletasPermitidos = array_values(array_filter(
+            array_map('intval', $atletas_ids),
+            function ($id) use ($conflictos) {
+                return $id > 0 && !isset($conflictos[$id]);
+            }
+        ));
+
+        if (empty($atletasPermitidos)) {
+            echo json_encode([
+                'status' => 'warning',
+                'message' => 'No se realizo ninguna inscripcion por conflicto de fechas: ' . implode('; ', $conflictoMsgs) . '.'
+            ]);
+            exit;
+        }
+
+        if ($objEvento->inscribirAtletasLote($id_evento, $atletasPermitidos)) {
             Bitacora::registrar(
                 $_SESSION['id'], 'Modulo Eventos', 'INSERT',
-                $id_evento, 'evento_inscripcion', null, count($atletas_ids) . ' atletas'
+                $id_evento, 'evento_inscripcion', null, count($atletasPermitidos) . ' atletas'
             );
             $detalleEvento = $objEvento->obtenerDetallePorId($id_evento);
             $nombreEvento = $detalleEvento['nombre'] ?? 'Evento';
-            foreach ($atletas_ids as $id_atleta) {
+            foreach ($atletasPermitidos as $id_atleta) {
                 Notificacion::NotificarEventos('INSCRIPCION', [
                     'nombre' => $nombreEvento
                 ], $id_evento, (int)$id_atleta);
             }
-            echo json_encode(['status' => 'success', 'message' => 'Atletas inscritos exitosamente.']);
+            if (!empty($conflictoMsgs)) {
+                echo json_encode([
+                    'status' => 'partial',
+                    'message' => 'Se inscribieron ' . count($atletasPermitidos) . ' atleta(s). No inscritos por conflicto de fechas: ' . implode('; ', $conflictoMsgs) . '.'
+                ]);
+            } else {
+                echo json_encode(['status' => 'success', 'message' => 'Atletas inscritos exitosamente.']);
+            }
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Error al inscribir atletas.']);
         }

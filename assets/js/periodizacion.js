@@ -7,6 +7,7 @@ const formMacro = document.getElementById('formMacro');
 let temporadasCache = [];
 let gruposCache = [];
 let eventosCache = [];
+let tablaMacroDT = null;
 
 // ============================================================
 //  COLORES CON SOPORTE CLARO/OSCURO
@@ -88,12 +89,16 @@ async function cargarTablaMacro() {
     const tbody = document.getElementById('tbodyMacro');
 
     if (!datos || datos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-gray-500 dark:text-gray-400">No se encontraron macrociclos.</td></tr>`;
+        if (tablaMacroDT) {
+            tablaMacroDT.clear().draw();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-gray-500 dark:text-gray-400">No se encontraron macrociclos.</td></tr>`;
+        }
         return;
     }
 
     tbody.innerHTML = datos.map(m => `
-        <tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345]">
+        <tr data-id="${m.id_macrociclo}" class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345]">
             <td class="p-4">
                 <p class="text-gray-900 dark:text-white font-medium">${m.nombre || 'Macrociclo #' + m.id_macrociclo}</p>
             </td>
@@ -119,12 +124,14 @@ async function cargarTablaMacro() {
                     <button onclick="verDetalle(${m.id_macrociclo})" class="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition cursor-pointer" title="Ver detalle">
                         <i class="fas fa-eye text-sm"></i>
                     </button>
-                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
+                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.generar ? `
                     ${!m.fase_actual ? `<button onclick="generarPeriodizacion(${m.id_macrociclo})" class="p-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition cursor-pointer" title="Generar periodizacion ATR">
                         <i class="fas fa-magic text-sm"></i>
                     </button>` : `<button onclick="generarPeriodizacion(${m.id_macrociclo})" class="p-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition cursor-pointer" title="Regenerar periodizacion">
                         <i class="fas fa-sync-alt text-sm"></i>
                     </button>`}
+                    ` : ''}
+                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.editar ? `
                     <button onclick="abrirModalMacro(${m.id_macrociclo})" class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition cursor-pointer" title="Editar">
                         <i class="fas fa-pen text-sm"></i>
                     </button>
@@ -136,16 +143,32 @@ async function cargarTablaMacro() {
             </td>
         </tr>
     `).join('');
-}
 
+    if (tablaMacroDT) {
+        tablaMacroDT.destroy();
+        tablaMacroDT = null;
+    }
 
-function filtrarTablaMacro() {
-    const texto = document.getElementById('busquedaMacro').value.toLowerCase();
-    const filas = document.querySelectorAll('#tbodyMacro tr');
-    filas.forEach(fila => {
-        const contenido = fila.textContent.toLowerCase();
-        fila.style.display = contenido.includes(texto) ? '' : 'none';
-    });
+    if (window.jQuery && $.fn.DataTable) {
+        tablaMacroDT = $('#tablaMacro').DataTable({
+            responsive: true,
+            dom: '<"flex flex-col sm:flex-row justify-between items-center gap-4 mb-4"lf>rtip',
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json',
+                search: "Buscar:",
+                lengthMenu: "Mostrar _MENU_ registros",
+                info: "Mostrando _START_ a _END_ de _TOTAL_ macrociclos",
+                paginate: { first: "Primero", last: "Último", next: "Siguiente", previous: "Anterior" }
+            },
+            columnDefs: [
+                { responsivePriority: 1, targets: 0 },
+                { responsivePriority: 2, targets: 8 },
+                { orderable: false, targets: [5, 8] },
+                { searchable: false, targets: [5] }
+            ],
+            autoWidth: false
+        });
+    }
 }
 
 // ============================================================
@@ -750,4 +773,46 @@ document.addEventListener('DOMContentLoaded', () => {
     if (campoFin) campoFin.addEventListener('change', validarFechasEnVivo);
 });
 
-cargarRecursos().then(() => cargarTablaMacro());
+// ============================================================
+//  DEEP LINK (notificaciones): ?p=periodizacion&h=<id_macrociclo>
+// ============================================================
+
+function resaltarFilaMacro(id_macrociclo) {
+    let fila = document.querySelector(`#tbodyMacro tr[data-id="${id_macrociclo}"]`);
+    if (!fila) return false;
+
+    if (tablaMacroDT && window.jQuery) {
+        tablaMacroDT.search('').columns().search('').draw();
+        fila = document.querySelector(`#tbodyMacro tr[data-id="${id_macrociclo}"]`);
+        if (fila) {
+            const idx = tablaMacroDT.row(fila).index();
+            if (idx !== undefined) {
+                const pagina = Math.floor(idx / tablaMacroDT.page.len());
+                tablaMacroDT.page(pagina).draw(false);
+            }
+        }
+    }
+
+    fila = document.querySelector(`#tbodyMacro tr[data-id="${id_macrociclo}"]`);
+    if (!fila) return false;
+
+    fila.classList.add('fila-destacada');
+    fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => fila.classList.remove('fila-destacada'), 5000);
+    return true;
+}
+
+async function iniciarModuloPeriodizacion() {
+    await cargarRecursos();
+    await cargarTablaMacro();
+
+    const params = new URLSearchParams(window.location.search);
+    const h = parseInt(params.get('h'), 10);
+    if (h) {
+        history.replaceState(null, '', 'index.php?p=periodizacion');
+        const encontrada = resaltarFilaMacro(h);
+        setTimeout(() => verDetalle(h), encontrada ? 700 : 0);
+    }
+}
+
+iniciarModuloPeriodizacion();

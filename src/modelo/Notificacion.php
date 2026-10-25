@@ -1151,7 +1151,7 @@ class Notificacion extends Conexion {
         try {
             $deepLink = "?p=eventos";
             if ($id_evento) {
-                $deepLink = "?p=eventos&accion=obtenerDetalle&id=" . $id_evento;
+                $deepLink = "?p=eventos&h=" . $id_evento;
             }
 
             $nombreEvento = $data['nombre'] ?? 'Evento';
