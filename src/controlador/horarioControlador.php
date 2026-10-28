@@ -6,74 +6,75 @@ if (empty($_SESSION['id'])) {
 }
 
 use GrupoProyecto\SisBiomec\modelo\horario;
-use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+
 $objHorario = new horario();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
-    $accion = isset($_GET['accion']) ? $_GET['accion'] : '';
+    $accion = $_GET['accion'] ?? '';
 
     if ($accion === 'guardar') {
-        $tipoAccion = isset($_POST['action_type']) ? $_POST['action_type'] : 'registrar';
-
+        $tipoAccion = $_POST['action_type'] ?? 'registrar';
         $objHorario->setDatos($_POST);
 
         $excluirId = null;
-        if ($tipoAccion === 'editar' || $tipoAccion === 'actualizar') {
-            $excluirId = isset($_POST['id_bloque']) ? (int)$_POST['id_bloque'] : null;
+        if (in_array($tipoAccion, ['editar', 'actualizar'], true)) {
+            $excluirId = !empty($_POST['id_bloque']) ? (int)$_POST['id_bloque'] : null;
             if (empty($excluirId)) {
-                echo json_encode(['status' => 'error', 'message' => 'ID de bloque no proporcionado para actualizar']);
+                echo json_encode(['status' => 'error', 'message' => 'ID de bloque no proporcionado']);
                 exit;
             }
         }
 
         $errores = $objHorario->validarDatos($excluirId);
-
         if (!empty($errores)) {
             echo json_encode(['status' => 'warning', 'errores' => $errores]);
             exit;
         }
 
-        $resultado = false;
-        if ($tipoAccion === 'editar' || $tipoAccion === 'actualizar') {
-            $resultado = $objHorario->editarHorario();
-        } else {
-            $resultado = $objHorario->registrarHorario();
-        }
+        $ok = in_array($tipoAccion, ['editar', 'actualizar'], true)
+            ? $objHorario->editarHorario()
+            : $objHorario->registrarHorario();
 
-        if ($resultado) {
-            echo json_encode(['status' => 'success', 'message' => 'Operación realizada con éxito.']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Error en la base de datos al guardar.']);
-        }
+        echo json_encode($ok
+            ? ['status' => 'success', 'message' => 'Operación realizada con éxito.']
+            : ['status' => 'error',   'message' => 'Error en la base de datos al guardar.']
+        );
         exit;
     }
 
     if ($accion === 'eliminar') {
-        if (!isset($_POST['id_bloque']) || empty($_POST['id_bloque'])) {
-            echo json_encode(['status' => 'error', 'message' => 'ID del bloque de horario no proporcionado.']);
+        if (empty($_POST['id_bloque'])) {
+            echo json_encode(['status' => 'error', 'message' => 'ID no proporcionado.']);
             exit;
         }
-
-        $id_bloque = (int)$_POST['id_bloque'];
-        $objHorario->setIdEliminar($id_bloque);
-
-        $resultado = $objHorario->eliminarHorario();
-
-        if ($resultado) {
-            echo json_encode(['status' => 'success', 'message' => 'Bloque de Horario eliminado correctamente.']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'No se pudo eliminar el bloque.']);
-        }
+        $objHorario->setIdEliminar((int)$_POST['id_bloque']);
+        echo json_encode($objHorario->eliminarHorario()
+            ? ['status' => 'success', 'message' => 'Bloque desactivado correctamente.']
+            : ['status' => 'error',   'message' => 'No se pudo desactivar el bloque.']
+        );
         exit;
     }
 
-    echo json_encode(['status' => 'error', 'message' => 'Acción no reconocida: ' . $accion]);
+    if ($accion === 'reactivar') {
+        if (empty($_POST['id_bloque'])) {
+            echo json_encode(['status' => 'error', 'message' => 'ID no proporcionado.']);
+            exit;
+        }
+        $objHorario->setIdEliminar((int)$_POST['id_bloque']);
+        echo json_encode($objHorario->reactivarHorario()
+            ? ['status' => 'success', 'message' => 'Bloque reactivado correctamente.']
+            : ['status' => 'error',   'message' => 'No se pudo reactivar (posible solapamiento con otro bloque activo).']
+        );
+        exit;
+    }
+
+    echo json_encode(['status' => 'error', 'message' => "Acción no reconocida: $accion"]);
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $accion = isset($_GET['accion']) ? $_GET['accion'] : '';
+    $accion = $_GET['accion'] ?? '';
 
     if ($accion === 'listarHorario') {
         header('Content-Type: application/json');
@@ -83,8 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if ($accion === 'obtenerBloque' && isset($_GET['id'])) {
         header('Content-Type: application/json');
-        $id = (int)$_GET['id'];
-        echo json_encode($objHorario->obtenerPorId($id));
+        echo json_encode($objHorario->obtenerPorId((int)$_GET['id']));
         exit;
     }
 

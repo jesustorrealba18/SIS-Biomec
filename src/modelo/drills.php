@@ -4,6 +4,7 @@ namespace GrupoProyecto\SisBiomec\modelo;
 
 use PDO;
 use PDOException;
+use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 
 class drills extends Conexion {
     use ValidacionesTrait;
@@ -44,7 +45,6 @@ class drills extends Conexion {
         $metraje_sugerido   = $this->datos['metraje_sugerido'] ?? '';
         $dificultad         = $this->datos['dificultad'] ?? '';
         $material_requerido = $this->datos['material_requerido'] ?? '';
-        $fecha_creacion     = $this->datos['fecha_creacion'] ?? '';
 
         if ($tipoAccion === 'editar') {
             $this->requerido($id_drill, 'id_drill');
@@ -57,16 +57,16 @@ class drills extends Conexion {
         $this->soloLetras($nombre, 'nombre');
         $this->longitud($nombre, 'nombre', 2, 100);
 
-       if (empty($this->errores['nombre'])) {
-        $this->unico(
-        $this->getConex1(),
-        $nombre,
-        'drills',
-        'nombre',
-        ($tipoAccion === 'editar') ? $excluirId : null,
-        'id_drill'
-           );
-       }
+        if (empty($this->errores['nombre'])) {
+            $this->unico(
+                $this->getConex1(),
+                $nombre,
+                'drills',
+                'nombre',
+                ($tipoAccion === 'editar') ? $excluirId : null,
+                'id_drill'
+            );
+        }
 
         $this->requerido($estilo, 'estilo');
         $this->enEnum($estilo, 'estilo', self::ESTILOS_VALIDOS);
@@ -78,10 +78,10 @@ class drills extends Conexion {
         $this->longitud($enfoque_tecnico, 'enfoque_tecnico', 5, 100);
 
         $this->requerido($descripcion, 'descripcion');
-        $this->longitud($descripcion, 'descripcion', 10, 500);
+        $this->longitud($descripcion, 'descripcion', 15, 500);
 
         $this->requerido($instrucciones, 'instrucciones');
-        $this->longitud($instrucciones, 'instrucciones', 5, 1000);
+        $this->longitud($instrucciones, 'instrucciones', 20, 800);
 
         $this->requerido($metraje_sugerido, 'metraje_sugerido');
         if (!empty($metraje_sugerido)) {
@@ -98,50 +98,57 @@ class drills extends Conexion {
         $this->requerido($material_requerido, 'material_requerido');
         $this->enEnum($material_requerido, 'material_requerido', self::MATERIALES_VALIDOS);
 
-        if (!empty($fecha_creacion)) {
-            $this->fechaValida($fecha_creacion, 'fecha_creacion');
-        }
-
         return $this->obtenerErrores();
     }
 
     public function registrarDrills(): bool {
         $errores = $this->validarDatos('registrar');
-        if (!empty($errores)) {
-            return false;
-        }
+        if (!empty($errores)) return false;
         return $this->registrarDrillsP();
     }
 
     public function editarDrills(): bool {
         $id = (int)($this->datos['id_drill'] ?? 0);
-        if ($id <= 0) {
-            return false;
-        }
+        if ($id <= 0) return false;
         $errores = $this->validarDatos('editar', $id);
-        if (!empty($errores)) {
-            return false;
-        }
+        if (!empty($errores)) return false;
         return $this->editarDrillsP();
     }
 
     public function eliminarDrills(): bool {
         $id = (int)($this->datos['id_drill'] ?? 0);
-        if ($id <= 0) {
-            return false;
-        }
+        if ($id <= 0) return false;
         return $this->eliminarDrillsP($id);
     }
 
-    public function listarDrills(): array {
+    public function cambiarEstado(int $id, int $nuevoEstado): bool {
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT id_drill, nombre, estilo, categoria, enfoque_tecnico,
-                           descripcion, instrucciones, metraje_sugerido, dificultad,
-                           material_requerido, personalizado, id_usuario_creador,
-                           activo, fecha_creacion
-                    FROM drills
-                    ORDER BY nombre ASC";
+            $stmt = $conex->prepare("UPDATE drills SET activo = :activo WHERE id_drill = :id");
+            $ok = $stmt->execute([':activo' => $nuevoEstado, ':id' => $id]);
+
+            if ($ok && $stmt->rowCount() > 0) {
+                Bitacora::registrar($_SESSION['id'] ?? 0, 'drills', $nuevoEstado === 1 ? 'ACTIVAR' : 'DESACTIVAR', $id, 'activo', $nuevoEstado === 1 ? '0' : '1', (string)$nuevoEstado);
+            }
+            return $ok;
+        } catch (PDOException $e) {
+            error_log("Error cambiando estado: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function listarDrills(bool $incluirInactivos = false): array {
+        $conex = $this->getConex1();
+        try {
+            $sql = "SELECT d.id_drill, d.nombre, d.estilo, d.categoria, d.enfoque_tecnico, d.descripcion, d.instrucciones, 
+                           d.metraje_sugerido, d.dificultad, d.material_requerido, d.personalizado, d.id_usuario_creador, 
+                           d.activo, d.fecha_creacion, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta 
+                    FROM drills d 
+                    LEFT JOIN atletas a ON d.id_usuario_creador = a.id_atleta";
+                    
+            if (!$incluirInactivos) $sql .= " WHERE d.activo = 1";
+            $sql .= " ORDER BY d.nombre ASC";
+            
             $stmt = $conex->query($sql);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -151,13 +158,13 @@ class drills extends Conexion {
     }
 
     public function obtenerPorId(int $id_drill): ?array {
-        if ($id_drill <= 0) {
-            return null;
-        }
+        if ($id_drill <= 0) return null;
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT * FROM drills WHERE id_drill = :id_drill";
-            $stmt = $conex->prepare($sql);
+            $stmt = $conex->prepare("SELECT d.*, CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta 
+                                     FROM drills d 
+                                     LEFT JOIN atletas a ON d.id_usuario_creador = a.id_atleta 
+                                     WHERE d.id_drill = :id_drill");
             $stmt->execute([':id_drill' => $id_drill]);
             $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
             return $resultado ?: null;
@@ -166,25 +173,27 @@ class drills extends Conexion {
             return null;
         }
     }
-    
+
+    public function listarAtletas(): array {
+        $conex = $this->getConex1();
+        try {
+            $sql = "SELECT id_atleta AS id_usuario, CONCAT(nombres, ' ', apellidos) AS nombre_completo, cedula FROM atletas ORDER BY nombres ASC";
+            $stmt = $conex->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error listando atletas: " . $e->getMessage());
+            return [];
+        }
+    }
+
     private function registrarDrillsP(): bool {
         $conex = $this->getConex1();
         try {
             $conex->beginTransaction();
-
-            $sql = "INSERT INTO drills (
-                        nombre, estilo, categoria, enfoque_tecnico, descripcion,
-                        instrucciones, metraje_sugerido, dificultad, material_requerido,
-                        personalizado, id_usuario_creador, activo, fecha_creacion
-                    ) VALUES (
-                        :nombre, :estilo, :categoria, :enfoque_tecnico, :descripcion,
-                        :instrucciones, :metraje_sugerido, :dificultad, :material_requerido,
-                        :personalizado, :id_usuario_creador, :activo, :fecha_creacion
-                    )";
-
+            $sql = "INSERT INTO drills (nombre, estilo, categoria, enfoque_tecnico, descripcion, instrucciones, metraje_sugerido, dificultad, material_requerido, personalizado, id_usuario_creador, activo, fecha_creacion) 
+                    VALUES (:nombre, :estilo, :categoria, :enfoque_tecnico, :descripcion, :instrucciones, :metraje_sugerido, :dificultad, :material_requerido, :personalizado, :id_usuario_creador, :activo, :fecha_creacion)";
             $stmt = $conex->prepare($sql);
-
-            $activo        = !empty($this->datos['activo']) ? 1 : 0;
+            $activo = !empty($this->datos['activo']) ? 1 : 0;
             $personalizado = !empty($this->datos['personalizado']) ? 1 : 0;
 
             $stmt->execute([
@@ -200,10 +209,12 @@ class drills extends Conexion {
                 ':personalizado'      => $personalizado,
                 ':id_usuario_creador' => $this->datos['id_usuario_creador'] ?? ($_SESSION['id'] ?? 1),
                 ':activo'             => $activo,
-                ':fecha_creacion'     => $this->datos['fecha_creacion'] ?? date('Y-m-d H:i:s'),
+                ':fecha_creacion'     => date('Y-m-d H:i:s'),
             ]);
 
+            $nuevoId = (int)$conex->lastInsertId();
             $conex->commit();
+            Bitacora::registrar($_SESSION['id'] ?? 0, 'drills', 'CREAR', $nuevoId, null, null, $this->datos['nombre'] ?? '');
             return true;
         } catch (PDOException $e) {
             $conex->rollBack();
@@ -216,25 +227,12 @@ class drills extends Conexion {
         $conex = $this->getConex1();
         try {
             $conex->beginTransaction();
+            $id_drill = (int)($this->datos['id_drill'] ?? 0);
+            $anterior = $this->obtenerPorId($id_drill);
 
-            $sql = "UPDATE drills SET
-                        nombre = :nombre,
-                        estilo = :estilo,
-                        categoria = :categoria,
-                        enfoque_tecnico = :enfoque_tecnico,
-                        descripcion = :descripcion,
-                        instrucciones = :instrucciones,
-                        metraje_sugerido = :metraje_sugerido,
-                        dificultad = :dificultad,
-                        material_requerido = :material_requerido,
-                        personalizado = :personalizado,
-                        activo = :activo
-                    WHERE id_drill = :id_drill";
-
+            $sql = "UPDATE drills SET nombre = :nombre, estilo = :estilo, categoria = :categoria, enfoque_tecnico = :enfoque_tecnico, descripcion = :descripcion, instrucciones = :instrucciones, metraje_sugerido = :metraje_sugerido, dificultad = :dificultad, material_requerido = :material_requerido, personalizado = :personalizado, activo = :activo WHERE id_drill = :id_drill";
             $stmt = $conex->prepare($sql);
-
-            $id_drill      = (int)($this->datos['id_drill'] ?? 0);
-            $activo        = !empty($this->datos['activo']) ? 1 : 0;
+            $activo = !empty($this->datos['activo']) ? 1 : 0;
             $personalizado = !empty($this->datos['personalizado']) ? 1 : 0;
 
             $status = $stmt->execute([
@@ -253,6 +251,10 @@ class drills extends Conexion {
             ]);
 
             $conex->commit();
+
+            if ($status) {
+                Bitacora::registrar($_SESSION['id'] ?? 0, 'drills', 'EDITAR', $id_drill, 'nombre', $anterior['nombre'] ?? null, $this->datos['nombre'] ?? '');
+            }
             return $status;
         } catch (PDOException $e) {
             $conex->rollBack();
@@ -264,18 +266,17 @@ class drills extends Conexion {
     private function eliminarDrillsP(int $id): bool {
         $conex = $this->getConex1();
         try {
-            $checkSql = "SELECT id_drill FROM drills WHERE id_drill = :id";
-            $checkStmt = $conex->prepare($checkSql);
-            $checkStmt->execute([':id' => $id]);
+            $drill = $this->obtenerPorId($id);
+            if (!$drill) return false;
 
-            if (!$checkStmt->fetch()) {
-                error_log("Drill con ID $id no encontrado");
-                return false;
-            }
-
-            $sql = "DELETE FROM drills WHERE id_drill = :id";
+            $sql = "UPDATE drills SET activo = 0 WHERE id_drill = :id";
             $stmt = $conex->prepare($sql);
-            return $stmt->execute([':id' => $id]);
+            $ok = $stmt->execute([':id' => $id]);
+
+            if ($ok && $stmt->rowCount() > 0) {
+                Bitacora::registrar($_SESSION['id'] ?? 0, 'drills', 'ELIMINAR', $id, 'nombre', $drill['nombre'] ?? null, null);
+            }
+            return $ok;
         } catch (PDOException $e) {
             error_log("Error al eliminar drill: " . $e->getMessage());
             return false;

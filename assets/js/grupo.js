@@ -18,6 +18,8 @@ let tablaSortDir = '';
 let tablaPagina = 1;
 const tablaPorPagina = 10;
 
+let atletasModalCompletos = [];
+
 async function peticionAjax(accion, datos = null) {
     const url = `${API_URL}&accion=${accion}`;
     const opciones = { method: datos ? 'POST' : 'GET' };
@@ -230,10 +232,18 @@ class ValidadorTiempoReal {
 
         if (!edadMin || !edadMax || !feedback) return true;
 
-        const min = parseInt(edadMin.value);
-        const max = parseInt(edadMax.value);
+        const min = parseInt(edadMin.value, 10);
+        const max = parseInt(edadMax.value, 10);
 
-        if (min && max && min > max) {
+        // No marcar error si falta uno de los dos campos
+        if (!Number.isInteger(min) || !Number.isInteger(max)) {
+            feedback.style.display = 'none';
+            edadMin.classList.remove('is-invalid');
+            edadMax.classList.remove('is-invalid');
+            return true;
+        }
+
+        if (min > max) {
             feedback.textContent = 'La edad mínima no puede ser mayor que la máxima';
             feedback.style.display = 'block';
             edadMin.classList.add('is-invalid');
@@ -412,6 +422,10 @@ async function abrirModalAsignacion(idGrupo = null) {
     formAsignacion.reset();
     document.getElementById('id_grupo_asignacion').value = idGrupo;
 
+    const busq = document.getElementById('busquedaAtleta');
+    if (busq) busq.value = '';
+    atletasModalCompletos = [];
+
     const grupo = await peticionAjax(`obtenerGrupo&id=${idGrupo}`);
     if (grupo) {
         document.getElementById('grupo_nombre').textContent = grupo.nombre;
@@ -428,18 +442,39 @@ async function abrirModalAsignacion(idGrupo = null) {
 }
 
 function renderListaAtletas(atletas, container) {
-    if (!atletas || atletas.length === 0) {
+    atletasModalCompletos = Array.isArray(atletas) ? atletas.slice() : [];
+    renderListaAtletasFiltrada();
+}
+
+function renderListaAtletasFiltrada() {
+    const container = document.getElementById('atletas-disponibles');
+    if (!container) return;
+
+    const termino = (document.getElementById('busquedaAtleta')?.value || '')
+        .toLowerCase().trim();
+
+    const filtrados = atletasModalCompletos.filter(a => {
+        if (!termino) return true;
+        const nombre = `${a.nombres || ''} ${a.apellidos || ''}`.toLowerCase();
+        const cedula = (a.cedula || '').toLowerCase();
+        return nombre.includes(termino) || cedula.includes(termino);
+    });
+
+    if (filtrados.length === 0) {
         container.innerHTML = `
             <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                <i class="fas fa-users text-4xl mb-3 block opacity-30"></i>
-                <span class="text-sm">No hay atletas disponibles para asignar</span>
+                <i class="fas fa-search text-4xl mb-3 block opacity-30"></i>
+                <span class="text-sm">${atletasModalCompletos.length === 0
+                    ? 'No hay atletas disponibles para asignar'
+                    : 'No se encontraron atletas con ese criterio'}</span>
             </div>
         `;
+        actualizarContadorAtletas();
         return;
     }
 
     let html = `<div class="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">`;
-    atletas.forEach(atleta => {
+    filtrados.forEach(atleta => {
         const edad = atleta.edad || 'N/A';
         const categoria = atleta.categoria_nombre || 'Sin categoría';
         html += `
@@ -519,24 +554,18 @@ async function filtrarAtletasPorEdad() {
     const container = document.getElementById('atletas-disponibles');
     if (!container) return;
 
-    if (!edadMin || !edadMax) {
-        if (typeof UI !== 'undefined') {
-            UI.advertencia('Filtro incompleto', 'Debes ingresar tanto la edad mínima como la máxima.');
-        }
-        return;
-    }
+    const min = parseInt(edadMin, 10);
+    const max = parseInt(edadMax, 10);
 
-    if (parseInt(edadMin) > parseInt(edadMax)) {
-        if (typeof UI !== 'undefined') {
-            UI.advertencia('Rango inválido', 'La edad mínima no puede ser mayor que la máxima.');
-        }
-        return;
-    }
+    // Guardas defensivas: no alertar, solo salir
+    if (!Number.isInteger(min) || !Number.isInteger(max)) return;
+    if (min < 5 || max < 5) return;
+    if (min > max) return;
 
     container.innerHTML = '<div class="text-center py-4 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin"></i> Filtrando atletas...</div>';
 
     try {
-        const atletas = await peticionAjax(`listarAtletasPorEdad&edad_min=${edadMin}&edad_max=${edadMax}`);
+        const atletas = await peticionAjax(`listarAtletasPorEdad&edad_min=${min}&edad_max=${max}`);
         renderListaAtletas(atletas, container);
     } catch (error) {
         container.innerHTML = '<div class="text-center py-4 text-red-600 dark:text-red-400">Error al filtrar atletas</div>';
@@ -565,9 +594,11 @@ function limpiarFiltros() {
     const cat = document.getElementById('filtroCategoria');
     const min = document.getElementById('edad_min');
     const max = document.getElementById('edad_max');
+    const busq = document.getElementById('busquedaAtleta');
     if (cat) cat.value = '';
     if (min) min.value = '';
     if (max) max.value = '';
+    if (busq) busq.value = '';
     cargarAtletasDisponibles();
 }
 
@@ -625,7 +656,19 @@ async function abrirModalVerGrupo(idGrupo) {
 }
 
 async function desasignarAtleta(id_atleta, id_grupo) {
-    if (!confirm("¿Está seguro de remover este atleta del grupo?")) return;
+    const confirmacion = await Swal.fire({
+        title: '¿Remover atleta del grupo?',
+        text: 'El atleta quedará disponible para asignarlo a otro grupo.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="fas fa-user-minus mr-1"></i> Sí, remover',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        customClass: { popup: 'rounded-2xl' }
+    });
+    if (!confirmacion.isConfirmed) return;
 
     const formData = new FormData();
     formData.append('accion', 'desasignarAtleta');
@@ -634,17 +677,23 @@ async function desasignarAtleta(id_atleta, id_grupo) {
     const resultado = await peticionAjax('desasignarAtleta', formData);
 
     if (resultado && resultado.status === 'success') {
-        if (typeof UI !== 'undefined') {
-            UI.exito('Desasignado', 'El atleta ha sido removido del grupo.');
-        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Desasignado',
+            text: 'El atleta ha sido removido del grupo.',
+            timer: 1800,
+            showConfirmButton: false
+        });
         if (grupoActualVer) {
             abrirModalVerGrupo(grupoActualVer.id_grupo);
         }
         cargarTablaGrupos();
     } else {
-        if (typeof UI !== 'undefined') {
-            UI.error('Error', resultado?.message || 'No se pudo desasignar el atleta.');
-        }
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: resultado?.message || 'No se pudo desasignar el atleta.'
+        });
     }
 }
 
@@ -884,19 +933,19 @@ function renderTablaGrupos() {
 
 function actualizarInfoYPieTabla(total, totalPaginas) {
     const contador = document.getElementById('contadorGrupos');
-    const infoTabla = document.getElementById('infoTabla');
-    const pieTabla = document.getElementById('pieTabla');
+    const infoTablaEl = document.getElementById('infoTabla');
+    const pieTablaEl = document.getElementById('pieTabla');
 
     if (contador) contador.textContent = `(${gruposData.length})`;
 
-    if (infoTabla) {
-        infoTabla.textContent = total === 0 ? '' : `Mostrando ${(tablaPagina - 1) * tablaPorPagina + 1}–${Math.min(tablaPagina * tablaPorPagina, total)} de ${total}`;
+    if (infoTablaEl) {
+        infoTablaEl.textContent = total === 0 ? '' : `Mostrando ${(tablaPagina - 1) * tablaPorPagina + 1}–${Math.min(tablaPagina * tablaPorPagina, total)} de ${total}`;
     }
 
-    if (!pieTabla) return;
+    if (!pieTablaEl) return;
 
     if (totalPaginas <= 1) {
-        pieTabla.innerHTML = '';
+        pieTablaEl.innerHTML = '';
         return;
     }
 
@@ -927,7 +976,7 @@ function actualizarInfoYPieTabla(total, totalPaginas) {
     }
 
     html += '</div>';
-    pieTabla.innerHTML = html;
+    pieTablaEl.innerHTML = html;
 }
 
 const inputBusqueda = document.getElementById('busquedaNombre');
@@ -954,7 +1003,20 @@ document.querySelectorAll('[data-sort]').forEach(th => {
 });
 
 async function eliminarGrupo(id_grupo) {
-    if (!confirm("¿Está seguro de archivar este grupo de entrenamiento?")) return;
+    const confirmacion = await Swal.fire({
+        title: '¿Archivar grupo?',
+        text: 'El grupo dejará de estar activo, pero podrá reactivarlo después.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="fas fa-trash-alt mr-1"></i> Sí, archivar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        customClass: { popup: 'rounded-2xl' }
+    });
+
+    if (!confirmacion.isConfirmed) return;
 
     let datosDelete = new FormData();
     datosDelete.append('accion', 'eliminar');
@@ -962,19 +1024,38 @@ async function eliminarGrupo(id_grupo) {
 
     const resultado = await peticionAjax('eliminar', datosDelete);
     if (resultado && resultado.status === 'success') {
-        if (typeof UI !== 'undefined') {
-            UI.exito('Archivado', 'El grupo ha sido desactivado.');
-        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Archivado',
+            text: 'El grupo ha sido desactivado.',
+            timer: 1800,
+            showConfirmButton: false
+        });
         cargarTablaGrupos();
     } else {
-        if (typeof UI !== 'undefined') {
-            UI.error('Error', 'No se pudo desactivar el registro.');
-        }
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo desactivar el registro.'
+        });
     }
 }
 
 async function reactivarGrupo(id_grupo) {
-    if (!confirm("¿Desea reactivar este grupo de entrenamiento?")) return;
+    const confirmacion = await Swal.fire({
+        title: '¿Reactivar grupo?',
+        text: 'El grupo volverá a estar disponible para asignar atletas.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="fas fa-check-circle mr-1"></i> Sí, reactivar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        customClass: { popup: 'rounded-2xl' }
+    });
+
+    if (!confirmacion.isConfirmed) return;
 
     let datosReactivar = new FormData();
     datosReactivar.append('accion', 'reactivar');
@@ -982,14 +1063,20 @@ async function reactivarGrupo(id_grupo) {
 
     const resultado = await peticionAjax('reactivar', datosReactivar);
     if (resultado && resultado.status === 'success') {
-        if (typeof UI !== 'undefined') {
-            UI.exito('Reactivado', 'El grupo vuelve a estar activo.');
-        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Reactivado',
+            text: 'El grupo vuelve a estar activo.',
+            timer: 1800,
+            showConfirmButton: false
+        });
         cargarTablaGrupos();
     } else {
-        if (typeof UI !== 'undefined') {
-            UI.error('Error', 'No se pudo reactivar el grupo.');
-        }
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo reactivar el grupo.'
+        });
     }
 }
 
@@ -1100,14 +1187,37 @@ document.addEventListener('DOMContentLoaded', () => {
         filtroEstadoEl.addEventListener('change', cargarTablaGrupos);
     }
 
+    const busquedaAtletaEl = document.getElementById('busquedaAtleta');
+    if (busquedaAtletaEl) {
+        busquedaAtletaEl.addEventListener('input', debounce(() => {
+            renderListaAtletasFiltrada();
+        }, 200));
+    }
+
     const edadMinEl = document.getElementById('edad_min');
     const edadMaxEl = document.getElementById('edad_max');
     if (edadMinEl && edadMaxEl) {
         const triggerFiltroEdad = debounce(() => {
-            if (edadMinEl.value && edadMaxEl.value) {
+            const min = parseInt(edadMinEl.value, 10);
+            const max = parseInt(edadMaxEl.value, 10);
+
+            if (
+                Number.isInteger(min) && min >= 5 &&
+                Number.isInteger(max) && max >= 5 &&
+                min <= max
+            ) {
                 filtrarAtletasPorEdad();
+            } else if (
+                Number.isInteger(min) && min >= 5 &&
+                Number.isInteger(max) && max >= 5 &&
+                min > max
+            ) {
+                if (typeof UI !== 'undefined') {
+                    UI.advertencia('Rango inválido',
+                        'La edad mínima no puede ser mayor que la máxima.');
+                }
             }
-        }, 400);
+        }, 600);
 
         edadMinEl.addEventListener('input', triggerFiltroEdad);
         edadMaxEl.addEventListener('input', triggerFiltroEdad);

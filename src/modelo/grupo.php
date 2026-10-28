@@ -45,6 +45,10 @@ class Grupo extends Conexion {
         $this->ultimoError = $error;
     }
 
+    public function obtenerUltimoIdInsertado(): int {
+    return (int)$this->getConex1()->lastInsertId();
+    }
+
     public function validarDatos($excluirId = null): array {
         $this->resetearErrores();
 
@@ -214,32 +218,39 @@ class Grupo extends Conexion {
         }
     }
 
-    public function listarGrupos(int $estado = 1): array {
-        $conex = $this->getConex1();
-        try {
-            $sql = "SELECT 
-                        g.id_grupo, 
-                        g.nombre, 
-                        g.descripcion, 
-                        g.activo, 
-                        g.id_entrenador,
-                        CONCAT(e.nombres, ' ', e.apellidos) as entrenador_nombre,
-                        e.cedula as entrenador_cedula,
-                        COUNT(ga.id_atleta) as total_atletas
-                    FROM grupos_entrenamiento g
-                    LEFT JOIN entrenador e ON g.id_entrenador = e.id_entrenador
-                    LEFT JOIN grupo_atleta ga ON g.id_grupo = ga.id_grupo
-                    WHERE g.activo = :estado 
-                    GROUP BY g.id_grupo
-                    ORDER BY g.id_grupo DESC";
-            $stmt = $conex->prepare($sql);
-            $stmt->execute([':estado' => $estado]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error en listarGrupos: " . $e->getMessage());
-            return [];
+public function listarGrupos(int $estado = 1, ?int $id_entrenador = null): array {
+    $conex = $this->getConex1();
+    try {
+        $sql = "SELECT 
+                    g.id_grupo, 
+                    g.nombre, 
+                    g.descripcion, 
+                    g.activo, 
+                    g.id_entrenador,
+                    CONCAT(e.nombres, ' ', e.apellidos) as entrenador_nombre,
+                    e.cedula as entrenador_cedula,
+                    COUNT(ga.id_atleta) as total_atletas
+                FROM grupos_entrenamiento g
+                LEFT JOIN entrenador e ON g.id_entrenador = e.id_entrenador
+                LEFT JOIN grupo_atleta ga ON g.id_grupo = ga.id_grupo
+                WHERE g.activo = :estado";
+        $params = [':estado' => $estado];
+
+        if ($id_entrenador !== null && $id_entrenador > 0) {
+            $sql .= " AND g.id_entrenador = :id_entrenador";
+            $params[':id_entrenador'] = $id_entrenador;
         }
+
+        $sql .= " GROUP BY g.id_grupo ORDER BY g.id_grupo DESC";
+
+        $stmt = $conex->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error en listarGrupos: " . $e->getMessage());
+        return [];
     }
+}
 
     public function listarGruposPorEntrenador(int $id_entrenador): array {
         $conex = $this->getConex1();

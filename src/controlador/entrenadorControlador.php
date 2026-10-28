@@ -17,12 +17,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($accion === 'guardar') {
         $tipoAccion = isset($_POST['action_type']) ? $_POST['action_type'] : 'registrar';
-        Autorizacion::exigir('atletas', $tipoAccion === 'actualizar' ? 'editar' : 'crear');
+        Autorizacion::exigir('atletas', $tipoAccion === 'editar' ? 'editar' : 'crear');
 
         $objEntrenador->setDatos($_POST);
 
-        $excluirCedula = ($tipoAccion === 'editar') ? ($_POST['cedula'] ?? null) : null;
+        if (isset($_FILES['curriculum']) && $_FILES['curriculum']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $objEntrenador->setCurriculum($_FILES['curriculum']);
+        }
 
+        $excluirCedula = ($tipoAccion === 'editar') ? ($_POST['cedula'] ?? null) : null;
         $errores = $objEntrenador->validarDatos($excluirCedula);
 
         if (!empty($errores)) {
@@ -38,16 +41,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($resultado) {
-            $idAfectado = isset($_POST['id_entrenador']) ? (int)$_POST['id_entrenador'] : null;
-            Bitacora::registrar(
-                $_SESSION['id'],
-                'Entrenadores',
-                $tipoAccion === 'editar' ? 'UPDATE' : 'INSERT',
-                $idAfectado,
-                'entrenador',
-                null,
-                trim(($_POST['nombres'] ?? '') . ' ' . ($_POST['apellidos'] ?? ''))
-            );
+            $idAfectado = isset($_POST['id_entrenador']) && !empty($_POST['id_entrenador']) 
+                ? (int)$_POST['id_entrenador'] 
+                : ($objEntrenador->getDatos()['id_entrenador'] ?? null);
+            
+            $nombreCompleto = trim(($_POST['nombres'] ?? '') . ' ' . ($_POST['apellidos'] ?? ''));
+            
+            if ($tipoAccion === 'editar') {
+                Bitacora::registrar($_SESSION['id'], 'Entrenadores', 'UPDATE', $idAfectado, 'entrenador', null,
+                    $nombreCompleto
+                );
+            } else {
+                Bitacora::registrar($_SESSION['id'], 'Entrenadores', 'INSERT', $idAfectado, 'entrenador', null,
+                    $nombreCompleto
+                );
+            }
+            
             echo json_encode(['status' => 'success', 'message' => 'Operación realizada con éxito.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Error en la base de datos al guardar.']);
@@ -60,9 +69,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id_entrenador = isset($_POST['id_entrenador']) ? (int)$_POST['id_entrenador'] : 0;
 
         if ($id_entrenador > 0) {
+            $entrenadorAntes = $objEntrenador->obtenerPorId($id_entrenador);
+            $nombre = $entrenadorAntes ? ($entrenadorAntes['nombres'] . ' ' . $entrenadorAntes['apellidos']) : 'N/A';
+            
             $resultado = $objEntrenador->eliminarEntrenador($id_entrenador);
             if ($resultado) {
-                Bitacora::registrar( $_SESSION['id'], 'Entrenadores', 'UPDATE', $id_entrenador, 'entrenador', 'Activo', 'Inactivo'
+                Bitacora::registrar($_SESSION['id'], 'Entrenadores', 'UPDATE', $id_entrenador, 'estado', 'Activo', 'Inactivo'
                 );
                 echo json_encode(['status' => 'success', 'message' => 'Entrenador desactivado correctamente.']);
             } else {
@@ -81,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($id_entrenador > 0) {
             $resultado = $objEntrenador->reactivarEntrenador($id_entrenador);
             if ($resultado) {
-                Bitacora::registrar($_SESSION['id'], 'Entrenadores', 'UPDATE', $id_entrenador, 'entrenador', 'Inactivo', 'Activo'
+                Bitacora::registrar($_SESSION['id'], 'Entrenadores', 'UPDATE', $id_entrenador, 'estado', 'Inactivo', 'Activo'
                 );
                 echo json_encode(['status' => 'success', 'message' => 'Entrenador reactivado correctamente.']);
             } else {
@@ -106,6 +118,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($accion === 'obtenerEntrenador' && isset($_GET['id'])) {
         header('Content-Type: application/json');
         echo json_encode($objEntrenador->obtenerPorId((int)$_GET['id']));
+        exit;
+    }
+
+    if ($accion === 'descargarCurriculum' && isset($_GET['id'])) {
+        $id = (int)$_GET['id'];
+        $info = $objEntrenador->obtenerCurriculum($id);
+        
+        if (!$info) {
+            http_response_code(404);
+            echo "El currículum no existe o no está disponible.";
+            exit;
+        }
+
+        Bitacora::registrar($_SESSION['id'], 'Entrenadores', 'SELECT', $id, 'curriculum_pdf', null, 'Descarga de currículum'
+        );
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $info['nombre_original'] . '"');
+        header('Content-Length: ' . filesize($info['ruta']));
+        readfile($info['ruta']);
         exit;
     }
 
