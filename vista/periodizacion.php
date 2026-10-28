@@ -10,6 +10,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- DataTables CSS + Responsive -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
+    <!-- jQuery + DataTables -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
     <style>
         /* ===== ESTILOS BASE ===== */
         body { font-family: 'Inter', sans-serif; }
@@ -135,41 +142,138 @@
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* ===== RESPONSIVE TABLE ===== */
-        @media (max-width: 768px) {
-            .tabla-responsive thead { display: none; }
-            .tabla-responsive tbody tr {
+        /* ===== DATATABLES ADAPTATIVO ===== */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_processing,
+        .dataTables_wrapper .dataTables_paginate {
+            color: #374151 !important;
+        }
+        .dark .dataTables_wrapper .dataTables_length,
+        .dark .dataTables_wrapper .dataTables_filter,
+        .dark .dataTables_wrapper .dataTables_info,
+        .dark .dataTables_wrapper .dataTables_processing,
+        .dark .dataTables_wrapper .dataTables_paginate {
+            color: #a0a0c0 !important;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            color: #1f2937;
+            border-radius: 0.75rem;
+            padding: 0.6rem 1rem !important;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .dark .dataTables_wrapper .dataTables_filter input {
+            background: #0f0d23;
+            border-color: #252345;
+            color: white;
+        }
+        .dataTables_wrapper .dataTables_length select {
+            padding: 0.6rem 1.5rem 0.6rem 0.75rem !important;
+            font-size: 0.875rem;
+            border-radius: 0.75rem;
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            color: #1f2937;
+        }
+        .dark .dataTables_wrapper .dataTables_length select {
+            background-color: #0f0d23;
+            border-color: #252345;
+            color: white;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            color: #374151 !important;
+            background: #f3f4f6 !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
+            padding: 0.4rem 0.8rem !important;
+            margin: 0 0.2rem !important;
+        }
+        .dark .dataTables_wrapper .dataTables_paginate .paginate_button {
+            color: #a0a0c0 !important;
+            background: #161430 !important;
+            border-color: #252345 !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #4f46e5 !important;
+            color: white !important;
+            border-color: #4f46e5 !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #e5e7eb !important;
+            color: #1f2937 !important;
+        }
+        .dark .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #252345 !important;
+            color: white !important;
+        }
+        table.dataTable tbody tr {
+            background-color: transparent;
+        }
+        table.dataTable tbody tr:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+        .dark table.dataTable tbody tr:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+        table.dataTable thead th {
+            border-bottom: 1px solid #e5e7eb;
+            color: #6b7280;
+        }
+        .dark table.dataTable thead th {
+            border-bottom-color: #252345;
+            color: #9ca3af;
+        }
+        /* ===== ESPACIADO DE CONTROLES (evita que toquen el borde de la tarjeta) ===== */
+        .dataTables_wrapper {
+            padding: 1rem 1rem 0.875rem 1rem;
+        }
+        .dataTables_wrapper .dataTables_info {
+            clear: both;
+            float: left;
+            margin-top: 0.875rem;
+        }
+        .dataTables_wrapper .dataTables_paginate {
+            margin-top: 0.875rem;
+        }
+
+        @media (max-width: 640px) {
+            .dataTables_wrapper {
+                padding: 0.75rem 0.625rem;
+            }
+            .dataTables_wrapper .dataTables_filter input {
+                width: 100% !important;
+            }
+            .dataTables_wrapper .dataTables_length {
+                width: 100%;
+                margin-bottom: 0.75rem;
+            }
+            .dataTables_wrapper .dataTables_info,
+            .dataTables_wrapper .dataTables_paginate {
+                float: none;
                 display: block;
-                padding: 12px;
-                margin-bottom: 8px;
-                border: 1px solid #e5e7eb;
-                border-radius: 12px;
-                background: #ffffff;
+                text-align: center;
             }
-            .dark .tabla-responsive tbody tr {
-                border-color: #252345;
-                background: #161430;
+            .dataTables_wrapper .dataTables_paginate {
+                margin-top: 1rem;
             }
-            .tabla-responsive tbody td {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 6px 0;
-                border: none;
+            .dataTables_wrapper .dataTables_paginate .paginate_button {
+                padding: 0.5rem 0.75rem !important;
+                margin: 0.2rem !important;
+                font-size: 0.75rem;
             }
-            .tabla-responsive tbody td::before {
-                content: attr(data-label);
-                font-size: 10px;
-                text-transform: uppercase;
-                color: #6b7280;
-                font-weight: 700;
-                letter-spacing: 0.05em;
-                margin-right: 8px;
-            }
-            .dark .tabla-responsive tbody td::before {
-                color: #6b7280;
-            }
-            .tabla-responsive tbody td:first-child::before { content: ''; }
+        }
+
+        /* ===== FILA DESTACADA (deep link de notificaciones) ===== */
+        .fila-destacada {
+            animation: destelloFila 1.2s ease-in-out 4;
+        }
+        @keyframes destelloFila {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(99, 102, 241, 0.35); }
         }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
@@ -224,7 +328,7 @@ if (isset($_SESSION['id'])) {
                         </h2>
                         <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Acumulación / Transmutación / Realización por macrociclo.</p>
                     </div>
-                    <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'editar')): ?>
+                    <?php if (\GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'generar')): ?>
                     <button onclick="abrirModalMacro()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
                         <i class="fas fa-plus-circle text-sm"></i> Crear Macrociclo
                     </button>
@@ -233,11 +337,7 @@ if (isset($_SESSION['id'])) {
 
                 <!-- Filtros -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-5 transition-colors duration-300">
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <div class="relative w-full sm:w-72">
-                            <i class="fas fa-search absolute left-4 top-3.5 text-gray-400 dark:text-gray-500"></i>
-                            <input type="text" id="busquedaMacro" onkeyup="filtrarTablaMacro()" placeholder="Buscar por nombre..." class="w-full input-adapt pl-11 pr-4 py-2.5 rounded-xl text-sm">
-                        </div>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-end">
                         <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
                             <select id="filtroTemporada" onchange="cargarTablaMacro()" class="input-adapt p-2.5 rounded-xl text-xs cursor-pointer">
                                 <option value="">Todas las Temporadas</option>
@@ -258,7 +358,7 @@ if (isset($_SESSION['id'])) {
                 <!-- Tabla -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden transition-colors duration-300">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse tabla-responsive">
+                        <table id="tablaMacro" class="w-full text-left border-collapse display">
                             <thead>
                                 <tr class="bg-gray-100 dark:bg-[#0f0d23] text-gray-600 dark:text-gray-400 uppercase text-[11px] font-bold tracking-wider border-b border-gray-200 dark:border-[#252345]">
                                     <th class="p-4">Macrociclo</th>
@@ -406,10 +506,10 @@ if (isset($_SESSION['id'])) {
     <script>
         const PERMISOS_MODULO = {
             ver: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'ver') ? 'true' : 'false'; ?>,
-            gestionar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'editar') ? 'true' : 'false'; ?>,
+            editar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'editar') ? 'true' : 'false'; ?>,
             generar: <?php echo \GrupoProyecto\SisBiomec\seguridad\Autorizacion::verificar('periodizacion', 'generar') ? 'true' : 'false'; ?>
         };
     </script>
-    <script src="assets/js/periodizacion.js"></script>
+    <script src="assets/js/periodizacion.js?v=20261024"></script>
 </body>
 </html>

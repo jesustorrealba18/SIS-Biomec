@@ -9,6 +9,7 @@ const formMetas = document.getElementById('formMetas');
 
 let atletasCache = [];
 let categoriasCache = [];
+let tablaEventosDT = null;
 
 const coloresTipo = {
     'Regional':      'bg-blue-500/20 text-blue-400 border border-blue-500/30',
@@ -56,12 +57,16 @@ async function cargarTablaEventos() {
     const tbody = document.getElementById('tbodyEventos');
 
     if (!datos || datos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-gray-500 dark:text-gray-400">No se encontraron eventos.</td></tr>`;
+        if (tablaEventosDT) {
+            tablaEventosDT.clear().draw();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-gray-500 dark:text-gray-400">No se encontraron eventos.</td></tr>`;
+        }
         return;
     }
 
     tbody.innerHTML = datos.map(ev => `
-        <tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345]">
+        <tr data-id="${ev.id_evento}" class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345]">
             <td class="p-4">
                 <p class="text-gray-900 dark:text-white font-medium">${ev.nombre}</p>
                 ${ev.organizador ? `<p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">${ev.organizador}</p>` : ''}
@@ -82,10 +87,10 @@ async function cargarTablaEventos() {
                     <button onclick="verDetalle(${ev.id_evento})" class="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition cursor-pointer" title="Ver detalle">
                         <i class="fas fa-eye text-sm"></i>
                     </button>
+                    ${typeof PERMISOS_MODULO !== 'undefined' && (PERMISOS_MODULO.editar || PERMISOS_MODULO.gestionar) ? `
                     <button onclick="abrirModalMetas(${ev.id_evento})" class="p-2 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition cursor-pointer" title="Metas">
                         <i class="fas fa-bullseye text-sm"></i>
                     </button>
-                    ${typeof PERMISOS_MODULO !== 'undefined' && PERMISOS_MODULO.gestionar ? `
                     <button onclick="abrirModalInscripcion(${ev.id_evento})" class="p-2 text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 rounded-lg transition cursor-pointer" title="Inscribir atletas">
                         <i class="fas fa-user-plus text-sm"></i>
                     </button>
@@ -100,15 +105,32 @@ async function cargarTablaEventos() {
             </td>
         </tr>
     `).join('');
-}
 
-function filtrarTablaEventos() {
-    const texto = document.getElementById('busquedaEvento').value.toLowerCase();
-    const filas = document.querySelectorAll('#tbodyEventos tr');
-    filas.forEach(fila => {
-        const contenido = fila.textContent.toLowerCase();
-        fila.style.display = contenido.includes(texto) ? '' : 'none';
-    });
+    if (tablaEventosDT) {
+        tablaEventosDT.destroy();
+        tablaEventosDT = null;
+    }
+
+    if (window.jQuery && $.fn.DataTable) {
+        tablaEventosDT = $('#tablaEventos').DataTable({
+            responsive: true,
+            dom: '<"flex flex-col sm:flex-row justify-between items-center gap-4 mb-4"lf>rtip',
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json',
+                search: "Buscar:",
+                lengthMenu: "Mostrar _MENU_ registros",
+                info: "Mostrando _START_ a _END_ de _TOTAL_ eventos",
+                paginate: { first: "Primero", last: "Último", next: "Siguiente", previous: "Anterior" }
+            },
+            columnDefs: [
+                { responsivePriority: 1, targets: 0 },
+                { responsivePriority: 2, targets: 8 },
+                { orderable: false, targets: [6, 7, 8] },
+                { searchable: false, targets: [6, 7, 8] }
+            ],
+            autoWidth: false
+        });
+    }
 }
 
 // =====================================================================
@@ -166,10 +188,10 @@ function agregarFilaTiempoCorte(datos = null) {
     const opcionesDist = opcionesDistancia.map(d => `<option value="${d}" ${datos && datos.distancia == d ? 'selected' : ''}>${d}m</option>`).join('');
 
     fila.innerHTML = `
-        <select name="tc_categoria[]" data-validar="requerido" data-nombre="Categoria" class="input-dark p-2 rounded-lg text-xs">${opcionesCat}</select>
-        <select name="tc_estilo[]" data-validar="requerido" data-nombre="Estilo" class="input-dark p-2 rounded-lg text-xs">${opcionesEst}</select>
-        <select name="tc_distancia[]" data-validar="requerido" data-nombre="Distancia" class="input-dark p-2 rounded-lg text-xs">${opcionesDist}</select>
-        <input type="number" step="0.01" name="tc_tiempo[]" data-validar="requerido|decimal" data-nombre="Tiempo de corte" placeholder="Segundos" value="${datos ? datos.tiempo_corte_segundos : ''}" class="input-dark p-2 rounded-lg text-xs font-mono text-center">
+        <select name="tc_categoria[]" data-validar="requerido" data-nombre="Categoria" class="input-adapt p-2 rounded-lg text-xs w-full">${opcionesCat}</select>
+        <select name="tc_estilo[]" data-validar="requerido" data-nombre="Estilo" class="input-adapt p-2 rounded-lg text-xs w-full">${opcionesEst}</select>
+        <select name="tc_distancia[]" data-validar="requerido" data-nombre="Distancia" class="input-adapt p-2 rounded-lg text-xs w-full">${opcionesDist}</select>
+        <input type="number" step="0.01" name="tc_tiempo[]" data-validar="requerido|decimal" data-nombre="Tiempo de corte" placeholder="Segundos" value="${datos ? datos.tiempo_corte_segundos : ''}" class="input-adapt p-2 rounded-lg text-xs font-mono text-center w-full">
         <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-2 transition cursor-pointer"><i class="fas fa-trash-alt"></i></button>
     `;
 
@@ -182,6 +204,14 @@ formEvento.addEventListener('submit', async function(e) {
     const erroresJS = Validador.validarFormulario(formEvento);
     if (erroresJS) {
         UI.advertencia('Datos Incompletos', erroresJS);
+        return;
+    }
+
+    const fechaInicio = document.getElementById('fecha_inicio').value;
+    const fechaFin = document.getElementById('fecha_fin').value;
+    if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+        UI.advertencia('Fechas Inválidas', 'La <b>fecha de fin</b> no puede ser anterior a la <b>fecha de inicio</b> del evento.');
+        document.getElementById('fecha_fin').classList.add('border-red-500');
         return;
     }
 
@@ -395,24 +425,31 @@ async function abrirModalInscripcion(id_evento) {
     document.getElementById('busquedaInscripcion').value = '';
     document.getElementById('listaAtletasInscripcion').innerHTML = '<p class="text-gray-500 text-sm text-center py-4">Cargando atletas...</p>';
 
-    const [atletas, detalle] = await Promise.all([
+    const [atletas, detalle, conflictos] = await Promise.all([
         peticionAjax('listarAtletasSelect'),
-        peticionAjax(`obtenerDetalle&id=${id_evento}`)
+        peticionAjax(`obtenerDetalle&id=${id_evento}`),
+        peticionAjax(`atletasConflicto&id=${id_evento}`)
     ]);
 
     if (!atletas || !detalle) return;
 
-    const inscritosIds = (detalle.inscripciones || []).map(i => i.id_atleta);
+    const inscritosIds = (detalle.inscripciones || []).map(i => String(i.id_atleta));
+    const conflictosMap = {};
+    (conflictos || []).forEach(c => { conflictosMap[String(c.id_atleta)] = c; });
 
     const contenedor = document.getElementById('listaAtletasInscripcion');
     contenedor.innerHTML = atletas.filter(a => a.estado === 'Activo').map(a => {
         const inscrito = inscritosIds.includes(String(a.id_atleta));
+        const conflicto = !inscrito && conflictosMap[String(a.id_atleta)];
+        const etiqueta = inscrito
+            ? '(Ya inscrito)'
+            : (conflicto ? `<span class="text-red-400 font-bold">(Conflicto de fechas: ${conflicto.nombre_evento})</span>` : '');
         return `
-            <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition cursor-pointer ${inscrito ? 'opacity-50' : ''}">
-                <input type="checkbox" class="check-inscripcion accent-indigo-500" value="${a.id_atleta}" ${inscrito ? 'checked disabled' : ''}>
+            <label class="flex items-center gap-3 p-3 rounded-xl transition ${inscrito || conflicto ? 'opacity-50' : 'hover:bg-white/5 cursor-pointer'}">
+                <input type="checkbox" class="check-inscripcion accent-indigo-500" value="${a.id_atleta}" ${inscrito || conflicto ? 'disabled' : ''} ${inscrito ? 'checked' : ''}>
                 <div>
                     <p class="text-sm text-white">${a.nombres} ${a.apellidos}</p>
-                    <p class="text-[10px] text-gray-500">${a.cedula} ${a.categoria_nombre ? '- ' + a.categoria_nombre : ''} ${inscrito ? '(Ya inscrito)' : ''}</p>
+                    <p class="text-[10px] text-gray-500">${a.cedula} ${a.categoria_nombre ? '- ' + a.categoria_nombre : ''} ${etiqueta}</p>
                 </div>
             </label>
         `;
@@ -457,8 +494,12 @@ async function inscribirAtletas() {
             UI.exito('Inscripcion Exitosa', resultado.message);
             cerrarModalInscripcion();
             cargarTablaEventos();
+        } else if (resultado.status === 'partial') {
+            cerrarModalInscripcion();
+            UI.advertencia('Inscripcion Parcial', resultado.message);
+            cargarTablaEventos();
         } else {
-            UI.error('Error', resultado.message);
+            UI.advertencia('Inscripcion No Realizada', resultado.message || 'Error al inscribir atletas.');
         }
     }
 }
@@ -640,7 +681,9 @@ async function accionEstado(id_evento, estadoActual) {
         </button>`
     ).join('');
 
-    const { isConfirmed, value } = await Swal.fire({
+    let estadoSeleccionado = null;
+
+    const { isConfirmed } = await Swal.fire({
         ...UI.config,
         title: 'Cambiar Estado',
         html: `<p class="text-sm text-gray-400 mb-4">Estado actual: <span class="font-bold text-white">${estadoActual}</span></p><div class="grid grid-cols-${opciones.length} gap-3">${botones}</div>`,
@@ -649,18 +692,19 @@ async function accionEstado(id_evento, estadoActual) {
         didOpen: () => {
             document.querySelectorAll('[data-estado]').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    Swal.close(this.dataset.estado);
+                    estadoSeleccionado = this.dataset.estado;
+                    Swal.clickConfirm();
                 });
             });
         }
     });
 
-    if (!isConfirmed || !value) return;
+    if (!isConfirmed || !estadoSeleccionado) return;
 
     const datos = new URLSearchParams({
         accion: 'actualizarEstado',
         id_evento: id_evento,
-        nuevo_estado: value
+        nuevo_estado: estadoSeleccionado
     });
 
     const resultado = await peticionAjax('actualizarEstado', datos);
@@ -713,5 +757,69 @@ async function cargarRecursos() {
     if (categorias) categoriasCache = categorias;
 }
 
-cargarRecursos().then(() => cargarTablaEventos());
+// =====================================================================
+// DEEP LINK (notificaciones / calendario): ?p=eventos&h=<id_evento>
+// =====================================================================
+
+function resaltarFilaEvento(id_evento) {
+    let fila = document.querySelector(`#tbodyEventos tr[data-id="${id_evento}"]`);
+    if (!fila) return false;
+
+    if (tablaEventosDT && window.jQuery) {
+        tablaEventosDT.search('').columns().search('').draw();
+        fila = document.querySelector(`#tbodyEventos tr[data-id="${id_evento}"]`);
+        if (fila) {
+            const idx = tablaEventosDT.row(fila).index();
+            if (idx !== undefined) {
+                const pagina = Math.floor(idx / tablaEventosDT.page.len());
+                tablaEventosDT.page(pagina).draw(false);
+            }
+        }
+    }
+
+    fila = document.querySelector(`#tbodyEventos tr[data-id="${id_evento}"]`);
+    if (!fila) return false;
+
+    fila.classList.add('fila-destacada');
+    fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => fila.classList.remove('fila-destacada'), 5000);
+    return true;
+}
+
+async function iniciarModuloEventos() {
+    await cargarRecursos();
+    await cargarTablaEventos();
+
+    const params = new URLSearchParams(window.location.search);
+    const h = parseInt(params.get('h'), 10);
+    if (h) {
+        history.replaceState(null, '', 'index.php?p=eventos');
+        const encontrada = resaltarFilaEvento(h);
+        setTimeout(() => verDetalle(h), encontrada ? 700 : 0);
+    }
+}
+
+// Validación en vivo de coherencia de fechas del evento
+(function validarFechasEventoEnVivo() {
+    const fi = document.getElementById('fecha_inicio');
+    const ff = document.getElementById('fecha_fin');
+    if (!fi || !ff) return;
+
+    function validar() {
+        if (fi.value && ff.value) {
+            ff.min = fi.value;
+            const coherente = ff.value >= fi.value;
+            ff.classList.toggle('border-red-500', !coherente);
+            ff.classList.toggle('border-emerald-500', coherente);
+        } else {
+            ff.min = '';
+            ff.classList.remove('border-red-500', 'border-emerald-500');
+        }
+    }
+
+    fi.addEventListener('change', validar);
+    ff.addEventListener('change', validar);
+})();
+
+iniciarModuloEventos();
 try { Validador.vincularTiempoReal(formEvento); } catch(e) {}

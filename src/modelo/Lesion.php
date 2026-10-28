@@ -11,10 +11,16 @@ class Lesion extends Conexion {
 
     
     private array $datos = [];
-    private array $camposPermitidos = [
+    /* private array $camposPermitidos = [
         'id_lesion', 'id_atleta', 'zona_anatomica', 'lado', 'tipo',
         'nivel_molestia', 'diagnostico', 'tratamiento', 'fecha_inicio',
         'fecha_estimada_recup', 'estado', 'profesional', 'observaciones',
+        'activo', 'motivo_eliminacion'
+    ]; */
+    private array $camposPermitidos = [
+        'id_lesion', 'id_atleta', 'zona_anatomica', 'lado', 'tipo',
+        'nivel_molestia', 'gravedad_clinica', 'diagnostico', 'tratamiento', 'fecha_inicio',
+        'fecha_estimada_recup', 'fecha_alta_real', 'estado', 'profesional', 'observaciones',
         'activo', 'motivo_eliminacion'
     ];
 
@@ -58,6 +64,16 @@ class Lesion extends Conexion {
             $this->requerido((string)($this->datos['tipo'] ?? ''), 'tipo');
         }
 
+       /*  $valor = $this->datos['nivel_molestia'] ?? null;
+        if ($valor === null || $valor === '') {
+            $this->agregarError('nivel_molestia', 'El nivel de molestia es obligatorio.');
+        } elseif (!is_numeric($valor) || $valor < 1 || $valor > 10) {
+            $this->agregarError('nivel_molestia', 'Debe ser un número entre 1 y 10.');
+        } */
+
+        if (isset($this->datos['nivel_molestia'])) {
+            $this->datos['nivel_molestia'] = preg_replace('/[^0-9]/', '', (string)$this->datos['nivel_molestia']);
+        }
         $valor = $this->datos['nivel_molestia'] ?? null;
         if ($valor === null || $valor === '') {
             $this->agregarError('nivel_molestia', 'El nivel de molestia es obligatorio.');
@@ -65,9 +81,93 @@ class Lesion extends Conexion {
             $this->agregarError('nivel_molestia', 'Debe ser un número entre 1 y 10.');
         }
 
-      
+        if (empty($this->datos['gravedad_clinica'])) {
+            $this->agregarError('gravedad_clinica', 'Debe clasificar la gravedad clínica (Leve/Moderada/Grave).');
+        } elseif (!in_array($this->datos['gravedad_clinica'], ['Leve','Moderada','Grave'])) {
+            $this->agregarError('gravedad_clinica', 'Gravedad clínica no válida.');
+        }
 
-        if (!empty($this->datos['fecha_inicio'])) {
+        // Coherencia Lógica para la IA: Molestia vs Gravedad
+       /*  if (isset($this->datos['nivel_molestia']) && !empty($this->datos['gravedad_clinica'])) {
+            $mol = (int)$this->datos['nivel_molestia'];
+            $grav = $this->datos['gravedad_clinica'];
+            
+            if ($mol >= 8 && $grav === 'Leve') {
+                $this->agregarError('gravedad_clinica', 'Contradicción: Una molestia de '.$mol.' no puede clasificarse como Leve.');
+            }
+            if ($mol <= 3 && $grav === 'Grave') {
+                $this->agregarError('gravedad_clinica', 'Contradicción: Una molestia de '.$mol.' no puede clasificarse como Grave.');
+            }
+        } */
+       // Coherencia Lógica para la IA: Molestia vs Gravedad (biyección estricta)
+if (!empty($this->datos['nivel_molestia']) && !empty($this->datos['gravedad_clinica'])) {
+    $mol = (int)$this->datos['nivel_molestia'];
+    $grav = $this->datos['gravedad_clinica'];
+    
+    $esperada = ($mol <= 3) ? 'Leve' : (($mol <= 7) ? 'Moderada' : 'Grave');
+    
+    if ($grav !== $esperada) {
+        $this->agregarError('gravedad_clinica', 
+            "Molestia {$mol}/10 requiere gravedad {$esperada}, pero recibió {$grav}. " .
+            "Reglas: 1-3→Leve, 4-7→Moderada, 8-10→Grave.");
+    }
+}
+
+        /* $zonasCentrales = ['Espalda','Cervical','Lumbar','Oido/Ojo/Cabeza','Respiratorio','Gastrointestinal','General'];
+        if (in_array($this->datos['zona_anatomica'] ?? '', $zonasCentrales)) {
+            if (in_array($this->datos['lado'] ?? '', ['Izquierdo', 'Derecho'])) {
+                $this->agregarError('lado', 'Afecciones médicas o zonas centrales no pueden ser unilaterales. Elimine el lado.');
+            }
+            $this->datos['lado'] = null; // Forzamos limpieza para la DB
+        } */
+
+            // Zonas centrales musculoesqueléticas (permiten Bilateral, NO Izq/Der)
+        $zonasCentralesMusculo = ['Espalda','Cervical','Lumbar'];
+        // Zonas médicas/sistémicas (NO admiten NINGÚN lado)
+        $zonasMedicas = ['Respiratorio','Gastrointestinal','General','Oido/Ojo/Cabeza'];
+
+        $zonaActual = $this->datos['zona_anatomica'] ?? '';
+        $ladoActual = $this->datos['lado'] ?? '';
+
+        if (in_array($zonaActual, $zonasMedicas)) {
+            if (!empty($ladoActual)) {
+                $this->agregarError('lado', 'Las afecciones médicas/sistémicas no tienen lateralidad. Deje el lado vacío.');
+            }
+            $this->datos['lado'] = null;
+        } elseif (in_array($zonaActual, $zonasCentralesMusculo)) {
+            if (in_array($ladoActual, ['Izquierdo', 'Derecho'])) {
+                $this->agregarError('lado', 'Para zonas centrales como '.$zonaActual.' use "Bilateral" o deje el lado vacío.');
+            }
+            // Bilateral SÍ se conserva, vacío SÍ se conserva
+        }
+
+        // Coherencia Tipo ↔ Zona (evita hechos contradictorios para la IA)
+       // $zonasMedicas = ['Respiratorio', 'Gastrointestinal', 'General', 'Oido/Ojo/Cabeza'];
+        $tipoActual   = $this->datos['tipo'] ?? '';
+       // $zonaActual   = $this->datos['zona_anatomica'] ?? '';
+
+        if ($tipoActual === 'Enfermedad' && !in_array($zonaActual, $zonasMedicas) && $zonaActual !== 'Otra') {
+            $this->agregarError('zona_anatomica',
+                'Para tipo "Enfermedad" seleccione una zona médica (Respiratorio, Gastrointestinal, General u Oído/Ojo/Cabeza).');
+        }
+        if (in_array($tipoActual, ['Sobreuso','Aguda','Recidiva']) && in_array($zonaActual, $zonasMedicas)) {
+            $this->agregarError('zona_anatomica',
+                'Una lesión traumática no puede tener zona de sistema médico. Cambie la zona o el tipo a "Enfermedad".');
+        }
+
+        // Una enfermedad no tiene lateralidad, sea cual sea la zona
+if ($tipoActual === 'Enfermedad' && !empty($this->datos['lado'])) {
+    $this->agregarError('lado', 'Una enfermedad no tiene lateralidad. Deje el lado vacío.');
+    $this->datos['lado'] = null;
+}
+
+      if (!empty($this->datos['fecha_inicio'])) {
+            if ($this->datos['fecha_inicio'] > date('Y-m-d')) {
+                $this->agregarError('fecha_inicio', 'La fecha de inicio no puede ser futura.');
+            }
+        }
+
+        /* if (!empty($this->datos['fecha_inicio'])) {
             $fechaInicio = $this->datos['fecha_inicio'];
             $hoy = date('Y-m-d');
             $haceUnMes = date('Y-m-d', strtotime('-1 month'));
@@ -77,14 +177,52 @@ class Lesion extends Conexion {
             } elseif ($fechaInicio < $haceUnMes) {
                 $this->agregarError('fecha_inicio', 'El sistema solo permite registrar lesiones con hasta 1 mes de antigüedad.');
             }
+        } */
+
+        /* if (($this->datos['estado'] ?? '') === 'Recuperada' && empty($this->datos['fecha_alta_real'])) {
+            $this->datos['fecha_alta_real'] = date('Y-m-d');
+        } */
+
+       /*  if (($this->datos['estado'] ?? '') === 'Recuperada' && empty($this->datos['fecha_alta_real'])) {
+            $esActualizacion = !empty($this->datos['id_lesion']);
+            if ($esActualizacion) {
+                $st = $this->pdo->prepare("SELECT estado FROM lesiones WHERE id_lesion = :id");
+                $st->execute([':id' => (int)$this->datos['id_lesion']]);
+                $prevEstado = $st->fetchColumn();
+                if ($prevEstado && $prevEstado !== 'Recuperada') {
+                    $this->datos['fecha_alta_real'] = date('Y-m-d');
+                }
+            }
+            // En registro (backfill), se deja NULL para que el médico lo complete después
+        } */
+
+        if (($this->datos['estado'] ?? '') === 'Recuperada' && empty($this->datos['fecha_alta_real'])) {
+            $esActualizacion = !empty($this->datos['id_lesion']);
+            if ($esActualizacion) {
+                $st = $this->pdo->prepare("SELECT estado, fecha_alta_real FROM lesiones WHERE id_lesion = :id");
+                $st->execute([':id' => (int)$this->datos['id_lesion']]);
+                $prev = $st->fetch(PDO::FETCH_ASSOC);
+                if ($prev) {
+                    if ($prev['estado'] !== 'Recuperada') {
+                        // Transición real Activa/EnRehab → Recuperada: set nueva fecha
+                        $this->datos['fecha_alta_real'] = date('Y-m-d');
+                    } elseif (!empty($prev['fecha_alta_real'])) {
+                        // Ya estaba Recuperada: PRESERVAR la fecha existente
+                        $this->datos['fecha_alta_real'] = $prev['fecha_alta_real'];
+                    }
+                }
+            }
         }
+
+        
 
         if (!empty($this->datos['fecha_estimada_recup']) && !empty($this->datos['fecha_inicio'])
             && $this->datos['fecha_estimada_recup'] < $this->datos['fecha_inicio']) {
             $this->agregarError('fecha_estimada_recup', 'No puede ser anterior a la fecha de inicio.');
         }
 
-        $zonasValidas = ['Hombro','Rodilla','Espalda','Codo','Tobillo','Cervical','Lumbar','Muslo','Gemelo','Pie','Otra'];
+        $zonasValidas = ['Hombro','Rodilla','Espalda','Codo','Tobillo','Cervical','Lumbar','Muslo','Gemelo','Pie','Mano/Muñeca','Oido/Ojo/Cabeza','Respiratorio','Gastrointestinal','General','Otra'];
+        //$zonasValidas = ['Hombro','Rodilla','Espalda','Codo','Tobillo','Cervical','Lumbar','Muslo','Gemelo','Pie','Otra'];
         if (!empty($this->datos['zona_anatomica']) && !in_array($this->datos['zona_anatomica'], $zonasValidas)) {
             $this->agregarError('zona_anatomica', 'Zona anatómica no válida.');
         }
@@ -94,7 +232,8 @@ class Lesion extends Conexion {
             $this->agregarError('lado', 'Lado no válido.');
         }
 
-        $tiposValidos = ['Sobreuso','Aguda','Recidiva'];
+        $tiposValidos = ['Sobreuso','Aguda','Recidiva','Enfermedad'];
+        //$tiposValidos = ['Sobreuso','Aguda','Recidiva'];
         if (!empty($this->datos['tipo']) && !in_array($this->datos['tipo'], $tiposValidos)) {
             $this->agregarError('tipo', 'Tipo de lesión no válido.');
         }
@@ -195,14 +334,19 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
         $detalle['rpe_promedio_3_dias'] = round($promedio, 1);
 
         
-        $alerta = false;
-        if ($detalle['activo'] == 1 && $promedio > 8.5) {
+
+         $alerta = ($detalle['activo'] == 1 && $detalle['gravedad_clinica'] === 'Grave');
+        $detalle['alerta_riesgo'] = $alerta;
+        
+        //$alerta = false;
+        
+        /* if ($detalle['activo'] == 1 && $promedio > 8.5) {
             $diagnostico = strtolower($detalle['diagnostico'] ?? '');
             if (strpos($diagnostico, 'molestia leve') !== false) {
                 $alerta = true;
             }
         }
-        $detalle['alerta_riesgo'] = $alerta;
+        $detalle['alerta_riesgo'] = $alerta; */
 
         return $detalle;
     } catch (PDOException $e) {
@@ -273,6 +417,11 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
         } else {
             $mapa[':id_atleta'] = ['id_atleta', PDO::PARAM_INT];
         }
+
+        //Revisar
+        $mapa[':gravedad_clinica'] = ['gravedad_clinica', PDO::PARAM_STR];
+        $mapa[':fecha_alta_real'] = ['fecha_alta_real', PDO::PARAM_STR];
+
         return $mapa;
     }
 
@@ -344,13 +493,20 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
         try {
             $this->pdo->beginTransaction();
 
-            $sql = "INSERT INTO lesiones (
+            /* $sql = "INSERT INTO lesiones (
                         id_atleta, zona_anatomica, lado, tipo, nivel_molestia, diagnostico, tratamiento, 
                         fecha_inicio, fecha_estimada_recup, estado, profesional, observaciones, activo
                     ) VALUES (
                         :id_atleta, :zona_anatomica, :lado, :tipo, :nivel_molestia, :diagnostico, :tratamiento, 
                         :fecha_inicio, :fecha_estimada_recup, COALESCE(:estado, 'Activa'), :profesional, :observaciones, 1
-                    )";
+                    )"; */
+        $sql = "INSERT INTO lesiones (
+            id_atleta, zona_anatomica, lado, tipo, nivel_molestia, gravedad_clinica, diagnostico, tratamiento, 
+            fecha_inicio, fecha_estimada_recup, fecha_alta_real, estado, profesional, observaciones, activo
+        ) VALUES (
+            :id_atleta, :zona_anatomica, :lado, :tipo, :nivel_molestia, :gravedad_clinica, :diagnostico, :tratamiento, 
+            :fecha_inicio, :fecha_estimada_recup, :fecha_alta_real, COALESCE(:estado, 'Activa'), :profesional, :observaciones, 1
+        )";
                     
             $stmt = $this->pdo->prepare($sql);
             $this->autoBind($stmt, $this->obtenerMapaParametros(false), $this->datos);
@@ -403,13 +559,20 @@ public function obtenerDetallePorId(int $id_lesion): ?array {
 
             $this->datos['id_atleta'] = (int)$oldData['id_atleta'];
 
-            $sql = "UPDATE lesiones SET
+            /* $sql = "UPDATE lesiones SET
                         zona_anatomica = :zona_anatomica, lado = :lado,
                         tipo = :tipo, nivel_molestia = :nivel_molestia, diagnostico = :diagnostico,
                         tratamiento = :tratamiento, fecha_inicio = :fecha_inicio,
                         fecha_estimada_recup = :fecha_estimada_recup, estado = :estado,
                         profesional = :profesional, observaciones = :observaciones
-                    WHERE id_lesion = :id_lesion AND activo = 1";
+                    WHERE id_lesion = :id_lesion AND activo = 1"; */
+
+            $sql = "UPDATE lesiones SET
+            zona_anatomica = :zona_anatomica, lado = :lado, tipo = :tipo, 
+            nivel_molestia = :nivel_molestia, gravedad_clinica = :gravedad_clinica, diagnostico = :diagnostico,
+            tratamiento = :tratamiento, fecha_inicio = :fecha_inicio, fecha_estimada_recup = :fecha_estimada_recup, 
+            fecha_alta_real = :fecha_alta_real, estado = :estado, profesional = :profesional, observaciones = :observaciones
+        WHERE id_lesion = :id_lesion AND activo = 1";
 
             $stmt = $this->pdo->prepare($sql);
             $this->datos['id_lesion'] = $id_lesion;

@@ -313,19 +313,50 @@ if (isset($_SESSION['id'])) {
                             <option value="Cronica">⚠️ Crónica</option>
                         </select>
 
-                        <select id="filtroTipo" class="w-full input-adapt px-4 py-2.5 rounded-xl text-xs cursor-pointer">
+                        <!-- <select id="filtroTipo" class="w-full input-adapt px-4 py-2.5 rounded-xl text-xs cursor-pointer">
                             <option value="">📌 Todos los Tipos</option>
                             <option value="Sobreuso">Sobrecarga/Sobreuso</option>
                             <option value="Aguda">Aguda (Traumática)</option>
                             <option value="Recidiva">Recidiva (Reincidente)</option>
-                        </select>
+                        </select> -->
 
-                        <select id="filtroZona" class="w-full input-adapt px-4 py-2.5 rounded-xl text-xs cursor-pointer">
+                        <!-- <select id="filtroZona" class="w-full input-adapt px-4 py-2.5 rounded-xl text-xs cursor-pointer">
                             <option value="">🦴 Todas las Zonas</option>
                             <option value="Hombro">Hombro</option>
                             <option value="Rodilla">Rodilla</option>
                             <option value="Espalda">Espalda</option>
                             <option value="Tobillo">Tobillo</option>
+                            <option value="Otra">Otra</option>
+                        </select> -->
+                        <select id="filtroTipo" class="w-full input-adapt px-4 py-2.5 rounded-xl text-xs cursor-pointer">
+                            <option value="">📌 Todos los Tipos</option>
+                            <option value="Sobreuso">Sobrecarga/Sobreuso</option>
+                            <option value="Aguda">Aguda (Traumática)</option>
+                            <option value="Recidiva">Recidiva (Reincidente)</option>
+                            <option value="Enfermedad">🦠 Enfermedad Clínica</option>
+                        </select>
+
+                        <select id="filtroZona" class="w-full input-adapt px-4 py-2.5 rounded-xl text-xs cursor-pointer">
+                            <option value="">🦴 Todas las Zonas</option>
+                            <optgroup label="Musculoesquelético">
+                                <option value="Hombro">Hombro</option>
+                                <option value="Codo">Codo</option>
+                                <option value="Mano/Muñeca">Mano/Muñeca</option>
+                                <option value="Espalda">Espalda</option>
+                                <option value="Cervical">Cervical</option>
+                                <option value="Lumbar">Lumbar</option>
+                                <option value="Muslo">Muslo</option>
+                                <option value="Rodilla">Rodilla</option>
+                                <option value="Gemelo">Gemelo</option>
+                                <option value="Tobillo">Tobillo</option>
+                                <option value="Pie">Pie</option>
+                            </optgroup>
+                            <optgroup label="Afecciones Médicas">
+                                <option value="Oido/Ojo/Cabeza">Oído/Ojo/Cabeza</option>
+                                <option value="Respiratorio">Respiratorio</option>
+                                <option value="Gastrointestinal">Gastrointestinal</option>
+                                <option value="General">General</option>
+                            </optgroup>
                             <option value="Otra">Otra</option>
                         </select>
                     </div>
@@ -426,14 +457,14 @@ if (isset($_SESSION['id'])) {
 
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Fecha de Inicio *</label>
-                            <input type="date" name="fecha_inicio" id="fecha_inicio" class="w-full input-adapt rounded-xl px-4 py-3" required data-validar="requerido|fecha_reciente" data-nombre="Fecha de inicio">
+                            <input type="date" name="fecha_inicio" id="fecha_inicio" class="w-full input-adapt rounded-xl px-4 py-3" required data-validar="requerido" data-nombre="Fecha de inicio">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Fecha Estimada Recuperación</label>
                             <input type="date" name="fecha_estimada_recup" id="fecha_estimada_recup" class="w-full input-adapt rounded-xl px-4 py-3" data-validar="fecha_posterior" data-nombre="Fecha estimada de recuperación" data-depende="fecha_inicio" data-mensaje="La fecha estimada no puede ser anterior a la fecha de inicio">
                         </div>
 
-                        <div>
+                        <!-- <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Zona Anatómica *</label>
                             <select name="zona_anatomica" id="zona_anatomica" class="w-full input-adapt rounded-xl px-4 py-3 cursor-pointer" required data-validar="requerido" data-nombre="Zona anatómica">
                                 <option value="">Seleccione...</option>
@@ -449,11 +480,37 @@ if (isset($_SESSION['id'])) {
                                 <option value="Pie">Pie</option>
                                 <option value="Otra">Otra</option>
                             </select>
+                        </div> -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Zona o Sistema *</label>
+                            <select name="zona_anatomica" id="zona_anatomica" class="w-full input-adapt rounded-xl px-4 py-3 cursor-pointer" required data-validar="requerido">
+                                <option value="">Seleccione...</option>
+                                <optgroup label="Musculoesquelético">
+                                    <option value="Hombro">Hombro</option>
+                                    <option value="Codo">Codo</option>
+                                    <option value="Mano/Muñeca">Mano/Muñeca</option>
+                                    <option value="Espalda">Espalda (Dorsal)</option>
+                                    <option value="Cervical">Cervical (Cuello)</option>
+                                    <option value="Lumbar">Lumbar (Baja espalda)</option>
+                                    <option value="Muslo">Muslo</option>
+                                    <option value="Rodilla">Rodilla</option>
+                                    <option value="Gemelo">Gemelo/Pantorrilla</option>
+                                    <option value="Tobillo">Tobillo</option>
+                                    <option value="Pie">Pie</option>
+                                </optgroup>
+                                <optgroup label="Afecciones Médicas">
+                                    <option value="Oido/Ojo/Cabeza">Oído/Ojo/Cabeza</option>
+                                    <option value="Respiratorio">Respiratorio (Asma, Gripe)</option>
+                                    <option value="Gastrointestinal">Gastrointestinal</option>
+                                    <option value="General">General (Fiebre, Virosis)</option>
+                                </optgroup>
+                                <option value="Otra">Otra</option>
+                            </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Lado Afectado</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Lado Afectado</label>
                             <select name="lado" id="lado" class="w-full input-adapt rounded-xl px-4 py-3 cursor-pointer">
-                                <option value="">No especificado</option>
+                                <option value="">No aplica / No especificado</option>
                                 <option value="Izquierdo">Izquierdo</option>
                                 <option value="Derecho">Derecho</option>
                                 <option value="Bilateral">Bilateral</option>
@@ -461,18 +518,34 @@ if (isset($_SESSION['id'])) {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Tipo de Lesión *</label>
-                            <select name="tipo" id="tipo" class="w-full input-adapt rounded-xl px-4 py-3 cursor-pointer" required data-validar="requerido" data-nombre="Tipo de lesión">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Tipo de Suceso *</label>
+                            <select name="tipo" id="tipo" class="w-full input-adapt rounded-xl px-4 py-3 cursor-pointer" required data-validar="requerido">
                                 <option value="">Seleccione el tipo...</option>
                                 <option value="Sobreuso">Sobrecarga / Sobreuso</option>
                                 <option value="Aguda">Aguda (Traumática)</option>
                                 <option value="Recidiva">Recidiva (Reincidente)</option>
+                                <option value="Enfermedad">Enfermedad Clínica</option>
                             </select>
                         </div>
-                        <div>
+                        <div class="flex gap-4">
+                            <div class="flex-1">
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Molestia (1-10) *</label>
+                                <input type="text" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(parseInt(this.value) > 10) this.value = '10';" name="nivel_molestia" id="nivel_molestia" class="w-full input-adapt rounded-xl px-4 py-3" required data-validar="requerido|rango" data-min-num="1" data-max-num="10">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Gravedad (IA) *</label>
+                                <select name="gravedad_clinica" id="gravedad_clinica" class="w-full input-adapt rounded-xl px-4 py-3 cursor-pointer" required data-validar="requerido">
+                                    <option value="">Seleccione...</option>
+                                    <option value="Leve">🟢 Leve</option>
+                                    <option value="Moderada">🟡 Moderada</option>
+                                    <option value="Grave">🔴 Grave</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- <div>
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Nivel de Molestia (1-10) *</label>
                             <input type="number" name="nivel_molestia" id="nivel_molestia" min="1" max="10" class="w-full input-adapt rounded-xl px-4 py-3" required data-validar="requerido|rango" data-nombre="Nivel de molestia" data-min-num="1" data-max-num="10">
-                        </div>
+                        </div> -->
 
                         <div class="md:col-span-2">
                             <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Diagnóstico Clínico *</label>

@@ -315,6 +315,78 @@ class Evento extends Conexion {
         }
     }
 
+    /**
+     * Devuelve los atletas inscrito(s) en otros eventos cuyo rango de fechas
+     * se solapa con el evento indicado (excluye el propio evento y los cancelados).
+     * Clave = id_atleta, valor = datos del conflicto.
+     */
+    public function obtenerConflictosInscripcion(int $id_evento, array $atletas_ids): array {
+        if (empty($atletas_ids) || $id_evento <= 0) return [];
+        $conex = $this->pdo;
+        try {
+            $ids = [];
+            foreach ($atletas_ids as $id) {
+                $id = (int)$id;
+                if ($id > 0) $ids[] = $id;
+            }
+            if (empty($ids)) return [];
+
+            $marks = implode(',', array_fill(0, count($ids), '?'));
+            $sql = "SELECT ei.id_atleta,
+                           CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta,
+                           e.nombre AS nombre_evento, e.fecha_inicio, e.fecha_fin
+                    FROM evento_inscripcion ei
+                    INNER JOIN eventos e ON e.id_evento = ei.id_evento
+                    INNER JOIN eventos destino ON destino.id_evento = ?
+                    INNER JOIN atletas a ON a.id_atleta = ei.id_atleta
+                    WHERE e.id_evento != destino.id_evento
+                      AND e.estado != 'Cancelado'
+                      AND e.fecha_inicio <= COALESCE(destino.fecha_fin, destino.fecha_inicio)
+                      AND COALESCE(e.fecha_fin, e.fecha_inicio) >= destino.fecha_inicio
+                      AND ei.id_atleta IN ($marks)";
+            $stmt = $conex->prepare($sql);
+            $stmt->execute(array_merge([$id_evento], $ids));
+
+            $conflictos = [];
+            while ($fila = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $conflictos[(int)$fila['id_atleta']] = $fila;
+            }
+            return $conflictos;
+        } catch (PDOException $e) {
+            error_log("Error consultando conflictos de inscripcion: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Devuelve todos los atletas con conflicto de fechas para un evento
+     * (usado por el modal de inscripcion para marcarlos visualmente).
+     */
+    public function obtenerAtletasConConflicto(int $id_evento): array {
+        if ($id_evento <= 0) return [];
+        $conex = $this->pdo;
+        try {
+            $sql = "SELECT ei.id_atleta,
+                           CONCAT(a.nombres, ' ', a.apellidos) AS nombre_atleta,
+                           e.nombre AS nombre_evento, e.fecha_inicio, e.fecha_fin
+                    FROM evento_inscripcion ei
+                    INNER JOIN eventos e ON e.id_evento = ei.id_evento
+                    INNER JOIN eventos destino ON destino.id_evento = :id_evento
+                    INNER JOIN atletas a ON a.id_atleta = ei.id_atleta
+                    WHERE e.id_evento != destino.id_evento
+                      AND e.estado != 'Cancelado'
+                      AND e.fecha_inicio <= COALESCE(destino.fecha_fin, destino.fecha_inicio)
+                      AND COALESCE(e.fecha_fin, e.fecha_inicio) >= destino.fecha_inicio
+                    ORDER BY e.fecha_inicio ASC";
+            $stmt = $conex->prepare($sql);
+            $stmt->execute([':id_evento' => $id_evento]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error consultando atletas con conflicto: " . $e->getMessage());
+            return [];
+        }
+    }
+
     // =====================================================================
     // 4. METODOS DE CONSULTA
     // =====================================================================
@@ -449,7 +521,7 @@ class Evento extends Conexion {
 
             foreach ($eventos as &$ev) {
                 $ev['color'] = $colores[$ev['tipo']] ?? '#6366f1';
-                $ev['url'] = '?p=eventos&accion=obtenerDetalle&id=' . $ev['id_evento'];
+                $ev['url'] = '?p=eventos&h=' . $ev['id_evento'];
                 if ($ev['start'] === $ev['end']) {
                     unset($ev['end']);
                 }

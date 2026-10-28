@@ -33,6 +33,20 @@ function getThemeColors() {
     };
 }
 
+
+// =====================================================================
+// ESCAPE HTML (previene XSS en campos de texto libre)
+// =====================================================================
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // ================== VALIDACIONES PERSONALIZADAS ==================
 function validarCampoPersonalizado(campo) {
     if (!campo.hasAttribute('data-validar')) return true;
@@ -162,13 +176,26 @@ function validarFormularioPersonalizado(formulario) {
             errores.push(`- <b>${nombre}</b>: ${mensaje}`);
         }
     });
+
+    const molInput = document.getElementById('nivel_molestia');
+    const gravSelect = document.getElementById('gravedad_clinica');
+    const mol = parseInt(molInput?.value);
+    const grav = gravSelect?.value;
+    if (!isNaN(mol) && grav && mol >= 1 && mol <= 10) {
+        const esperada = (mol <= 3) ? 'Leve' : (mol <= 7 ? 'Moderada' : 'Grave');
+        if (grav !== esperada) {
+            errores.push(`- <b>Gravedad (IA)</b>: Molestia ${mol}/10 requiere gravedad <b>${esperada}</b>, pero tienes <b>${grav}</b>.`);
+        }
+    }
+
+
     return errores.length ? errores.join('<br>') : false;
 }
 
 // =====================================================================
 // PETICIÓN AJAX CENTRALIZADA
 // =====================================================================
-async function peticionAjax(accion, datos = null, metodo = 'GET') {
+/* async function peticionAjax(accion, datos = null, metodo = 'GET') {
     let url = `${API_URL}&accion=${accion}`;
     const opciones = { method: metodo };
     
@@ -190,6 +217,56 @@ async function peticionAjax(accion, datos = null, metodo = 'GET') {
         if (typeof UI !== 'undefined') UI.error('Falla de Comunicación', 'El servidor no pudo procesar la solicitud.');
         return null;
     }
+} */
+
+// =====================================================================
+// PETICIÓN AJAX CENTRALIZADA (con manejo de 403/422/500 + _handled)
+// =====================================================================
+async function peticionAjax(accion, datos = null, metodo = 'GET') {
+    let url = `${API_URL}&accion=${accion}`;
+    const opciones = { method: metodo };
+    
+    if (datos) {
+        if (metodo === 'POST' && !(datos instanceof FormData)) {
+            opciones.body = JSON.stringify(datos);
+            opciones.headers = { 'Content-Type': 'application/json' };
+        } else {
+            opciones.body = datos;
+        }
+    }
+
+    let respuesta;
+    try {
+        respuesta = await fetch(url, opciones);
+    } catch (redError) {
+        console.error('[LESION] Error de red:', redError);
+        if (typeof UI !== 'undefined') UI.error('Error de comunicación', 'No se pudo conectar con el servidor.');
+        return { status: 'error', message: 'Error de red', _handled: true };
+    }
+
+    const texto = await respuesta.text();
+    let json = null;
+    try { json = texto ? JSON.parse(texto) : null; } catch (e) { /* body no-JSON */ }
+
+    if (!respuesta.ok) {
+        const mensaje = json?.message || `Error HTTP ${respuesta.status}`;
+        if (typeof UI !== 'undefined') {
+            if (respuesta.status === 403 || respuesta.status === 401) {
+                UI.error('⛔ Acceso denegado', mensaje);
+            } else if (respuesta.status === 422) {
+                UI.advertencia ? UI.advertencia('⚠️ Datos inválidos', mensaje)
+                               : UI.error('Datos inválidos', mensaje);
+            } else if (respuesta.status === 404) {
+                UI.error('No encontrado', mensaje);
+            } else {
+                UI.error('Error del servidor', mensaje);
+            }
+        }
+        console.warn('[SEGURIDAD-LESION] Intento bloqueado:', respuesta.status, mensaje);
+        return json ? { ...json, _handled: true } : { status: 'error', message: mensaje, _handled: true };
+    }
+
+    return json;
 }
 
 // =====================================================================
@@ -323,7 +400,7 @@ async function cargarAtletas() {
 
         const visibleBadge = reg.activo == 1 
             ? '<span class="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded text-xs border border-emerald-200 dark:border-emerald-500/30"><i class="fas fa-check"></i> Activo</span>'
-            : '<span class="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded text-xs border border-red-200 dark:border-red-500/30" title="'+(reg.motivo_eliminacion||'')+'"><i class="fas fa-trash-alt"></i> Papelera</span>';
+            : '<span class="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded text-xs border border-red-200 dark:border-red-500/30" title="'+(escapeHtml(reg.motivo_eliminacion)||'')+'"><i class="fas fa-trash-alt"></i> Papelera</span>';
         
         let botones = `<button onclick="verDetalle(${reg.id_lesion})" class="bg-gray-200 dark:bg-[#252345] hover:bg-indigo-600 dark:hover:bg-indigo-600 text-gray-700 dark:text-white w-8 h-8 rounded-lg transition-colors" title="Ficha Médica"><i class="fas fa-eye text-xs"></i></button>`;
         
@@ -342,8 +419,8 @@ async function cargarAtletas() {
         filas += `
             <tr class="hover:bg-gray-100 dark:hover:bg-white/5 transition-colors border-b border-gray-200 dark:border-[#252345]">
                 <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${formatearFecha(reg.fecha_inicio)}</td>
-                <td class="px-6 py-4 text-indigo-600 dark:text-indigo-300 font-semibold">${reg.nombre_atleta}</td>
-                <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${reg.zona_anatomica} ${reg.lado ? '('+reg.lado+')' : ''}<br><span class="text-xs text-gray-500 dark:text-gray-400">${reg.tipo}</span></td>
+                <td class="px-6 py-4 text-indigo-600 dark:text-indigo-300 font-semibold">${escapeHtml(reg.nombre_atleta)}</td>
+                <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${escapeHtml(reg.zona_anatomica)} ${reg.lado ? '('+reg.lado+')' : ''}<br><span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(reg.tipo)}</span></td>
                 <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold border border-current ${colorMolestia}">${reg.nivel_molestia}/10</span></td>
                 <td class="px-6 py-4 text-gray-700 dark:text-gray-300">${lblEstado}</td>
                 <td class="px-6 py-4 text-center">${visibleBadge}</td>
@@ -421,10 +498,10 @@ async function cargarRiesgosActivos() {
             <li class="flex justify-between items-center bg-white dark:bg-[#161430] p-3 rounded shadow-sm border border-red-100 dark:border-red-500/20">
                 <div>
                     <p class="font-bold text-gray-800 dark:text-white">
-                        ${alert.nombres} ${alert.apellidos}
+                        ${escapeHtml(alert.nombres)} ${escapeHtml(alert.apellidos)}
                         <span class="text-xs ${gravedadClase} text-white px-2 py-0.5 rounded ml-1">${gravedadTexto}</span>
                     </p>
-                    <p class="text-xs text-gray-500">${alert.tipo_alerta}: ${alert.mensaje}</p>
+                    <p class="text-xs text-gray-500">${alert.tipo_alerta}: ${escapeHtml(alert.mensaje)}</p>
                     <p class="text-[10px] text-gray-400 mt-0.5">${new Date(alert.fecha_creacion).toLocaleString()}</p>
                 </div>
                 <a href="javascript:verDetalle(${alert.id_registro_origen})" 
@@ -443,6 +520,15 @@ async function cargarRiesgosActivos() {
 // =====================================================================
 function abrirModal(id_lesion = null) {
     formulario.reset();
+    const selectLadoReset = document.getElementById('lado');
+    if (selectLadoReset) {
+        selectLadoReset.disabled = false;
+        selectLadoReset.classList.remove('bg-gray-200', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-70');
+        selectLadoReset.title = '';
+    }
+    document.querySelectorAll('#zona_anatomica optgroup').forEach(g => g.disabled = false);
+    
+   
     document.getElementById('id_lesion').value = '';
     document.getElementById('accion').value = 'registrar';
     document.getElementById('tituloModal').innerText = 'Registrar Nueva Lesión';
@@ -470,7 +556,9 @@ async function cargarDatosParaEdicion(id_lesion) {
     
     const data = await peticionAjax(`obtenerDetalleLesion&id=${id_lesion}`);
     if (!data || data.status === 'error') {
-        UI.error('Error', data?.message || 'No se pudo cargar la lesión.');
+        if (!data?._handled && typeof UI !== 'undefined') {
+            UI.error('Error', data?.message || 'No se pudo cargar la lesión.');
+        }
         cerrarModal();
         return;
     }
@@ -478,6 +566,12 @@ async function cargarDatosParaEdicion(id_lesion) {
     Object.keys(data).forEach(key => {
         if (document.getElementById(key)) document.getElementById(key).value = data[key];
     });
+    // Disparar evento de cambio para revaluar bloqueos de zona/lado
+const zonaEl = document.getElementById('zona_anatomica');
+if(zonaEl) zonaEl.dispatchEvent(new Event('change'));
+
+const tipoEl = document.getElementById('tipo');
+if (tipoEl) tipoEl.dispatchEvent(new Event('change'));
 
     const selectAtleta = document.getElementById('id_atleta');
     if (selectAtleta) {
@@ -526,7 +620,7 @@ formulario.addEventListener('submit', async (e) => {
         cerrarModal();
         cargarTabla();
         cargarRiesgosActivos(); 
-    } else {
+    }  else if (!resultado?._handled && typeof UI !== 'undefined') {
         UI.error('Advertencia', resultado?.message || 'Error de procesamiento');
     }
 });
@@ -551,8 +645,8 @@ async function softDelete(id_lesion) {
         UI.exito('Movido a Papelera', resultado.message);
         cargarTabla();
         cargarRiesgosActivos(); 
-    } else {
-        UI.error('No se pudo anular', resultado?.message);
+    } else if (!resultado?._handled && typeof UI !== 'undefined') {
+        UI.error('No se pudo anular', resultado?.message || 'Intenta de nuevo.');
     }
 }
 
@@ -568,8 +662,8 @@ async function reactivar(id_lesion) {
         UI.exito('Restaurado', resultado.message);
         cargarTabla();
         cargarRiesgosActivos(); 
-    } else {
-        UI.error('Error', resultado?.message);
+    } else if (!resultado?._handled && typeof UI !== 'undefined') {
+        UI.error('Error', resultado?.message || 'Intenta de nuevo.');
     }
 }
 
@@ -603,12 +697,17 @@ async function verDetalle(id_lesion) {
     contenedor.innerHTML = `<div class="text-center py-20 text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin text-4xl text-indigo-500"></i></div>`;
     
     const data = await peticionAjax(`obtenerDetalleLesion&id=${id_lesion}`);
-    if (!data || data.status === 'error') return cerrarModalVer();
+    if (!data || data.status === 'error') {
+    if (!data?._handled && typeof UI !== 'undefined') {
+        UI.error('No se pudo cargar el detalle', data?.message || 'Registro no disponible.');
+    }
+    return cerrarModalVer();
+}
     
     const colors = getThemeColors();
     
     let advertenciaPapelera = data.activo == 0 
-        ? `<div class="bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 p-3 rounded-xl mb-4"><i class="fas fa-trash-alt text-red-600 dark:text-red-400 mr-2"></i><strong class="text-red-600 dark:text-red-400">Motivo de anulación:</strong> <span class="text-gray-700 dark:text-gray-300">${data.motivo_eliminacion}</span></div>` 
+        ? `<div class="bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 p-3 rounded-xl mb-4"><i class="fas fa-trash-alt text-red-600 dark:text-red-400 mr-2"></i><strong class="text-red-600 dark:text-red-400">Motivo de anulación:</strong> <span class="text-gray-700 dark:text-gray-300">${escapeHtml(data.motivo_eliminacion)}</span></div>` 
         : '';
 
     contenedor.innerHTML = `
@@ -618,15 +717,15 @@ async function verDetalle(id_lesion) {
                 <i class="fas fa-file-medical"></i>
             </div>
             <div>
-                <h2 class="text-3xl font-black text-gray-900 dark:text-white">${data.nombres} ${data.apellidos}</h2>
-                <p class="text-indigo-600 dark:text-indigo-400"><i class="fas fa-id-card"></i> ${data.cedula} | Inicio: ${formatearFecha(data.fecha_inicio)}</p>
+                <h2 class="text-3xl font-black text-gray-900 dark:text-white">${escapeHtml(data.nombres)} ${escapeHtml(data.apellidos)}</h2>
+                <p class="text-indigo-600 dark:text-indigo-400"><i class="fas fa-id-card"></i> ${escapeHtml(data.cedula)} | Inicio: ${formatearFecha(data.fecha_inicio)}</p>
             </div>
         </div>
         
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <div class="bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]">
                 <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Zona</p>
-                <p class="text-gray-900 dark:text-white font-bold">${data.zona_anatomica}</p>
+                <p class="text-gray-900 dark:text-white font-bold">${escapeHtml(data.zona_anatomica)}</p>
             </div>
             <div class="bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]">
                 <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Tipo</p>
@@ -637,18 +736,30 @@ async function verDetalle(id_lesion) {
                 <p class="text-amber-600 dark:text-amber-400 font-bold">${data.nivel_molestia}/10</p>
             </div>
             <div class="bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]">
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Gravedad</p>
+                <p class="text-indigo-600 dark:text-indigo-400 font-bold">${data.gravedad_clinica || 'No clasificada'}</p>
+            </div>
+            <div class="bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]">
                 <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Estado</p>
                 <p class="text-emerald-600 dark:text-emerald-400 font-bold">${data.estado}</p>
             </div>
             
-            <div class="col-span-2 md:col-span-4 bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]">
+            <div class="col-span-2 md:col-span-5 bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border border-gray-200 dark:border-[#252345]">
                 <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase mb-1">Diagnóstico Clínico</p>
-                <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">${data.diagnostico}</p>
+                <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">${escapeHtml(data.diagnostico)}</p>
             </div>
-            <div class="col-span-2 md:col-span-4 bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border-l-2 border-indigo-500 border border-gray-200 dark:border-[#252345]">
-                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase mb-1">Tratamiento Asignado por: ${data.profesional || 'No definido'}</p>
-                <p class="text-gray-700 dark:text-gray-300 text-sm">${data.tratamiento || 'Sin tratamiento.'}</p>
+            <div class="col-span-2 md:col-span-5 bg-gray-100 dark:bg-[#161430] p-4 rounded-xl border-l-2 border-indigo-500 border border-gray-200 dark:border-[#252345]">
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase mb-1">Tratamiento Asignado por: ${escapeHtml(data.profesional) || 'No definido'}</p>
+                <p class="text-gray-700 dark:text-gray-300 text-sm">${escapeHtml(data.tratamiento) || 'Sin tratamiento.'}</p>
             </div>
+            ${data.estado === 'Recuperada' && data.fecha_alta_real ? `
+            <div class="col-span-2 md:col-span-5 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-3">
+                <i class="fas fa-heartbeat text-emerald-600 dark:text-emerald-400 text-xl"></i>
+                <div>
+                    <p class="text-[10px] text-emerald-700 dark:text-emerald-500 uppercase font-bold">Alta Médica</p>
+                    <p class="text-emerald-800 dark:text-emerald-300 text-sm">El atleta fue dado de alta el <strong>${formatearFecha(data.fecha_alta_real)}</strong>.</p>
+                </div>
+            </div>` : ''}
         </div>
 
         <div class="bg-gray-100 dark:bg-[#161430] border border-gray-200 dark:border-white/5 rounded-2xl p-5">
@@ -718,7 +829,7 @@ function cerrarModalVer() {
 // =====================================================================
 // BLOQUEO FÍSICO DE CALENDARIOS NATIVOS
 // =====================================================================
-function configurarLimitesCalendario() {
+/* function configurarLimitesCalendario() {
     const inputInicio = document.getElementById('fecha_inicio');
     const inputRecup = document.getElementById('fecha_estimada_recup');
 
@@ -754,6 +865,28 @@ function configurarLimitesCalendario() {
             }
         }
     });
+} */
+
+    function configurarLimitesCalendario() {
+    const inputInicio = document.getElementById('fecha_inicio');
+    const inputRecup = document.getElementById('fecha_estimada_recup');
+    if (!inputInicio || !inputRecup) return;
+
+    const hoy = new Date();
+    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+    const strHoy = (new Date(hoy - tzOffset)).toISOString().split('T')[0];
+
+    inputInicio.max = strHoy;  // Solo bloquea futuro, no el pasado
+
+    inputInicio.addEventListener('change', () => {
+        if (inputInicio.value) {
+            inputRecup.min = inputInicio.value;
+            if (inputRecup.value && inputRecup.value < inputInicio.value) {
+                inputRecup.value = '';
+                validarCampoPersonalizado(inputRecup);
+            }
+        }
+    });
 }
 
 // =====================================================================
@@ -763,6 +896,130 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof Validador !== 'undefined' && Validador.vincularTiempoReal) {
         Validador.vincularTiempoReal(formulario);
     }
+
+    // CONTROL DE CONGRUENCIA ESTRICTA PARA IA SIMBÓLICA
+/* const selectZona = document.getElementById('zona_anatomica');
+const selectLado = document.getElementById('lado');
+
+if (selectZona && selectLado) {
+    selectZona.addEventListener('change', function() {
+        const zonasCentrales = ['Espalda', 'Cervical', 'Lumbar', 'Oido/Ojo/Cabeza', 'Respiratorio', 'Gastrointestinal', 'General'];
+        
+        if (zonasCentrales.includes(this.value)) {
+            selectLado.value = ''; // Fuerza a "No aplica"
+            selectLado.disabled = true;
+            selectLado.classList.add('bg-gray-200', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-70');
+            selectLado.title = "No aplica lado para afecciones sistémicas o centrales.";
+        } else {
+            selectLado.disabled = false;
+            selectLado.classList.remove('bg-gray-200', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-70');
+            selectLado.title = "";
+        }
+    });
+} */
+
+// =====================================================================
+// CONTROL DE CONGRUENCIA ESTRICTA PARA IA SIMBÓLICA (FRONTEND)
+// =====================================================================
+const selectZona = document.getElementById('zona_anatomica');
+const selectLado = document.getElementById('lado');
+const selectTipo = document.getElementById('tipo');
+const inputMolestia = document.getElementById('nivel_molestia');
+const selectGravedad = document.getElementById('gravedad_clinica');
+
+// 1. Bloqueo de Lado según Zona Central/Sistémica
+/* if (selectZona && selectLado) {
+    selectZona.addEventListener('change', function() {
+        const zonasCentrales = ['Espalda', 'Cervical', 'Lumbar', 'Oido/Ojo/Cabeza', 'Respiratorio', 'Gastrointestinal', 'General'];
+        if (zonasCentrales.includes(this.value)) {
+            selectLado.value = ''; 
+            selectLado.disabled = true;
+            selectLado.classList.add('bg-gray-200', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-70');
+            selectLado.title = "No aplica lado para afecciones sistémicas o centrales.";
+        } else {
+            selectLado.disabled = false;
+            selectLado.classList.remove('bg-gray-200', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-70');
+            selectLado.title = "";
+        }
+        if(typeof validarCampoPersonalizado === 'function') validarCampoPersonalizado(selectLado);
+    });
+} */
+if (selectZona && selectLado) {
+    selectZona.addEventListener('change', function() {
+        const zonasMedicas = ['Oido/Ojo/Cabeza', 'Respiratorio', 'Gastrointestinal', 'General'];
+        const zonasCentralesMusculo = ['Espalda', 'Cervical', 'Lumbar'];
+        const tipoActual = selectTipo ? selectTipo.value : '';
+        
+        if (zonasMedicas.includes(this.value) || tipoActual === 'Enfermedad') {
+            // Bloqueo total: ni Izq, ni Der, ni Bilateral
+            selectLado.value = '';
+            selectLado.disabled = true;
+            selectLado.classList.add('bg-gray-200', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-70');
+            selectLado.title = (tipoActual === 'Enfermedad') 
+                ? "Una enfermedad no tiene lateralidad."
+                : "Las afecciones médicas no tienen lateralidad.";
+        } else if (zonasCentralesMusculo.includes(this.value)) {
+            // Permite Bilateral o vacío, bloquea Izq/Der
+            selectLado.disabled = false;
+            selectLado.classList.remove('bg-gray-200', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-70');
+            if (['Izquierdo', 'Derecho'].includes(selectLado.value)) {
+                selectLado.value = '';
+            }
+            selectLado.title = "Para zonas centrales, use 'Bilateral' o deje vacío.";
+        } else {
+            // Zonas laterales: sin restricción
+            selectLado.disabled = false;
+            selectLado.classList.remove('bg-gray-200', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-70');
+            selectLado.title = "";
+        }
+        if (typeof validarCampoPersonalizado === 'function') validarCampoPersonalizado(selectLado);
+    });
+}
+
+// 2. Deshabilitar Zonas según Tipo de Suceso
+if (selectTipo && selectZona) {
+    selectTipo.addEventListener('change', function() {
+        const tipo = this.value;
+        const optgroups = selectZona.querySelectorAll('optgroup');
+        
+        if (optgroups.length >= 2) {
+            if (tipo === 'Enfermedad') {
+                optgroups[0].disabled = true; // Deshabilita Musculoesquelético
+                optgroups[1].disabled = false; // Habilita Afecciones Médicas
+               if (optgroups[0].contains(selectZona.options[selectZona.selectedIndex])) {
+                    selectZona.value = '';
+                    
+                }
+                selectZona.dispatchEvent(new Event('change'));  // <-- AÑADIR
+            } else if (['Sobreuso', 'Aguda', 'Recidiva'].includes(tipo)) {
+                optgroups[0].disabled = false;
+                optgroups[1].disabled = true;
+                if (optgroups[1].contains(selectZona.options[selectZona.selectedIndex])) {
+                    selectZona.value = '';
+                    
+                }
+                selectZona.dispatchEvent(new Event('change'));  // <-- AÑADIR
+            } else {
+                optgroups[0].disabled = false;
+                optgroups[1].disabled = false;
+            }
+        }
+    });
+}
+
+// 3. Auto-Cálculo de Gravedad según Molestia
+if (inputMolestia && selectGravedad) {
+    inputMolestia.addEventListener('input', function() {
+        const val = parseInt(this.value);
+        if (!isNaN(val)) {
+            if (val <= 3) selectGravedad.value = 'Leve';
+            else if (val <= 7) selectGravedad.value = 'Moderada';
+            else selectGravedad.value = 'Grave';
+            
+            if(typeof validarCampoPersonalizado === 'function') validarCampoPersonalizado(selectGravedad);
+        }
+    });
+}
 
     configurarLimitesCalendario();
     
