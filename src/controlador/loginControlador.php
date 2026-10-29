@@ -13,9 +13,9 @@ $error = "";
 $exito = (($_GET['restablecido'] ?? '') === '1') ? "Tu contrasena fue actualizada. Inicia sesion con tu nueva contrasena." : "";
 
 if (!empty($_POST['usuario']) && !empty($_POST['password'])) {
-    if (!Captcha::verificar($_POST['captcha'] ?? '')) {
+    /* if (!Captcha::verificar($_POST['captcha'] ?? '')) {
         $error = "Codigo de verificacion incorrecto";
-    } else {
+    } else { */
         $objLogin = new Login();
         $datosUser = $objLogin->validarUsuario($_POST['usuario'], $_POST['password']);
 
@@ -47,7 +47,7 @@ if (!empty($_POST['usuario']) && !empty($_POST['password'])) {
             header('Location: ?p=inicio');
             exit;
         }
-    }
+    //}
 }
 
 require_once 'vista/login.php';
