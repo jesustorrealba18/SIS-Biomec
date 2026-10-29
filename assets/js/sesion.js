@@ -14,6 +14,7 @@ let entrenadoresCache = [];
 let sesionEditando = false;
 let tablaPagina = 1;
 let sesionesData = [];
+let pasoSesionActual = 1;
 
 const coloresEstado = {
     'Planificada': 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30',
@@ -22,16 +23,139 @@ const coloresEstado = {
     'Cancelada': 'bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30'
 };
 
+function irAPasoSesion(paso) {
+    if (paso > pasoSesionActual) {
+        if (!validarPasoSesion(pasoSesionActual)) return;
+    }
+
+    pasoSesionActual = paso;
+
+    document.querySelectorAll('#modalSesion .tab-content').forEach(tab => tab.classList.remove('active'));
+
+    document.querySelectorAll('#modalSesion .step-circle').forEach(c => {
+        c.classList.remove('active', 'completed');
+    });
+    document.querySelectorAll('#modalSesion .step-label').forEach(l => {
+        l.classList.remove('active', 'completed');
+    });
+    document.querySelectorAll('#modalSesion .step-line').forEach(l => l.classList.remove('completed'));
+
+    for (let i = 1; i <= 2; i++) {
+        const circle = document.querySelector(`#modalSesion .step-circle[data-step="${i}"]`);
+        const label = document.querySelector(`#modalSesion .step-label[data-step="${i}"]`);
+        if (!circle || !label) continue;
+
+        if (i < paso) {
+            circle.classList.add('completed');
+            label.classList.add('completed');
+            const line = document.querySelector(`#modalSesion .step-line[data-line="${i}"]`);
+            if (line) line.classList.add('completed');
+        } else if (i === paso) {
+            circle.classList.add('active');
+            label.classList.add('active');
+        }
+    }
+
+    const tabId = paso === 1 ? 'tab-datos' : 'tab-series';
+    const tabEl = document.getElementById(tabId);
+    if (tabEl) tabEl.classList.add('active');
+
+    const btnAtras = document.getElementById('btnAtrasSesion');
+    const btnSiguiente = document.getElementById('btnSiguienteSesion');
+    const btnGuardar = document.getElementById('btnGuardarSesion');
+
+    if (btnAtras) btnAtras.classList.toggle('visible', paso > 1);
+    if (btnSiguiente) btnSiguiente.classList.toggle('visible', paso < 2);
+    if (btnGuardar) btnGuardar.classList.toggle('visible', paso === 2);
+}
+
+function avanzarPasoSesion() {
+    if (pasoSesionActual < 2) irAPasoSesion(pasoSesionActual + 1);
+}
+
+function retrocederPasoSesion() {
+    if (pasoSesionActual > 1) irAPasoSesion(pasoSesionActual - 1);
+}
+
+function validarPasoSesion(paso) {
+    if (paso === 1) {
+        const { hasError, errores } = validarFormularioSesionCompleto(formSesion);
+        if (hasError) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Datos Incompletos',
+                html: errores.join('<br>') || 'Por favor corrige los campos marcados en rojo.',
+                confirmButtonColor: '#4f46e5'
+            });
+            const primerError = formSesion.querySelector('.border-red-500');
+            if (primerError) {
+                primerError.focus();
+                primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return false;
+        }
+
+        const fecha = document.getElementById('fecha').value;
+        if (!fecha) {
+            Swal.fire('Validación', 'Debe seleccionar una fecha para la sesión.', 'warning');
+            return false;
+        }
+
+        const duracion = parseInt(document.getElementById('duracion_minutos').value);
+        if (!duracion || duracion < 15 || duracion > 480) {
+            Swal.fire('Validación', 'La duración debe estar entre 15 y 480 minutos.', 'warning');
+            return false;
+        }
+    }
+
+    if (paso === 2) {
+        const filas = document.querySelectorAll('.fila-serie');
+        if (filas.length === 0) {
+            Swal.fire('Validación', 'Debe agregar al menos una serie a la sesión.', 'warning');
+            return false;
+        }
+
+        for (let i = 0; i < filas.length; i++) {
+            const fila = filas[i];
+            const repes = parseInt(fila.querySelector('.rep-input').value) || 0;
+            const dist = parseInt(fila.querySelector('.dist-input').value) || 0;
+            const descansoInputs = fila.querySelectorAll('input[type="number"]');
+            const descanso = descansoInputs[2] ? parseInt(descansoInputs[2].value) || 0 : 0;
+            const drill = fila.querySelector('.drill-select').value;
+            const descripcion = fila.querySelector('.desc-input').value.trim();
+
+            if (repes < 1 || repes > 100) {
+                Swal.fire('Validación', `Serie ${i+1}: las repeticiones deben estar entre 1 y 100.`, 'warning');
+                return false;
+            }
+            if (dist < 25 || dist > 10000) {
+                Swal.fire('Validación', `Serie ${i+1}: la distancia debe estar entre 25 y 10000 metros.`, 'warning');
+                return false;
+            }
+            if (descanso > 600) {
+                Swal.fire('Validación', `Serie ${i+1}: el descanso máximo es de 600 segundos.`, 'warning');
+                return false;
+            }
+            if (!drill && (!descripcion || descripcion.length < 3)) {
+                Swal.fire('Validación', `Serie ${i+1}: seleccione un drill o escriba una descripción (mín. 3 caracteres).`, 'warning');
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 function setupValidacionTiempoRealSesion() {
     const campos = [
         { id: 'id_entrenador', reglas: 'requerido', nombre: 'Entrenador' },
         { id: 'fecha', reglas: 'requerido|fecha', nombre: 'Fecha' },
         { id: 'id_grupo', reglas: 'requerido', nombre: 'Grupo' },
         { id: 'tipo_sesion', reglas: 'requerido', nombre: 'Tipo de sesión' },
-        { id: 'duracion_minutos', reglas: 'requerido|numero', nombre: 'Duración', min: 15 },
-        { id: 'observaciones', reglas: 'texto', nombre: 'Observaciones', max: 5000 },
+        { id: 'duracion_minutos', reglas: 'requerido|numero', nombre: 'Duración', min: 15, max: 480 },
+        { id: 'observaciones', reglas: 'texto', nombre: 'Observaciones', max: 500 },
         { id: 'volumen_ejecutado', reglas: 'requerido|numero', nombre: 'Volumen ejecutado', min: 0 },
-        { id: 'observaciones_completar', reglas: 'texto', nombre: 'Observaciones', max: 5000 }
+        { id: 'observaciones_completar', reglas: 'texto', nombre: 'Observaciones', max: 500 }
     ];
 
     campos.forEach(({ id, reglas, nombre, min, max }) => {
@@ -50,18 +174,15 @@ function setupValidacionTiempoRealSesion() {
                 validarCampoSesion(this, reglas, nombre, min, max);
             });
         }
-
         if (input.tagName === 'SELECT') {
             input.addEventListener('change', function() {
                 validarCampoSesion(this, reglas, nombre, min, max);
             });
         }
-
         input.addEventListener('blur', function() {
             this.dataset.touched = 'true';
             validarCampoSesion(this, reglas, nombre, min, max);
         });
-
         input.addEventListener('focus', function() {
             this.dataset.touched = 'true';
         });
@@ -99,7 +220,7 @@ function validarCampoSesion(input, reglas, nombre, min = null, max = null) {
         error = `${nombre} es requerido`;
     } else if (valor) {
         if (reglas.includes('fecha')) {
-            const hoy = new Date().toISOString().split('T')[0];
+            const hoy = obtenerFechaLocal();
             if (valor < hoy && !sesionEditando) {
                 error = 'No se permite planificar sesiones para fechas pasadas';
             }
@@ -111,17 +232,17 @@ function validarCampoSesion(input, reglas, nombre, min = null, max = null) {
                 error = `${nombre} debe ser un número válido mayor o igual a 0`;
             } else if (min !== null && num < min) {
                 error = `${nombre} debe ser al menos ${min}`;
-            }
-        }
-
-        if (reglas.includes('texto') && valor) {
-            if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s.,;:()\-_\n]+$/.test(valor)) {
-                error = `${nombre} contiene caracteres no permitidos`;
+            } else if (max !== null && num > max) {
+                error = `${nombre} no debe exceder ${max}`;
             }
         }
 
         if (max && valor.length > max) {
             error = `${nombre} no debe exceder ${max} caracteres`;
+        } else if (reglas.includes('texto') && valor) {
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s.,;:()\-_\n]+$/.test(valor)) {
+                error = `${nombre} contiene caracteres no permitidos`;
+            }
         }
     }
 
@@ -161,18 +282,18 @@ function validarFormularioSesionCompleto(form) {
         { id: 'id_grupo', reglas: 'requerido', nombre: 'Grupo' },
         { id: 'fecha', reglas: 'requerido', nombre: 'Fecha' },
         { id: 'tipo_sesion', reglas: 'requerido', nombre: 'Tipo de sesión' },
-        { id: 'duracion_minutos', reglas: 'requerido|numero', nombre: 'Duración', min: 15 }
+        { id: 'duracion_minutos', reglas: 'requerido|numero', nombre: 'Duración', min: 15, max: 480 }
     ];
 
     let hasError = false;
     let errores = [];
 
-    camposRequeridos.forEach(({ id, reglas, nombre, min }) => {
+    camposRequeridos.forEach(({ id, reglas, nombre, min, max }) => {
         const input = document.getElementById(id);
         if (input) {
             input.dataset.touched = 'true';
             const reglasAplicar = (id === 'fecha' && sesionEditando) ? 'requerido' : reglas;
-            const isValid = validarCampoSesion(input, reglasAplicar, nombre, min);
+            const isValid = validarCampoSesion(input, reglasAplicar, nombre, min, max);
             if (!isValid) {
                 hasError = true;
                 const errorMsg = input.parentElement.querySelector('.error-msg');
@@ -189,33 +310,23 @@ function validarFormularioSesionCompleto(form) {
 async function peticionAjax(accion, datos = null) {
     try {
         let url = `${API_URL}&accion=${accion}`;
-        let opciones = {
-            method: datos ? 'POST' : 'GET'
-        };
+        let opciones = { method: datos ? 'POST' : 'GET' };
 
         if (datos) {
             if (datos instanceof FormData) {
                 opciones.body = datos;
             } else {
-                opciones.headers = {
-                    'Content-Type': 'application/json'
-                };
+                opciones.headers = { 'Content-Type': 'application/json' };
                 opciones.body = JSON.stringify(datos);
             }
         }
 
         const respuesta = await fetch(url, opciones);
-
         if (!respuesta.ok) {
             throw new Error(`HTTP error! status: ${respuesta.status}`);
         }
-
         return await respuesta.json();
     } catch (error) {
-        console.error("Error Fetch en Sesiones:", error);
-        if (typeof Swal !== 'undefined') {
-            Swal.fire('Error', 'Error de comunicación con el servidor', 'error');
-        }
         return null;
     }
 }
@@ -264,12 +375,11 @@ async function cargarTablaSesiones() {
 
     sesionesData = datos;
     const total = sesionesData.length;
-    
     if (totalSesiones) totalSesiones.textContent = `${total} Registrados`;
 
     const totalPaginas = Math.max(1, Math.ceil(total / tablaPorPagina));
     if (tablaPagina > totalPaginas) tablaPagina = totalPaginas;
-    
+
     if (infoTabla) infoTabla.textContent = `Mostrando ${total === 0 ? 0 : (tablaPagina - 1) * tablaPorPagina + 1}–${Math.min(tablaPagina * tablaPorPagina, total)} de ${total}`;
 
     const inicio = (tablaPagina - 1) * tablaPorPagina;
@@ -302,17 +412,17 @@ async function cargarTablaSesiones() {
                         <i class="fas fa-eye text-sm"></i>
                     </button>
 
-                     ${s.estado === 'Planificada' && s.fecha === obtenerFechaLocal() ? `
+                    ${s.estado === 'Planificada' ? `
                         <button onclick="iniciarSesion(${s.id_sesion})" class="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition" title="Iniciar">
                             <i class="fas fa-play text-sm"></i>
                         </button>
                     ` : ''}
-                    
+
                     ${['Planificada', 'Parcial'].includes(s.estado) ? `
                         <button onclick="abrirModalCompletarSesion(${s.id_sesion})" class="p-2 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-500/10 rounded-lg transition" title="Completar">
                             <i class="fas fa-check-circle text-sm"></i>
                         </button>
-                        
+
                         <button onclick="cancelarSesion(${s.id_sesion})" class="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition" title="Cancelar">
                             <i class="fas fa-ban text-sm"></i>
                         </button>
@@ -320,8 +430,6 @@ async function cargarTablaSesiones() {
                             <i class="fas fa-pen text-sm"></i>
                         </button>
                     ` : ''}
-                    
-                   
                 </div>
             </td>
          </tr>
@@ -333,7 +441,7 @@ async function cargarTablaSesiones() {
 function renderPaginacionSesiones(totalPaginas) {
     const pieTabla = document.getElementById('pieTabla');
     if (!pieTabla) return;
-    
+
     if (totalPaginas <= 1) {
         pieTabla.innerHTML = '';
         return;
@@ -383,6 +491,35 @@ function renderPaginacionSesiones(totalPaginas) {
     pieTabla.innerHTML = html;
 }
 
+async function cargarGruposPorEntrenador(idEntrenador) {
+    const selectGrupoForm = document.getElementById('id_grupo');
+    if (!selectGrupoForm) return;
+
+    selectGrupoForm.innerHTML = '<option value="">Cargando grupos...</option>';
+    selectGrupoForm.disabled = true;
+
+    let url = 'listarGrupos';
+    if (idEntrenador) {
+        url += `&id_entrenador=${idEntrenador}`;
+    }
+
+    const respuesta = await peticionAjax(url);
+    let grupos = [];
+    if (Array.isArray(respuesta)) {
+        grupos = respuesta;
+    } else if (respuesta && Array.isArray(respuesta.data)) {
+        grupos = respuesta.data;
+    }
+
+    if (grupos.length === 0) {
+        selectGrupoForm.innerHTML = '<option value="">Sin grupos asignados</option>';
+    } else {
+        selectGrupoForm.innerHTML = '<option value="">Seleccione un Grupo</option>' +
+            grupos.map(g => `<option value="${g.id_grupo}">${g.nombre}</option>`).join('');
+    }
+    selectGrupoForm.disabled = false;
+}
+
 function abrirModalSesion(id_sesion = null) {
     if (!formSesion || !modalSesion) return;
 
@@ -401,23 +538,36 @@ function abrirModalSesion(id_sesion = null) {
     });
 
     const inputFecha = document.getElementById('fecha');
-    const hoy = new Date().toISOString().split('T')[0];
+    const hoy = obtenerFechaLocal();
     if (inputFecha) {
         inputFecha.min = hoy;
         if (!id_sesion) inputFecha.value = hoy;
         inputFecha.dataset.touched = 'false';
     }
 
+    const selectEntrenadorModal = document.getElementById('id_entrenador');
+    if (selectEntrenadorModal) {
+        selectEntrenadorModal.onchange = async function() {
+            await cargarGruposPorEntrenador(this.value);
+        };
+    }
+
+    pasoSesionActual = 1;
+    irAPasoSesion(1);
+
     if (id_sesion) {
         document.getElementById('modalSesionTitulo').innerHTML = '<i class="fas fa-edit text-indigo-400"></i> Editar Sesión';
-        peticionAjax(`obtenerDetalle&id=${id_sesion}`).then(det => {
-            if (!det) {
+        peticionAjax(`obtenerDetalle&id=${id_sesion}`).then(async det => {
+            if (!det || det.status === 'error') {
                 Swal.fire('Error', 'No se pudo cargar la sesión', 'error');
                 return;
             }
 
             document.getElementById('id_sesion').value = det.id_sesion;
             document.getElementById('id_entrenador').value = det.id_entrenador || '';
+
+            await cargarGruposPorEntrenador(det.id_entrenador);
+
             document.getElementById('id_grupo').value = det.id_grupo || '';
             document.getElementById('id_microciclo').value = det.id_microciclo || '';
             document.getElementById('fecha').value = det.fecha || '';
@@ -431,8 +581,7 @@ function abrirModalSesion(id_sesion = null) {
                 document.getElementById('id_grupo').disabled = true;
                 document.getElementById('fecha').disabled = true;
                 document.getElementById('id_entrenador').disabled = true;
-                document.getElementById('id_microciclo').disabled = true; 
-                document.querySelector('#tbodySeries .agregar-serie-btn')?.setAttribute('disabled', 'true');
+                document.getElementById('id_microciclo').disabled = true;
             } else {
                 document.getElementById('id_grupo').disabled = false;
                 document.getElementById('fecha').disabled = false;
@@ -454,6 +603,7 @@ function abrirModalSesion(id_sesion = null) {
     } else {
         document.getElementById('modalSesionTitulo').innerHTML = '<i class="fas fa-calendar-plus text-indigo-400"></i> Planificar Sesión';
         document.getElementById('tbodySeries').innerHTML = '';
+        document.getElementById('id_grupo').innerHTML = '<option value="">Seleccione un Entrenador primero</option>';
         agregarFilaSerie();
         setTimeout(() => activarValidacionesEnModal(), 200);
     }
@@ -471,6 +621,7 @@ function cerrarModalSesion() {
     setTimeout(() => {
         modalSesion.classList.add('hidden');
         sesionEditando = false;
+        pasoSesionActual = 1;
     }, 300);
 }
 
@@ -479,7 +630,7 @@ async function verDetalleSesion(id_sesion) {
 
     try {
         const det = await peticionAjax(`obtenerDetalle&id=${id_sesion}`);
-        if (!det) {
+        if (!det || det.status === 'error') {
             Swal.fire('Error', 'No se pudieron recuperar los detalles.', 'error');
             return;
         }
@@ -555,9 +706,7 @@ async function verDetalleSesion(id_sesion) {
         modalVerSesion.style.display = 'flex';
 
         const modalContent = modalVerSesion.firstElementChild;
-        if (modalContent) {
-            modalContent.classList.remove('scale-95', 'opacity-0');
-        }
+        if (modalContent) modalContent.classList.remove('scale-95', 'opacity-0');
 
     } catch (error) {
         Swal.fire('Error', 'Error al cargar los detalles', 'error');
@@ -567,9 +716,7 @@ async function verDetalleSesion(id_sesion) {
 function cerrarModalVer() {
     if (!modalVerSesion) return;
     const modalContent = modalVerSesion.firstElementChild;
-    if (modalContent) {
-        modalContent.classList.add('scale-95', 'opacity-0');
-    }
+    if (modalContent) modalContent.classList.add('scale-95', 'opacity-0');
     setTimeout(() => {
         modalVerSesion.classList.add('hidden');
         modalVerSesion.style.display = '';
@@ -589,7 +736,7 @@ async function abrirModalCompletarSesion(id_sesion) {
     });
 
     const det = await peticionAjax(`obtenerDetalle&id=${id_sesion}`);
-    if (!det) {
+    if (!det || det.status === 'error') {
         Swal.fire('Error', 'No se pudo cargar la sesión', 'error');
         return;
     }
@@ -615,18 +762,14 @@ async function abrirModalCompletarSesion(id_sesion) {
     modalCompletarSesion.classList.remove('hidden');
     setTimeout(() => {
         const modalContent = modalCompletarSesion.firstElementChild;
-        if (modalContent) {
-            modalContent.classList.remove('scale-95', 'opacity-0');
-        }
+        if (modalContent) modalContent.classList.remove('scale-95', 'opacity-0');
     }, 50);
 }
 
 function cerrarModalCompletar() {
     if (!modalCompletarSesion) return;
     const modalContent = modalCompletarSesion.firstElementChild;
-    if (modalContent) {
-        modalContent.classList.add('scale-95', 'opacity-0');
-    }
+    if (modalContent) modalContent.classList.add('scale-95', 'opacity-0');
     setTimeout(() => modalCompletarSesion.classList.add('hidden'), 300);
 }
 
@@ -638,7 +781,7 @@ function agregarFilaSerie(datos = null) {
     const nuevoOrden = filasExistentes + 1;
 
     const tr = document.createElement('tr');
-    tr.className = 'fila-serie hover:bg-gray-100 dark:hover:bg-white/5 transition';
+    tr.className = 'fila-serie hover:bg-gray-100 dark:hover:bg-white/10 transition border-b border-gray-200 dark:border-gray-800';
 
     const opcionesDrills = `<option value="">Ejercicio Libre</option>` +
         (drillsCache || []).map(d => `<option value="${d.id_drill}" ${datos && datos.id_drill == d.id_drill ? 'selected' : ''}>${d.nombre}</option>`).join('');
@@ -646,54 +789,56 @@ function agregarFilaSerie(datos = null) {
     tr.innerHTML = `
         <input type="hidden" name="serie_orden_ejecucion[]" value="${datos ? datos.orden_ejecucion : nuevoOrden}" class="serie-orden">
 
-        <td class="p-2">
-            <select name="serie_bloque[]" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white bloque-select" onchange="calcularVolumenTotalSesion()">
+        <td class="p-1 align-top">
+            <select name="serie_bloque[]" title="Selecciona la fase de la sesión" class="w-full bg-white dark:bg-[#161430] border border-gray-300 dark:border-white/10 rounded-lg p-2 text-xs text-gray-800 dark:text-white bloque-select cursor-pointer" onchange="calcularVolumenTotalSesion()">
                 <option value="Calentamiento" ${datos && datos.bloque === 'Calentamiento' ? 'selected' : ''}>Calentamiento</option>
                 <option value="Principal" ${datos && datos.bloque === 'Principal' ? 'selected' : (!datos && filasExistentes === 0 ? 'selected' : '')}>Principal</option>
                 <option value="VueltaCalma" ${datos && datos.bloque === 'VueltaCalma' ? 'selected' : (!datos && filasExistentes === 1 ? 'selected' : '')}>Vuelta Calma</option>
             </select>
-         </td>
+        </td>
 
-        <td class="p-2">
-            <select name="serie_id_drill[]" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white w-full drill-select" onchange="alternarCampoDescripcion(this)">
+        <td class="p-1 align-top">
+            <select name="serie_id_drill[]" title="Selecciona un ejercicio del catálogo" class="w-full bg-white dark:bg-[#161430] border border-gray-300 dark:border-white/10 rounded-lg p-2 text-xs text-gray-800 dark:text-white drill-select cursor-pointer mb-1" onchange="alternarCampoDescripcion(this)">
                 ${opcionesDrills}
             </select>
-            <input type="text" name="serie_ejercicio_descripcion[]" value="${datos ? datos.ejercicio_descripcion || '' : ''}" placeholder="Descripción libre..." class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white w-full mt-1 desc-input">
-         </td>
+            <input type="text" name="serie_ejercicio_descripcion[]" value="${datos ? datos.ejercicio_descripcion || '' : ''}" placeholder="Describir si es libre..." maxlength="500" title="Escribe una descripción si no elegiste un drill" class="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/5 rounded-lg p-1.5 text-[11px] text-gray-600 dark:text-gray-400 desc-input italic">
+        </td>
 
-        <td class="p-2">
-            <input type="text" name="serie_ritmo_objetivo[]" value="${datos ? datos.ritmo_objetivo || '' : ''}" placeholder="Ej: 1:30" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white text-center font-mono w-full">
-         </td>
+        <td class="p-1 align-top">
+            <input type="text" name="serie_ritmo_objetivo[]" value="${datos ? datos.ritmo_objetivo || '' : ''}" placeholder="Ej: 1:30" maxlength="20" title="Ritmo objetivo a mantener" class="w-full bg-white dark:bg-[#161430] border border-gray-300 dark:border-white/10 rounded-lg p-2 text-xs text-gray-800 dark:text-white text-center font-mono">
+        </td>
 
-        <td class="p-2 text-center">
-            <input type="number" min="1" max="100" name="serie_repeticiones[]" value="${datos ? datos.repeticiones : '1'}" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white text-center font-mono w-14 rep-input" oninput="calcularVolumenSerie(this)">
-         </td>
+        <td class="p-1 align-top">
+            <input type="number" min="1" max="100" name="serie_repeticiones[]" value="${datos ? datos.repeticiones : '1'}" placeholder="Reps" title="Cantidad de repeticiones" class="w-full bg-white dark:bg-[#161430] border border-gray-300 dark:border-white/10 rounded-lg p-2 text-xs text-gray-800 dark:text-white text-center font-mono rep-input" oninput="calcularVolumenSerie(this)">
+        </td>
 
-        <td class="p-2 text-center">
-            <input type="number" min="0" max="10000" step="25" name="serie_distancia_m[]" value="${datos ? datos.distancia_m : '50'}" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white text-center font-mono w-16 dist-input" oninput="calcularVolumenSerie(this)">
-         </td>
+        <td class="p-1 align-top">
+            <input type="number" min="25" max="10000" step="25" name="serie_distancia_m[]" value="${datos ? datos.distancia_m : '50'}" placeholder="Mts" title="Distancia en metros (mín 25)" class="w-full bg-white dark:bg-[#161430] border border-gray-300 dark:border-white/10 rounded-lg p-2 text-xs text-gray-800 dark:text-white text-center font-mono dist-input" oninput="calcularVolumenSerie(this)">
+        </td>
 
-        <td class="p-2 text-center">
-            <input type="number" min="0" max="600" name="serie_descanso_seg[]" value="${datos ? datos.descanso_seg : '15'}" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white text-center font-mono w-14">
-         </td>
+        <td class="p-1 align-top">
+            <input type="number" min="0" max="600" name="serie_descanso_seg[]" value="${datos ? datos.descanso_seg : '15'}" placeholder="Seg" title="Descanso en segundos (máx 600)" class="w-full bg-white dark:bg-[#161430] border border-gray-300 dark:border-white/10 rounded-lg p-2 text-xs text-gray-800 dark:text-white text-center font-mono">
+        </td>
 
-        <td class="p-2">
-            <select name="serie_zona_intensidad[]" class="bg-white dark:bg-[#0f0d23] border border-gray-300 dark:border-white/10 rounded-xl p-1.5 text-xs text-gray-800 dark:text-white">
+        <td class="p-1 align-top">
+            <select name="serie_zona_intensidad[]" title="Zona de intensidad cardíaca" class="w-full bg-white dark:bg-[#161430] border border-gray-300 dark:border-white/10 rounded-lg p-2 text-xs text-gray-800 dark:text-white text-center font-bold cursor-pointer">
                 <option value="Z1" ${datos && datos.zona_intensidad === 'Z1' ? 'selected' : ''}>Z1</option>
                 <option value="Z2" ${datos && datos.zona_intensidad === 'Z2' ? 'selected' : ''}>Z2</option>
                 <option value="Z3" ${datos && datos.zona_intensidad === 'Z3' ? 'selected' : ''}>Z3</option>
                 <option value="Z4" ${datos && datos.zona_intensidad === 'Z4' ? 'selected' : ''}>Z4</option>
                 <option value="Z5" ${datos && datos.zona_intensidad === 'Z5' ? 'selected' : ''}>Z5</option>
             </select>
-         </td>
+        </td>
 
-        <td class="p-2 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400 vol-serie-badge">0m</td>
+        <td class="p-1 align-middle text-center">
+            <span class="vol-serie-badge inline-block bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold font-mono text-xs px-2 py-1 rounded-md border border-indigo-200 dark:border-indigo-700/50">0m</span>
+        </td>
 
-        <td class="p-2 text-right">
-            <button type="button" onclick="removerFilaSerie(this)" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition">
-                <i class="fas fa-trash-alt"></i>
+        <td class="p-1 align-middle text-right">
+            <button type="button" onclick="removerFilaSerie(this)" title="Eliminar esta serie" class="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg transition">
+                <i class="fas fa-trash-alt text-sm"></i>
             </button>
-         </td>
+        </td>
     `;
 
     contenedor.appendChild(tr);
@@ -769,8 +914,9 @@ if (formSesion) {
     formSesion.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        const { hasError, errores } = validarFormularioSesionCompleto(this);
+        if (!validarPasoSesion(1) || !validarPasoSesion(2)) return;
 
+        const { hasError, errores } = validarFormularioSesionCompleto(this);
         if (hasError) {
             Swal.fire({
                 icon: 'warning',
@@ -778,49 +924,9 @@ if (formSesion) {
                 html: errores.join('<br>') || 'Por favor corrige los campos marcados en rojo.',
                 confirmButtonColor: '#4f46e5'
             });
-
-            const primerError = this.querySelector('.border-red-500');
-            if (primerError) {
-                primerError.focus();
-                primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+            irAPasoSesion(1);
             return;
         }
-
-        const id_grupo = document.getElementById('id_grupo').value;
-        if (!id_grupo) {
-            Swal.fire('Validación', 'Debe seleccionar un grupo obligatoriamente.', 'warning');
-            return;
-        }
-
-        const fecha = document.getElementById('fecha').value;
-        if (!fecha) {
-            Swal.fire('Validación', 'Debe seleccionar una fecha para la sesión.', 'warning');
-            return;
-        }
-
-        const duracion = parseInt(document.getElementById('duracion_minutos').value);
-        if (!duracion || duracion < 15) {
-            Swal.fire('Validación', 'La duración mínima de la sesión debe ser de 15 minutos.', 'warning');
-            return;
-        }
-
-        const filasSeries = document.querySelectorAll('.fila-serie');
-        if (filasSeries.length === 0) {
-            Swal.fire('Validación', 'Debe agregar al menos una serie a la sesión.', 'warning');
-            return;
-        }
-
-        let errorSeries = false;
-        filasSeries.forEach((fila, index) => {
-            const repes = parseInt(fila.querySelector('.rep-input').value) || 0;
-            const dist = parseInt(fila.querySelector('.dist-input').value) || 0;
-            if (repes <= 0 || dist <= 0) {
-                errorSeries = true;
-                Swal.fire('Validación', `La serie ${index + 1} debe tener repeticiones y distancia mayores a 0.`, 'warning');
-            }
-        });
-        if (errorSeries) return;
 
         const id_sesion = document.getElementById('id_sesion').value;
         const formData = new FormData(formSesion);
@@ -888,7 +994,6 @@ if (formCompletarSesion) {
             Swal.fire('Validación', 'El volumen ejecutado no puede superar al volumen planificado.', 'warning');
             return;
         }
-
         if (volumenEjecutadoVal < 0) {
             Swal.fire('Validación', 'El volumen ejecutado no puede ser negativo.', 'warning');
             return;
@@ -958,64 +1063,52 @@ async function iniciarSesion(id_sesion) {
 }
 
 async function cargarRecursosIniciales() {
-    try {
-        const [grupos, microciclos, drills, entrenadores] = await Promise.all([
-            peticionAjax('listarGrupos'),
-            peticionAjax('listarMicrociclos'),
-            peticionAjax('listarDrillsActivos'),
-            peticionAjax('listarEntrenadores')
-        ]);
+    const [grupos, microciclos, drills, entrenadores] = await Promise.allSettled([
+        peticionAjax('listarGrupos'),
+        peticionAjax('listarMicrociclos'),
+        peticionAjax('listarDrillsActivos'),
+        peticionAjax('listarEntrenadores')
+    ]);
 
-        if (grupos) {
-            gruposCache = Array.isArray(grupos) ? grupos : (grupos.data || []);
-            const selectGrupoForm = document.getElementById('id_grupo');
-            const selectGrupoFiltro = document.getElementById('filtroGrupo');
-            if (selectGrupoForm) {
-                selectGrupoForm.innerHTML = '<option value="">Seleccione un Grupo</option>' +
-                    gruposCache.map(g => `<option value="${g.id_grupo}">${g.nombre}</option>`).join('');
-            }
-            if (selectGrupoFiltro) {
-                selectGrupoFiltro.innerHTML = '<option value="">Todos los Grupos</option>' +
-                    gruposCache.map(g => `<option value="${g.id_grupo}">${g.nombre}</option>`).join('');
-            }
+    if (grupos.status === 'fulfilled' && grupos.value) {
+        gruposCache = Array.isArray(grupos.value) ? grupos.value : (grupos.value.data || []);
+        const selectGrupoFiltro = document.getElementById('filtroGrupo');
+        if (selectGrupoFiltro) {
+            selectGrupoFiltro.innerHTML = '<option value="">Todos los Grupos</option>' +
+                gruposCache.map(g => `<option value="${g.id_grupo}">${g.nombre}</option>`).join('');
         }
-        if (microciclos) {
-            microciclosCache = Array.isArray(microciclos) ? microciclos : (microciclos.data || []);
-            const selectMicroForm = document.getElementById('id_microciclo');
-            if (selectMicroForm) {
-                selectMicroForm.innerHTML = '<option value="">Microciclo (Ninguno)</option>' +
-                    microciclosCache.map(m => `<option value="${m.id_microciclo}">${m.nombre}</option>`).join('');
-            }
-        }
-        if (drills) {
-            drillsCache = Array.isArray(drills) ? drills : (drills.data || []);
-        }
-        if (entrenadores) {
-            entrenadoresCache = Array.isArray(entrenadores) ? entrenadores : (entrenadores.data || []);
-            const selectEntrenador = document.getElementById('id_entrenador');
-            if (selectEntrenador && entrenadoresCache.length > 0) {
-                let opciones = '<option value="">Seleccione un Entrenador</option>';
+    }
 
-                entrenadoresCache.forEach(e => {
-                    let nombreCompleto = '';
-                    if (e.nombres && e.apellidos) {
-                        nombreCompleto = e.nombres + ' ' + e.apellidos;
-                    } else if (e.nombres) {
-                        nombreCompleto = e.nombres;
-                    } else if (e.nombre_completo) {
-                        nombreCompleto = e.nombre_completo;
-                    } else {
-                        nombreCompleto = 'Entrenador ID: ' + e.id_entrenador;
-                    }
-
-                    opciones += `<option value="${e.id_entrenador}">${nombreCompleto}</option>`;
-                });
-
-                selectEntrenador.innerHTML = opciones;
-            }
+    if (microciclos.status === 'fulfilled' && microciclos.value) {
+        microciclosCache = Array.isArray(microciclos.value) ? microciclos.value : (microciclos.value.data || []);
+        const selectMicroForm = document.getElementById('id_microciclo');
+        if (selectMicroForm) {
+            selectMicroForm.innerHTML = '<option value="">Microciclo (Ninguno)</option>' +
+                microciclosCache.map(m => `<option value="${m.id_microciclo}">${m.nombre}</option>`).join('');
         }
-    } catch (error) {
-        console.error("Error al cargar recursos iniciales:", error);
+    }
+
+    if (drills.status === 'fulfilled' && drills.value) {
+        drillsCache = Array.isArray(drills.value) ? drills.value : (drills.value.data || []);
+    } else {
+        drillsCache = [];
+    }
+
+    if (entrenadores.status === 'fulfilled' && entrenadores.value) {
+        entrenadoresCache = Array.isArray(entrenadores.value) ? entrenadores.value : (entrenadores.value.data || []);
+        const selectEntrenador = document.getElementById('id_entrenador');
+        if (selectEntrenador && entrenadoresCache.length > 0) {
+            let opciones = '<option value="">Seleccione un Entrenador</option>';
+            entrenadoresCache.forEach(e => {
+                let nombreCompleto = '';
+                if (e.nombres && e.apellidos) nombreCompleto = e.nombres + ' ' + e.apellidos;
+                else if (e.nombres) nombreCompleto = e.nombres;
+                else if (e.nombre_completo) nombreCompleto = e.nombre_completo;
+                else nombreCompleto = 'Entrenador ID: ' + e.id_entrenador;
+                opciones += `<option value="${e.id_entrenador}">${nombreCompleto}</option>`;
+            });
+            selectEntrenador.innerHTML = opciones;
+        }
     }
 }
 
@@ -1029,7 +1122,6 @@ function setupEventosFiltros() {
             cargarTablaSesiones();
         });
     }
-
     if (filtroTipo) {
         filtroTipo.addEventListener('change', () => {
             tablaPagina = 1;

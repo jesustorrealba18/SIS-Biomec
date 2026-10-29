@@ -11,7 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-         body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; }
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
@@ -20,7 +20,6 @@
         .dark ::-webkit-scrollbar-thumb { background: #252345; }
         ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
 
-        /* ===== INPUTS ADAPTATIVOS ===== */
         .input-adapt {
             background-color: #ffffff;
             border: 1px solid #d1d5db;
@@ -37,173 +36,8 @@
             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
             outline: none;
         }
-        .dark .input-adapt:focus {
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-        }
-        /* Para el calendario (date) en modo oscuro */
-        .dark .input-adapt::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-        }
-  
-        .stepper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0;
-            margin-bottom: 1.5rem;
-            padding: 0 1rem;
-        }
-        .step-item {
-            display: flex;
-            align-items: center;
-            gap: 0;
-        }
-        .step-item + .step-item {
-            margin-left: 0;
-        }
-        .step-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 800;
-            border: 2px solid #d1d5db;
-            background: #f3f4f6;
-            color: #9ca3af;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        .dark .step-circle {
-            border-color: #252345;
-            background: #0f0d23;
-            color: #4b5563;
-        }
-        .step-circle.active {
-            border-color: #6366f1;
-            background: #6366f1;
-            color: #ffffff;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
-        }
-        .dark .step-circle.active {
-            border-color: #818cf8;
-            background: #6366f1;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
-        }
-        .step-circle.completed {
-            border-color: #10b981;
-            background: #10b981;
-            color: #ffffff;
-        }
-        .dark .step-circle.completed {
-            border-color: #34d399;
-            background: #10b981;
-        }
-        .step-label {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #9ca3af;
-            margin-left: 8px;
-            white-space: nowrap;
-            transition: color 0.3s ease;
-            cursor: pointer;
-        }
-        .dark .step-label {
-            color: #4b5563;
-        }
-        .step-label.active {
-            color: #4f46e5;
-        }
-        .dark .step-label.active {
-            color: #a5b4fc;
-        }
-        .step-label.completed {
-            color: #10b981;
-        }
-        .dark .step-label.completed {
-            color: #34d399;
-        }
-        .step-line {
-            width: 40px;
-            height: 2px;
-            background: #d1d5db;
-            margin: 0 12px;
-            flex-shrink: 0;
-            transition: background 0.3s ease;
-        }
-        .dark .step-line {
-            background: #252345;
-        }
-        .step-line.completed {
-            background: #10b981;
-        }
-        .dark .step-line.completed {
-            background: #34d399;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .stepper-btn {
-            display: none;
-        }
-        .stepper-btn.visible {
-            display: flex;
-        }
+        .dark .input-adapt::-webkit-calendar-picker-indicator { filter: invert(1); }
 
-        .estado-badge {
-            padding: 4px 12px;
-            border-radius: 9999px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .estado-Activo {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-        .dark .estado-Activo {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-        }
-        .estado-Inactivo {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-        .dark .estado-Inactivo {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-        }
-        .estado-Retirado {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-        .dark .estado-Retirado {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-        }
-        .estado-Transferido {
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-        .dark .estado-Transferido {
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-        }
-
-        /* ===== RESPONSIVE TABLE ===== */
         @media (max-width: 768px) {
             .tabla-responsive thead { display: none; }
             .tabla-responsive tbody tr {
@@ -234,15 +68,10 @@
                 letter-spacing: 0.05em;
                 margin-right: 8px;
             }
-            .dark .tabla-responsive tbody td::before {
-                color: #6b7280;
-            }
             .tabla-responsive tbody td:first-child::before { content: ''; }
         }
 
-        .menu-transition {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        .menu-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
@@ -257,11 +86,11 @@ if (isset($_SESSION['id'])) {
 ?>
 
 <div class="flex h-screen overflow-hidden">
-    
-    <!-- Overlay para móvil cuando el menú está abierto -->
+
+    <!-- Overlay móvil -->
     <div id="menuOverlay" class="fixed inset-0 bg-black/70 z-30 opacity-0 pointer-events-none transition-opacity lg:hidden"></div>
 
-    <!-- Sidebar - responsive -->
+    <!-- Sidebar -->
     <aside id="sidebarMenu" class="fixed top-0 left-0 h-full w-72 bg-white dark:bg-[#0f0d23] border-r border-gray-200 dark:border-[#252345] z-40 transform -translate-x-full menu-transition lg:relative lg:translate-x-0 lg:flex-shrink-0 overflow-y-auto transition-colors duration-300">
         <div class="p-4 flex justify-between items-center border-b border-gray-200 dark:border-[#252345] lg:hidden">
             <div class="flex items-center gap-2">
@@ -278,16 +107,16 @@ if (isset($_SESSION['id'])) {
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        
-        <?php 
+
+        <?php
             $tituloPagina = "Gestión de Bloques de Horarios";
             $tituloPaginaResponsive = "Horarios";
             $iconModulo = "fas fa-clock";
-            include 'vista/complementos/header.php'; 
+            include 'vista/complementos/header.php';
         ?>
 
         <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
-            
+
             <!-- Encabezado -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#161430] p-6 rounded-2xl border border-gray-200 dark:border-[#252345] transition-colors duration-300">
                 <div>
@@ -303,7 +132,7 @@ if (isset($_SESSION['id'])) {
                 <?php endif; ?>
             </div>
 
-            <!-- Buscador -->
+            <!-- Buscador + filtro estado -->
             <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-5 transition-colors duration-300">
                 <div class="flex flex-col sm:flex-row gap-4">
                     <div class="relative flex-1">
@@ -311,7 +140,12 @@ if (isset($_SESSION['id'])) {
                         <input type="text" id="busquedaHorario" placeholder="Buscar por día o horario..."
                                class="input-adapt w-full pl-11 pr-4 py-3 rounded-xl text-sm shadow-inner">
                     </div>
-                    <span id="totalHorarios" class="flex items-center gap-2 text-xs bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/20 self-center">0 Registrados</span>
+                    <select id="filtroEstado" class="input-adapt px-4 py-3 rounded-xl text-sm sm:w-48">
+                        <option value="">Todos los estados</option>
+                        <option value="Activo">Solo Activos</option>
+                        <option value="Inactivo">Solo Inactivos</option>
+                    </select>
+                    <span id="totalHorarios" class="flex items-center gap-2 text-xs bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/20 self-center whitespace-nowrap">0 Registrados</span>
                 </div>
             </div>
 
@@ -322,7 +156,7 @@ if (isset($_SESSION['id'])) {
                     <span id="infoTabla" class="text-xs text-gray-500 dark:text-gray-500"></span>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left">
+                    <table class="w-full text-left tabla-responsive">
                         <thead class="bg-gray-100 dark:bg-[#1c1a3a] text-gray-600 dark:text-gray-400 text-xs uppercase tracking-widest">
                             <tr>
                                 <th class="p-4 cursor-pointer hover:text-indigo-500 transition" data-sort="dia_semana">
@@ -334,12 +168,13 @@ if (isset($_SESSION['id'])) {
                                 <th class="p-4 cursor-pointer hover:text-indigo-500 transition" data-sort="hora_fin">
                                     Hora Fin <i class="fas fa-sort ml-1 text-gray-600 text-[10px]"></i>
                                 </th>
+                                <th class="p-4">Estado</th>
                                 <th class="p-4 text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="text-sm divide-y divide-gray-200 dark:divide-gray-800" id="listaHorario">
                             <tr>
-                                <td colspan="4" class="text-center p-12 text-gray-500 dark:text-gray-400">
+                                <td colspan="5" class="text-center p-12 text-gray-500 dark:text-gray-400">
                                     <i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i>
                                     <span class="text-xs uppercase tracking-wider block">Cargando horarios...</span>
                                 </td>
@@ -355,7 +190,7 @@ if (isset($_SESSION['id'])) {
 
 <!-- ===== MODAL REGISTRAR/EDITAR ===== -->
 <div id="modalHorario" class="fixed inset-0 z-50 hidden bg-black/20 dark:bg-[#0f0d23]/95 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-2xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8 transition-colors duration-300">
+    <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-2xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8">
         <div class="flex justify-between items-center mb-6 border-b border-gray-200 dark:border-gray-800 pb-4">
             <div class="flex items-center gap-3">
                 <div class="bg-indigo-600 p-2 rounded-lg text-white"><i class="fas fa-clock"></i></div>
@@ -373,16 +208,16 @@ if (isset($_SESSION['id'])) {
             <div class="space-y-4">
                 <div class="space-y-1">
                     <label class="text-[11px] text-gray-600 dark:text-gray-400 font-bold ml-1">Día de la Semana <span class="text-red-400">*</span></label>
-                    <select id="dia_semana" name="dia_semana" 
+                    <select id="dia_semana" name="dia_semana"
                             data-validar="requerido" data-nombre="Día de la semana"
                             class="input-adapt w-full p-3 rounded-xl">
                         <option value="">Seleccione un día</option>
                         <option value="Lunes">Lunes</option>
                         <option value="Martes">Martes</option>
-                        <option value="Miércoles">Miércoles</option>
+                        <option value="Miercoles">Miércoles</option>
                         <option value="Jueves">Jueves</option>
                         <option value="Viernes">Viernes</option>
-                        <option value="Sábado">Sábado</option>
+                        <option value="Sabado">Sábado</option>
                         <option value="Domingo">Domingo</option>
                     </select>
                 </div>
@@ -390,14 +225,14 @@ if (isset($_SESSION['id'])) {
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1">
                         <label class="text-[11px] text-gray-600 dark:text-gray-400 font-bold ml-1">Hora de Inicio <span class="text-red-400">*</span></label>
-                        <input type="time" id="hora_inicio" name="hora_inicio" 
+                        <input type="time" id="hora_inicio" name="hora_inicio"
                                data-validar="requerido" data-nombre="Hora de inicio"
                                class="input-adapt w-full p-3 rounded-xl">
                     </div>
 
                     <div class="space-y-1">
                         <label class="text-[11px] text-gray-600 dark:text-gray-400 font-bold ml-1">Hora de Fin <span class="text-red-400">*</span></label>
-                        <input type="time" id="hora_fin" name="hora_fin" 
+                        <input type="time" id="hora_fin" name="hora_fin"
                                data-validar="requerido" data-nombre="Hora de fin"
                                class="input-adapt w-full p-3 rounded-xl">
                     </div>
@@ -406,7 +241,7 @@ if (isset($_SESSION['id'])) {
                 <div class="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-xl p-4 transition-colors duration-300">
                     <p class="text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
                         <i class="fas fa-info-circle"></i>
-                        <span>Los horarios no pueden superponerse con bloques existentes del mismo día</span>
+                        <span>Los horarios no pueden superponerse con bloques activos del mismo día</span>
                     </p>
                 </div>
             </div>
@@ -430,7 +265,7 @@ if (isset($_SESSION['id'])) {
         <div class="relative p-8">
             <div class="flex justify-between items-center mb-6 border-b border-gray-200 dark:border-gray-800 pb-4">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <i class="fas fa-info-circle text-indigo-500"></i> 
+                    <i class="fas fa-info-circle text-indigo-500"></i>
                     Detalle del Bloque Horario
                 </h2>
             </div>
@@ -450,9 +285,15 @@ if (isset($_SESSION['id'])) {
                         <p id="verHoraFin" class="text-2xl font-bold text-gray-900 dark:text-white mt-1">-</p>
                     </div>
                 </div>
-                <div class="bg-indigo-50 dark:bg-indigo-500/10 p-4 rounded-xl border border-indigo-200 dark:border-indigo-500/20">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Rango de Horario</p>
-                    <p id="verRango" class="text-lg font-bold text-gray-900 dark:text-white mt-1">-</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-indigo-50 dark:bg-indigo-500/10 p-4 rounded-xl border border-indigo-200 dark:border-indigo-500/20">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Rango de Horario</p>
+                        <p id="verRango" class="text-lg font-bold text-gray-900 dark:text-white mt-1">-</p>
+                    </div>
+                    <div class="bg-gray-100 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-200 dark:border-[#252345]">
+                        <p class="text-xs text-gray-500 uppercase">Estado</p>
+                        <p id="verEstado" class="mt-1">-</p>
+                    </div>
                 </div>
             </div>
 
@@ -465,7 +306,7 @@ if (isset($_SESSION['id'])) {
 
 <!-- ===== SCRIPTS ===== -->
 <script>
-    (function() {
+    (function () {
         const sidebar = document.getElementById('sidebarMenu');
         const overlay = document.getElementById('menuOverlay');
         const openBtn = document.getElementById('openMenuBtn');
@@ -497,7 +338,7 @@ if (isset($_SESSION['id'])) {
         if (closeBtn) closeBtn.addEventListener('click', closeMenu);
         if (overlay) overlay.addEventListener('click', closeMenu);
 
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             if (window.innerWidth >= 1024) {
                 if (sidebar && sidebar.classList.contains('translate-x-0')) {
                     sidebar.classList.remove('translate-x-0');

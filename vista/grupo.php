@@ -1,5 +1,4 @@
 <?php
-// Declaramos la variable para que el menú sepa qué botón iluminar
 $pagina = 'grupo';
 ?>
 <!DOCTYPE html>
@@ -296,8 +295,8 @@ if (isset($_SESSION['id'])) {
             <form id="formAsignacion" class="space-y-6">
                 <input type="hidden" id="id_grupo_asignacion" name="id_grupo" value="">
 
-                <!-- FILTROS -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- FILTROS + BUSCADOR -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="space-y-1">
                         <label class="text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1">CATEGORÍA</label>
                         <select id="filtroCategoria" class="input-adapt w-full p-2 rounded-xl cursor-pointer" onchange="filtrarAtletasPorCategoria()">
@@ -317,12 +316,22 @@ if (isset($_SESSION['id'])) {
                                placeholder="Ej: 15" min="5" max="99">
                         <div class="invalid-feedback" id="edad-error"></div>
                     </div>
+                    <div class="space-y-1">
+                        <label class="text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1">BUSCAR ATLETA</label>
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="text" id="busquedaAtleta" 
+                                   class="input-adapt w-full pl-9 pr-3 py-2 rounded-xl text-sm" 
+                                   placeholder="Nombre, apellido o cédula...">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex gap-2">
-              <button type="button" onclick="aplicarFiltros()" ...>
-    <i class="fas fa-filter mr-2"></i> Aplicar Filtros
-      </button>
+                    <button type="button" onclick="aplicarFiltros()" 
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold transition cursor-pointer text-xs uppercase tracking-wider">
+                        <i class="fas fa-filter mr-2"></i> Aplicar Filtros
+                    </button>
                     <button type="button" onclick="limpiarFiltros()" 
                             class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white px-4 py-2 rounded-xl font-bold transition cursor-pointer text-xs uppercase tracking-wider">
                         <i class="fas fa-undo"></i> Limpiar

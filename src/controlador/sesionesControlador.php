@@ -15,18 +15,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $accionesGet = [
         'listarSesiones' => function() use ($objSesiones) {
-            $id_grupo = !empty($_GET['id_grupo']) ? (int)$_GET['id_grupo'] : null;
-            $estado = !empty($_GET['estado']) ? $_GET['estado'] : null;
-            return ['status' => 'success', 'data' => $objSesiones->listarSesiones($id_grupo, $estado)];
+            try {
+                $id_grupo = !empty($_GET['id_grupo']) ? (int)$_GET['id_grupo'] : null;
+                $estado = !empty($_GET['estado']) ? $_GET['estado'] : null;
+                return ['status' => 'success', 'data' => $objSesiones->listarSesiones($id_grupo, $estado)];
+            } catch (\Throwable $e) {
+                error_log("Error listarSesiones: " . $e->getMessage());
+                return ['status' => 'error', 'data' => [], 'message' => $e->getMessage()];
+            }
         },
         'obtenerDetalle' => function() use ($objSesiones) {
-            return $objSesiones->obtenerDetalleSesion((int)$_GET['id']);
+            try {
+                $id = (int)($_GET['id'] ?? 0);
+                if ($id <= 0) return ['status' => 'error', 'message' => 'ID inválido'];
+                return $objSesiones->obtenerDetalleSesion($id);
+            } catch (\Throwable $e) {
+                error_log("Error obtenerDetalle: " . $e->getMessage());
+                return ['status' => 'error', 'message' => $e->getMessage()];
+            }
         },
         'listarGrupos' => function() {
             try {
                 $objGrupo = new Grupo();
-                return $objGrupo->listarGrupos(1) ?: [];
-            } catch (Exception $e) {
+                $id_entrenador = !empty($_GET['id_entrenador']) ? (int)$_GET['id_entrenador'] : null;
+                return $objGrupo->listarGrupos(1, $id_entrenador) ?: [];
+            } catch (\Throwable $e) {
+                error_log("Error listarGrupos: " . $e->getMessage());
                 return [];
             }
         },
@@ -34,16 +48,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             try {
                 $objEntrenador = new \GrupoProyecto\SisBiomec\modelo\Entrenador();
                 return $objEntrenador->listarEntrenador() ?: [];
-            } catch (Exception $e) {
+            } catch (\Throwable $e) {
+                error_log("Error listarEntrenadores: " . $e->getMessage());
                 return [];
             }
         },
         'listarMicrociclos' => function() use ($objSesiones) {
-            return $objSesiones->listarMicrociclos();
+            try {
+                return $objSesiones->listarMicrociclos() ?: [];
+            } catch (\Throwable $e) {
+                error_log("Error listarMicrociclos: " . $e->getMessage());
+                return [];
+            }
         },
         'listarDrillsActivos' => function() {
-            $objDrills = new Drills();
-            return $objDrills->listarDrills(['estado' => 'Activo']);
+            try {
+                $objDrills = new Drills();
+                $resultado = $objDrills->listarDrills();
+                return is_array($resultado) ? $resultado : [];
+            } catch (\Throwable $e) {
+                error_log("Error listarDrillsActivos: " . $e->getMessage());
+                return [];
+            }
         },
     ];
 
@@ -145,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($funcionesPost[$accion])) {
         try {
             echo json_encode($funcionesPost[$accion]());
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             echo json_encode(['status' => 'error', 'message' => 'ERROR: ' . $e->getMessage()]);
         }
         exit;

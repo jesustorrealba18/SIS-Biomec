@@ -40,13 +40,10 @@
         .dark .input-adapt:focus {
             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
-        /* Para el calendario (date) en modo oscuro */
         .dark .input-adapt::-webkit-calendar-picker-indicator {
             filter: invert(1);
         }
-     
 
-        /* ===== TABS ===== */
         /* ===== STEPPER ===== */
         .stepper {
             display: flex;
@@ -262,7 +259,7 @@ if (isset($_SESSION['id'])) {
 ?>
 
     <div class="flex h-screen overflow-hidden">
-        
+
         <!-- Overlay para móvil cuando el menú está abierto -->
         <div id="menuOverlay" class="fixed inset-0 bg-black/70 z-30 opacity-0 pointer-events-none transition-opacity lg:hidden"></div>
 
@@ -283,16 +280,16 @@ if (isset($_SESSION['id'])) {
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-            
-            <?php 
+
+            <?php
                 $tituloPagina = "Planificación de Sesiones";
                 $tituloPaginaResponsive = "Sesiones";
                 $iconModulo = "fas fa-swimming-pool";
-                include 'vista/complementos/header.php'; 
+                include 'vista/complementos/header.php';
             ?>
 
             <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
-                
+
                 <!-- Encabezado -->
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#161430] p-6 rounded-2xl border border-gray-200 dark:border-[#252345] transition-colors duration-300">
                     <div>
@@ -348,7 +345,7 @@ if (isset($_SESSION['id'])) {
                             </tbody>
                         </table>
                     </div>
-                      <div id="pieTabla" class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-wrap justify-between items-center gap-4 bg-gray-50 dark:bg-white/5"></div>
+                    <div id="pieTabla" class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-wrap justify-between items-center gap-4 bg-gray-50 dark:bg-white/5"></div>
                 </div>
             </main>
         </div>
@@ -363,119 +360,158 @@ if (isset($_SESSION['id'])) {
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            
-            <form id="formSesion" autocomplete="off"> 
+
+            <form id="formSesion" autocomplete="off">
                 <input type="hidden" id="id_sesion" name="id_sesion" value="">
                 <input type="hidden" id="volumen_planificado" name="volumen_planificado" value="0">
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                        <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Entrenador *</label>
-                        <select id="id_entrenador" name="id_entrenador" required class="w-full input-adapt p-3 rounded-xl text-sm cursor-pointer">
-                            <option value="">Seleccione un Entrenador</option>
-                        </select>
+                <!-- ===== STEPPER ===== -->
+                <div class="stepper" id="stepperSesion">
+                    <div class="step-item">
+                        <div class="step-circle active" data-step="1" onclick="irAPasoSesion(1)">1</div>
+                        <span class="step-label active" data-step="1" onclick="irAPasoSesion(1)">Datos de Sesión</span>
                     </div>
-                    <div>
-                        <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Grupo de Entrenamiento *</label>
-                        <select id="id_grupo" name="id_grupo" required class="w-full input-adapt p-3 rounded-xl text-sm cursor-pointer">
-                            <option value="">Seleccione un Grupo</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Microciclo Vinculado</label>
-                        <select id="id_microciclo" name="id_microciclo" class="w-full input-adapt p-3 rounded-xl text-sm cursor-pointer">
-                            <option value="">Microciclo (Ninguno)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Fecha Planificada *</label>
-                        <input type="date" id="fecha" name="fecha" required class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
+                    <div class="step-line" data-line="1"></div>
+                    <div class="step-item">
+                        <div class="step-circle" data-step="2" onclick="irAPasoSesion(2)">2</div>
+                        <span class="step-label" data-step="2" onclick="irAPasoSesion(2)">Series y Bloques</span>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                        <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Tipo de Sesión *</label>
-                        <select id="tipo_sesion" name="tipo_sesion" required class="w-full input-adapt p-3 rounded-xl text-sm cursor-pointer">
-                            <option value="Tecnica">Técnica</option>
-                            <option value="Resistencia">Resistencia</option>
-                            <option value="Velocidad">Velocidad</option>
-                            <option value="Recuperacion">Recuperación</option>
-                            <option value="Fuerza">Fuerza</option>
-                            <option value="Flexibilidad">Flexibilidad</option>
-                            <option value="Competencia">Competencia</option>
-                        </select>
+                <!-- ============ TAB 1: DATOS GENERALES ============ -->
+                <div id="tab-datos" class="tab-content active">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Entrenador *</label>
+                            <select id="id_entrenador" name="id_entrenador" required class="w-full input-adapt p-3 rounded-xl text-sm cursor-pointer">
+                                <option value="">Seleccione un Entrenador</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Grupo de Entrenamiento *</label>
+                            <select id="id_grupo" name="id_grupo" required class="w-full input-adapt p-3 rounded-xl text-sm cursor-pointer">
+                                <option value="">Seleccione un Grupo</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Microciclo Vinculado</label>
+                            <select id="id_microciclo" name="id_microciclo" class="w-full input-adapt p-3 rounded-xl text-sm cursor-pointer">
+                                <option value="">Microciclo (Ninguno)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Fecha Planificada *</label>
+                            <input type="date" id="fecha" name="fecha" required class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Duración (Minutos)</label>
-                        <input type="number" id="duracion_minutos" name="duracion_minutos" min="1" placeholder="Ej: 90" class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Observaciones Generales de Planificación</label>
-                        <textarea id="observaciones" name="observaciones" rows="2" placeholder="Indicaciones logísticas o notas para el grupo..." class="w-full input-adapt p-3 rounded-xl text-sm"></textarea>
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div>
-                        <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Indicación de Calentamiento General</label>
-                        <textarea id="calentamiento" name="calentamiento" rows="2" placeholder="Ej: 200m Libre..." class="w-full input-adapt p-3 rounded-xl text-sm"></textarea>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Tipo de Sesión *</label>
+                            <select id="tipo_sesion" name="tipo_sesion" required class="w-full input-adapt p-3 rounded-xl text-sm cursor-pointer">
+                                <option value="Tecnica">Técnica</option>
+                                <option value="Resistencia">Resistencia</option>
+                                <option value="Velocidad">Velocidad</option>
+                                <option value="Recuperacion">Recuperación</option>
+                                <option value="Fuerza">Fuerza</option>
+                                <option value="Flexibilidad">Flexibilidad</option>
+                                <option value="Competencia">Competencia</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Duración (Minutos) *</label>
+                            <input type="number" id="duracion_minutos" name="duracion_minutos" min="15" max="480" placeholder="Ej: 90" class="w-full input-adapt p-3 rounded-xl text-sm font-mono">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Observaciones Generales de Planificación</label>
+                            <textarea id="observaciones" name="observaciones" rows="2" maxlength="500" placeholder="Indicaciones logísticas o notas para el grupo (máx. 500 caracteres)..." class="w-full input-adapt p-3 rounded-xl text-sm"></textarea>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Indicación de Vuelta a la Calma General</label>
-                        <textarea id="vuelta_calma" name="vuelta_calma" rows="2" placeholder="Ej: 100m" class="w-full input-adapt p-3 rounded-xl text-sm"></textarea>
-                    </div>
-                    <div class="bg-indigo-50 dark:bg-indigo-600/10 p-3 rounded-xl border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center">
-                        <div class="text-center">
-                            <p class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold">Volumen Total</p>
-                            <p id="lblVolTotalPlanificado" class="text-2xl font-bold text-gray-900 dark:text-white font-mono">0m</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Indicación de Calentamiento General</label>
+                            <textarea id="calentamiento" name="calentamiento" rows="2" maxlength="100" placeholder="Ej: 200m Libre..." class="w-full input-adapt p-3 rounded-xl text-sm"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Indicación de Vuelta a la Calma General</label>
+                            <textarea id="vuelta_calma" name="vuelta_calma" rows="2" maxlength="100" placeholder="Ej: 100m" class="w-full input-adapt p-3 rounded-xl text-sm"></textarea>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 text-center">
-                    <div class="bg-gray-100 dark:bg-black/20 p-2 rounded-xl border border-gray-200 dark:border-[#252345]">
-                        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Calentamiento</p>
-                        <p id="lblVolCalentamiento" class="text-sm font-bold text-gray-700 dark:text-gray-300 font-mono">0m</p>
+                <!-- ============ TAB 2: SERIES ============ -->
+                <div id="tab-series" class="tab-content">
+                    
+                    <!-- 1. FORMULARIO DE SERIES PRIMERO -->
+                    <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-200 dark:border-[#252345] transition-colors duration-300 mb-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="text-sm uppercase text-indigo-600 dark:text-indigo-400 font-bold tracking-widest">
+                                <i class="fas fa-list-ol mr-1"></i> Añadir Series
+                            </h4>
+                            <button type="button" onclick="agregarFilaSerie()" class="text-xs bg-indigo-600 text-white hover:bg-indigo-500 px-4 py-2 rounded-lg transition cursor-pointer font-bold flex items-center gap-2 shadow-md">
+                                <i class="fas fa-plus"></i> Añadir Serie
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full min-w-[800px] text-left border-collapse">
+                                <thead>
+                                    <tr class="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
+                                        <th class="pb-2 px-1">Bloque</th>
+                                        <th class="pb-2 px-1 w-64">Drill / Descripción</th>
+                                        <th class="pb-2 px-1 text-center">Ritmo</th>
+                                        <th class="pb-2 px-1 text-center">Reps</th>
+                                        <th class="pb-2 px-1 text-center">Metros</th>
+                                        <th class="pb-2 px-1 text-center">Descanso(s)</th>
+                                        <th class="pb-2 px-1">Zona</th>
+                                        <th class="pb-2 px-1 text-center">Subtotal</th>
+                                        <th class="pb-2 px-1 text-right">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodySeries" class="space-y-2"></tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div class="bg-gray-100 dark:bg-black/20 p-2 rounded-xl border border-gray-200 dark:border-[#252345]">
-                        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Bloque Principal</p>
-                        <p id="lblVolPrincipal" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 font-mono">0m</p>
+
+                    <!-- 2. TARJETA DE VOLUMEN TOTAL (MOVIDA AQUÍ) -->
+                    <div class="bg-indigo-50 dark:bg-indigo-600/10 p-4 rounded-xl border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center mb-4 shadow-inner">
+                        <div class="text-center">
+                            <p class="text-[10px] text-indigo-600 dark:text-indigo-400 uppercase font-bold tracking-widest mb-1">Volumen Total Planificado</p>
+                            <p id="lblVolTotalPlanificado" class="text-4xl font-extrabold text-gray-900 dark:text-white font-mono">0m</p>
+                        </div>
                     </div>
-                    <div class="bg-gray-100 dark:bg-black/20 p-2 rounded-xl border border-gray-200 dark:border-[#252345]">
-                        <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Vuelta a la Calma</p>
-                        <p id="lblVolVueltaCalma" class="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">0m</p>
+
+                    <!-- 3. DESGLOSE POR BLOQUES AL FINAL -->
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div class="bg-gray-100 dark:bg-black/20 p-3 rounded-xl border border-gray-200 dark:border-[#252345]">
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Calentamiento</p>
+                            <p id="lblVolCalentamiento" class="text-lg font-bold text-gray-700 dark:text-gray-300 font-mono">0m</p>
+                        </div>
+                        <div class="bg-gray-100 dark:bg-black/20 p-3 rounded-xl border border-gray-200 dark:border-[#252345]">
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Bloque Principal</p>
+                            <p id="lblVolPrincipal" class="text-lg font-bold text-indigo-600 dark:text-indigo-400 font-mono">0m</p>
+                        </div>
+                        <div class="bg-gray-100 dark:bg-black/20 p-3 rounded-xl border border-gray-200 dark:border-[#252345]">
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Vuelta a la Calma</p>
+                            <p id="lblVolVueltaCalma" class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono">0m</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-gray-50 dark:bg-[#0f0d23] p-4 rounded-xl border border-gray-200 dark:border-[#252345] transition-colors duration-300">
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="text-xs uppercase text-indigo-600 dark:text-indigo-400 font-bold tracking-widest">
-                            <i class="fas fa-list-ol mr-1"></i> Series Planificadas
-                        </h4>
-                        <button type="button" onclick="agregarFilaSerie()" class="text-xs bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/30 px-3 py-1.5 rounded-lg transition cursor-pointer font-bold flex items-center gap-1">
-                            <i class="fas fa-plus"></i> Añadir Serie
-                        </button>
-                    </div>
-
-                    <div class="hidden md:grid grid-cols-9 gap-2 px-3 mb-2 text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">
-                        <div>Bloque</div>
-                        <div class="col-span-2">Drill / Catálogo y Desc.</div>
-                        <div>Ritmo Objetivo</div>
-                        <div class="text-center">Rep.</div>
-                        <div class="text-center">Metros</div>
-                        <div class="text-center">Descanso (s)</div>
-                        <div>Intensidad</div>
-                        <div class="text-right">Subtotal / Borrar</div>
-                    </div>
-
-                    <table class="w-full"><tbody id="tbodySeries" class="space-y-2"></tbody></table>
-                </div>
-
-                <!-- BOTONES -->
-                <div class="flex gap-3 mt-6">
+                <!-- ===== BOTONES DE NAVEGACIÓN ===== -->
+                <div class="flex flex-col sm:flex-row gap-3 mt-6">
                     <button type="button" onclick="cerrarModalSesion()" class="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-3.5 rounded-xl font-bold transition cursor-pointer uppercase text-xs tracking-wider">CANCELAR</button>
-                    <button type="submit" class="flex-[2] bg-indigo-600 hover:bg-indigo-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 cursor-pointer uppercase text-xs tracking-wider">
+
+                    <button type="button" id="btnAtrasSesion" onclick="retrocederPasoSesion()" class="stepper-btn flex-1 items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-3.5 rounded-xl font-bold transition cursor-pointer uppercase text-xs tracking-wider">
+                        <i class="fas fa-arrow-left"></i> ATRÁS
+                    </button>
+
+                    <button type="button" id="btnSiguienteSesion" onclick="avanzarPasoSesion()" class="stepper-btn visible flex-[2] items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 cursor-pointer uppercase text-xs tracking-wider">
+                        SIGUIENTE <i class="fas fa-arrow-right"></i>
+                    </button>
+
+                    <button type="submit" id="btnGuardarSesion" class="stepper-btn flex-[2] items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 cursor-pointer uppercase text-xs tracking-wider">
                         GUARDAR PLANIFICACIÓN <i class="fas fa-save ml-2"></i>
                     </button>
                 </div>
@@ -507,8 +543,8 @@ if (isset($_SESSION['id'])) {
                     <i class="fas fa-times text-lg"></i>
                 </button>
             </div>
-            
-            <form id="formCompletar" autocomplete="off"> 
+
+            <form id="formCompletar" autocomplete="off">
                 <input type="hidden" id="id_sesion_completar" name="id_sesion" value="">
 
                 <div class="bg-gray-100 dark:bg-black/20 border border-gray-200 dark:border-[#252345] p-3 rounded-xl mb-4 space-y-1.5 text-xs transition-colors duration-300">
@@ -525,7 +561,7 @@ if (isset($_SESSION['id'])) {
 
                 <div class="mb-4">
                     <label class="block text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Observaciones de Ejecución / Rendimiento</label>
-                    <textarea id="observaciones_completar" name="observaciones" rows="3" placeholder="Ej: Excelentes ritmos..." class="w-full input-adapt p-3 rounded-xl text-sm"></textarea>
+                    <textarea id="observaciones_completar" name="observaciones" rows="3" maxlength="500" placeholder="Ej: Excelentes ritmos... (máx. 500 caracteres)" class="w-full input-adapt p-3 rounded-xl text-sm"></textarea>
                 </div>
 
                 <div class="flex gap-3 mt-6">

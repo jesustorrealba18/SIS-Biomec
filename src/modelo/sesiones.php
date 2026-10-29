@@ -210,7 +210,7 @@ class Sesiones extends Conexion {
 
         if (!empty($this->datos['observaciones'])) {
             $observaciones = $this->datos['observaciones'];
-            $this->longitud($observaciones, 'observaciones', 0, 5000);
+            $this->longitud($observaciones, 'observaciones', 0, 500);
             if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s.,;:()\-_\n]+$/', $observaciones)) {
                 $this->agregarError('observaciones', 'Las observaciones contienen caracteres no permitidos.');
             }
@@ -514,8 +514,7 @@ class Sesiones extends Conexion {
                     ) VALUES (
                         :id_microciclo, :id_grupo, :fecha, :tipo_sesion,
                         :calentamiento, :vuelta_calma,
-                        :volumen_planificado, :observaciones, 'Planificada', :id_entrenador, :duracion_minutos
-                    )";
+                        :volumen_planificado, :observaciones, 'Planificada', :id_entrenador, :duracion_minutos                    )";
             $stmt = $conex->prepare($sql);
             $stmt->execute([
                 ':id_microciclo'       => !empty($this->datos['id_microciclo']) ? (int)$this->datos['id_microciclo'] : null,

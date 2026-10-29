@@ -39,10 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $resultado = false;
         if ($tipoAccion === 'editar') {
             $resultado = $objDrills->editarDrills();
-            error_log("Ejecutando edición de drill ID: " . ($_POST['id_drill'] ?? 'sin ID'));
         } else {
             $resultado = $objDrills->registrarDrills();
-            error_log("Ejecutando registro de nuevo drill");
         }
 
         if ($resultado) {
@@ -70,6 +68,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+    if ($accion === 'cambiarEstado') {
+        $id_drill = isset($_POST['id_drill']) ? (int)$_POST['id_drill'] : 0;
+        $nuevoEstado = isset($_POST['estado']) ? (int)$_POST['estado'] : 0;
+
+        if ($id_drill > 0) {
+            $resultado = $objDrills->cambiarEstado($id_drill, $nuevoEstado);
+            if ($resultado) {
+                echo json_encode(['status' => 'success', 'message' => $nuevoEstado === 1 ? 'Drill activado.' : 'Drill desactivado.']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'No se pudo cambiar el estado.']);
+            }
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'ID no válido.']);
+        }
+        exit;
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -77,7 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if ($accion === 'listarDrills') {
         header('Content-Type: application/json');
-        echo json_encode($objDrills->listarDrills());
+        $verInactivos = isset($_GET['inactivos']) && $_GET['inactivos'] === '1';
+        echo json_encode($objDrills->listarDrills($verInactivos));
         exit;
     }
 
@@ -85,6 +101,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         header('Content-Type: application/json');
         $drill = $objDrills->obtenerPorId((int)$_GET['id']);
         echo json_encode($drill);
+        exit;
+    }
+
+    if ($accion === 'listarAtletas') {
+        header('Content-Type: application/json');
+        echo json_encode($objDrills->listarAtletas());
         exit;
     }
 

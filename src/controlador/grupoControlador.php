@@ -6,37 +6,46 @@ if (empty($_SESSION['id'])) {
 
 use GrupoProyecto\SisBiomec\modelo\Grupo;
 use GrupoProyecto\SisBiomec\seguridad\Autorizacion;
+use GrupoProyecto\SisBiomec\seguridad\Bitacora;
 
 $objGrupo = new Grupo();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $accion = isset($_GET['accion']) ? $_GET['accion'] : '';
+    $idUsuarioActual = (int)($_SESSION['id'] ?? 0);
 
     $accionesPost = [
-        'eliminar' => function() use ($objGrupo) {
+        'eliminar' => function() use ($objGrupo, $idUsuarioActual) {
             Autorizacion::exigir('atletas', 'gestionar');
             $id = isset($_POST['id_grupo']) ? (int)$_POST['id_grupo'] : 0;
             $resultado = $objGrupo->cambiarEstadoGrupo($id, 0);
-            return $resultado
-                ? ['status' => 'success']
-                : ['status' => 'error', 'message' => 'No se pudo desactivar el grupo.'];
+
+            if ($resultado) {
+                Bitacora::registrar($idUsuarioActual, 'grupos_entrenamiento', 'DESACTIVAR', $id, 'activo', '1', '0'
+                );
+                return ['status' => 'success'];
+            }
+            return ['status' => 'error', 'message' => 'No se pudo desactivar el grupo.'];
         },
 
-        'reactivar' => function() use ($objGrupo) {
+        'reactivar' => function() use ($objGrupo, $idUsuarioActual) {
             Autorizacion::exigir('atletas', 'gestionar');
             $id = isset($_POST['id_grupo']) ? (int)$_POST['id_grupo'] : 0;
             $resultado = $objGrupo->cambiarEstadoGrupo($id, 1);
-            return $resultado
-                ? ['status' => 'success']
-                : ['status' => 'error', 'message' => 'No se pudo reactivar el grupo.'];
+
+            if ($resultado) {
+                Bitacora::registrar($idUsuarioActual, 'grupos_entrenamiento', 'REACTIVAR', $id, 'activo', '0', '1'
+                );
+                return ['status' => 'success'];
+            }
+            return ['status' => 'error', 'message' => 'No se pudo reactivar el grupo.'];
         },
 
-        'guardarGrupo' => function() use ($objGrupo) {
+        'guardarGrupo' => function() use ($objGrupo, $idUsuarioActual) {
             Autorizacion::exigir('atletas', 'gestionar');
 
             $objGrupo->setDatos($_POST);
-
             $idOriginal = !empty($_POST['id_grupo_original']) ? (int)$_POST['id_grupo_original'] : null;
 
             $errores = $objGrupo->validarDatos($idOriginal);
@@ -45,8 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $nombre = $_POST['nombre'] ?? '';
-            $idExcluir = $idOriginal;
-            if ($objGrupo->verificarNombreExistente($nombre, $idExcluir)) {
+            if ($objGrupo->verificarNombreExistente($nombre, $idOriginal)) {
                 return [
                     'status' => 'warning',
                     'errores' => ['nombre' => 'Ya existe un grupo con ese nombre.']
@@ -54,32 +62,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             try {
+                $grupoAntes = $idOriginal ? $objGrupo->obtenerPorId($idOriginal) : null;
                 $resultado = $idOriginal ? $objGrupo->editarGrupo() : $objGrupo->registrarGrupo();
-                return $resultado
-                    ? ['status' => 'success', 'message' => 'Operación realizada con éxito.']
-                    : ['status' => 'error', 'message' => 'Error en base de datos: ' . ($objGrupo->obtenerUltimoError() ?: 'Error desconocido al guardar.')];
+
+                if ($resultado) {
+                    if ($idOriginal) {
+                        if ($grupoAntes) {
+                            $campos = ['nombre', 'descripcion', 'id_entrenador'];
+                            foreach ($campos as $campo) {
+                                $antes = $grupoAntes[$campo] ?? null;
+                                $despues = $_POST[$campo] ?? null;
+                                if ((string)$antes !== (string)$despues) {
+                                    Bitacora::registrar(
+                                        $idUsuarioActual,
+                                        'grupos_entrenamiento',
+                                        'ACTUALIZAR',
+                                        $idOriginal,
+                                        $campo,
+                                        $antes,
+                                        $despues
+                                    );
+                                }
+                            }
+                        }
+                    } else {
+                        $idNuevo = (int)$objGrupo->obtenerUltimoIdInsertado();
+                        Bitacora::registrar(
+                            $idUsuarioActual,
+                            'grupos_entrenamiento',
+                            'CREAR',
+                            $idNuevo,
+                            'nombre',
+                            null,
+                            $nombre
+                        );
+                    }
+                    return ['status' => 'success', 'message' => 'Operación realizada con éxito.'];
+                }
+                return ['status' => 'error', 'message' => 'Error en base de datos: ' . ($objGrupo->obtenerUltimoError() ?: 'Error desconocido al guardar.')];
             } catch (Exception $e) {
                 return ['status' => 'error', 'message' => 'Error en base de datos: ' . $e->getMessage()];
             }
         },
 
-        'asignarAtletas' => function() use ($objGrupo) {
+        'asignarAtletas' => function() use ($objGrupo, $idUsuarioActual) {
             Autorizacion::exigir('atletas', 'gestionar');
 
             $objGrupo->setDatosAsignacion($_POST);
-
             $errores = $objGrupo->validarAsignacion();
             if (!empty($errores)) {
                 return ['status' => 'warning', 'errores' => $errores];
             }
 
+            $idGrupo = (int)($_POST['id_grupo'] ?? 0);
             $resultado = $objGrupo->asignarGrupoAtletas();
-            return $resultado
-                ? ['status' => 'success', 'message' => 'Atletas asignados correctamente.']
-                : ['status' => 'error', 'message' => 'Error al asignar atletas: ' . ($objGrupo->obtenerUltimoError() ?: 'Error desconocido al asignar.')];
+
+            if ($resultado) {
+                $atletas = $_POST['atletas'] ?? [];
+                Bitacora::registrar($idUsuarioActual, 'grupo_atleta', 'ASIGNAR', $idGrupo, 'atletas', null,
+                    is_array($atletas) ? implode(',', array_map('intval', $atletas)) : ''
+                );
+                return ['status' => 'success', 'message' => 'Atletas asignados correctamente.'];
+            }
+            return ['status' => 'error', 'message' => 'Error al asignar atletas: ' . ($objGrupo->obtenerUltimoError() ?: 'Error desconocido al asignar.')];
         },
 
-        'desasignarAtleta' => function() use ($objGrupo) {
+        'desasignarAtleta' => function() use ($objGrupo, $idUsuarioActual) {
             Autorizacion::exigir('atletas', 'gestionar');
             $id_atleta = isset($_POST['id_atleta']) ? (int)$_POST['id_atleta'] : 0;
 
@@ -88,12 +136,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $resultado = $objGrupo->desasignarAtletas([$id_atleta]);
-            return $resultado
-                ? ['status' => 'success', 'message' => 'Atleta desasignado correctamente.']
-                : ['status' => 'error', 'message' => 'Error al desasignar atleta: ' . ($objGrupo->obtenerUltimoError() ?: 'Error desconocido.')];
+
+            if ($resultado) {
+                Bitacora::registrar($idUsuarioActual, 'grupo_atleta', 'DESASIGNAR', $id_atleta, 'id_grupo', null, null
+                );
+                return ['status' => 'success', 'message' => 'Atleta desasignado correctamente.'];
+            }
+            return ['status' => 'error', 'message' => 'Error al desasignar atleta: ' . ($objGrupo->obtenerUltimoError() ?: 'Error desconocido.')];
         },
 
-        'cambiarGrupoAtleta' => function() use ($objGrupo) {
+        'cambiarGrupoAtleta' => function() use ($objGrupo, $idUsuarioActual) {
             Autorizacion::exigir('atletas', 'gestionar');
             $id_atleta = isset($_POST['id_atleta']) ? (int)$_POST['id_atleta'] : 0;
             $id_nuevo_grupo = isset($_POST['id_nuevo_grupo']) ? (int)$_POST['id_nuevo_grupo'] : 0;
@@ -102,10 +154,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 return ['status' => 'error', 'message' => 'Datos inválidos.'];
             }
 
+            $grupoActual = $objGrupo->obtenerGrupoActualAtleta($id_atleta);
             $resultado = $objGrupo->cambiarGrupoAtleta($id_atleta, $id_nuevo_grupo);
-            return $resultado
-                ? ['status' => 'success', 'message' => 'Grupo cambiado correctamente.']
-                : ['status' => 'error', 'message' => 'Error al cambiar grupo: ' . ($objGrupo->obtenerUltimoError() ?: 'Error desconocido.')];
+
+            if ($resultado) {
+                Bitacora::registrar($idUsuarioActual, 'grupo_atleta', 'CAMBIO_GRUPO', $id_atleta, 'id_grupo', $grupoActual['id_grupo'] ?? null, $id_nuevo_grupo
+                );
+                return ['status' => 'success', 'message' => 'Grupo cambiado correctamente.'];
+            }
+            return ['status' => 'error', 'message' => 'Error al cambiar grupo: ' . ($objGrupo->obtenerUltimoError() ?: 'Error desconocido.')];
         },
 
         'verificarDuplicado' => function() use ($objGrupo) {

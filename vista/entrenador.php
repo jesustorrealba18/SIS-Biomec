@@ -20,7 +20,6 @@
         .dark ::-webkit-scrollbar-thumb { background: #252345; }
         ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
 
-        /* ===== INPUTS ADAPTATIVOS ===== */
         .input-adapt {
             background-color: #ffffff;
             border: 1px solid #d1d5db;
@@ -40,11 +39,10 @@
         .dark .input-adapt:focus {
             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
-        /* Para el calendario (date) en modo oscuro */
         .dark .input-adapt::-webkit-calendar-picker-indicator {
             filter: invert(1);
         }
-     
+
         .stepper {
             display: flex;
             align-items: center;
@@ -58,9 +56,7 @@
             align-items: center;
             gap: 0;
         }
-        .step-item + .step-item {
-            margin-left: 0;
-        }
+        .step-item + .step-item { margin-left: 0; }
         .step-circle {
             width: 40px;
             height: 40px;
@@ -113,21 +109,11 @@
             transition: color 0.3s ease;
             cursor: pointer;
         }
-        .dark .step-label {
-            color: #4b5563;
-        }
-        .step-label.active {
-            color: #4f46e5;
-        }
-        .dark .step-label.active {
-            color: #a5b4fc;
-        }
-        .step-label.completed {
-            color: #10b981;
-        }
-        .dark .step-label.completed {
-            color: #34d399;
-        }
+        .dark .step-label { color: #4b5563; }
+        .step-label.active { color: #4f46e5; }
+        .dark .step-label.active { color: #a5b4fc; }
+        .step-label.completed { color: #10b981; }
+        .dark .step-label.completed { color: #34d399; }
         .step-line {
             width: 40px;
             height: 2px;
@@ -136,29 +122,13 @@
             flex-shrink: 0;
             transition: background 0.3s ease;
         }
-        .dark .step-line {
-            background: #252345;
-        }
-        .step-line.completed {
-            background: #10b981;
-        }
-        .dark .step-line.completed {
-            background: #34d399;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .stepper-btn {
-            display: none;
-        }
-        .stepper-btn.visible {
-            display: flex;
-        }
-
-        /* ===== BADGES DE ESTADO ===== */
+        .dark .step-line { background: #252345; }
+        .step-line.completed { background: #10b981; }
+        .dark .step-line.completed { background: #34d399; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stepper-btn { display: none; }
+        .stepper-btn.visible { display: flex; }
         .estado-badge {
             padding: 4px 12px;
             border-radius: 9999px;
@@ -172,39 +142,12 @@
             color: #34d399;
             border: 1px solid rgba(16, 185, 129, 0.3);
         }
-        .dark .estado-Activo {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-        }
         .estado-Inactivo {
             background: rgba(239, 68, 68, 0.15);
             color: #f87171;
             border: 1px solid rgba(239, 68, 68, 0.3);
         }
-        .dark .estado-Inactivo {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-        }
-        .estado-Retirado {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-        .dark .estado-Retirado {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-        }
-        .estado-Transferido {
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-        .dark .estado-Transferido {
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-        }
 
-        /* ===== RESPONSIVE TABLE ===== */
         @media (max-width: 768px) {
             .tabla-responsive thead { display: none; }
             .tabla-responsive tbody tr {
@@ -235,31 +178,20 @@
                 letter-spacing: 0.05em;
                 margin-right: 8px;
             }
-            .dark .tabla-responsive tbody td::before {
-                color: #6b7280;
-            }
             .tabla-responsive tbody td:first-child::before { content: ''; }
         }
 
-        /* ===== TRANSICIONES ===== */
         .menu-transition {
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        /* ===== VALIDACIÓN ===== */
         .error-msg {
             display: none;
             font-size: 10px;
             margin-top: 4px;
         }
-        .error-msg.show {
-            display: block;
-        }
-        .border-red-500 {
-            border-color: #ef4444 !important;
-        }
-        .border-green-500 {
-            border-color: #22c55e !important;
-        }
+        .error-msg.show { display: block; }
+        .border-red-500 { border-color: #ef4444 !important; }
+        .border-green-500 { border-color: #22c55e !important; }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
@@ -274,11 +206,9 @@ if (isset($_SESSION['id'])) {
 ?>
 
     <div class="flex h-screen overflow-hidden">
-        
-        <!-- Overlay para móvil cuando el menú está abierto -->
+
         <div id="menuOverlay" class="fixed inset-0 bg-black/70 z-30 opacity-0 pointer-events-none transition-opacity lg:hidden"></div>
 
-        <!-- Sidebar - responsive -->
         <aside id="sidebarMenu" class="fixed top-0 left-0 h-full w-72 bg-white dark:bg-[#0f0d23] border-r border-gray-200 dark:border-[#252345] z-40 transform -translate-x-full menu-transition lg:relative lg:translate-x-0 lg:flex-shrink-0 overflow-y-auto transition-colors duration-300">
             <div class="p-4 flex justify-between items-center border-b border-gray-200 dark:border-[#252345] lg:hidden">
                 <div class="flex items-center gap-2">
@@ -295,17 +225,16 @@ if (isset($_SESSION['id'])) {
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-            
-            <?php 
+
+            <?php
                 $tituloPagina = "Gestión de Entrenadores";
                 $tituloPaginaResponsive = "Entrenadores";
                 $iconModulo = "fas fa-user-tie";
-                include 'vista/complementos/header.php'; 
+                include 'vista/complementos/header.php';
             ?>
 
             <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
-                
-                <!-- Encabezado -->
+
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#161430] p-6 rounded-2xl border border-gray-200 dark:border-[#252345] transition-colors duration-300">
                     <div>
                         <h2 class="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -320,23 +249,21 @@ if (isset($_SESSION['id'])) {
                     <?php endif; ?>
                 </div>
 
-                <!-- Buscador -->
-               <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-5 transition-colors duration-300">
-    <div class="flex flex-col sm:flex-row gap-4 items-center">
-        <div class="relative flex-1 w-full">
-            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm"></i>
-            <input type="text" id="busquedaCedula" placeholder="Buscar por cédula o nombre..."
-                   class="input-adapt w-full pl-11 pr-4 py-3 rounded-xl text-sm shadow-inner">
-        </div>
-        <label class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-            <input type="checkbox" id="toggleInactivos" class="w-4 h-4 accent-red-500">
-            Ver inactivos
-        </label>
-        <span id="totalEntrenador" class="flex items-center gap-2 text-xs bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/20 self-center">0 Activos</span>
-    </div>
-</div>
+                <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl p-5 transition-colors duration-300">
+                    <div class="flex flex-col sm:flex-row gap-4 items-center">
+                        <div class="relative flex-1 w-full">
+                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm"></i>
+                            <input type="text" id="busquedaCedula" placeholder="Buscar por cédula o nombre..."
+                                   class="input-adapt w-full pl-11 pr-4 py-3 rounded-xl text-sm shadow-inner">
+                        </div>
+                        <label class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                            <input type="checkbox" id="toggleInactivos" class="w-4 h-4 accent-red-500">
+                            Ver inactivos
+                        </label>
+                        <span id="totalEntrenador" class="flex items-center gap-2 text-xs bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/20 self-center">0 Activos</span>
+                    </div>
+                </div>
 
-                <!-- Tabla -->
                 <div class="bg-white dark:bg-[#161430] border border-gray-200 dark:border-[#252345] rounded-2xl overflow-hidden shadow-2xl transition-colors duration-300">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-800 flex flex-wrap justify-between items-center gap-4 bg-gray-50 dark:bg-white/5">
                         <h3 class="text-gray-900 dark:text-white font-semibold">Listado General</h3>
@@ -369,7 +296,6 @@ if (isset($_SESSION['id'])) {
         </div>
     </div>
 
-    <!-- ===== MODAL REGISTRAR/EDITAR ===== -->
     <div id="modalEntrenador" class="fixed inset-0 z-50 hidden bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-4xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8 transition-colors duration-300">
             <div class="flex justify-between items-center mb-6 border-b border-gray-200 dark:border-gray-800 pb-4">
@@ -382,32 +308,44 @@ if (isset($_SESSION['id'])) {
                 </button>
             </div>
 
-            <form id="formEntrenador" class="space-y-6" novalidate>
+            <form id="formEntrenador" class="space-y-6" novalidate enctype="multipart/form-data">
                 <input type="hidden" id="action_type" name="action_type" value="registrar">
                 <input type="hidden" id="id_entrenador" name="id_entrenador" value="">
+                <input type="hidden" id="cedula" name="cedula" value="">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <!-- Columna izquierda -->
                     <div class="space-y-4">
                         <p class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-tighter">Información Personal</p>
-                        
+
+                        <!-- CÉDULA CON PREFIJO V-/E- -->
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1">Cédula *</label>
-                            <input type="text" id="cedula" name="cedula" 
-                                   data-validar="requerido|numeros" data-nombre="Cédula" data-min="8" data-max="8" 
-                                   maxlength="8" class="input-adapt w-full p-3 rounded-xl" placeholder="Ej: 25888999">
+                            <div class="relative flex">
+                                <select id="cedula_prefijo" name="cedula_prefijo"
+                                        class="input-adapt rounded-l-xl rounded-r-none border-r-0 px-3 py-3 text-sm font-bold w-[70px] focus:z-10">
+                                    <option value="V">V-</option>
+                                    <option value="E">E-</option>
+                                </select>
+                                <input type="text" id="cedula_numero" name="cedula_numero"
+                                       data-validar="requerido|numeros" data-nombre="Cédula" data-min="7" data-max="8"
+                                       maxlength="8" inputmode="numeric"
+                                       class="input-adapt flex-1 rounded-r-xl rounded-l-none p-3 text-sm"
+                                       placeholder="12345678">
+                            </div>
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 ml-1">Entre 7 y 8 dígitos.</p>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1">
                                 <label class="text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1">Nombres *</label>
-                                <input type="text" id="nombres" name="nombres" 
+                                <input type="text" id="nombres" name="nombres"
                                        data-validar="requerido|letras" data-nombre="Nombres" data-min="2" data-max="50"
                                        maxlength="50" class="input-adapt w-full p-3 rounded-xl" placeholder="Juan">
                             </div>
                             <div class="space-y-1">
                                 <label class="text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1">Apellidos *</label>
-                                <input type="text" id="apellidos" name="apellidos" 
+                                <input type="text" id="apellidos" name="apellidos"
                                        data-validar="requerido|letras" data-nombre="Apellidos" data-min="2" data-max="50"
                                        maxlength="50" class="input-adapt w-full p-3 rounded-xl" placeholder="Pérez">
                             </div>
@@ -416,7 +354,8 @@ if (isset($_SESSION['id'])) {
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1">Fecha Nacimiento *</label>
                             <input type="date" name="fecha_nacimiento" id="fecha_nacimiento"
-                                data-validar="requerido|fecha_logica|mayor_edad" data-nombre="Fecha de nacimiento" class="input-adapt w-full p-3 rounded-xl">
+                                   data-validar="requerido|fecha_logica|mayor_edad" data-nombre="Fecha de nacimiento"
+                                   class="input-adapt w-full p-3 rounded-xl">
                         </div>
 
                         <div class="space-y-1">
@@ -429,29 +368,47 @@ if (isset($_SESSION['id'])) {
                         </div>
                     </div>
 
-                    <!-- Columna derecha -->
                     <div class="space-y-4">
                         <p class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-tighter">Datos de Contacto</p>
 
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1">Teléfono *</label>
-                            <input type="text" id="telefono" name="telefono" 
+                            <input type="text" id="telefono" name="telefono"
                                    data-validar="requerido|numeros" data-nombre="Teléfono" data-min="11" data-max="11"
-                                   maxlength="11" class="input-adapt w-full p-3 rounded-xl" placeholder="04121234567">
+                                   maxlength="11" inputmode="numeric"
+                                   class="input-adapt w-full p-3 rounded-xl" placeholder="04121234567">
                         </div>
 
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1">Correo Electrónico *</label>
-                            <input type="email" id="correo" name="correo" 
+                            <input type="email" id="correo" name="correo"
                                    data-validar="requerido|email" data-nombre="Correo Electrónico"
                                    class="input-adapt w-full p-3 rounded-xl" placeholder="ejemplo@correo.com">
                         </div>
 
                         <div class="space-y-1">
                             <label class="text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1">Dirección *</label>
-                            <textarea id="direccion" name="direccion" rows="4" 
+                            <textarea id="direccion" name="direccion" rows="3"
                                       data-validar="requerido" data-nombre="Dirección" data-min="5" data-max="50"
                                       maxlength="50" class="input-adapt w-full p-3 rounded-xl resize-none" placeholder="Calle principal #123"></textarea>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[11px] text-gray-500 dark:text-gray-400 font-bold ml-1">
+                                Currículum (PDF) <span class="text-gray-400 font-normal">- Opcional</span>
+                            </label>
+                            <input type="file" id="curriculum" name="curriculum" accept="application/pdf"
+                                   class="input-adapt w-full p-2.5 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 file:cursor-pointer cursor-pointer">
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 ml-1">Máx. 5MB. Solo PDF.</p>
+
+                            <div id="curriculumActual" class="hidden items-center gap-2 mt-2 p-2 bg-rose-50 dark:bg-rose-500/10 rounded-lg text-xs border border-rose-200 dark:border-rose-500/20">
+                                <i class="fas fa-file-pdf text-rose-500 text-base"></i>
+                                <span id="curriculumNombre" class="text-gray-700 dark:text-gray-300 truncate flex-1">CV.pdf</span>
+                                <a id="curriculumLink" href="#" target="_blank"
+                                   class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-bold whitespace-nowrap">
+                                    <i class="fas fa-download"></i> Descargar
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -466,7 +423,6 @@ if (isset($_SESSION['id'])) {
         </div>
     </div>
 
-    <!-- ===== MODAL VER DETALLE ===== -->
     <div id="modalVerEntrenador" class="fixed inset-0 z-50 hidden bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="relative bg-white dark:bg-[#161430] border border-gray-200 dark:border-white/5 w-full max-w-2xl rounded-2xl shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto p-6 md:p-8 transition-colors duration-300">
             <div class="flex justify-between items-center mb-6 border-b border-gray-200 dark:border-gray-800 pb-4">
@@ -519,6 +475,15 @@ if (isset($_SESSION['id'])) {
                         <p class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-tighter">Dirección</p>
                         <p id="verDireccion" class="text-gray-900 dark:text-white text-sm">---</p>
                     </div>
+
+                    <div id="verCurriculumBlock" class="hidden pt-3 mt-2 border-t border-gray-200 dark:border-gray-800">
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-tighter">Currículum</p>
+                        <a id="verCurriculumLink" href="#" target="_blank"
+                           class="inline-flex items-center gap-2 mt-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-bold text-sm">
+                            <i class="fas fa-file-pdf text-rose-500 text-lg"></i>
+                            <span>Descargar Currículum PDF</span>
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -530,7 +495,6 @@ if (isset($_SESSION['id'])) {
         </div>
     </div>
 
-    <!-- ===== SCRIPTS ===== -->
     <script>
         (function() {
             const sidebar = document.getElementById('sidebarMenu');
