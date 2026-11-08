@@ -1,0 +1,19 @@
+$kind: http-request
+url: http://localhost/ProyectoPiscinaBolivariana/SIS-Biomec/index.php?p=lesion&accion=registrar
+method: POST
+headers:
+  Cookie: PHPSESSID=mujqofbb0f52s7t9nbv6ccg2vl
+queryParams:
+  p: lesion
+  accion: registrar
+body:
+  type: urlencoded
+  content:
+    id_atleta: "1"
+    fecha_inicio: 2026-11-05
+    zona_anatomica: Hombro
+    tipo: Sobreuso
+    nivel_molestia: "9"
+    gravedad_clinica: Leve
+    diagnostico: Dolor agudo en el hombro de prueba
+order: 3000

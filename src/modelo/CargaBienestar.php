@@ -470,6 +470,12 @@ private function esDuenoDelRegistro(int $id_rpe, int $id_usuario, string $rol): 
             return ['exito' => true, 'id_rpe' => $id_insertado, 'mensaje' => 'Registro RPE guardado correctamente.'];
         } catch (PDOException $e) {
             $this->pdo->rollBack();
+
+            /* if ($e->getCode() == 23000) {
+                $this->agregarError('integridad', 'Fraude Logístico: El atleta o la sesión especificada no existen en el sistema.');
+                return false;
+            } */ //
+
             error_log("Error registrarRPE SQL: " . $e->getMessage());
             $this->agregarError('bd', 'Error interno al guardar el registro.');
             return false;

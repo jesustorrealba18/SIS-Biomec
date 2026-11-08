@@ -1,0 +1,20 @@
+$kind: http-request
+url: http://localhost/ProyectoPiscinaBolivariana/SIS-Biomec/index.php?p=marcas&accion=registrar
+method: POST
+headers:
+  Cookie: PHPSESSID=mujqofbb0f52s7t9nbv6ccg2vl
+queryParams:
+  p: marcas
+  accion: registrar
+body:
+  type: urlencoded
+  content:
+    id_atleta: "1"
+    tiempo_final_seg: "35.50"
+    fecha: 2026-11-05
+    estilo: Libre
+    distancia_m: "50"
+    tipo_piscina: 50m
+    id_sesion: "1"
+    id_evento: "2"
+order: 2000

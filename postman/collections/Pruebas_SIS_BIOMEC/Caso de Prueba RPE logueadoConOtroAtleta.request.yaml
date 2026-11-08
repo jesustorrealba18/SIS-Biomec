@@ -1,0 +1,22 @@
+$kind: http-request
+description: ""
+url: http://localhost/ProyectoPiscinaBolivariana/SIS-Biomec/index.php?p=cargaBienestar&accion=registrar
+method: POST
+headers:
+  Cookie: PHPSESSID=g17q3ktn3mah8i8a288f52mu8g
+queryParams:
+  p: cargaBienestar
+  accion: registrar
+body:
+  type: urlencoded
+  content:
+    id_atleta: "5"
+    rpe: "6"
+    fecha: 2026-11-05
+settings:
+  protocolVersion: auto
+  strictSSL: false
+  followRedirects: true
+  disableCookies: false
+  maxResponseSize: 52428800
+order: 4000

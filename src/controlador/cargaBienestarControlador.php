@@ -28,6 +28,7 @@ function esIntentoDeVulneracion(string $mensaje): bool {
         'permiso',           // "No tienes permiso..."
         'no autorizado',
         'ajeno',
+        //'fraude',
         'sin atleta',        // "Usuario sin atleta vinculado"
         'no vinculado',      // idem
         'asistencia',        // "no tienes asistencia registrada"

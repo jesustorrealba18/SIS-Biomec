@@ -88,7 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     header('Content-Type: application/json');
-    $accionPost = $_POST['accion'] ?? '';
+   // $accionPost = $_POST['accion'] ?? '';
+    $accionPost = $_GET['accion'] ?? $_POST['accion'] ?? '';
 
     $id_usuario = $_SESSION['id'] ?? 0;
 
@@ -115,6 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Notificacion::NotificarMarcas('CREATE',  $datosFiltrados,$datosFiltrados['id_marca']);
 
             echo json_encode(['status' => 'success', 'message' => 'Marca registrada.']);
+            //exit;
         } else {
 
             $errores = $objMarca->obtenerErrores(); 
@@ -123,6 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 echo json_encode(['status' => 'error', 'message' => 'Error con el servidor.']);
             }
+           // exit;
         }
 
        
