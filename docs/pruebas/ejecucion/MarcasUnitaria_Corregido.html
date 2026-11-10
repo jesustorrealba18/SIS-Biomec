@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <title>Test Documentation</title>
+        <style>
+            body {
+                text-rendering: optimizeLegibility;
+                font-family: Source SansSerif Pro, Arial, sans-serif;
+                font-variant-ligatures: common-ligatures;
+                font-kerning: normal;
+                margin-left: 2rem;
+                background-color: #fff;
+                color: #000;
+            }
+
+            body > ul > li {
+                font-size: larger;
+            }
+
+            h2 {
+                font-size: larger;
+                text-decoration-line: underline;
+                text-decoration-thickness: 2px;
+                margin: 0;
+                padding: 0.5rem 0;
+            }
+
+            ul {
+                list-style: none;
+                margin: 0 0 2rem;
+                padding: 0 0 0 1rem;
+                text-indent: -1rem;
+            }
+
+            .success:before {
+                color: #4e9a06;
+                content: '✓';
+                padding-right: 0.5rem;
+            }
+
+            .defect {
+                color: #a40000;
+            }
+
+            .defect:before {
+                color: #a40000;
+                content: '✗';
+                padding-right: 0.5rem;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>Marca Validation (Tests\Unit\Marcas\MarcaValidation)</h2>
+        <ul>
+            <li class="defect">CP-UNI-06.01: XOR sesión+evento</li>
+            <li class="defect">CP-UNI-06.02: Sin sesión ni evento</li>
+            <li class="success">CP-UNI-06.03: id_atleta="0" debe rechazarse</li>
+            <li class="success">CP-UNI-06.04: id_sesion[] (array) debe rechazarse</li>
+            <li class="success">CP-UNI-06.05: Distancia 1000m fuera del enum</li>
+            <li class="success">CP-UNI-06.06: Tipo piscina "75m" fuera del enum</li>
+            <li class="success">CP-UNI-06.07: Estilo "crol" (minúsculas) debe rechazarse</li>
+            <li class="success">CP-UNI-06.08: Fecha futura debe rechazarse</li>
+            <li class="success">CP-UNI-06.09: Tiempo final "0.00" debe rechazarse</li>
+            <li class="success">CP-UNI-06.10: Tiempo final negativo debe rechazarse</li>
+            <li class="success">CP-UNI-06.11: Tiempo final absurdo (99999s)</li>
+            <li class="success">CP-UNI-06.12: Reacción 999.99s debe rechazarse</li>
+            <li class="success">CP-UNI-06.13: 100m con solo 3 splits</li>
+            <li class="success">CP-UNI-06.14: Split a 30m (no múltiplo de 25)</li>
+            <li class="success">CP-UNI-06.15: Split con clave 0</li>
+            <li class="success">CP-UNI-06.16: Split con clave negativa</li>
+            <li class="success">CP-UNI-06.17: Splits desordenados o sin meta</li>
+            <li class="success">CP-UNI-06.18: Viraje en 25m para piscina 50m</li>
+            <li class="defect">CP-UNI-06.19: Actualizar id_marca inexistente</li>
+            <li class="success">CP-UNI-06.20: Motivo con 4 letras</li>
+            <li class="success">CP-UNI-06.21: Motivo de solo espacios</li>
+            <li class="defect">CP-UNI-07.01: Cálculo SWOLF</li>
+            <li class="defect">CP-UNI-07.02: Brazadas 0 no genera SWOLF</li>
+            <li class="success">CP-UNI-07.03: Brazadas negativas</li>
+            <li class="success">CP-UNI-07.04: Brazadas de 1000 (límite 999)</li>
+        </ul>
+    </body>
+</html>

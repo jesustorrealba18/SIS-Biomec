@@ -74,15 +74,7 @@ async function peticionAjax(accion, datos = null) {
         return null;
     }
 
-  /*   try {
-        const respuesta = await fetch(`${API_URL}&accion=${accion}`, opciones);
-        if (!respuesta.ok) throw new Error('Error de comunicación con el servidor');
-        return await respuesta.json();
-    } catch (error) {
-        console.error("Error Fetch:", error);
-        UI.error('Error del Servidor', 'No se pudo procesar la solicitud.');
-        return null;
-    } */
+
 }
 
 function obtenerFechaLocal() {
@@ -103,8 +95,8 @@ function cerrarModalMarca() {
     
     // 1. Resetear el formulario tradicional
     formMarca.reset();
-    restaurarSelectsPrueba();        // <- NUEVO: Restauramos selects
-    window.metasEventoActivo = [];   // <- NUEVO: Purgamos caché de metas
+    restaurarSelectsPrueba();        
+    window.metasEventoActivo = [];   
     resetearContexto();
     
     // 2. Limpiar el contenedor dinámico de Splits (RF-06)
@@ -119,7 +111,7 @@ function cerrarModalMarca() {
         inputBuscar.value = '';
         inputBuscar.classList.remove('text-indigo-600', 'text-emerald-400', 'dark:text-emerald-400', 'font-bold');
         
-        // inputBuscar.classList.remove('text-emerald-400', 'font-bold');
+        
         inputBuscar.removeAttribute('readonly');
         document.getElementById('btnLimpiarAtleta').classList.add('hidden');
     }
@@ -129,7 +121,7 @@ function cerrarModalMarca() {
     selectEvento.disabled = false;
     selectEvento.classList.remove('opacity-30', 'cursor-not-allowed');
 
-    // 🧹 DESBLOQUEAR INPUTS DE TIEMPO para el próximo registro
+   
   // Desbloquear inputs de tiempo (excepto brazadas_por_largo)
 document.querySelectorAll('#contenedorTiemposManuales input, #rejillaSplits input').forEach(input => {
     if (input.id !== 'brazadas_por_largo') {
@@ -245,8 +237,7 @@ async function abrirModalMarca(id_marca = null) {
         selectEvento.disabled = false;
         selectSesion.classList.add('opacity-50', 'pointer-events-none', 'bg-gray-200', 'dark:bg-[#0f0d23]');
         selectEvento.classList.add('opacity-50', 'pointer-events-none', 'bg-gray-200', 'dark:bg-[#0f0d23]');
-/*         selectSesion.classList.add('opacity-50', 'pointer-events-none', 'bg-[#0f0d23]');
-        selectEvento.classList.add('opacity-50', 'pointer-events-none', 'bg-[#0f0d23]'); */
+
         selectSesion.tabIndex = -1;
         selectEvento.tabIndex = -1;
 
@@ -257,7 +248,6 @@ async function abrirModalMarca(id_marca = null) {
         inputAtleta.value = `${nombreCompleto} (C.I: ${data.atleta_cedula || data.cedula})`;
         inputAtleta.disabled = true; 
         inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'text-indigo-600', 'dark:text-emerald-400', 'font-bold');
-        // inputAtleta.classList.add('opacity-50', 'cursor-not-allowed', 'text-emerald-400', 'font-bold');
         document.getElementById('btnLimpiarAtleta').classList.add('hidden');
 
         // 3. CONGELAR / CONFIGURAR FECHA
@@ -456,27 +446,6 @@ function configurarExclusividadSelects() {
         }
     });
 
-    /* selectEvento.addEventListener('change', function() {
-        if (this.value !== "") {
-            // 1. Bloqueamos sesión
-            selectSesion.value = "";
-            selectSesion.disabled = true;
-            selectSesion.classList.add('opacity-30', 'cursor-not-allowed');
-            
-            // 2. LÓGICA DE FECHA (Rango permitido)
-            const optionSeleccionada = this.options[this.selectedIndex];
-            inputFecha.value = ""; // Limpiamos para que elija
-            inputFecha.min = optionSeleccionada.getAttribute('data-inicio');
-            inputFecha.max = optionSeleccionada.getAttribute('data-fin');
-            inputFecha.readOnly = false; // Aquí sí puede elegir (ej. un evento dura 3 días)
-            inputFecha.classList.remove('opacity-70', 'pointer-events-none');
-            
-            // 3. Cargar atletas
-            cargarAtletasPorContexto('evento', this.value);
-        } else {
-            resetearContexto();
-        }
-    }); */
 
     selectEvento.addEventListener('change', async function() {
         if (this.value !== "") {
@@ -641,18 +610,7 @@ async function cargarSelectsContexto() {
 }
 
 
-// =====================================================================
-// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
-// =====================================================================
-// =====================================================================
-// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
-// =====================================================================
-// =====================================================================
-// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
-// =====================================================================
-// =====================================================================
-// ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
-// =====================================================================
+
 // =====================================================================
 // ESTILOS EXCLUSIVOS PARA LOS SPLITS (sin tocar validador.js)
 // =====================================================================
@@ -731,8 +689,9 @@ function generarCajasSplits() {
                         </div>
                         <input type="text" 
                                name="splits[${distanciaActual}]" 
-                               data-validar="requerido|decimal_tiempo" 
-                               required 
+                              
+                               data-validar="decimal_tiempo" 
+                                
                                data-nombre="Parcial de ${distanciaActual}m" 
                                placeholder="00.00" 
                                class="w-full bg-gray-50 dark:bg-[#0f0d23] border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-emerald-400 font-mono text-sm rounded-lg py-1.5 pr-5 pl-10 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-right split-input">
@@ -777,87 +736,7 @@ function generarCajasSplits() {
         rejillaSplits.style.opacity = 1;
     }, 50);
 }
-/* function generarCajasSplits() {
-    const distanciaTotal = parseInt(selectDistancia.value);
-    const tipoPiscinaVal = selectPiscina.value; // '25m' o '50m'
-    const tamanoPiscina = tipoPiscinaVal === '25m' ? 25 : 50;
-    
-    if (isNaN(distanciaTotal)) {
-        contenedorSplits.classList.add('hidden');
-        rejillaSplits.innerHTML = '';
-        return;
-    }
 
-    const tamanoTramo = 25; 
-    const cantidadTramos = distanciaTotal / tamanoTramo;
-    
-    rejillaSplits.innerHTML = '';
-    
-    for (let i = 1; i <= cantidadTramos; i++) {
-        let distanciaActual = i * tamanoTramo;
-        
-        // LÓGICA MATEMÁTICA: ¿Hay pared aquí? 
-        // (Es múltiplo del tamaño de la piscina y NO es la meta final)
-        const esPared = (distanciaActual % tamanoPiscina === 0) && (distanciaActual < distanciaTotal);
-        
-        let cajaHTML = `
-            <div class="bg-white dark:bg-[#161430] p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative split-box">
-                <label class="block text-[10px] text-gray-600 dark:text-gray-400 uppercase font-bold mb-2 text-center border-b border-gray-100 dark:border-gray-800 pb-1">
-                    Tramo ${distanciaActual}m
-                </label>
-                <div class="space-y-2">
-                    <!-- Input de Parcial (Siempre visible) -->
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
-                            <span class="text-[9px] text-indigo-400 font-bold">SPLIT</span>
-                        </div>
-                        <input type="text" 
-                               name="splits[${distanciaActual}]" 
-                               data-validar="requerido|decimal_tiempo" 
-                               required 
-                               data-nombre="Parcial de ${distanciaActual}m" 
-                               placeholder="00.00" 
-                               class="w-full bg-gray-50 dark:bg-[#0f0d23] border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-emerald-400 font-mono text-sm rounded-lg py-1.5 pr-5 pl-10 focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-right split-input">
-                        <span class="absolute right-2 top-1.5 text-gray-400 dark:text-gray-500 text-[10px]">s</span>
-                    </div>
-        `;
-        
-        // Si hay pared en este tramo, inyectamos la cajita de Viraje
-        if (esPared) {
-            cajaHTML += `
-                    <!-- Input de Viraje (Dinámico) -->
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
-                            <span class="text-[9px] text-amber-500 font-bold">VIRAJE</span>
-                        </div>
-                        <input type="text" 
-                               name="virajes[${distanciaActual}]" 
-                               data-validar="decimal_tiempo" 
-                               data-nombre="Viraje en ${distanciaActual}m" 
-                               placeholder="00.00" 
-                               class="w-full bg-gray-50 dark:bg-[#0f0d23] border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-amber-400 font-mono text-sm rounded-lg py-1.5 pr-5 pl-10 focus:ring-2 focus:ring-amber-500 outline-none transition-all text-right">
-                        <span class="absolute right-2 top-1.5 text-gray-400 dark:text-gray-500 text-[10px]">s</span>
-                    </div>
-            `;
-        }
-        
-        cajaHTML += `
-                </div>
-            </div>
-        `;
-        
-        rejillaSplits.innerHTML += cajaHTML;
-    }
-
-    contadorSplits.innerText = `${cantidadTramos} Tramos (Cada 25m)`;
-    contenedorSplits.classList.remove('hidden');
-    
-    rejillaSplits.style.opacity = 0;
-    setTimeout(() => {
-        rejillaSplits.style.transition = "opacity 0.3s ease-in-out";
-        rejillaSplits.style.opacity = 1;
-    }, 50);
-} */
 
 selectDistancia.addEventListener('change', generarCajasSplits);
 // IMPORTANTE: Agregar este listener para que re-calcule las paredes si cambian el tipo de piscina
@@ -1014,6 +893,12 @@ formMarca.addEventListener('submit', async (e) => {
     let datosFormulario = new FormData(formMarca);
     const accionActual = document.getElementById('accion_form') ? document.getElementById('accion_form').value : 'registrar';
     datosFormulario.set('accion', accionActual);
+
+     for (let [key, value] of datosFormulario.entries()) {
+        if ((key.startsWith('splits[') || key.startsWith('virajes[')) && value.trim() === '') {
+            datosFormulario.delete(key);
+        }
+    }
 
     // =================================================================
     // EL GOLPE MAESTRO DE SEGURIDAD (ADAPTADO A TU BACKEND EXACTO)
@@ -1180,23 +1065,7 @@ const infoTiempo = NormalizadorPiscina.procesarTiempo(marca.tiempo_final_seg, ma
                </div>`
             : '';
 
-/*         const botonAccion = (estadoFiltro === 'Activo' && puedeEliminar)
-            ? `<button onclick="eliminarMarca(${marca.id_marca})" class="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 p-2 rounded-lg transition" title="Archivar Registro"><i class="fas fa-trash-alt"></i></button>`
-            : (estadoFiltro === 'Inactivo' && puedeRestaurar)
-            ? `<button onclick="reactivarMarca(${marca.id_marca})" class="text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 p-2 rounded-lg transition" title="Restaurar Registro"><i class="fas fa-undo"></i></button>`
-            : '';
 
-        const botonEditar = (estadoFiltro === 'Activo' && puedeEditar)
-            ? `<button onclick="abrirModalMarca(${marca.id_marca})" class="text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 p-2 rounded-lg transition" title="Editar Registro de Tiempo"><i class="fas fa-edit text-base"></i></button>`
-            : '';
-
-        const accionesHTML = (botonEditar || botonAccion) ? `${botonEditar}${botonAccion}` : '';
-        const justificacionHTML = (estadoFiltro === 'Inactivo' && marca.motivo_eliminacion)
-            ? `<div class="text-[9px] text-red-600 dark:text-red-400 mt-1 flex items-center gap-1 w-48 leading-tight">
-                <i class="fas fa-exclamation-circle"></i> Anulado: ${marca.motivo_eliminacion}
-               </div>`
-            : '';
- */
         let clasesFila = "hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200 border-b border-gray-200 dark:border-[#252345]";
         html += `
             <tr id="fila-marca-${marca.id_marca}" data-id-marca="${marca.id_marca}" class="${clasesFila}">
@@ -1238,24 +1107,7 @@ const infoTiempo = NormalizadorPiscina.procesarTiempo(marca.tiempo_final_seg, ma
         `;
     });
 
-   /*  `<td class="p-4 align-middle">
-                    <span class="bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
-                        ${marca.nivel_evento}
-                    </span>
-                    ${justificacionHTML}
-                </td>
-                <td class="p-4 text-xs font-mono text-gray-600 dark:text-gray-400 align-middle" data-sort="${marca.fecha}">
-                    ${fechaLatina}
-                </td>
-                <td class="p-4 align-middle">
-                    <div class="flex flex-wrap items-center gap-2 md:justify-end">
-                        <button onclick="verDetallesMarca(${marca.id_marca})" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 p-2 rounded-lg transition" title="Ver Análisis de Rendimiento">
-                            <i class="fas fa-chart-line text-base"></i>
-                        </button>
-                        ${accionesHTML}
-                    </div>
-                </td>
-            </tr>` */
+  
 
     tbody.innerHTML = html;
 
@@ -1486,95 +1338,7 @@ async function verDetallesMarca(id_marca) {
         </div>
     `;
 
-    // 3. RENDERIZADO DE LAS GRÁFICAS
-/*     const esDark = document.documentElement.classList.contains('dark');
-    const colorTexto = esDark ? '#6b7280' : '#4b5563';
-    const colorGrid = esDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.05)';
-
-    if (data.historial_evolucion && data.historial_evolucion.length > 0) {
-        const ejeFechas = data.historial_evolucion.map(h => formatearFecha(h.fecha));
-        const ejeTiempos = data.historial_evolucion.map(h => parseFloat(h.tiempo_final_seg));
-
-        if (instanciaGrafica) instanciaGrafica.destroy();
-
-        const contextoLienzo = document.getElementById('canvasEvolucion').getContext('2d');
-        instanciaGrafica = new Chart(contextoLienzo, {
-            type: 'line',
-            data: {
-                labels: ejeFechas,
-                datasets: [{
-                    data: ejeTiempos,
-                    borderColor: '#6366f1', 
-                    backgroundColor: 'rgba(99, 102, 241, 0.05)',
-                    borderWidth: 2.5,
-                    pointBackgroundColor: '#10b981', 
-                    pointBorderColor: '#fff',
-                    pointRadius: 3.5,
-                    tension: 0.25 
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: {
-                        grid: { color: colorGrid },
-                        ticks: { color: colorTexto, font: { size: 9, family: 'monospace' } }
-                    },
-                    y: {
-                        grid: { color: colorGrid },
-                        ticks: { 
-                            color: colorTexto, 
-                            font: { size: 9, family: 'monospace' },
-                            callback: function(val) { return val + 's'; }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    if (data.splits && data.splits.length > 0) {
-        const ejeDistancias = data.splits.map(s => s.distancia_parcial_m + 'm');
-        const ejeTiemposSplits = data.splits.map(s => parseFloat(s.tiempo_parcial_seg));
-
-        if (instanciaGraficaSplits) instanciaGraficaSplits.destroy();
-
-        const ctxSplits = document.getElementById('graficaSplits').getContext('2d');
-        instanciaGraficaSplits = new Chart(ctxSplits, {
-            type: 'line',
-            data: {
-                labels: ejeDistancias,
-                datasets: [{
-                    data: ejeTiemposSplits,
-                    borderColor: '#06b6d4',
-                    backgroundColor: 'rgba(6, 182, 212, 0.05)',
-                    borderWidth: 2.5,
-                    pointBackgroundColor: '#06b6d4',
-                    pointBorderColor: '#fff',
-                    pointRadius: 3.5,
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { 
-                        grid: { display: false }, 
-                        ticks: { color: colorTexto, font: { size: 9, family: 'monospace' } } 
-                    },
-                    y: { 
-                        grid: { color: colorGrid }, 
-                        ticks: { color: colorTexto, font: { size: 9, family: 'monospace' }, callback: function(val) { return val + 's'; } } 
-                    }
-                }
-            }
-        });
-    } */
+ 
    // 3. RENDERIZADO DE LAS GRÁFICAS
     const esDark = document.documentElement.classList.contains('dark');
     const colorTexto = esDark ? '#6b7280' : '#4b5563';
@@ -1966,40 +1730,6 @@ function prepararBotonSiguienteTramo(btnCrono, btnIcon, btnText) {
 }
 
 
-/* function prepararBotonSiguienteTramo(btnCrono, btnIcon, btnText) {
-    const esPared = (distanciaActual % confPiscina === 0) && (distanciaActual < confDistancia);
-    const esLlegada = (distanciaActual === confDistancia);
-
-    btnCrono.className = "flex-1 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-2xl shadow-[0_0_40px_rgba(79,70,229,0.3)] transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-indigo-400/50";
-
-    if (esLlegada) {
-        btnIcon.className = "fas fa-flag-checkered text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
-        btnText.textContent = `Llegada Final (${distanciaActual}m)`;
-    } else if (esPared) {
-        btnIcon.className = "fas fa-hand-paper text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
-        btnText.textContent = `Toca Pared (${distanciaActual}m)`;
-    } else {
-        btnIcon.className = "fas fa-ruler-horizontal text-4xl sm:text-5xl mb-2 group-active:scale-90 transition-transform";
-        btnText.textContent = `Marca Split (${distanciaActual}m)`;
-    }
-} */
-
-// Helper: Pinta el elemento en la lista del cronómetro
-/* function agregarItemListaCrono(etiqueta, icono, colorBadge, formatoFinal) {
-    const listaHtml = document.getElementById('listaTiemposCrono');
-    if (distanciaActual === 0 && estadoCrono !== 'EN_VIRAJE') listaHtml.innerHTML = ''; 
-
-    const itemHtml = `
-        <li class="flex justify-between items-center bg-white/10 hover:bg-white/15 p-3 rounded-lg border border-white/5 transition animate-fade-in">
-            <div class="flex items-center gap-3">
-                <span class="${colorBadge} text-white text-[10px] font-bold px-2 py-1 rounded w-8 text-center"><i class="fas ${icono}"></i></span>
-                <span class="text-white text-sm font-medium">${etiqueta}</span>
-            </div>
-            <span class="text-white font-mono font-bold text-sm tracking-wider">${formatoFinal}</span>
-        </li>
-    `;
-    listaHtml.insertAdjacentHTML('afterbegin', itemHtml);
-} */
 
     function agregarItemListaCrono(etiqueta, icono, colorBadge, formatoFinal) {
     const listaHtml = document.getElementById('listaTiemposCrono');
@@ -2422,44 +2152,6 @@ async function reactivarMarca(id_marca) {
     }
 }
 
-// =====================================================================
-// INICIALIZADOR
-// =====================================================================
-/* document.addEventListener('DOMContentLoaded', () => {
-
-   // 1. LEER LA URL AL ENTRAR A LA PÁGINA
-    const urlParamsInicio = new URLSearchParams(window.location.search);
-    const estadoDesdeUrl = urlParamsInicio.get('estado');
-
-    // 2. Si la URL exige 'Inactivo', forzamos el DOM antes de cargar nada
-    if (estadoDesdeUrl) {
-        const selectEstado = document.getElementById('filtroEstado');
-        if (selectEstado) {
-            selectEstado.value = estadoDesdeUrl;
-        }
-    }
-
-    Validador.vincularTiempoReal(document.getElementById('formMarca'));
-    cargarFiltroAtletas();
-    configurarExclusividadSelects();
-    cargarSelectsContexto();
-    cargarTablaMarcas();
-}); */
-
-
-/* window.addEventListener('error', function(e) {
-    // Si el error es un ReferenceError causado por manipular el DOM en F12
-    if (e.message.includes('is not defined')) {
-        e.preventDefault(); // Oculta el error rojo nativo de la consola
-        
-        // Lanzamos tu alerta de diseño
-        UI.error('Operación Bloqueada', 'Se detectó una alteración manual en la estructura del botón.');
-        
-        // Detenemos la propagación para intentar frenar el "fantasma" de DataTables
-        e.stopPropagation();
-        return true;
-    }
-}); */
 
 
 // =====================================================================

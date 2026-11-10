@@ -1,0 +1,7 @@
+$kind: collection
+description: Pruebas Backend (CP-API-06.01 → CP-API-06.06) — Módulo Marcas
+variables:
+  base_url: http://localhost/ProyectoPiscinaBolivariana/SIS-Biomec
+  PHPSESSID: 4dstqah1235fljl09ra860u29f
+  id_marca_test: "1"
+  fecha_prueba: ""

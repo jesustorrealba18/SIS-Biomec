@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=marcas&accion=sync_telemetria"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: marcas
+  accion: sync_telemetria
+body:
+  type: urlencoded
+  content:
+    id_atleta: "1"
+    distancia_total: "100"
+    tipo_piscina: 50m
+    estilo: Libre
+    estado_carrera: iniciando
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-06.05: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-06.05: status=success', () => pm.expect(pm.response.json().status).to.eql('success'));
+order: 5000

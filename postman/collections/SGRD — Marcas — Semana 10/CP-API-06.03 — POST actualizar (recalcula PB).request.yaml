@@ -1,0 +1,41 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=marcas&accion=actualizar"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: marcas
+  accion: actualizar
+body:
+  type: urlencoded
+  content:
+    id_marca: "{{id_marca_test}}"
+    id_atleta: "13"
+    id_sesion: "8"
+    estilo: Libre
+    distancia_m: "100"
+    tipo_piscina: 50m
+    tiempo_final_seg: "58.00"
+    fecha: "{{fecha_prueba}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-06.03: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-06.03: status=success', () => pm.expect(pm.response.json().status).to.eql('success'));
+  - type: beforeRequest
+    code: "let hoy = new Date();\r
+
+      let year = hoy.getFullYear();\r
+
+      let month = String(hoy.getMonth() + 1).padStart(2, '0'); // Meses van de 0 a 11\r
+
+      let day = String(hoy.getDate()).padStart(2, '0');\r
+
+      let fechaLocal = `${year}-${month}-${day}`;\r
+
+      \r
+
+      pm.collectionVariables.set(\"fecha_prueba\", fechaLocal);"
+    language: text/javascript
+order: 3000

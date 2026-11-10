@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=marcas&accion=listarMarcas&estado=Activo"
+method: GET
+headers:
+  Cookie: "{{PHPSESSID}}"
+queryParams:
+  p: marcas
+  accion: listarMarcas
+  estado: Activo
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-06.04: HTTP 200', () => pm.response.to.have.status(200));
+      const arr = pm.response.json();
+      pm.test('CP-API-06.04: array no vacío', () => pm.expect(arr).to.be.an('array').that.is.not.empty);
+      pm.test('CP-API-06.04: contiene factor_conversion', () => {
+        const conFactor = arr.some(m => m.factor_conversion !== undefined);
+        pm.expect(conFactor).to.be.true;
+      });
+order: 4000
