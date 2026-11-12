@@ -207,6 +207,45 @@ class MarcaValidationTest extends TestCase
         $this->assertFalse($this->invokePrivate('validarAtributosInternos'), 'FALLO: El sistema aceptó un viraje en una pared que no existe.');
     }
 
+    #[TestDox('CP-UNI-06.22: Incoherencia matemática (Suma de Splits vs Tiempo Final)')]
+    public function test_CP_UNI_06_22_incoherencia_matematica(): void
+    {
+        // Splits suman 59.00, pero el tiempo final es 60.00
+        $this->marca->setAtributos($this->payloadBase([
+            'tiempo_final_seg' => '60.00',
+            'splits' => [25 => '14.75', 50 => '14.75', 75 => '14.75', 100 => '14.75'],
+        ]));
+        $valido = $this->invokePrivate('validarAtributosInternos');
+
+        $this->assertFalse($valido, 'FALLO: El sistema aceptó un tiempo final que no coincide con la suma de los splits.');
+        $this->assertArrayHasKey('splits', $this->marca->obtenerErrores());
+    }
+
+    #[TestDox('CP-UNI-06.23: Boundary de error (Suma de Splits dentro del margen de 0.02s)')]
+    public function test_CP_UNI_06_23_margen_error_permitido(): void
+    {
+        // Splits suman 60.02, tiempo final 60.00 (Diferencia de 0.02s exactos)
+        $this->marca->setAtributos($this->payloadBase([
+            'tiempo_final_seg' => '60.00',
+            'splits' => [25 => '15.01', 50 => '15.00', 75 => '15.00', 100 => '15.01'],
+        ]));
+        $valido = $this->invokePrivate('validarAtributosInternos');
+
+        $this->assertTrue($valido, 'FALLO: El sistema rechazó un margen de error aceptable (<= 0.02s).');
+    }
+
+    #[TestDox('CP-UNI-06.24: Splits opcionales (Sin arreglo de splits)')]
+    public function test_CP_UNI_06_24_splits_opcionales(): void
+    {
+        $this->marca->setAtributos($this->payloadBase([
+            'tiempo_final_seg' => '60.00',
+            'splits' => [], // Arreglo vacío, el entrenador no tomó parciales
+        ]));
+        $valido = $this->invokePrivate('validarAtributosInternos');
+
+        $this->assertTrue($valido, 'FALLO: El sistema rechazó una marca válida por no tener splits.');
+    }
+
     // ─────────────────────────────────────────────────────────────
     // GRUPO 3 — RF-06.3 / RF-06.4: Update y Delete
     // ─────────────────────────────────────────────────────────────
@@ -229,6 +268,12 @@ class MarcaValidationTest extends TestCase
     {
         $this->marca->setAtributos(['id_marca' => 1, 'motivo_eliminacion' => '     ']);
         $this->assertFalse($this->invokePrivate('getEliminarMarca'), 'FALLO: El sistema aceptó 5 espacios como justificación válida.');
+    }
+
+    #[TestDox('CP-UNI-06.25: Borrado de splits al actualizar sin enviarlos')]
+    public function test_CP_UNI_06_25_borrar_splits_al_actualizar(): void
+    {
+        $this->markTestIncomplete('Requiere BD (hace un DELETE en marcas_splits). Se hará en Semana 12.');
     }
 
     // ─────────────────────────────────────────────────────────────

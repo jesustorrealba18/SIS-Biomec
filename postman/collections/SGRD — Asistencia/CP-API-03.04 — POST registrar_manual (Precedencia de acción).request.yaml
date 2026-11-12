@@ -1,0 +1,28 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=asistencia"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: asistencia
+  # Nota: Intencionalmente NO ponemos 'accion' aquí en la URL
+body:
+  type: urlencoded
+  content:
+    accion: registrar_manual
+    id_sesion: "9"
+    id_atleta: "5"
+    estado_asistencia: Ausente
+    justificacion: No aplica
+    tipo: Manual
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-03.04: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-03.04: Procesa acción desde el Body', () => {
+          const jsonData = pm.response.json();
+          pm.expect(jsonData.status).to.eql('success');
+          pm.expect(jsonData.message).to.include('Estado actualizado correctamente');
+      });
+order: 4000

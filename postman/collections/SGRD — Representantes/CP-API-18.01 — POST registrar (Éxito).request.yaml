@@ -1,0 +1,29 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=representante&accion=guardar"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: "application/x-www-form-urlencoded"
+queryParams:
+  p: representante
+  accion: guardar
+body:
+  type: urlencoded
+  content:
+    cedula: "V-11223344"
+    nombres: "Carlos"
+    apellidos: "Mendoza"
+    fecha_nacimiento: "1985-05-20"
+    parentesco: "Padre"
+    telefono_principal: "04141234567"
+    correo: "carlos@example.com"
+    direccion_residencia: "Av. Principal, Edificio A"
+    atletas_ids[]: "20"
+    aut_medica[20]: "1"
+    aut_imagen[20]: "0"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-18.01: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-18.01: status=success', () => pm.expect(pm.response.json().status).to.eql('success'));
+order: 1000

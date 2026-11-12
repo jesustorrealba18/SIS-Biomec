@@ -17,9 +17,23 @@ class Asistencia extends Conexion {
     ];
 
     
+    /* public function setDatos(array $datos): self {
+        foreach ($datos as $clave => $valor) {
+            if (in_array($clave, $this->camposPermitidos)) {
+                $this->datos[$clave] = is_string($valor) ? trim($valor) : $valor;
+            }
+        }
+        return $this;
+    } */
+
     public function setDatos(array $datos): self {
         foreach ($datos as $clave => $valor) {
             if (in_array($clave, $this->camposPermitidos)) {
+                // BLINDAJE: Si es un array, lo ignoramos o guardamos null para que falle la validación lógica luego
+                if (is_array($valor)) {
+                    $this->datos[$clave] = null; 
+                    continue;
+                }
                 $this->datos[$clave] = is_string($valor) ? trim($valor) : $valor;
             }
         }
@@ -39,6 +53,7 @@ class Asistencia extends Conexion {
         $estado    = $this->datos['estado_asistencia'] ?? '';
         $justif    = $this->datos['justificacion'] ?? '';
         $tipo      = $this->datos['tipo'] ?? 'Manual';
+        $token     = $this->datos['token_qr'] ?? '';
 
         // Validar Sesión y Atleta
         $this->requerido((string)$id_sesion, 'id_sesion');
@@ -46,6 +61,13 @@ class Asistencia extends Conexion {
         
         $this->requerido((string)$id_atleta, 'id_atleta');
         $this->soloNumeros((string)$id_atleta, 'id_atleta');
+
+        if (!is_numeric($id_sesion) || (int)$id_sesion <= 0) {
+            $this->agregarError('id_sesion', 'El identificador de la sesión debe ser un entero positivo mayor a 0.');
+        }
+        if (!is_numeric($id_atleta) || (int)$id_atleta <= 0) {
+            $this->agregarError('id_atleta', 'El identificador del atleta debe ser un entero positivo mayor a 0.');
+        }
 
         // Validar Estado contra el diccionario permitido (Lista Blanca Absoluta)
         $estadosPermitidos = ['Presente', 'Ausente', 'Justificado', 'Retardo'];
@@ -68,6 +90,21 @@ class Asistencia extends Conexion {
             $this->agregarError('tipo', 'Violación: Tipo de registro no autorizado.');
         }
 
+        if ($tipo === 'QR' && empty($token)) {
+            $this->agregarError('token_qr', 'Violación: Tipo QR requiere validación por token.');
+        }
+
+        if ($estado === 'Justificado') {
+            // Reemplazamos los espacios duros (NBSP) por espacios normales, y luego quitamos espacios
+            $justifLimpia = preg_replace('/[\s\p{Z}\x{00A0}]+/u', ' ', $justif);
+            $justifLimpia = trim($justifLimpia);
+
+            $this->requerido($justifLimpia, 'justificacion');
+            $this->longitud($justifLimpia, 'justificacion', 5, 255);
+        } else {
+            $this->datos['justificacion'] = 'No aplica'; 
+        }
+
         return empty($this->obtenerErrores());
     }
 
@@ -80,20 +117,7 @@ class Asistencia extends Conexion {
         return $this->guardar();
     }
     
-  /*   public function RegistrarPorQR(): array {
-
-      $this->resetearErrores();
-        
-        $id_sesion = $this->datos['id_sesion'] ?? '';
-        $token = $this->datos['token_qr'] ?? '';
-
-        if (empty($id_sesion) || empty($token)) {
-            return ['exito' => false, 'mensaje' => 'Falta el token o la sesión.'];
-        }
-
-
-        return $this->TransaccionRegistrarQR();
-    } */
+  
 
     public function RegistrarPorQR(): array {
         $this->resetearErrores();
@@ -229,27 +253,7 @@ class Asistencia extends Conexion {
         }
     }
 
-    /**
-     * Extrae las sesiones aptas para el registro de asistencia (Planificadas y Parciales)
-     */
-  /*   public function obtenerSesionesActivas(): array {
-        try {
-            $sql = "SELECT s.id_sesion, g.nombre AS grupo_nombre,
-             s.fecha, s.estado FROM sesiones s 
-             INNER JOIN grupos_entrenamiento g ON s.id_grupo = g.id_grupo 
-             WHERE s.estado IN ('Planificada', 'Parcial') 
-             AND DATE(s.fecha) = CURDATE() ORDER BY s.fecha ASC;";
-
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute();
-            
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        } catch (PDOException $e) {
-            error_log("Error Modelo Asistencia (Listar Sesiones Activas): " . $e->getMessage());
-            return [];
-        }
-    } */
+   
 
     /**
      * Extrae las sesiones aptas para el registro de asistencia (Planificadas y Parciales)
@@ -282,62 +286,6 @@ class Asistencia extends Conexion {
     } 
 
 
- /*        private function TransaccionRegistrarQR(): array {
-        $tokenLimpio = preg_replace('/^token/', '', trim($this->datos['token_qr']));
-
-        try {
-            $sqlBuscar = "SELECT id_atleta, nombres, apellidos FROM atletas WHERE token_asistencia = :token";
-            $stmtBuscar = $this->pdo->prepare($sqlBuscar);
-            $stmtBuscar->bindValue(':token', $tokenLimpio, PDO::PARAM_STR);
-            $stmtBuscar->execute();
-            
-            $atleta = $stmtBuscar->fetch(PDO::FETCH_ASSOC);
-
-            if (!$atleta) {
-                return ['exito' => false, 'mensaje' => 'Token de seguridad inválido o no registrado.'];
-            }
-
-            $id_sesion = $this->datos['id_sesion'];
-            $nombreCompleto = $atleta['nombres'] . ' ' . $atleta['apellidos'];
-
-            $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
-            $stmtCheck = $this->pdo->prepare($sqlCheck);
-            $stmtCheck->execute([':id_sesion' => $id_sesion, ':id_atleta' => $atleta['id_atleta']]);
-            $registroPrevio = $stmtCheck->fetch(PDO::FETCH_ASSOC);
-
-            if ($registroPrevio && $registroPrevio['estado'] === 'Presente') {
-                return [
-                    'exito' => false, 
-                    'status_http' => 'info', // Gatilla la alerta azul
-                    'nombre_atleta' => $nombreCompleto,
-                    'mensaje' => "¡Ya estaba presente! Registrado vía {$registroPrevio['tipo']}."
-                ];
-            }
-
-            $this->datos['id_atleta'] = $atleta['id_atleta'];
-            $this->datos['estado_asistencia'] = 'Presente';
-            $this->datos['justificacion'] = 'Validación Biométrica QR';
-            $this->datos['tipo'] = 'QR';
-
-            $exito = $this->guardar();
-
-            if ($exito) {
-                return [
-                    'exito' => true,
-                    'status_http' => 'success',
-                    'nombre_atleta' => $nombreCompleto,
-                    'mensaje' => 'Asistencia registrada exitosamente.'
-                ];
-            } else {
-                $errores = $this->obtenerErrores();
-                $mensajeFinal = !empty($errores) ? reset($errores) : 'Error de integridad al guardar.';
-                return ['exito' => false, 'mensaje' => $mensajeFinal];
-            }
-
-        } catch (PDOException $e) {
-            return ['exito' => false, 'mensaje' => 'Error BD: ' . $e->getMessage()];
-        }
-    } */
 
    
     private function guardar(): bool {
@@ -345,19 +293,7 @@ class Asistencia extends Conexion {
 
         $this->pdo->beginTransaction();
 
-           /*  $sqlCheck = "SELECT estado, tipo FROM asistencia WHERE id_sesion = :id_sesion AND id_atleta = :id_atleta";
-            $stmtCheck = $this->pdo->prepare($sqlCheck);
-            $stmtCheck->execute([
-                ':id_sesion' => $this->datos['id_sesion'],
-                ':id_atleta' => $this->datos['id_atleta']
-            ]);
-            $registroPrevio = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
-
-            if ($registroPrevio && $registroPrevio['tipo'] === 'QR' && $registroPrevio['estado'] === 'Presente') {
-                $this->agregarError('estado_asistencia', 'Acción denegada: Este atleta ya validó su presencia mediante el Escáner QR de forma inmutable.');
-                $this->pdo->rollBack();
-                return false;
-            } */
+          
 
             $this->validarInmutabilidadQR($this->datos['id_sesion'], $this->datos['id_atleta']);
 

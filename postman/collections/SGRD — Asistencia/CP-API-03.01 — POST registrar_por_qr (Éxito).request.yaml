@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=asistencia&accion=registrar_por_qr"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: asistencia
+  accion: registrar_por_qr
+body:
+  type: urlencoded
+  content:
+    id_sesion: "9"
+    token_qr: cf224e1c831e89f027980f234b99d280
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-03.01: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-03.01: status=success o info', () => {
+          const jsonData = pm.response.json();
+          pm.expect(['success', 'info']).to.include(jsonData.status);
+      });
+order: 1000

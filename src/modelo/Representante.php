@@ -23,7 +23,7 @@ class Representante extends Conexion {
     ];
 
     
-    public function setAtributos(array $payload): void {
+    /* public function setAtributos(array $payload): void {
         foreach ($this->camposPermitidos as $campo) {
             if (isset($payload[$campo])) {
                 
@@ -35,6 +35,53 @@ class Representante extends Conexion {
                     $this->datos[$campo] = $payload[$campo];
                 } else {
                     $this->datos[$campo] = null;
+                }
+            } else {
+                $this->datos[$campo] = null;
+            }
+        }
+    } */
+
+  /*   public function setAtributos(array $payload): void {
+    $this->resetearErrores(); // Limpiamos errores previos
+    foreach ($this->camposPermitidos as $campo) {
+        if (isset($payload[$campo])) {
+            if (is_array($payload[$campo])) {
+                // Si envían un array (ataque), lo anulamos y guardamos el error
+                $this->datos[$campo] = null;
+                $this->agregarError($campo, 'Formato de campo inválido: se esperaba un valor escalar.');
+            } else {
+                // Limpiamos los espacios en blanco (Soluciona CP-UNI-18.16)
+                $valor = is_string($payload[$campo]) ? trim($payload[$campo]) : $payload[$campo];
+                $this->datos[$campo] = $valor !== '' ? $valor : null;
+            }
+        } else {
+            $this->datos[$campo] = null;
+        }
+    }
+} */
+
+    public function setAtributos(array $payload): void {
+        $this->resetearErrores(); // Limpiamos errores previos
+        
+        // Excepciones: Campos que lógicamente SÍ deben ser un arreglo
+        $camposArrayPermitidos = ['atletas_ids', 'aut_medica', 'aut_imagen'];
+
+        foreach ($this->camposPermitidos as $campo) {
+            if (isset($payload[$campo])) {
+                if (is_array($payload[$campo])) {
+                    // Si envían un array, verificamos si está en la lista permitida
+                    if (in_array($campo, $camposArrayPermitidos)) {
+                        $this->datos[$campo] = $payload[$campo];
+                    } else {
+                        // Bloqueo de ataque de inyección en campos de texto (Soluciona CP-UNI-18.15)
+                        $this->datos[$campo] = null;
+                        $this->agregarError($campo, 'Formato de campo inválido: se esperaba un valor escalar.');
+                    }
+                } else {
+                    // Limpiamos los espacios en blanco (Soluciona CP-UNI-18.16)
+                    $valor = is_string($payload[$campo]) ? trim($payload[$campo]) : $payload[$campo];
+                    $this->datos[$campo] = $valor !== '' ? $valor : null;
                 }
             } else {
                 $this->datos[$campo] = null;
@@ -53,7 +100,7 @@ class Representante extends Conexion {
    
 
 private function validarDatos(): bool {
-        $this->resetearErrores();
+        //$this->resetearErrores();
 
         $cedula        = $this->datos['cedula'] ?? '';
         $nombres       = $this->datos['nombres'] ?? '';
@@ -106,7 +153,7 @@ private function validarDatos(): bool {
         $fechaNac = $this->datos['fecha_nacimiento'] ?? '';
 
         // --- VALIDACIÓN DE FECHA DE NACIMIENTO (REPRESENTANTE MAYOR DE EDAD) ---
-        if ($this->requerido($fechaNac, 'fecha_nacimiento')) {
+        /* if ($this->requerido($fechaNac, 'fecha_nacimiento')) {
             // Validar estructura base (YYYY-MM-DD)
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaNac)) {
                 $this->agregarError('fecha_nacimiento', 'Formato de fecha de nacimiento inválido.');
@@ -118,6 +165,22 @@ private function validarDatos(): bool {
                 
                 if ($edad < 18) {
                     $this->agregarError('fecha_nacimiento', 'El representante debe ser mayor de 18 años.');
+                }
+            }
+        } */
+       if ($this->requerido($fechaNac, 'fecha_nacimiento')) {
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaNac)) {
+                $this->agregarError('fecha_nacimiento', 'Formato de fecha de nacimiento inválido.');
+            } else {
+                $fechaNacimientoObj = new \DateTime($fechaNac);
+                $hoy = new \DateTime();
+                $edad = $hoy->diff($fechaNacimientoObj)->y;
+                
+                if ($edad < 18) {
+                    $this->agregarError('fecha_nacimiento', 'El representante debe ser mayor de 18 años.');
+                } elseif ($edad > 120) {
+                    // CORRECCIÓN DEL CP-UNI-18.03!
+                    $this->agregarError('fecha_nacimiento', 'La edad no puede superar los 120 años.');
                 }
             }
         }
@@ -300,15 +363,7 @@ private function validarDatos(): bool {
         try {
             $this->pdo->beginTransaction();
 
-            /* $sql = "INSERT INTO representantes (
-                        cedula, nombres, apellidos, parentesco, 
-                        telefono_principal, telefono_secundario, 
-                        correo, direccion, id_usuario
-                    ) VALUES (
-                        :cedula, :nombres, :apellidos, :parentesco, 
-                        :tel_prin, :tel_sec, 
-                        :correo, :direccion, :id_usuario
-                    )"; */
+          
 
         $sql = "INSERT INTO representantes (
             cedula, nombres, apellidos, parentesco, 
@@ -418,11 +473,7 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
             $conex->beginTransaction();
 
           
-            /* $sql = "UPDATE representantes SET 
-                        cedula = :cedula, nombres = :nombres, apellidos = :apellidos, 
-                        parentesco = :parentesco, telefono_principal = :tel_prin, 
-                        telefono_secundario = :tel_sec, correo = :correo, direccion = :direccion
-                    WHERE id_representante = :id_rep"; */
+           
 
             $sql = "UPDATE representantes SET 
             cedula = :cedula, nombres = :nombres, apellidos = :apellidos, 
@@ -457,10 +508,7 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
             $stmt->execute();
 
             
-           /*  $sqlDelete = "DELETE FROM atleta_representante WHERE id_representante = :id_rep";
-            $stmtDel = $conex->prepare($sqlDelete);
-            $stmtDel->bindValue(':id_rep', $id_representante, \PDO::PARAM_INT);
-            $stmtDel->execute(); */
+         
             $this->limpiarRelacionesAtletas($conex, $id_representante);
 
             
@@ -498,10 +546,7 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
             $stmtLogico->execute();
 
             
-            /* $sqlFisico = "DELETE FROM atleta_representante WHERE id_representante = :id";
-            $stmtFisico = $conex->prepare($sqlFisico);
-            $stmtFisico->bindValue(':id',(int)$this->datos['id_representante'], \PDO::PARAM_INT);
-            $stmtFisico->execute(); */
+           
              $this->limpiarRelacionesAtletas($conex, $id_representante);
 
             $conex->commit();
@@ -532,16 +577,7 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
     public function listarRepresentantes(string $estado = 'Activo'): array {
         $conex = $this->pdo;
         try {
-            /* $sql = "SELECT 
-                        r.id_representante, r.cedula, r.nombres, r.apellidos, 
-                        r.telefono_principal, r.parentesco, r.estado,
-                        GROUP_CONCAT(CONCAT(a.id_atleta, ':', a.nombres, ' ', a.apellidos) SEPARATOR '|') as atletas_vinculados
-                    FROM representantes r
-                    LEFT JOIN atleta_representante ar ON r.id_representante = ar.id_representante
-                    LEFT JOIN atletas a ON ar.id_atleta = a.id_atleta
-                    WHERE r.estado = :estado 
-                    GROUP BY r.id_representante
-                    ORDER BY r.id_representante DESC"; */
+           
                     
                     $sql ="SELECT * FROM vista_representantes_atletas
                     WHERE estado = :estado
