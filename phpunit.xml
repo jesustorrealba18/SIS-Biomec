@@ -3,7 +3,7 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="tests/bootstrap.php"
          colors="true"
-         cacheDirectory=".phpunit.cache">
+         cacheResultFile=".phpunit.cache/phpunit.result.cache">
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
@@ -15,9 +15,9 @@
             <directory>tests/Feature</directory>
         </testsuite>
     </testsuites>
-    <source>
+    <coverage processUncoveredFiles="true">
         <include>
             <directory suffix=".php">src</directory>
         </include>
-    </source>
+    </coverage>
 </phpunit>

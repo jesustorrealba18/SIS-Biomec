@@ -1,0 +1,230 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Plan Maestro de Pruebas - SIS-Biomec</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>
+  @page { size: 21.59cm 27.94cm; margin: 2.5cm; }
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; line-height: 1.35; }
+  h1 { font-size: 20pt; color: #0f3d6e; border-bottom: 3px solid #0f3d6e; padding-bottom: 6px; }
+  h2 { font-size: 15pt; color: #0f3d6e; margin-top: 22px; border-bottom: 1px solid #b8cfe5; padding-bottom: 3px; }
+  h3 { font-size: 12.5pt; color: #17548f; margin-top: 16px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px 0; font-size: 9.5pt; }
+  th { background: #0f3d6e; color: #ffffff; border: 1px solid #666; padding: 5px 7px; text-align: left; }
+  td { border: 1px solid #999; padding: 4px 7px; vertical-align: top; }
+  tr:nth-child(even) td { background: #eef4fa; }
+  code, pre { font-family: Consolas, monospace; font-size: 9.5pt; }
+  pre { background: #f2f2f2; border: 1px solid #ccc; padding: 10px; }
+  .ok { color: #1a7f37; font-weight: bold; }
+  .alerta { color: #b02a2a; font-weight: bold; }
+  .plan { color: #b07207; font-weight: bold; }
+  .portada { text-align: center; margin-top: 170px; }
+  .portada h1 { border: none; font-size: 26pt; }
+  .salto { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<div class="portada">
+  <h1>PLAN MAESTRO DE PRUEBAS</h1>
+  <p style="font-size:16pt;">SIS-Biomec<br>Sistema de Información para el Seguimiento Biomecánico y Deportivo (Natación)</p>
+  <p style="font-size:14pt; margin-top:30px;"><b>Equipo QA: Piscinas Bolivarianas</b></p>
+  <p style="font-size:12pt; margin-top:40px;">
+    Alcance: 7 módulos funcionales + 3 transversales<br>
+    Estado iteración 1: <span class="ok">87 casos · 266 aserciones · 100% aprobadas</span><br><br>
+    <b>Versión 1.0 — 25 de octubre de 2026</b>
+  </p>
+</div>
+
+<div class="salto"></div>
+
+<h2>1. Alcance y Módulos del Plan</h2>
+<p>El plan cubre la totalidad de los módulos funcionales del sistema. Los módulos 1 y 2 y los transversales ya cuentan con una primera ronda de pruebas ejecutada; los módulos 3–7 tienen pruebas planificadas para la siguiente iteración.</p>
+
+<h3>Módulo 1 — Login y Seguridad (RNF-01) · probado parcialmente</h3>
+<table>
+  <tr><th>Submódulo</th><th>Descripción</th></tr>
+  <tr><td>Autenticación</td><td>password_verify contra hash bcrypt; mensaje único anti-enumeración</td></tr>
+  <tr><td>Captcha</td><td>Imagen GD de 6 caracteres, case-insensitive, de un solo uso</td></tr>
+  <tr><td>Anti-fuerza bruta por cuenta</td><td>intentos_fallidos: <b>5 intentos → bloqueo 15 minutos</b> (bloqueado_hasta)</td></tr>
+  <tr><td>Anti-fuerza bruta por IP</td><td>Tabla intentos_login: <b>20 fallos / 15 minutos</b></td></tr>
+  <tr><td>RBAC</td><td>Autorizacion: permisos modulo.accion recargados por petición; exigir() → HTTP 403</td></tr>
+  <tr><td>Gestión de sesión</td><td>Timeout 28800 s (8 h), session_regenerate_id(true), cookies endurecidas</td></tr>
+  <tr><td>Bitácora</td><td>Operaciones CREATE/UPDATE/DELETE/LOGIN/LOGOUT/EXPORT con IP y user-agent</td></tr>
+  <tr><td>Recuperación de contraseña</td><td>Token con expiración + SMTP (PHPMailer)</td></tr>
+</table>
+
+<h3>Módulo 2 — Atletas (RF-01) · probado parcialmente (CRUD/token)</h3>
+<table>
+  <tr><th>Submódulo</th><th>Descripción</th></tr>
+  <tr><td>CRUD transaccional</td><td>Doble tabla atletas + atleta_datos_medicos (1:1); borrado lógico (estado='Inactivo')</td></tr>
+  <tr><td>Categoría FEVEDA automática</td><td>Trigger SQL por edad: Pre-Infantil (8-10), Infantil A (11-12), Infantil B (13-14), Juvenil A (15-16), Juvenil B (17-18), Maxima (19-99); fallbacks: &lt;8 → cat 1; sin match → cat 6</td></tr>
+  <tr><td>Foto de perfil</td><td>JPEG/PNG máx 2 MB, recorte 300×300</td></tr>
+  <tr><td>Token de asistencia</td><td>bin2hex(random_bytes(16)) → <b>32 hex</b>, UNIQUE en BD</td></tr>
+  <tr><td>Pase QR</td><td>Generación client-side (qrcodejs, nivel H) + lectura con cámara (html5-qrcode); validación server-side del token</td></tr>
+  <tr><td>Vinculación representante</td><td>Solo atletas <b>&lt; 18 años</b>, un representante activo; autorizaciones médica/imagen con triggers de fecha</td></tr>
+  <tr><td>Validaciones</td><td>Cédula V/E-1234567(8) única; enums sexo/estado/grupo sanguíneo; fechas no futuras</td></tr>
+</table>
+
+<h3>Módulo 3 — Antropometría (RF-05) · sin pruebas aún</h3>
+<table>
+  <tr><th>Submódulo</th><th>Descripción</th></tr>
+  <tr><td>Registro de medición</td><td>peso, talla, envergadura, perímetro abdominal, % grasa (manual) + IMC calculado server-side (1 decimal)</td></tr>
+  <tr><td>Edición controlada</td><td>Justificación obligatoria; id_atleta nunca se actualiza</td></tr>
+  <tr><td>Anulación/reactivación</td><td>Soft-delete (deleted_at + motivo); reactivar restaura alertas</td></tr>
+  <tr><td>Historial y gráficas</td><td>Evolución por atleta (Chart.js)</td></tr>
+  <tr><td>KPIs</td><td>Vencidas <b>&gt; 84 días</b>, cobertura ≤ 90 días, mediciones últimos 30 días</td></tr>
+  <tr><td>Alertas biológicas</td><td><b>Pérdida de peso ≥ 2.0 %</b> vs medición previa → PÉRDIDA_PESO_SEVERA, gravedad 3 → staff + entrenador</td></tr>
+  <tr><td>Cron de vencimiento</td><td>Notifica el día exacto <b>85</b> (ciclo objetivo 90 días) a atleta y representante</td></tr>
+  <tr><td>Aislamiento por rol</td><td>Atleta ve solo lo suyo; representante solo sus menores</td></tr>
+</table>
+<p><b>Límites biológicos validados (blindaje):</b> peso <b>20–200 kg</b> · talla y envergadura <b>100–250 cm</b> · perímetro abdominal <b>40–150 cm</b> · % grasa <b>3–50 %</b> · fecha no futura con máx <b>1 mes</b> de antigüedad.</p>
+
+<h3>Módulo 4 — Sesiones y Asistencia (RF-14 / RF-03) · sin pruebas aún</h3>
+<table>
+  <tr><th>Submódulo</th><th>Descripción</th></tr>
+  <tr><td>Planificación de sesiones</td><td>Cabecera + series por bloques (Calentamiento/Principal/VueltaCalma) y zonas Z1–Z5 con drills</td></tr>
+  <tr><td>Ciclo de vida</td><td>Planificada → Parcial (iniciar) → Completada / Cancelada; iniciar solo desde Planificada</td></tr>
+  <tr><td>Volumen</td><td>Planificado = Σ(repeticiones × distancia); ejecutado <b>≤ planificado</b> al cerrar</td></tr>
+  <tr><td>Asistencia por QR</td><td>Token valida pertenencia al grupo (estado='Activo'); valores forzados Presente/QR; <b>inmutable</b></td></tr>
+  <tr><td>Asistencia manual</td><td>Upsert Presente/Ausente/Justificado/Tardanza; Justificado exige motivo (5–255)</td></tr>
+  <tr><td>Convocados</td><td>Listado del grupo + estado actual + categoría FEVEDA</td></tr>
+  <tr><td>Notificaciones</td><td>Por grupo en cada evento de sesión; asistencia notifica a atleta (y representante si menor)</td></tr>
+</table>
+<p><b>Validaciones:</b> duración de sesión <b>15–480 min</b> · fecha no pasada al crear · series (repeticiones 1–100, distancia 25–10000 m, descanso ≤ 600 s).</p>
+
+<h3>Módulo 5 — Marcas y Telemetría (RF-06) · sin pruebas aún (compañero asignado)</h3>
+<table>
+  <tr><th>Submódulo</th><th>Descripción</th></tr>
+  <tr><td>Registro manual CRUD</td><td>Alta/editar/archivar (motivo ≥ 5)/reactivar, con bitácora y notificaciones</td></tr>
+  <tr><td><b>Regla XOR</b></td><td>id_sesion XOR id_evento: ambos → error; ninguno → error</td></tr>
+  <tr><td>Motor PB auto-reparable</td><td>Reset es_pb=0 de la categoría (atleta+estilo+distancia+piscina) y coronación del mejor Activo (tiempo ASC, desempate por fecha)</td></tr>
+  <tr><td>SWOLF</td><td>round(tiempo/largo + brazadas), largo 25/50 según piscina; solo si brazadas &gt; 0</td></tr>
+  <tr><td>Splits</td><td><b>Exactamente distancia/25</b> tramos; claves múltiplos de 25 ≤ distancia</td></tr>
+  <tr><td>Integridad sesión</td><td>Atleta con asistencia <b>Presente</b> + fecha de marca idéntica a la sesión</td></tr>
+  <tr><td>Integridad evento</td><td>Inscripción en evento_inscripcion + fecha dentro de [inicio, fin]</td></tr>
+  <tr><td>Telemetría en vivo</td><td>Tabla MEMORY telemetria_live; estados esperando/iniciando/en_curso/en_viraje/finalizado/cancelado; GC &gt; 15 min</td></tr>
+  <tr><td>Pizarra/lobby</td><td>Ghost PB (PB + reacción 0.65 s por defecto) como objetivo en vivo</td></tr>
+  <tr><td>Selectores y conversión</td><td>Cascada atletas→sesiones/eventos→presentes/inscritos; conversión 25↔50 m</td></tr>
+</table>
+
+<h3>Módulo 6 — Carga y Bienestar / RPE (RF-11) · sin pruebas aún</h3>
+<table>
+  <tr><th>Submódulo</th><th>Descripción</th></tr>
+  <tr><td>Registro RPE + bienestar</td><td>RPE, sueño, sensación muscular, estrés, metros, duración; vínculo opcional a sesión</td></tr>
+  <tr><td>Cálculo sRPE</td><td>Foster: sRPE = RPE × duración_min</td></tr>
+  <tr><td>Carga semanal</td><td>SUM(sRPE) últimos <b>7 días</b></td></tr>
+  <tr><td>Recomendaciones</td><td><b>Sobrecarga: &gt; 600 sRPE</b> → reducir volumen 20 %; <b>Recuperación: RPE prom. 3 días &gt; 7 y sueño prom. 3 días &lt; 6</b></td></tr>
+  <tr><td>Papelera</td><td>Soft-delete con justificación + reactivación + eliminación física solo desde papelera</td></tr>
+  <tr><td>Auditoría de inconsistencias</td><td><b>RPE = 1 el mismo día de un PB</b> → listado y anulación asistida</td></tr>
+  <tr><td>Sesiones pendientes de RPE</td><td>Completadas con asistencia y sin registro (límite 15)</td></tr>
+</table>
+<p><b>Límites validados:</b> <b>RPE &gt; 10 rechazado</b> (escala 1–10) · bienestar 1–10 por ítem · sueño <b>0–24 h</b> · fecha máx <b>1 mes</b> · unicidad por (atleta, sesión) · sesión <b>Completada</b> con asistencia Presente/Tardanza.</p>
+
+<h3>Módulo 7 — Lesiones y Coherencia Clínica (RF-10) · sin pruebas aún</h3>
+<table>
+  <tr><th>Submódulo</th><th>Descripción</th></tr>
+  <tr><td>Informe clínico CRUD</td><td>Registrar/editar/anular (motivo)/reactivar; borrado siempre lógico</td></tr>
+  <tr><td><b>Biyección clínica</b></td><td>molestia (1–10) → gravedad obligatoria: <b>1-3→Leve, 4-7→Moderada, 8-10→Grave</b> (molestia 9 = Grave, NUNCA Leve)</td></tr>
+  <tr><td>Coherencia zona↔lado</td><td>Zonas médicas sin lado; zonas centrales (Espalda/Cervical/Lumbar) solo Bilateral</td></tr>
+  <tr><td>Coherencia tipo↔zona</td><td>Enfermedad exige zona médica u Otra; tipos traumáticos sin zona médica; Enfermedad sin lateralidad</td></tr>
+  <tr><td>Catálogos</td><td>16 zonas · Izquierdo/Derecho/Bilateral · Sobreuso/Aguda/Recidiva/Enfermedad · Activa/EnRehabilitacion/Recuperada/Cronica</td></tr>
+  <tr><td>Detalle con cruce RPE</td><td>Historial registro_rpe en <b>± 15 días</b> + promedio RPE de <b>3 días previos</b></td></tr>
+  <tr><td>Alertas clínicas</td><td>Molestia <b>≥ 8</b> o Recidiva → gravedad 2/3; alta médica → ALTA_MEDICA gravedad 1</td></tr>
+  <tr><td>Detección de vulneración</td><td>Enums inválidos o bypass → bitácora INTENTO_BLOQUEADO + <b>HTTP 403</b></td></tr>
+  <tr><td>Notificaciones</td><td>4 audiencias: atleta (+representante si menor), entrenador, staff médico/admin (roles 1,3)</td></tr>
+</table>
+
+<h3>Módulos transversales · ya probados (iteración 1)</h3>
+<table>
+  <tr><th>Módulo</th><th>Estado</th></tr>
+  <tr><td>Usuarios y RBAC</td><td>6 casos unitarios + 6 integración</td></tr>
+  <tr><td>Eventos</td><td>13 unitarios + 5 integración (máquina de estados, inscripciones, conflictos)</td></tr>
+  <tr><td>Notificaciones</td><td>4 integración (envío, conteo, idempotencia, propiedad)</td></tr>
+  <tr><td>Humo global</td><td>16 casos (arranque, rutas, captcha, cabeceras, BDs)</td></tr>
+</table>
+
+<h2 class="salto">2. Objetivos de las Pruebas</h2>
+<ol>
+  <li><b>Validar la seguridad de acceso:</b> anti-fuerza bruta por cuenta (5 intentos/15 min) e IP (20 fallos/15 min), captcha, mensajes anti-enumeración, endurecimiento de sesión y RBAC.</li>
+  <li><b>Validar la protección contra IDOR:</b> scoping por rol — Atleta solo sus recursos, Representante sus menores, Entrenador sus grupos. Carga/Bienestar y Antropometría son la referencia de protección completa; se verificará que Marcas y la ruta pública <i>live</i> no expongan recursos ajenos.</li>
+  <li><b>Validar los límites biológicos:</b> rechazo de valores fisiológicamente imposibles (Peso &gt; 200 kg, RPE &gt; 10, talla/envergadura &gt; 250 cm, % grasa &gt; 50 %, sueño &gt; 24 h, perímetro &gt; 150 cm) y sus rangos mínimos.</li>
+  <li><b>Validar la biyección clínica estricta:</b> molestia↔gravedad determinista (Molestia 9 = Grave, NUNCA Leve), más coherencias zona↔lado y tipo↔zona.</li>
+  <li><b>Validar la regla XOR en marcas:</b> una marca pertenece a sesión <b>O</b> a evento, jamás a ambos ni a ninguno.</li>
+  <li><b>Validar la integridad de datos:</b> transacciones, FKs, triggers (categoría FEVEDA, fechas de autorización), unicidades (token QR, cédula, correo, RPE por sesión) y borrado lógico con motivo.</li>
+  <li><b>Validar reglas de negocio derivadas:</b> IMC, SWOLF, sRPE de Foster, recálculo auto-reparable de PB, alertas (pérdida peso ≥ 2 %, sobrecarga &gt; 600 sRPE, dolor agudo/recidiva, alta médica).</li>
+  <li><b>Verificar la continuidad operativa (humo):</b> arranque, protección de rutas, captcha operativo, cabeceras de seguridad y salud de ambas BDs.</li>
+</ol>
+
+<h2>3. Orden de Ejecución de los Módulos</h2>
+<p>La secuencia responde a las dependencias de datos de la base transaccional sis_natacion: cada módulo solo se prueba cuando sus datos pre-requisito existen y son consistentes.</p>
+<table>
+  <tr><th>#</th><th>Módulo (RF)</th><th>Dependencia que lo habilita</th></tr>
+  <tr><td>1</td><td><b>Login y Seguridad (RNF-01)</b></td><td>Sin dependencias. Genera usuarios con rol y sesiones válidas que consumen los demás módulos.</td></tr>
+  <tr><td>2</td><td><b>Atletas (RF-01) + QR</b></td><td>Requiere usuarios/roles. atletas.id_atleta es la FK raíz de antropometría, asistencia, marcas, RPE y lesiones; genera token_asistencia (paso 4).</td></tr>
+  <tr><td>3</td><td><b>Antropometría (RF-05)</b></td><td>Requiere atletas. Produce alertas_biologicas reutilizadas por lesiones (paso 7).</td></tr>
+  <tr><td>4</td><td><b>Sesiones y Asistencia (RF-14/RF-03)</b></td><td>Requiere atletas en grupos. Produce asistencia Presente y sesiones Completada, prerequisitos de los pasos 5 y 6.</td></tr>
+  <tr><td>5</td><td><b>Marcas y Telemetría (RF-06)</b></td><td>Requiere asistencia Presente + sesión con fecha idéntica, o inscripción en evento. Produce es_pb que consume el paso 6.</td></tr>
+  <tr><td>6</td><td><b>Carga y Bienestar (RF-11)</b></td><td>Requiere sesiones Completada + asistencia Presente/Tardanza (paso 4) y PB de marcas (paso 5) para la auditoría de inconsistencias.</td></tr>
+  <tr><td>7</td><td><b>Lesiones (RF-10)</b></td><td>Requiere atletas; su detalle cruza registro_rpe de los pasos 4–6 (±15 días). Escribe alertas_biologicas validadas contra el paso 3.</td></tr>
+</table>
+<pre>Login/Seguridad ──▶ Atletas (+QR) ──▶ Antropometría (alertas)
+        │                 │
+        │                 ├──▶ Sesiones + Asistencia (Presente / Completada)
+        │                 │            │
+        │                 │            ├──▶ Marcas + Telemetría (PB)
+        │                 │            │            │
+        │                 │            └──▶ Carga y Bienestar (RPE) ◀─┘
+        │                 │                         │
+        └─────────────────┴────────▶ Lesiones (cruce RPE + alertas) ◀─┘</pre>
+
+<h2>4. Responsabilidad de la Prueba</h2>
+<p><b>Equipo QA Piscinas Bolivarianas</b> — responsable de ejecutar, registrar y validar el presente plan.</p>
+<table>
+  <tr><th>Rol</th><th>Responsabilidad</th><th>Integrante</th></tr>
+  <tr><td>Coordinador QA</td><td>Plan maestro, criterios de entrada/salida, consolidación y aprobación</td><td>&lt;Nombre&gt;</td></tr>
+  <tr><td>Analista de Pruebas Backend</td><td>Suites unitarias e integración (BD real, autolimpieza TESTPRUEBA), reporte de defectos</td><td>&lt;Nombre&gt;</td></tr>
+  <tr><td>Probador de Seguridad</td><td>Fuerza bruta, IDOR, RBAC, sesiones, cabeceras (progpilot + ZAP)</td><td>&lt;Nombre&gt;</td></tr>
+  <tr><td>Probador Marcas / Telemetría</td><td>Módulo RF-06 completo: XOR, PB, SWOLF/splits, telemetría</td><td>&lt;Nombre (compañero asignado)&gt;</td></tr>
+  <tr><td>Probador Funcional</td><td>Humo HTTP, flujos de UI (QR, gráficas, papelera), verificación de hallazgos</td><td>&lt;Nombre&gt;</td></tr>
+</table>
+<p><b>Reglas operativas:</b> prefijo TESTPRUEBA con autolimpieza · evidencia JUnit por corrida (tests/results/) · defectos con convención DE-xx (defecto) / HA-xx (hallazgo).</p>
+
+<h2>5. Tipos de Prueba por Módulo</h2>
+<table>
+  <tr><th>Módulo</th><th>Unitarias</th><th>Humo</th><th>Integración BD</th><th>Seguridad</th></tr>
+  <tr><td>1. Login y Seguridad</td><td class="ok">✔</td><td class="ok">✔</td><td class="ok">✔</td><td class="plan">Planificado</td></tr>
+  <tr><td>2. Atletas</td><td class="ok">✔</td><td class="ok">✔</td><td class="ok">✔ (CP-INT-07..12)</td><td class="plan">Planificado</td></tr>
+  <tr><td>3. Antropometría</td><td class="plan">Planificado</td><td class="ok">✔</td><td class="plan">Planificado</td><td class="plan">Planificado (IDOR)</td></tr>
+  <tr><td>4. Sesiones/Asistencia</td><td class="plan">Planificado</td><td class="ok">✔</td><td class="plan">Planificado</td><td class="plan">Planificado</td></tr>
+  <tr><td>5. Marcas</td><td class="plan">Planificado (compañero)</td><td class="ok">✔</td><td class="plan">Compañero</td><td class="plan">Compañero (live)</td></tr>
+  <tr><td>6. Carga/Bienestar</td><td class="plan">Planificado</td><td class="ok">✔</td><td class="plan">Planificado</td><td class="plan">Planificado</td></tr>
+  <tr><td>7. Lesiones</td><td class="plan">Planificado</td><td class="ok">✔</td><td class="plan">Planificado</td><td class="plan">Planificado</td></tr>
+  <tr><td>Transversales (Usuarios/Eventos/Notificaciones)</td><td class="ok">✔ 27</td><td class="ok">✔ 16</td><td class="ok">✔ 18</td><td class="ok">✔ RBAC</td></tr>
+</table>
+<p>✔ = ejecutado en iteración 1 (el humo cubre la protección básica de rutas de todos los módulos). "Planificado/Compañero" = iteración 2.</p>
+
+<h2 class="salto">6. Riesgos y Condiciones Previas Detectadas</h2>
+<table>
+  <tr><th>ID</th><th>Riesgo / condición</th><th>Impacto</th><th>Mitigación</th></tr>
+  <tr><td>R-01</td><td>Captcha desactivado temporalmente (if (false &amp;&amp; ...) en loginControlador)</td><td>El login con captcha no ejercita la protección real</td><td>Reactivar antes de la campaña de seguridad</td></tr>
+  <tr><td>R-02</td><td>RATE_LIMIT_ENABLED=false en .env</td><td>Fuerza bruta por cuenta e IP inoperativa</td><td>Activar solo para pruebas de seguridad</td></tr>
+  <tr><td>R-03</td><td>Ruta live pública sin ownership</td><td>Exposición de telemetría/datos por id_atleta (IDOR potencial)</td><td>Caso de seguridad dedicado; evaluar token de pizarra o sesión</td></tr>
+  <tr><td>R-04</td><td>Enum asistencia: modelo valida "Retardo", BD usa "Tardanza"</td><td>Tardanza manual puede ser rechazada</td><td>Caso de regresión; alinear modelo o BD</td></tr>
+  <tr><td>R-05</td><td>Esquema lesiones desfasado con migraciones</td><td>Instalaciones nuevas fallarán</td><td>Migración 007 con el DDL real antes de probar el módulo</td></tr>
+  <tr><td>R-06</td><td>HA-01 (marca=0 aceptada) y HA-02 (fechas sin ceros) de iteración 1</td><td>Comportamiento no estricto aceptado</td><td>Tests fijan el comportamiento actual; decisión pendiente</td></tr>
+</table>
+
+<h2>7. Entorno, Criterios y Evidencias</h2>
+<p><b>Entorno:</b> PHP 8.0.30 · MariaDB 10.4.32 (XAMPP) · Apache 2.4 · PHPUnit 9.6.38 · BDs sis_natacion + sis_seguridad con migraciones 001–006.</p>
+<p><b>Criterios de entrada:</b> (1) Apache/MySQL activos y app respondiendo; (2) suite de humo (16 casos) en verde antes de integración; (3) BD migrada y respaldo reciente.</p>
+<p><b>Criterios de salida (por módulo):</b> (1) 100 % de casos ejecutados sin fallos altos abiertos; (2) cero registros TESTPRUEBA residuales; (3) evidencia JUnit generada; (4) hallazgos documentados con severidad.</p>
+<pre>vendor\bin\phpunit.bat --testsuite Unit          :: unitarias
+vendor\bin\phpunit.bat --testsuite Feature       :: humo (prerequisito)
+vendor\bin\phpunit.bat --testsuite Integration   :: integración BD real
+vendor\bin\phpunit.bat --testdox --log-junit tests\results\evidencia-FECHA.xml</pre>
+
+<p style="margin-top:30px; font-size:9pt; color:#666;">Plan Maestro de Pruebas — Equipo QA Piscinas Bolivarianas. Versión 1.0 (25/10/2026). Documento complementario: Plan y Reporte de Pruebas de la iteración 1.</p>
+
+</body>
+</html>

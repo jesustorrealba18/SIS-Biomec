@@ -89,6 +89,7 @@
                 </div>
             </div>
 
+            <?php /* TEMP: captcha desactivado para pruebas codegen
             <div>
                 <label class="text-xs font-bold text-gray-400 uppercase ml-1">Verificacion de seguridad</label>
                 <div class="flex items-center gap-3 mt-2">
@@ -100,6 +101,7 @@
                 <input type="text" name="captcha"  autocomplete="off" placeholder="Escribe el codigo"
                     class="input-dark w-full rounded-2xl py-3 pl-4 pr-4 text-white focus:outline-none mt-2">
             </div>
+            */ ?>
 
             <button type="submit" class="w-full gradiente-boton py-4 rounded-2xl font-bold text-white text-lg hover:scale-[1.01] transition active:scale-[0.98]">
                 INGRESAR

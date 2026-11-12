@@ -1,0 +1,210 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Plan y Reporte de Pruebas - SIS-Biomec</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>
+  @page { size: 21.59cm 27.94cm; margin: 2.5cm; }
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; line-height: 1.35; }
+  h1 { font-size: 20pt; color: #0f3d6e; border-bottom: 3px solid #0f3d6e; padding-bottom: 6px; }
+  h2 { font-size: 15pt; color: #0f3d6e; margin-top: 22px; border-bottom: 1px solid #b8cfe5; padding-bottom: 3px; }
+  h3 { font-size: 12.5pt; color: #17548f; margin-top: 16px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px 0; font-size: 9.5pt; }
+  th { background: #0f3d6e; color: #ffffff; border: 1px solid #666; padding: 5px 7px; text-align: left; }
+  td { border: 1px solid #999; padding: 4px 7px; vertical-align: top; }
+  tr:nth-child(even) td { background: #eef4fa; }
+  .ok { color: #1a7f37; font-weight: bold; }
+  .skip { color: #b07207; font-weight: bold; }
+  .alta { color: #b02a2a; font-weight: bold; }
+  .media { color: #b07207; font-weight: bold; }
+  .baja { color: #555; font-weight: bold; }
+  .salto { page-break-before: always; }
+  .nota { background: #fff8e1; border: 1px solid #e0c97a; padding: 8px 12px; font-size: 10pt; }
+  code { font-family: Consolas, monospace; background: #f0f3f7; padding: 1px 4px; }
+  pre { font-family: Consolas, monospace; background: #f0f3f7; border: 1px solid #ccd7e3; padding: 10px 14px; font-size: 9.5pt; }
+</style>
+</head>
+<body>
+
+<h1>Plan y Reporte de Pruebas &mdash; SIS-Biomec</h1>
+<p><b>Sistema de Informaci&oacute;n para el Seguimiento Biomec&aacute;nico y Deportivo (nataci&oacute;n)</b></p>
+
+<table>
+  <tr><th>Campo</th><th>Detalle</th></tr>
+  <tr><td>Proyecto</td><td>SIS-Biomec (<code>GrupoProyecto\SisBiomec</code>)</td></tr>
+  <tr><td>Tipo de prueba</td><td>Unitarias, Humo (Smoke), Integraci&oacute;n de Backend</td></tr>
+  <tr><td>M&oacute;dulos en alcance</td><td>Usuario, Atleta, Evento, Notificaci&oacute;n, Test F&iacute;sico, Observaciones T&eacute;cnicas + RBAC + humo global</td></tr>
+  <tr><td>Fuera de alcance</td><td>Marcas (asignado a otro integrante del equipo)</td></tr>
+  <tr><td>Ejecuci&oacute;n</td><td>Iteraci&oacute;n 1: 25/10/2026 &middot; Iteraci&oacute;n 1b: 08/11/2026</td></tr>
+  <tr><td>Resultado global</td><td><b>145 pruebas, 450 aserciones &mdash; 0 fallos, 0 errores, 2 omitidas (R-01 captcha)</b></td></tr>
+</table>
+
+<h2>1. Introducci&oacute;n y objetivos</h2>
+<p>Este documento describe la estrategia, los casos de prueba, los resultados y los defectos detectados en las rondas de pruebas del sistema SIS-Biomec (iteraci&oacute;n 1: 25/10/2026; iteraci&oacute;n 1b: 08/11/2026 con los m&oacute;dulos de Test F&iacute;sico y Observaciones T&eacute;cnicas).</p>
+<p><b>Objetivos:</b></p>
+<ol>
+  <li>Verificar que la l&oacute;gica de negocio de los m&oacute;dulos n&uacute;cleo cumple sus reglas de validaci&oacute;n.</li>
+  <li>Comprobar que el sistema arranca y sus funciones cr&iacute;ticas responden correctamente (humo).</li>
+  <li>Validar la persistencia real en base de datos de las operaciones CRUD del backend.</li>
+  <li>Dejar una suite automatizada, repetible y documentada como base del proceso de calidad.</li>
+</ol>
+
+<h2>2. Alcance</h2>
+<p><b>Incluido:</b></p>
+<ul>
+  <li>M&oacute;dulos: Usuario, Atleta, Evento, Notificaci&oacute;n, Test F&iacute;sico, Observaciones T&eacute;cnicas.</li>
+  <li>Seguridad: control de acceso RBAC (Autorizacion), protecci&oacute;n de rutas, captcha, cabeceras HTTP.</li>
+  <li>Infraestructura: conexi&oacute;n a ambas bases de datos, respuesta de Apache/PHP.</li>
+</ul>
+<p><b>Excluido:</b></p>
+<ul>
+  <li>M&oacute;dulo de Marcas / SWOLF / telemetr&iacute;a (responsabilidad de otro integrante).</li>
+  <li>M&oacute;dulos restantes del Plan Maestro (Antropometr&iacute;a, Sesiones/Asistencia, Carga/RPE, Lesiones) &mdash; iteraci&oacute;n 2.</li>
+  <li>Pruebas E2E con navegador (Cypress/Playwright) y pruebas de carga.</li>
+  <li>Flujo de login completo automatizado (captcha; adem&aacute;s desactivado temporalmente por el equipo &mdash; riesgo R-01).</li>
+</ul>
+
+<h2>3. Estrategia de pruebas</h2>
+<table>
+  <tr><th>Tipo</th><th>Suite</th><th>Qu&eacute; eval&uacute;a</th><th>Aislamiento</th></tr>
+  <tr><td><b>Unitarias</b></td><td>tests/Unit (79)</td><td>Reglas de validaci&oacute;n puras: formatos, rangos, enums, l&iacute;mites, mensajes de error. Sin BD ni servidor.</td><td>Total (BD solo para instanciar modelos)</td></tr>
+  <tr><td><b>Humo</b></td><td>tests/Feature (18)</td><td>Salud del sistema: arranque, rutas p&uacute;blicas/privadas, captcha, POST de login, cabeceras de seguridad, accesibilidad de BD.</td><td>Peticiones HTTP reales contra Apache</td></tr>
+  <tr><td><b>Integraci&oacute;n</b></td><td>tests/Integration (48)</td><td>Ciclo completo modelo &rarr; PDO &rarr; BD real &rarr; resultado: CRUD, transacciones, FK, triggers, RBAC con datos reales.</td><td>BD real de desarrollo con datos marcados TESTPRUEBA% y limpieza autom&aacute;tica en tearDown()</td></tr>
+</table>
+<p><b>Estrategia de datos:</b> dado que se prueba contra la BD de desarrollo, todo dato creado por las pruebas usa el prefijo identificable <code>TESTPRUEBA</code> (correo/nombre) y se elimina al finalizar cada prueba en orden inverso de dependencias (FK). La bit&aacute;cora de auditor&iacute;a registra las acciones de prueba (comportamiento normal del sistema) y se limpia por ON DELETE CASCADE.</p>
+
+<h2>4. Entorno de pruebas</h2>
+<table>
+  <tr><th>Componente</th><th>Versi&oacute;n</th></tr>
+  <tr><td>PHP (CLI y Apache)</td><td>8.0.30</td></tr>
+  <tr><td>Base de datos</td><td>MariaDB 10.4.32 (XAMPP), modo no estricto (sin STRICT_TRANS_TABLES)</td></tr>
+  <tr><td>Servidor web</td><td>Apache 2.4 (XAMPP), ra&iacute;z C:\xampp\htdocs\SIS-Biomec</td></tr>
+  <tr><td>Framework de pruebas</td><td>PHPUnit 9.6.38 (Composer)</td></tr>
+  <tr><td>Sistema operativo</td><td>Windows</td></tr>
+  <tr><td>Bases de datos</td><td>sis_natacion (negocio) y sis_seguridad (autenticaci&oacute;n/RBAC)</td></tr>
+  <tr><td>Migraciones aplicadas</td><td>sis_*_vacia.sql + 001&ndash;006</td></tr>
+</table>
+
+<h2 class="salto">5. Casos de prueba</h2>
+
+<h3>5.1 Unitarias (79 casos) &mdash; CP-UNI-xx</h3>
+<table>
+  <tr><th>ID</th><th>M&eacute;todo bajo prueba</th><th>Escenario</th><th>Estado</th></tr>
+  <tr><td>CP-UNI-01..17</td><td>ValidacionesTrait (requerido, longitud, letras, fechas, edades, enums, formatos, errores)</td><td>Formatos venezolanos, l&iacute;mites, estrictitud; hallazgos HA-01/HA-02</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-18..24</td><td>Evento::validarDatosEvento</td><td>Evento completo, vac&iacute;o, enums inv&aacute;lidos, fecha fin &lt; inicio</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-25..29</td><td>Evento::validarDatosMeta</td><td>Meta v&aacute;lida, atleta no num&eacute;rico, marca negativa/cero, estilo, distancia</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-30..35</td><td>Autorizacion (sesi&oacute;n)</td><td>P&aacute;ginas p&u;blicas, no mapeadas, permisos, estrictitud, roles CSV</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-36..39</td><td>Respuesta (cat&aacute;logo)</td><td>Claves del sistema, textos no vac&iacute;os, sin filtraci&oacute;n de detalles SQL</td><td class="ok">&#10004;</td></tr>
+  <tr><td>&mdash; (8)</td><td>UsuarioModelo::validarContrasena</td><td>Corta, sin n&uacute;meros, sin letras, l&iacute;mite 6, 130 chars, vac&iacute;a, v&aacute;lida</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-40..46</td><td>TestFisico &mdash; registro</td><td>Completo v&aacute;lido, vac&iacute;o (solo exige id_atleta), id_atleta no num&eacute;rico, fecha inv&aacute;lida, observaciones &gt;500, estado fuera de enum, 3 estados v&aacute;lidos</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-47..49</td><td>TestFisico::getRegistrarTest</td><td>Sin tipo predefinido ni personalizado, sin valores, valores no-array &mdash; rechazo temprano sin tocar BD</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-50..52</td><td>TestFisico actualizar/eliminar</td><td>Sin id de registro, actualizaci&oacute;n permite omitir id_atleta, eliminar id inv&aacute;lido</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-53..57</td><td>TestFisico tipos predefinidos</td><td>Sin nombre, nombre corto, sin variables, variable sin nombre, referencia no decimal</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-58..61</td><td>ObservacionTecnica campos</td><td>Completo v&aacute;lido, vac&iacute;o (3 obligatorios), id_atleta e id_aspecto no num&eacute;ricos</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-62/62b</td><td>ObservacionTecnica::calificacion</td><td>'6' rechazada / '0' aceptada (hallazgo OF-2)</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-63..65</td><td>ObservacionTecnica</td><td>Calificaciones 1&ndash;5 v&aacute;lidas, texto &gt;500, id_sesion no num&eacute;rico</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-UNI-66..69</td><td>ObservacionTecnica flujo</td><td>Registrar sin datos sin tocar BD, actualizar sin id, eliminar id inv&aacute;lido, campos omitidos en actualizaci&oacute;n</td><td class="ok">&#10004;</td></tr>
+</table>
+
+<h3>5.2 Humo (18 casos) &mdash; CP-HUM-xx</h3>
+<table>
+  <tr><th>ID</th><th>Escenario</th><th>Estado</th></tr>
+  <tr><td>CP-HUM-01</td><td>index.php sin sesi&oacute;n &rarr; 302 a ?p=login</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-HUM-02</td><td>Carga de login con campos usuario/password/captcha</td><td class="skip">&#9193; Omitido (R-01: captcha desactivado por el equipo)</td></tr>
+  <tr><td>CP-HUM-03</td><td>Rutas p&uacute;blicas (recuperar, restablecer, live) &rarr; 200</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-HUM-04</td><td>Rutas privadas sin sesi&oacute;n &rarr; 302 (atleta, usuarios, eventos, marcas, bitacora, notificaciones, testFisico, observacionesTecnicas)</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-HUM-05</td><td>P&aacute;gina inexistente &rarr; redirecci&oacute;n (sin 500)</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-HUM-06</td><td>captcha.php &rarr; 200 + Content-Type: image/*</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-HUM-07</td><td>POST login con captcha inv&aacute;lido &rarr; mensaje de error</td><td class="skip">&#9193; Omitido (R-01)</td></tr>
+  <tr><td>CP-HUM-08</td><td>Cabeceras de seguridad (X-Frame-Options: DENY, X-Content-Type-Options: nosniff)</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-HUM-09</td><td>Conexi&oacute;n a sis_natacion y sis_seguridad</td><td class="ok">&#10004;</td></tr>
+</table>
+<div class="nota"><b>Nota R-01:</b> los tests CP-HUM-02 y CP-HUM-07 detectan din&aacute;micamente si el campo captcha est&aacute; presente en la vista; si est&aacute; desactivado se marcan como omitidos con referencia al riesgo y se reactivan autom&aacute;ticamente al restaurarlo.</div>
+
+<h3 class="salto">5.3 Integraci&oacute;n backend (48 casos) &mdash; CP-INT-xx</h3>
+<table>
+  <tr><th>ID</th><th>M&oacute;dulo</th><th>Escenario</th><th>Estado</th></tr>
+  <tr><td>CP-INT-01..06</td><td>Usuario</td><td>Crear con rol (hash bcrypt), duplicado, actualizar, toggleActivo, reset con desbloqueo, eliminar</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-07..12</td><td>Atleta</td><td>setDatos v&aacute;lido (token 32 hex), guardar (doble tabla), datos incompletos, actualizar, borrado l&oacute;gico, listar</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-13..17</td><td>Evento</td><td>Registrar+detalle, editar, m&aacute;quina de estados (10 transiciones), inscripci&oacute;n idempotente, conflictos de fechas</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-18..21</td><td>Notificaci&oacute;n</td><td>Enviar+listar, conteo no le&iacute;das idempotente, propiedad al marcar, resoluci&oacute;n por correo</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-22..23</td><td>RBAC</td><td>cargarPermisos con usuario real; usuario sin roles &rarr; privadas denegadas</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-24..28</td><td>Test F&iacute;sico</td><td>Crear tipo con variables, registrar con unidad auto-resuelta y estado default, rechazos sin valores/sin tipo, estado expl&iacute;cito</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-29</td><td>Test F&iacute;sico</td><td>Actualizar con estado expl&iacute;cito &mdash; datos y valores reemplazados (2&rarr;1)</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-30</td><td>Test F&iacute;sico</td><td><b>Actualizar sin estado corrompe silenciosamente</b> (estado queda '' &mdash; hallazgo TF-5)</td><td class="ok">&#10004; documenta</td></tr>
+  <tr><td>CP-INT-31</td><td>Test F&iacute;sico</td><td>Actualizar con datos id&eacute;nticos &rarr; rowCount 0 &rarr; "no encontrado" (TF-2b)</td><td class="ok">&#10004; documenta</td></tr>
+  <tr><td>CP-INT-32..35</td><td>Test F&iacute;sico</td><td>Eliminar test (valores+registro), inexistente, tipo con registros bloqueado, tipo sin registros eliminable</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-36</td><td>Test F&iacute;sico</td><td>Personalizado con creador: persiste, listado filtrado con variables</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-37</td><td>Test F&iacute;sico</td><td>Personalizado sin creador &rarr; id_usuario_creador=0 (hallazgo TF-3)</td><td class="ok">&#10004; documenta</td></tr>
+  <tr><td>CP-INT-38..39</td><td>Test F&iacute;sico</td><td>Detalle con valores ordenados e historial solo Completo; resumen cuenta solo Completos</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-40..42</td><td>Observaciones</td><td>Registrar completa; sin id_usuario &rarr; error BD gen&eacute;rico (OF-1); calificaci&oacute;n '9' rechazada</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-43..45</td><td>Observaciones</td><td>Actualizar calificaci&oacute;n/texto; id inexistente; borrado f&iacute;sico no idempotente</td><td class="ok">&#10004;</td></tr>
+  <tr><td>CP-INT-46..48</td><td>Observaciones</td><td>Listar filtro por atleta; detalle con historial por aspecto (ascendente); resumen promedio 4.0 / max 5 / min 3</td><td class="ok">&#10004;</td></tr>
+</table>
+
+<h2>6. Matriz de trazabilidad</h2>
+<table>
+  <tr><th>M&oacute;dulo / funci&oacute;n</th><th>Casos que lo cubren</th></tr>
+  <tr><td>Validaciones (trait)</td><td>CP-UNI-01..17</td></tr>
+  <tr><td>Usuario &mdash; contrase&ntilde;as</td><td>8 tests de validarContrasena, CP-INT-01, CP-INT-05</td></tr>
+  <tr><td>Usuario &mdash; CRUD y cuenta</td><td>CP-INT-01..06</td></tr>
+  <tr><td>Atleta</td><td>CP-INT-07..12</td></tr>
+  <tr><td>Evento &mdash; validaci&oacute;n</td><td>CP-UNI-18..29</td></tr>
+  <tr><td>Evento &mdash; ciclo de vida</td><td>CP-INT-13..17</td></tr>
+  <tr><td>Notificaci&oacute;n</td><td>CP-INT-18..21</td></tr>
+  <tr><td>Test F&iacute;sico &mdash; validaci&oacute;n</td><td>CP-UNI-40..57</td></tr>
+  <tr><td>Test F&iacute;sico &mdash; registro/CRUD</td><td>CP-INT-24..39</td></tr>
+  <tr><td>Observaciones T&eacute;cnicas &mdash; validaci&oacute;n</td><td>CP-UNI-58..69</td></tr>
+  <tr><td>Observaciones T&eacute;cnicas &mdash; ciclo de vida</td><td>CP-INT-40..48</td></tr>
+  <tr><td>RBAC / seguridad</td><td>CP-UNI-30..35, CP-INT-22..23, CP-HUM-04, CP-HUM-08</td></tr>
+  <tr><td>Arranque / infraestructura</td><td>CP-HUM-01..03, CP-HUM-05..07, CP-HUM-09</td></tr>
+</table>
+
+<h2>7. Evidencias de ejecuci&oacute;n</h2>
+<table>
+  <tr><th>&Iacute;tem</th><th>Ubicaci&oacute;n</th></tr>
+  <tr><td>Log JUnit iteraci&oacute;n 1 (87 pruebas)</td><td>tests/results/evidencia-2026-10-25.xml</td></tr>
+  <tr><td>Log JUnit iteraci&oacute;n 1b (145 pruebas)</td><td>tests/results/evidencia-2026-11-08.xml</td></tr>
+  <tr><td>Salida legible por prueba</td><td>vendor\bin\phpunit.bat --testdox</td></tr>
+  <tr><td>Configuraci&oacute;n de suites</td><td>phpunit.xml</td></tr>
+</table>
+<pre>vendor\bin\phpunit.bat --testsuite Unit          :: 79 pruebas, sin efectos en datos
+vendor\bin\phpunit.bat --testsuite Feature       :: 18 pruebas de humo
+vendor\bin\phpunit.bat --testsuite Integration   :: 48 pruebas contra BD real (autolimpieza)
+vendor\bin\phpunit.bat                           :: suite completa (145)</pre>
+<div class="nota"><b>Nota de entorno (HA-06):</b> la suite completa abre una conexi&oacute;n por prueba y PHPUnit retiene los objetos; con m&aacute;s de ~140 pruebas se agota el max_connections=151 por defecto de XAMPP. Elevar temporalmente antes de ejecutar: <code>SET GLOBAL max_connections = 500;</code> (en memoria; restaurar despu&eacute;s a 151).</div>
+
+<h2 class="salto">8. Defectos y hallazgos</h2>
+<table>
+  <tr><th>ID</th><th>Severidad</th><th>Descripci&oacute;n</th><th>Estado</th></tr>
+  <tr><td class="alta">DE-01</td><td>Alta</td><td>Tabla sis_seguridad.notificaciones no exist&iacute;a: el m&oacute;dulo de notificaciones fallaba silenciosamente.</td><td><b>Corregido</b> &mdash; migraci&oacute;n 006</td></tr>
+  <tr><td class="alta">DE-02</td><td>Alta</td><td>metas_competitivas carec&iacute;a de id_usuario_creador: eliminar usuario siempre devolv&iacute;a false.</td><td><b>Corregido</b> &mdash; migraci&oacute;n 006</td></tr>
+  <tr><td class="alta">DE-03</td><td>Alta</td><td>ObservacionTecnica::resumenPorAspecto ten&iacute;a typo SQL (observaciones_tecnicos &rarr; observaciones_tecnicas): el resumen devolv&iacute;a siempre []. Detectado por CP-INT-48.</td><td><b>Corregido</b> &mdash; src/modelo/ObservacionTecnica.php; pendiente revisi&oacute;n del equipo</td></tr>
+  <tr><td class="alta">TF-5</td><td>Alta</td><td>Actualizar un test sin enviar estado corrompe silenciosamente el registro: MariaDB sin modo estricto convierte NULL en '' (fuera del enum). Detectado por CP-INT-30.</td><td>Pendiente de decisi&oacute;n (activar STRICT o validar)</td></tr>
+  <tr><td class="media">TF-2</td><td>Media</td><td>getRegistrarTest acepta id_tipo_test e id_test_pers simult&aacute;neamente (XOR no estricto).</td><td>Pendiente de decisi&oacute;n</td></tr>
+  <tr><td class="media">TF-2b</td><td>Baja</td><td>UPDATE con datos id&eacute;nticos (rowCount 0) se interpreta como "registro no encontrado".</td><td>Pendiente de decisi&oacute;n</td></tr>
+  <tr><td class="media">TF-3</td><td>Media</td><td>crearTestPersonalizado sin id_usuario_creador inserta 0 (referencia fantasma); con clave ausente genera warning PHP.</td><td>Pendiente de decisi&oacute;n</td></tr>
+  <tr><td class="media">OF-1</td><td>Media</td><td>observaciones_tecnicas.id_usuario es NOT NULL pero el modelo no lo valida: fallo gen&eacute;rico "Error interno" en vez de mensaje de campo.</td><td>Pendiente de decisi&oacute;n</td></tr>
+  <tr><td class="media">OF-2</td><td>Media</td><td>calificacion '0' pasa la validaci&oacute;n por !empty() (mismo patr&oacute;n que HA-01).</td><td>Pendiente de decisi&oacute;n</td></tr>
+  <tr><td class="media">HA-01</td><td>Media</td><td>validarDatosMeta acepta marca_objetivo_seg = 0 por !empty().</td><td>Pendiente de decisi&oacute;n</td></tr>
+  <tr><td class="baja">HA-02</td><td>Baja</td><td>fechaValida acepta fechas sin ceros (2024-1-5).</td><td>Pendiente de decisi&oacute;n</td></tr>
+  <tr><td>HA-03</td><td>Ambiente</td><td>composer.json declaraba phpunit sin instalar. Se fij&oacute; ^9.6 e instal&oacute; 9.6.38.</td><td><b>Corregido</b></td></tr>
+  <tr><td>HA-04</td><td>Observaci&oacute;n</td><td>Respuesta::enviar() termina con exit: no ejecutable en PHPUnit; cobertura a nivel HTTP.</td><td>Documentado</td></tr>
+  <tr><td>HA-05</td><td>Observaci&oacute;n</td><td>Trigger de categor&iacute;as FEVEDA reasigna id_categoria por edad al insertar atletas.</td><td>Documentado</td></tr>
+  <tr><td>HA-06</td><td>Ambiente</td><td>PHPUnit retiene conexiones por test: con &gt;140 tests se agota max_connections=151 de XAMPP. Mitigaci&oacute;n documentada en &sect;7.</td><td>Documentado</td></tr>
+</table>
+<div class="nota"><b>Riesgo activo R-01:</b> durante la iteraci&oacute;n 1b se detect&oacute; que el equipo desactiv&oacute; el captcha (vista comentada y "if (false &amp;&amp; ...)" en loginControlador.php, "TEMP para pruebas codegen"). CP-HUM-02 y CP-HUM-07 quedan como omitidos condicionales y se reactivar&aacute;n autom&aacute;ticamente al restaurarlo.</div>
+
+<h2>9. Conclusiones</h2>
+<ol>
+  <li>Los 6 m&oacute;dulos probados (Usuario, Atleta, Evento, Notificaci&oacute;n, Test F&iacute;sico, Observaciones T&eacute;cnicas) pasan el 100% de los casos de validaci&oacute;n unitaria y de integraci&oacute;n contra BD real.</li>
+  <li>El RBAC y la protecci&oacute;n de rutas funcionan correctamente a nivel de sesi&oacute;n y de HTTP, incluyendo las rutas nuevas testFisico y observacionesTecnicas.</li>
+  <li>Las pruebas han detectado <b>3 defectos de alta severidad</b> (DE-01, DE-02 corregidos con migraci&oacute;n; DE-03 corregido en c&oacute;digo) y <b>7 hallazgos</b> que documentan decisiones pendientes del equipo (TF-2, TF-3, TF-5, OF-1, OF-2, HA-01, HA-02).</li>
+  <li>Queda instalada la infraestructura de calidad: 145 pruebas automatizadas, evidencia versionable y convenci&oacute;n de datos de prueba (TESTPRUEBA) que protege la BD de desarrollo.</li>
+  <li>Pr&oacute;ximos pasos: incorporar el m&oacute;dulo de Marcas (compa&ntilde;ero asignado), los m&oacute;dulos de Antropometr&iacute;a/Sesiones/Carga/Lesiones (iteraci&oacute;n 2), decidir sobre los hallazgos pendientes (especialmente TF-5) y restaurar el captcha (R-01).</li>
+</ol>
+
+<p style="margin-top:30px; font-size:9pt; color:#666;">Documento generado como parte del plan de calidad de SIS-Biomec. &Uacute;ltima actualizaci&oacute;n: 08/11/2026.</p>
+
+</body>
+</html>

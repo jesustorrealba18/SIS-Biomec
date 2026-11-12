@@ -41,13 +41,6 @@ CREATE TABLE `bitacora` (
   `fecha_operacion` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Volcado de datos para la tabla `bitacora`
---
-
-INSERT INTO `bitacora` (`id_bitacora`, `id_usuario`, `modulo_afectado`, `tipo_operacion`, `id_registro_afectado`, `campo_modificado`, `valor_anterior`, `valor_nuevo`, `ip_origen`, `navegador`, `fecha_operacion`) VALUES
-(1, 1, 'Mantenimiento', 'EXPORT', NULL, 'Base de Datos', NULL, 'Backup generado: SGRD_Backup_2026-09-16_03-53-37.sql', '::1', NULL, '2026-09-15 21:53:38');
-
 -- --------------------------------------------------------
 
 --
@@ -62,22 +55,6 @@ CREATE TABLE `intentos_login` (
   `exitoso` tinyint(1) NOT NULL DEFAULT 0,
   `fecha_intento` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `intentos_login`
---
-
-INSERT INTO `intentos_login` (`id_intento`, `id_usuario`, `correoIntento`, `ip_origen`, `exitoso`, `fecha_intento`) VALUES
-(1, 1, 'admin@sgrd.com', '::1', 1, '2026-09-10 01:52:49'),
-(2, 1, 'admin@sgrd.com', '::1', 1, '2026-09-15 17:08:53'),
-(3, 1, 'admin@sgrd.com', '::1', 1, '2026-09-15 17:32:08'),
-(4, 1, 'admin@sgrd.com', '::1', 1, '2026-09-15 18:27:47'),
-(5, 1, 'admin@sgrd.com', '::1', 1, '2026-09-15 19:10:47'),
-(6, 1, 'admin@sgrd.com', '::1', 1, '2026-09-15 19:30:29'),
-(7, 1, 'admin@sgrd.com', '::1', 1, '2026-09-15 19:46:59'),
-(8, 1, 'admin@sgrd.com', '::1', 1, '2026-09-15 19:57:02'),
-(9, 1, 'admin@sgrd.com', '::1', 1, '2026-09-15 20:12:49'),
-(10, 1, 'admin@sgrd.com', '::1', 1, '2026-09-15 21:51:28');
 
 -- --------------------------------------------------------
 
@@ -203,7 +180,9 @@ INSERT INTO `permisos` (`id_permiso`, `modulo`, `accion`, `descripcion`) VALUES
 (88, 'asignacion', 'ver', 'ver asignacion de carriles'),
 (89, 'asignacion', 'gestionar', 'crear, editar y eliminar'),
 (90, 'horario', 'ver', 'ver horarios'),
-(91, 'horario', 'gestionar', 'crear, editar, eliminar');
+(91, 'horario', 'gestionar', 'crear, editar, eliminar'),
+(92, 'calendario', 'ver', 'Acceso al modulo de calendario'),
+(93, 'rpe', 'eliminardb', 'Eliminar permanentemente registro RPE');
 
 -- --------------------------------------------------------
 
@@ -328,6 +307,8 @@ INSERT INTO `rol_permisos` (`id_rol_permiso`, `id_rol`, `id_permiso`) VALUES
 (595, 1, 89),
 (596, 1, 90),
 (597, 1, 91),
+(598, 1, 92),
+(599, 1, 93),
 (70, 2, 1),
 (68, 2, 2),
 (69, 2, 3),
@@ -386,6 +367,7 @@ INSERT INTO `rol_permisos` (`id_rol_permiso`, `id_rol`, `id_permiso`) VALUES
 (309, 2, 74),
 (308, 2, 75),
 (439, 2, 85),
+(600, 2, 92),
 (129, 3, 1),
 (314, 3, 16),
 (128, 3, 18),
@@ -415,6 +397,7 @@ INSERT INTO `rol_permisos` (`id_rol_permiso`, `id_rol`, `id_permiso`) VALUES
 (349, 4, 43),
 (347, 4, 44),
 (353, 4, 70),
+(601, 4, 92),
 (356, 5, 1),
 (358, 5, 16),
 (355, 5, 18),
@@ -422,7 +405,8 @@ INSERT INTO `rol_permisos` (`id_rol_permiso`, `id_rol`, `id_permiso`) VALUES
 (362, 5, 45),
 (360, 5, 46),
 (361, 5, 47),
-(359, 5, 70);
+(359, 5, 70),
+(602, 5, 92);
 
 -- --------------------------------------------------------
 
@@ -596,13 +580,13 @@ ALTER TABLE `usuario_roles`
 -- AUTO_INCREMENT de la tabla `bitacora`
 --
 ALTER TABLE `bitacora`
-  MODIFY `id_bitacora` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_bitacora` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `intentos_login`
 --
 ALTER TABLE `intentos_login`
-  MODIFY `id_intento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id_intento` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `notificaciones`
@@ -614,7 +598,7 @@ ALTER TABLE `notificaciones`
 -- AUTO_INCREMENT de la tabla `permisos`
 --
 ALTER TABLE `permisos`
-  MODIFY `id_permiso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
+  MODIFY `id_permiso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;
 
 --
 -- AUTO_INCREMENT de la tabla `roles`
@@ -626,7 +610,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT de la tabla `rol_permisos`
 --
 ALTER TABLE `rol_permisos`
-  MODIFY `id_rol_permiso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=598;
+  MODIFY `id_rol_permiso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=603;
 
 --
 -- AUTO_INCREMENT de la tabla `sesiones_activas`

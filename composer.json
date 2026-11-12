@@ -6,6 +6,11 @@
             "GrupoProyecto\\SisBiomec\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "jesustorrealba18",
@@ -19,6 +24,6 @@
     },
     "require-dev": {
         "designsecurity/progpilot": "^1.2",
-        "phpunit/phpunit": "*"
+        "phpunit/phpunit": "^9.6"
     }
 }

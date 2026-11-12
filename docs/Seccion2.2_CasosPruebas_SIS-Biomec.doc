@@ -1,0 +1,188 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Seccion 2.2 - Casos de Pruebas Incluidos - SIS-Biomec</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>
+  @page { size: 21.59cm 27.94cm; margin: 2.5cm; }
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; line-height: 1.35; }
+  h1 { font-size: 20pt; color: #0f3d6e; border-bottom: 3px solid #0f3d6e; padding-bottom: 6px; }
+  h2 { font-size: 15pt; color: #0f3d6e; margin-top: 22px; border-bottom: 1px solid #b8cfe5; padding-bottom: 3px; }
+  h3 { font-size: 12.5pt; color: #17548f; margin-top: 16px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px 0; font-size: 9.5pt; }
+  th { background: #0f3d6e; color: #ffffff; border: 1px solid #666; padding: 5px 7px; text-align: left; }
+  td { border: 1px solid #999; padding: 4px 7px; vertical-align: top; }
+  tr:nth-child(even) td { background: #eef4fa; }
+  .ok { color: #1a7f37; font-weight: bold; }
+  .parcial { color: #b07207; font-weight: bold; }
+  .pend { color: #b02a2a; font-weight: bold; }
+  .skip { color: #b07207; font-weight: bold; }
+  .salto { page-break-before: always; }
+  .nota { background: #fff8e1; border: 1px solid #e0c97a; padding: 8px 12px; font-size: 10pt; }
+</style>
+</head>
+<body>
+
+<h1>Secci&oacute;n 2.2 &mdash; Casos de Pruebas Incluidos</h1>
+<p style="font-size:12pt;">SIS-Biomec &middot; Plan Maestro de Pruebas &middot; <b>Equipo QA Piscinas Bolivarianas</b><br>
+Complemento del Plan Maestro de Pruebas v1.0 &middot; Actualizado con la iteraci&oacute;n 1b (08/11/2026)</p>
+
+<h2>2.2.1 Tabla resumen de casos de prueba por m&oacute;dulo</h2>
+<div class="nota"><b>Nota de llenado:</b> la columna "# Casos Disponibles" contabiliza casos <b>ya dise&ntilde;ados y ejecutados</b> en las iteraciones 1 y 1b (145 en total: 0 fallos, 0 errores, 2 omitidos condicionales por R-01). Para los m&oacute;dulos cuya campa&ntilde;a de pruebas <b>a&uacute;n no se ha realizado</b>, la celda indica el estado y se deja el espacio reservado (secci&oacute;n 2.2.4) para completar cuando se ejecuten.</div>
+
+<table>
+  <tr><th># Casos Disponibles</th><th># Estimado Casos Nuevos</th><th>Tipo</th><th>M&oacute;dulo</th><th>Total de Casos</th><th>Estado</th></tr>
+  <tr><td>22</td><td>N/A</td><td>Unitaria, Integraci&oacute;n (BD), Humo (HTTP)</td><td>Seguridad y Login (RNF-01, RNF-11)</td><td>22</td><td class="parcial">&#9650; Parcialmente realizadas. Falta campa&ntilde;a de fuerza bruta e IDOR (condicionada a R-01/R-02: captcha y rate-limit desactivados). 2 casos de humo omitidos por R-01.</td></tr>
+  <tr><td>6</td><td>N/A</td><td>Unitaria, Integraci&oacute;n (BD), Caja Negra</td><td>Atletas (RF-01) y Representantes (RF-18)</td><td>6</td><td class="parcial">&#9650; Parcialmente realizadas: CRUD, doble tabla, token/QR server-side. Pendientes: trigger categor&iacute;a FEVEDA, QR extremo a extremo, representantes.</td></tr>
+  <tr><td>34</td><td>N/A</td><td>Unitaria, Integraci&oacute;n (BD)</td><td>Test F&iacute;sico (RF-02/RF-04): tipos predefinidos, personalizados, registros y valores</td><td>34</td><td class="ok">&#10004; Realizadas (iteraci&oacute;n 1b, 08/11/2026): 100% aprobadas. Hallazgos TF-2, TF-3, TF-5.</td></tr>
+  <tr><td>22</td><td>N/A</td><td>Unitaria, Integraci&oacute;n (BD)</td><td>Observaciones T&eacute;cnicas (RF-04/RF-17): aspectos, calificaciones 1&ndash;5, historial</td><td>22</td><td class="ok">&#10004; Realizadas (iteraci&oacute;n 1b, 08/11/2026): 100% aprobadas. Hallazgos OF-1, OF-2; defecto DE-03 detectado y corregido.</td></tr>
+  <tr><td>&mdash;</td><td>(por definir)</td><td>Unitaria, API, Integraci&oacute;n, Caja Negra (planificado)</td><td>Antropometr&iacute;a (RF-05) y Alertas Biol&oacute;gicas</td><td>&mdash;</td><td class="pend">&#10008; A&uacute;n no se han realizado. Espacio reservado (ver 2.2.4)</td></tr>
+  <tr><td>&mdash;</td><td>(por definir)</td><td>Unitaria, Integraci&oacute;n, Caja Negra, Humo (planificado)</td><td>Sesiones (RF-14) y Asistencia (RF-03)</td><td>&mdash;</td><td class="pend">&#10008; A&uacute;n no se han realizado. Espacio reservado (ver 2.2.4)</td></tr>
+  <tr><td>&mdash;</td><td>(por definir)</td><td>Unitaria, API, Integraci&oacute;n, Caja Negra, Humo (planificado)</td><td>Marcas y Telemetr&iacute;a (RF-06 a RF-09)</td><td>&mdash;</td><td class="pend">&#10008; A&uacute;n no se han realizado (asignadas al integrante de QA de Marcas). Espacio reservado (ver 2.2.4)</td></tr>
+  <tr><td>&mdash;</td><td>(por definir)</td><td>Unitaria, API, Integraci&oacute;n, Caja Negra (planificado)</td><td>Carga y Bienestar / RPE (RF-11)</td><td>&mdash;</td><td class="pend">&#10008; A&uacute;n no se han realizado. Espacio reservado (ver 2.2.4)</td></tr>
+  <tr><td>&mdash;</td><td>(por definir)</td><td>Unitaria, API, Integraci&oacute;n, Caja Negra (planificado)</td><td>Lesiones y Coherencia Cl&iacute;nica (RF-10)</td><td>&mdash;</td><td class="pend">&#10008; A&uacute;n no se han realizado. Espacio reservado (ver 2.2.4)</td></tr>
+  <tr><td>61</td><td>N/A</td><td>Unitaria, Integraci&oacute;n (BD/Trigger), Humo</td><td>Integraci&oacute;n Cruzada Global y Transversales (Validaciones, Usuarios/RBAC, Eventos, Notificaciones, Respuesta JSON)</td><td>61</td><td class="ok">&#10004; Realizadas en iteraci&oacute;n 1 (100% aprobadas)</td></tr>
+  <tr><td><b>145</b></td><td>&mdash;</td><td>&mdash;</td><td><b>TOTAL GENERAL</b></td><td><b>145 ejecutadas</b> + pendientes por llenar</td><td class="ok">450 aserciones &middot; 0 fallos &middot; 0 errores &middot; 2 omitidas (R-01)</td></tr>
+</table>
+
+<h2>2.2.2 Distribuci&oacute;n por tipo de prueba (casos ya ejecutados)</h2>
+<table>
+  <tr><th>Tipo de prueba</th><th>Suite (ubicaci&oacute;n)</th><th># Casos</th><th>Resultado</th><th>Estado</th></tr>
+  <tr><td>Unitarias</td><td>tests/Unit</td><td>79</td><td>79 &#10004; / 0 &#10008;</td><td class="ok">&#10004; Realizadas (25/10 y 08/11/2026)</td></tr>
+  <tr><td>Humo (HTTP real, caja negra)</td><td>tests/Feature</td><td>18</td><td>16 &#10004; / 2 omitidas (R-01)</td><td class="ok">&#10004; Realizadas (25/10 y 08/11/2026)</td></tr>
+  <tr><td>Integraci&oacute;n (BD real, transaccional)</td><td>tests/Integration</td><td>48</td><td>48 &#10004; / 0 &#10008;</td><td class="ok">&#10004; Realizadas (25/10 y 08/11/2026)</td></tr>
+  <tr><td>API (endpoints AJAX JSON)</td><td>tests/Feature (pendiente crear)</td><td>&mdash;</td><td>&mdash;</td><td class="pend">&#10008; A&uacute;n no realizadas</td></tr>
+  <tr><td>Seguridad (fuerza bruta, IDOR, ZAP)</td><td>por definir</td><td>&mdash;</td><td>&mdash;</td><td class="pend">&#10008; A&uacute;n no realizadas (condicionadas a R-01, R-02)</td></tr>
+  <tr><td><b>TOTAL EJECUTADO</b></td><td></td><td><b>145</b></td><td><b>143 &#10004; &middot; 2 omitidas &middot; 0 fallos (450 aserciones)</b></td><td class="ok">&mdash;</td></tr>
+</table>
+<p><i>Nota:</i> las pruebas de Humo e Integraci&oacute;n actuales ejercen el sistema por sus interfaces p&uacute;blicas (HTTP y BD), por lo que cubren parcialmente la clasificaci&oacute;n "Caja Negra".</p>
+
+<h2 class="salto">2.2.3 Detalle de casos ejecutados por m&oacute;dulo</h2>
+
+<h3>Seguridad y Login (RNF-01, RNF-11) &mdash; 22 casos</h3>
+<table>
+  <tr><th>ID</th><th>Tipo</th><th>Escenario</th></tr>
+  <tr><td>CP-UNI-30..35</td><td>Unitaria</td><td>RBAC de sesi&oacute;n: p&aacute;ginas p&uacute;blicas, no mapeadas, permisos exactos, estrictitud, roles CSV</td></tr>
+  <tr><td>CP-INT-22..23</td><td>Integraci&oacute;n</td><td>cargarPermisos con usuario real; usuario sin roles &rarr; privadas denegadas</td></tr>
+  <tr><td>CP-HUM-01</td><td>Humo</td><td>index.php sin sesi&oacute;n redirige 302 a ?p=login</td></tr>
+  <tr><td>CP-HUM-02</td><td>Humo</td><td>Login carga formulario completo &mdash; omitido por R-01 (captcha desactivado)</td></tr>
+  <tr><td>CP-HUM-04 (&times;8)</td><td>Humo</td><td>Rutas privadas redirigen sin sesi&oacute;n: atleta, usuarios, eventos, marcas, bitacora, notificaciones, testFisico, observacionesTecnicas</td></tr>
+  <tr><td>CP-HUM-05</td><td>Humo</td><td>P&aacute;gina inexistente no expone errores (redirige)</td></tr>
+  <tr><td>CP-HUM-06</td><td>Humo</td><td>captcha.php genera imagen v&aacute;lida</td></tr>
+  <tr><td>CP-HUM-07</td><td>Humo</td><td>POST de login rechaza captcha inv&aacute;lido &mdash; omitido por R-01</td></tr>
+  <tr><td>CP-HUM-08</td><td>Humo</td><td>Cabeceras X-Frame-Options: DENY y X-Content-Type-Options: nosniff</td></tr>
+  <tr><td>CP-HUM-09 (&times;2)</td><td>Humo</td><td>Accesibilidad de ambas BDs (sis_natacion y sis_seguridad)</td></tr>
+</table>
+
+<h3>Atletas (RF-01) &mdash; 6 casos</h3>
+<table>
+  <tr><th>ID</th><th>Tipo</th><th>Escenario</th></tr>
+  <tr><td>CP-INT-07</td><td>Integraci&oacute;n</td><td>setDatos v&aacute;lido: sin errores y token de asistencia 32 hex</td></tr>
+  <tr><td>CP-INT-08</td><td>Integraci&oacute;n</td><td>guardar() persiste en atletas y atleta_datos_medicos (1:1)</td></tr>
+  <tr><td>CP-INT-09</td><td>Integraci&oacute;n</td><td>Datos incompletos generan errores y no insertan</td></tr>
+  <tr><td>CP-INT-10</td><td>Integraci&oacute;n</td><td>actualizar() modifica el tel&eacute;fono</td></tr>
+  <tr><td>CP-INT-11</td><td>Integraci&oacute;n</td><td>eliminar() es borrado l&oacute;gico (Inactivo)</td></tr>
+  <tr><td>CP-INT-12</td><td>Integraci&oacute;n</td><td>listar() incluye al atleta creado</td></tr>
+</table>
+
+<h3>Test F&iacute;sico (RF-02/RF-04) &mdash; 34 casos &middot; iteraci&oacute;n 1b</h3>
+<table>
+  <tr><th>ID</th><th>Tipo</th><th>Escenario</th></tr>
+  <tr><td>CP-UNI-40..46</td><td>Unitaria</td><td>Validaci&oacute;n de registros: completo v&aacute;lido, vac&iacute;o (solo exige id_atleta), id no num&eacute;rico, fecha inv&aacute;lida, observaciones &gt;500, estado fuera de enum, 3 estados v&aacute;lidos</td></tr>
+  <tr><td>CP-UNI-47..49</td><td>Unitaria</td><td>getRegistrarTest: sin tipo, sin valores, valores no-array &mdash; rechazo sin tocar BD</td></tr>
+  <tr><td>CP-UNI-50..52</td><td>Unitaria</td><td>Actualizar sin id, actualizaci&oacute;n permite omitir id_atleta, eliminar id inv&aacute;lido</td></tr>
+  <tr><td>CP-UNI-53..57</td><td>Unitaria</td><td>Tipos predefinidos: sin nombre, nombre corto, sin variables, variable sin nombre, referencia no decimal</td></tr>
+  <tr><td>CP-INT-24..28</td><td>Integraci&oacute;n</td><td>Crear tipo con variables; registrar con unidad auto-resuelta y estado default Completo; rechazos sin valores/sin tipo; estado expl&iacute;cito Parcial</td></tr>
+  <tr><td>CP-INT-29</td><td>Integraci&oacute;n</td><td>Actualizar cambia datos y reemplaza valores (2&rarr;1)</td></tr>
+  <tr><td>CP-INT-30</td><td>Integraci&oacute;n</td><td><b>Actualizar sin estado corrompe silenciosamente</b> (estado queda '' fuera del enum &mdash; hallazgo TF-5)</td></tr>
+  <tr><td>CP-INT-31</td><td>Integraci&oacute;n</td><td>Actualizar con datos id&eacute;nticos &rarr; rowCount 0 &rarr; "no encontrado" (TF-2b)</td></tr>
+  <tr><td>CP-INT-32..35</td><td>Integraci&oacute;n</td><td>Eliminar test (valores+registro); inexistente; tipo con registros bloqueado (regla de negocio); tipo sin registros eliminable</td></tr>
+  <tr><td>CP-INT-36..37</td><td>Integraci&oacute;n</td><td>Personalizado con creador (listado filtrado con variables); sin creador &rarr; id_usuario_creador=0 (TF-3)</td></tr>
+  <tr><td>CP-INT-38..39</td><td>Integraci&oacute;n</td><td>Detalle con valores ordenados e historial solo Completo; resumen cuenta solo Completos</td></tr>
+</table>
+
+<h3 class="salto">Observaciones T&eacute;cnicas (RF-04/RF-17) &mdash; 22 casos &middot; iteraci&oacute;n 1b</h3>
+<table>
+  <tr><th>ID</th><th>Tipo</th><th>Escenario</th></tr>
+  <tr><td>CP-UNI-58..61</td><td>Unitaria</td><td>Completo v&aacute;lido; vac&iacute;o exige 3 obligatorios; id_atleta e id_aspecto no num&eacute;ricos</td></tr>
+  <tr><td>CP-UNI-62/62b</td><td>Unitaria</td><td>Calificaci&oacute;n '6' rechazada; calificaci&oacute;n '0' aceptada (comportamiento actual &mdash; hallazgo OF-2)</td></tr>
+  <tr><td>CP-UNI-63..65</td><td>Unitaria</td><td>Calificaciones 1&ndash;5 v&aacute;lidas; texto &gt;500; id_sesion no num&eacute;rico</td></tr>
+  <tr><td>CP-UNI-66..69</td><td>Unitaria</td><td>Registrar sin datos sin tocar BD; actualizar sin id; eliminar id inv&aacute;lido; campos omitidos en actualizaci&oacute;n</td></tr>
+  <tr><td>CP-INT-40</td><td>Integraci&oacute;n</td><td>Registrar completa: persiste calificaci&oacute;n, texto y fecha</td></tr>
+  <tr><td>CP-INT-41</td><td>Integraci&oacute;n</td><td><b>Sin id_usuario falla con error BD gen&eacute;rico</b> (hallazgo OF-1: columna NOT NULL sin validaci&oacute;n del modelo)</td></tr>
+  <tr><td>CP-INT-42..45</td><td>Integraci&oacute;n</td><td>Calificaci&oacute;n '9' rechazada; actualizar cambia calificaci&oacute;n/texto; id inexistente; borrado f&iacute;sico no idempotente</td></tr>
+  <tr><td>CP-INT-46..47</td><td>Integraci&oacute;n</td><td>Listar filtro por atleta con nombres; detalle con historial por aspecto ascendente</td></tr>
+  <tr><td>CP-INT-48</td><td>Integraci&oacute;n</td><td>Resumen por aspecto: promedio 4.0, max 5, min 3 (valida la correcci&oacute;n del defecto DE-03)</td></tr>
+</table>
+
+<h3>Transversales (Validaciones, Usuarios/RBAC, Eventos, Notificaciones) &mdash; 61 casos</h3>
+<table>
+  <tr><th>Grupo</th><th># Casos</th><th>Tipo</th><th>Resumen</th></tr>
+  <tr><td>ValidacionesTrait</td><td>17</td><td>Unitaria</td><td>Requerido, longitud, letras, fechas, edades, enums, n&uacute;meros, correo, c&eacute;dula, tel&eacute;fono, decimales, acumulaci&oacute;n de errores</td></tr>
+  <tr><td>Contrase&ntilde;as (UsuarioModelo)</td><td>8</td><td>Unitaria</td><td>Corta, sin n&uacute;meros, sin letras, l&iacute;mite 6, 130 caracteres, vac&iacute;a, v&aacute;lida</td></tr>
+  <tr><td>Validaci&oacute;n de eventos</td><td>13</td><td>Unitaria</td><td>Campos obligatorios, enums tipo/nivel/estado, fechas coherentes, metas (hallazgos HA-01/HA-02)</td></tr>
+  <tr><td>Respuesta JSON</td><td>4</td><td>Unitaria</td><td>Cat&aacute;logo de mensajes &iacute;ntegro, sin filtraci&oacute;n de detalles SQL</td></tr>
+  <tr><td>Usuarios (integraci&oacute;n)</td><td>6</td><td>Integraci&oacute;n</td><td>Crear con hash+rol, correo duplicado, actualizar, toggle activo, reset con desbloqueo, eliminar</td></tr>
+  <tr><td>Eventos (integraci&oacute;n)</td><td>5</td><td>Integraci&oacute;n</td><td>Registrar+detalle, editar, m&aacute;quina de estados (10 transiciones), inscripci&oacute;n idempotente, conflictos de fechas</td></tr>
+  <tr><td>Notificaciones (integraci&oacute;n)</td><td>4</td><td>Integraci&oacute;n</td><td>Env&iacute;o+listado, conteo no le&iacute;das+idempotencia, regla de propiedad, resoluci&oacute;n por correo</td></tr>
+  <tr><td>Humo global</td><td>4</td><td>Humo</td><td>Rutas p&uacute;blicas 200 (&times;3), accesibilidad de ambas BDs</td></tr>
+</table>
+
+<h2 class="salto">2.2.4 M&oacute;dulos pendientes &mdash; espacio reservado para llenar</h2>
+<div class="nota"><b>Estado: A&Uacute;N NO SE HAN REALIZADO.</b> Las siguientes plantillas se completar&aacute;n cuando se dise&ntilde;en y ejecuten los casos de cada m&oacute;dulo (iteraci&oacute;n 2). Test F&iacute;sico y Observaciones T&eacute;cnicas ya no figuran aqu&iacute;: sus campa&ntilde;as quedaron ejecutadas en la iteraci&oacute;n 1b.</div>
+
+<h3>Antropometr&iacute;a (RF-05) y Alertas Biol&oacute;gicas</h3>
+<table>
+  <tr><th>ID Caso</th><th>Tipo</th><th>Escenario</th><th>Resultado Esperado</th><th>Estado</th></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<h3>Sesiones (RF-14) y Asistencia (RF-03)</h3>
+<table>
+  <tr><th>ID Caso</th><th>Tipo</th><th>Escenario</th><th>Resultado Esperado</th><th>Estado</th></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<h3>Marcas y Telemetr&iacute;a (RF-06 a RF-09) &mdash; responsable: integrante QA de Marcas</h3>
+<table>
+  <tr><th>ID Caso</th><th>Tipo</th><th>Escenario</th><th>Resultado Esperado</th><th>Estado</th></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<h3>Carga y Bienestar / RPE (RF-11)</h3>
+<table>
+  <tr><th>ID Caso</th><th>Tipo</th><th>Escenario</th><th>Resultado Esperado</th><th>Estado</th></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<h3>Lesiones y Coherencia Cl&iacute;nica (RF-10)</h3>
+<table>
+  <tr><th>ID Caso</th><th>Tipo</th><th>Escenario</th><th>Resultado Esperado</th><th>Estado</th></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>(por llenar)</td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<h3>Casos nuevos estimados (a definir por el equipo)</h3>
+<table>
+  <tr><th>M&oacute;dulo</th><th># Estimado Casos Nuevos</th><th>Responsable</th></tr>
+  <tr><td>Antropometr&iacute;a</td><td>(por definir)</td><td>(por asignar)</td></tr>
+  <tr><td>Sesiones y Asistencia</td><td>(por definir)</td><td>(por asignar)</td></tr>
+  <tr><td>Marcas y Telemetr&iacute;a</td><td>(por definir)</td><td>Integrante QA de Marcas</td></tr>
+  <tr><td>Carga y Bienestar / RPE</td><td>(por definir)</td><td>(por asignar)</td></tr>
+  <tr><td>Lesiones</td><td>(por definir)</td><td>(por asignar)</td></tr>
+  <tr><td>Seguridad (fuerza bruta, IDOR)</td><td>(por definir)</td><td>(por asignar)</td></tr>
+</table>
+
+<p style="margin-top:30px; font-size:9pt; color:#666;">Secci&oacute;n 2.2 &mdash; Equipo QA Piscinas Bolivarianas. Fuente de cifras: ejecuciones PHPUnit 9.6.38 del 25/10/2026 (87 pruebas, evidencia-2026-10-25.xml) y del 08/11/2026 (145 pruebas, evidencia-2026-11-08.xml).</p>
+
+</body>
+</html>
