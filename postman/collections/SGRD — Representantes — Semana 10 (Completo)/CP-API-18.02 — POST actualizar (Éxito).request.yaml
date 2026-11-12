@@ -1,0 +1,61 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=representante"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: representante
+body:
+  type: urlencoded
+  content:
+    - key: accion
+      value: guardar
+      disabled: false
+    - key: cedula_original
+      value: "{{id_representante_test}}"
+      disabled: false
+    - key: cedula
+      value: V-11223344
+      disabled: false
+    - key: nombres
+      value: Carlos Alberto
+      disabled: false
+    - key: apellidos
+      value: Mendoza
+      disabled: false
+    - key: fecha_nacimiento
+      value: 1985-05-20
+      disabled: false
+    - key: parentesco
+      value: Padre
+      disabled: false
+    - key: telefono_principal
+      value: "04249998877"
+      disabled: false
+    - key: correo
+      value: carlos@example.com
+      disabled: false
+    - key: direccion_residencia
+      value: Av. Principal, Edificio B
+      disabled: false
+    - key: atletas_ids[]
+      value: "20"
+      disabled: false
+    - key: atletas_ids[]
+      value: "7"
+      disabled: false
+      description: ""
+    - key: aut_medica[20]
+      value: "0"
+      disabled: false
+    - key: aut_imagen[20]
+      value: "1"
+      disabled: false
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-18.02: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-18.02: status=success', () => pm.expect(pm.response.json().status).to.eql('success'));
+    language: text/javascript
+order: 2000

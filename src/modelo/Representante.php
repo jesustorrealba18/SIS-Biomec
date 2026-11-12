@@ -120,7 +120,8 @@ private function validarDatos(): bool {
         
         if ($this->requerido($cedula, 'cedula')) {
             $this->cedula($cedula, 'cedula');
-            $this->longitud($cedula, 'cedula', 6, 10);
+            //$this->longitud($cedula, 'cedula', 6, 10);
+            $this->longitud($cedula, 'cedula', 9, 10);
             
          
         }
@@ -342,6 +343,11 @@ private function validarDatos(): bool {
             $this->agregarError('id_representante', 'El ID del representante es requerido para eliminar.');
             return false;
         }
+
+    if (empty($this->datos['id_representante']) || (int)$this->datos['id_representante'] <= 0) {
+            $this->agregarError('id_representante', 'El ID del representante debe ser un entero positivo mayor a 0.');
+            return false;
+        }
          
         return $this->eliminarRepresentante();
     }    
@@ -350,6 +356,11 @@ private function validarDatos(): bool {
 
     if (empty($this->datos['id_representante'])) {
             $this->agregarError('id_representante', 'El ID del representante es requerido para reactivar.');
+            return false;
+        }
+
+    if (empty($this->datos['id_representante']) || (int)$this->datos['id_representante'] <= 0) {
+            $this->agregarError('id_representante', 'El ID del representante debe ser un entero positivo mayor a 0.');
             return false;
         }
        
@@ -533,7 +544,7 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
     }
 
 
-    private function eliminarRepresentante(): bool {
+/*     private function eliminarRepresentante(): bool {
         $conex = $this->pdo;
         try {
             $conex->beginTransaction();
@@ -571,7 +582,60 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
             error_log("Error Reactivando Representante: " . $e->getMessage());
             return false;
         }
-    }       
+    }    */    
+
+            private function eliminarRepresentante(): bool {
+        $conex = $this->pdo;
+        try {
+            $conex->beginTransaction();
+
+            $id_representante = (int)$this->datos['id_representante'];
+            
+            // CORRECCIÓN: Agregamos la condición AND estado = 'Activo'
+            $sqlLogico = "UPDATE representantes SET estado = 'Inactivo' WHERE id_representante = :id AND estado = 'Activo'";
+            $stmtLogico = $conex->prepare($sqlLogico);
+            $stmtLogico->bindValue(':id', $id_representante, \PDO::PARAM_INT);
+            $stmtLogico->execute();
+
+            // CORRECCIÓN: Verificamos si realmente se actualizó algo
+            if ($stmtLogico->rowCount() === 0) {
+                $this->agregarError('id_representante', 'El representante ya se encuentra inactivo o no existe.');
+                $conex->rollBack();
+                return false;
+            }
+
+            $this->limpiarRelacionesAtletas($conex, $id_representante);
+
+            $conex->commit();
+            return true;
+        } catch (\PDOException $e) {
+            $conex->rollBack();
+            error_log("Error Eliminando Representante: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function reactivarRepresentante(): bool {
+        $conex = $this->pdo;
+        try {
+            // CORRECCIÓN: Agregamos la condición AND estado = 'Inactivo'
+            $sql = "UPDATE representantes SET estado = 'Activo' WHERE id_representante = :id AND estado = 'Inactivo'";
+            $stmt = $conex->prepare($sql);
+            $stmt->bindValue(':id', (int)$this->datos['id_representante'], \PDO::PARAM_INT);
+            $stmt->execute();
+
+            // CORRECCIÓN: Verificamos si realmente se actualizó algo
+            if ($stmt->rowCount() === 0) {
+                $this->agregarError('id_representante', 'El representante ya se encuentra activo o no existe.');
+                return false;
+            }
+
+            return true;
+        } catch (\PDOException $e) {
+            error_log("Error Reactivando Representante: " . $e->getMessage());
+            return false;
+        }
+    }
 
     
     public function listarRepresentantes(string $estado = 'Activo'): array {
@@ -595,6 +659,14 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
    
    
     public function obtenerPorId(int $id): ?array {
+        $this->resetearErrores(); // Limpiamos errores previos
+
+        // 1. Validación lógica en el modelo
+        if ($id <= 0) {
+            $this->agregarError('id_representante', 'El ID del representante debe ser un entero positivo.');
+            return null;
+        }
+
         $conex = $this->pdo;
         try {
             $sql = "SELECT * FROM representantes WHERE id_representante = :id";
@@ -602,7 +674,14 @@ private function vincularAtletas(\PDO $conex, int $id_representante, array $dato
             $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
             $stmt->execute();
             $resultado = $stmt->fetch(\PDO::FETCH_ASSOC);
-            return $resultado ? $resultado : null;
+
+            if (!$resultado) {
+                $this->agregarError('id_representante', 'Representante no encontrado.');
+                return null;
+            }
+
+
+            return $resultado;
         } catch (\PDOException $e) {
             error_log("Error en obtenerPorId (Representante): " . $e->getMessage());
             return null;

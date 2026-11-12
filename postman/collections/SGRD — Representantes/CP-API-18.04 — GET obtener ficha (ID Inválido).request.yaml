@@ -15,4 +15,5 @@ scripts:
           const j = pm.response.json();
           pm.expect(j).to.be.null;
       });
+    language: text/javascript
 order: 3000

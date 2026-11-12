@@ -1,0 +1,73 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=representante"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+queryParams:
+  p: representante
+body:
+  type: formdata
+  content:
+    - type: text
+      key: accion
+      value: guardar
+      disabled: false
+    - type: text
+      key: cedula
+      value: V-11223344
+      disabled: false
+    - type: text
+      key: nombres
+      value: Carlos
+      disabled: false
+    - type: text
+      key: apellidos
+      value: Mendoza
+      disabled: false
+    - type: text
+      key: fecha_nacimiento
+      value: 1985-05-20
+      disabled: false
+    - type: text
+      key: parentesco
+      value: Padre
+      disabled: false
+    - type: text
+      key: telefono_principal
+      value: "04141234567"
+      disabled: false
+    - type: text
+      key: correo
+      value: carlos@example.com
+      disabled: false
+    - type: text
+      key: direccion_residencia
+      value: Av. Principal, Edificio A
+      disabled: false
+    - type: text
+      key: atletas_ids[]
+      value: "20"
+      disabled: false
+    - type: text
+      key: aut_medica[20]
+      value: "1"
+      disabled: false
+    - type: text
+      key: aut_imagen[20]
+      value: "0"
+      disabled: false
+    - type: file
+      key: foto
+      src:
+        - /C:/Users/admin/Desktop/WhatsApp Image 2026-11-12 at 13.25.49.jpeg
+      disabled: false
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-18.01: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-18.01: status=success', () => {
+          const j = pm.response.json();
+          pm.expect(j.status).to.eql('success');
+      });
+    language: text/javascript
+order: 1000

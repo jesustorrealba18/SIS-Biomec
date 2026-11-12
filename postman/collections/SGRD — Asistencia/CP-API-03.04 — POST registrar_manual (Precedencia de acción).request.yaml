@@ -25,4 +25,5 @@ scripts:
           pm.expect(jsonData.status).to.eql('success');
           pm.expect(jsonData.message).to.include('Estado actualizado correctamente');
       });
+    language: text/javascript
 order: 4000

@@ -1,15 +1,15 @@
 $kind: http-request
-url: "{{base_url}}/index.php?p=representante&accion=guardar"
+url: "{{base_url}}/index.php?p=representante"
 method: POST
 headers:
   Cookie: "{{PHPSESSID}}"
   Content-Type: "application/x-www-form-urlencoded"
 queryParams:
   p: representante
-  accion: guardar
 body:
   type: urlencoded
   content:
+    accion: "guardar"
     cedula: "V-11223344"
     nombres: "Carlos"
     apellidos: "Mendoza"
@@ -25,5 +25,7 @@ scripts:
   - type: afterResponse
     code: |-
       pm.test('CP-API-18.01: HTTP 200', () => pm.response.to.have.status(200));
-      pm.test('CP-API-18.01: status=success', () => pm.expect(pm.response.json().status).to.eql('success'));
-order: 1000
+      pm.test('CP-API-18.01: status=success', () => {
+          const j = pm.response.json();
+          pm.expect(j.status).to.eql('success');
+      });

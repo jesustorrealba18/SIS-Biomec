@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=representante"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: representante
+body:
+  type: urlencoded
+  content:
+    accion: eliminar
+    id_representante: "{{id_representante_test}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-18.05: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-18.05: status=success', () => pm.expect(pm.response.json().status).to.eql('success'));
+    language: text/javascript
+order: 6000

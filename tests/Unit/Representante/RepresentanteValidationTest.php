@@ -186,6 +186,50 @@ class RepresentanteValidationTest extends TestCase
         $this->assertEmpty($valores['telefono_emergencia'] ?? null, 'El teléfono de emergencia con espacios debe quedar vacío/nulo.');
     }
 
+            #[TestDox('CP-UNI-18.10: Boundary cédula (9 y 10 caracteres reales)')]
+    public function test_CP_UNI_18_10_boundaries_cedula(): void
+    {
+        // 5 caracteres (bajo mínimo real: "V-123") -> Debe rechazar
+        $this->representante->setAtributos($this->payloadBase(['cedula' => 'V-123']));
+        $this->assertFalse($this->invokePrivate('validarDatos'));
+
+        // 8 caracteres (bajo mínimo real: "V-123456") -> Debe rechazar (la regex exige 7 u 8 números)
+        $this->representante->setAtributos($this->payloadBase(['cedula' => 'V-123456']));
+        $this->assertFalse($this->invokePrivate('validarDatos'));
+
+        // 9 caracteres (mínimo exacto: "V-1234567") -> Debe aceptar
+        $this->representante->setAtributos($this->payloadBase(['cedula' => 'V-1234567']));
+        $this->assertTrue($this->invokePrivate('validarDatos'));
+
+        // 10 caracteres (máximo exacto: "V-12345678") -> Debe aceptar
+        $this->representante->setAtributos($this->payloadBase(['cedula' => 'V-12345678']));
+        $this->assertTrue($this->invokePrivate('validarDatos'));
+
+        // 11 caracteres (sobre máximo: "V-123456789") -> Debe rechazar
+        $this->representante->setAtributos($this->payloadBase(['cedula' => 'V-123456789']));
+        $this->assertFalse($this->invokePrivate('validarDatos'));
+    }
+
+    #[TestDox('CP-UNI-18.12: Boundary dirección (9, 10, 200, 201 caracteres)')]
+    public function test_CP_UNI_18_12_boundaries_direccion(): void
+    {
+        // 9 caracteres (bajo mínimo) -> Debe rechazar
+        $this->representante->setAtributos($this->payloadBase(['direccion_residencia' => 'Calle 123']));
+        $this->assertFalse($this->invokePrivate('validarDatos'));
+
+        // 10 caracteres (mínimo exacto) -> Debe aceptar
+        $this->representante->setAtributos($this->payloadBase(['direccion_residencia' => 'Calle 1234']));
+        $this->assertTrue($this->invokePrivate('validarDatos'));
+
+        // 200 caracteres (máximo exacto) -> Debe aceptar
+        $this->representante->setAtributos($this->payloadBase(['direccion_residencia' => str_repeat('A', 200)]));
+        $this->assertTrue($this->invokePrivate('validarDatos'));
+
+        // 201 caracteres (sobre máximo) -> Debe rechazar
+        $this->representante->setAtributos($this->payloadBase(['direccion_residencia' => str_repeat('A', 201)]));
+        $this->assertFalse($this->invokePrivate('validarDatos'));
+    }
+
     // ─────────────────────────────────────────────────────────────
     // GRUPO 5 — Reglas de Negocio (Requieren BD)
     // ─────────────────────────────────────────────────────────────

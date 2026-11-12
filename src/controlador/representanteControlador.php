@@ -18,10 +18,10 @@ $objAtleta = new Atleta();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
-
+$accion = $_POST['accion'] ?? $_GET['accion'] ?? '';
 
     
-    if (isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
+/*     if ($accion === 'eliminar') {
         Autorizacion::exigir('representantes', 'gestionar');
 
        $objRepresentante->setAtributos($_POST);
@@ -66,10 +66,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['status' => 'error', 'message' => 'No se pudo reactivar el registro.']);
         }
         exit;
+    }    */ 
+
+        if ($accion === 'eliminar') {
+        Autorizacion::exigir('representantes', 'gestionar');
+
+        $objRepresentante->setAtributos($_POST);
+
+        if ($objRepresentante->Eliminar()) {
+            
+            Bitacora::registrar(
+                $_SESSION['id'], 
+                'Representantes', 
+                'DELETE', 
+                $_POST['id_representante'], 
+                'Estado', 
+                'Activo', 
+                'Inactivo'
+            );
+            echo json_encode(['status' => 'success']);
+        } else {
+            // CORRECCIÓN: Agregamos código HTTP 400 y mostramos el error real del modelo
+            http_response_code(400); 
+            $errores = $objRepresentante->obtenerErrores();
+            $mensaje = !empty($errores) ? reset($errores) : 'No se pudo desactivar el registro.';
+            echo json_encode(['status' => 'error', 'message' => $mensaje]);
+        }
+        exit;
+    }
+
+    if (isset($_POST['accion']) && $_POST['accion'] === 'reactivar') {
+        Autorizacion::exigir('representantes', 'gestionar');
+      
+        $objRepresentante->setAtributos($_POST);
+
+        if ($objRepresentante->Reactivar()) {
+            Bitacora::registrar(
+                $_SESSION['id'], 
+                'Representantes', 
+                'RESTORE', 
+                $_POST['id_representante'], 
+                'Estado', 
+                'Inactivo', 
+                'Activo'
+            );
+            echo json_encode(['status' => 'success']);
+        } else {
+            // CORRECCIÓN: Agregamos código HTTP 400 y mostramos el error real del modelo
+            http_response_code(400);
+            $errores = $objRepresentante->obtenerErrores();
+            $mensaje = !empty($errores) ? reset($errores) : 'No se pudo reactivar el registro.';
+            echo json_encode(['status' => 'error', 'message' => $mensaje]);
+        }
+        exit;
     }    
     
 
-   if (isset($_POST['accion']) && $_POST['accion'] === 'guardar') {
+if ($accion === 'guardar') {
+   /* if (isset($_POST['accion']) && $_POST['accion'] === 'guardar') { */
    
     Autorizacion::exigir('representantes', 'gestionar');
     $excluirCedula = !empty($_POST['cedula_original']) ? $_POST['cedula_original'] : null;
@@ -203,8 +257,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['accion']) && $_GET['accion'] === 'obtenerRepresentante' && isset($_GET['id'])) {
         header('Content-Type: application/json');
        
-        echo json_encode($objRepresentante->obtenerPorId((int)$_GET['id']));
+      /*   echo json_encode($objRepresentante->obtenerPorId((int)$_GET['id']));
+        exit;  */
+        $representante = $objRepresentante->obtenerPorId((int)$_GET['id']);
+
+        // El controlador actúa como pivote comprobando la respuesta del modelo
+        if ($representante === null) {
+            $errores = $objRepresentante->obtenerErrores();
+            $mensaje = !empty($errores) ? reset($errores) : 'Representante no encontrado.';
+            
+            // Asignamos el código HTTP correcto según el error
+            if (strpos($mensaje, 'positivo') !== false) {
+                http_response_code(400); // Bad Request (ID negativo o cero)
+            } else {
+                http_response_code(404); // Not Found (ID válido pero no existe)
+            }
+
+            echo json_encode(['status' => 'error', 'message' => $mensaje]);
+            exit; 
+        }
+
+        // Si el modelo devolvió datos válidos, los enviamos
+        echo json_encode($representante);
         exit; 
+        
     }
 
     require_once 'vista/representante.php';

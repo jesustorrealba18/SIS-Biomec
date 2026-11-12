@@ -23,6 +23,7 @@ scripts:
     code: |-
       pm.test('CP-API-06.03: HTTP 200', () => pm.response.to.have.status(200));
       pm.test('CP-API-06.03: status=success', () => pm.expect(pm.response.json().status).to.eql('success'));
+    language: text/javascript
   - type: beforeRequest
     code: "let hoy = new Date();\r
 

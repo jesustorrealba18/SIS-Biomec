@@ -20,4 +20,5 @@ scripts:
           const jsonData = pm.response.json();
           pm.expect(['success', 'info']).to.include(jsonData.status);
       });
+    language: text/javascript
 order: 1000

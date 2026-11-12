@@ -17,4 +17,5 @@ scripts:
         const conFactor = arr.some(m => m.factor_conversion !== undefined);
         pm.expect(conFactor).to.be.true;
       });
+    language: text/javascript
 order: 4000

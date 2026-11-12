@@ -1,4 +1,5 @@
 $kind: http-request
+name: CP-API-06.07 — Validar rechazo por Fraude Logístico (Atleta Ausente)
 url: "{{base_url}}/index.php?p=marcas&accion=registrar"
 method: POST
 headers:
@@ -11,7 +12,7 @@ body:
   type: urlencoded
   content:
     id_atleta: "1"
-    id_sesion: "999" # Suponiendo que en la sesión 999 este atleta NO está presente
+    id_sesion: "999"
     estilo: Libre
     distancia_m: "100"
     tipo_piscina: 50m
@@ -30,4 +31,5 @@ scripts:
           // Verifica que el mensaje contenga la palabra clave de la regla de negocio
           pm.expect(JSON.stringify(jsonData)).to.include('Fraude Logístico');
       });
+    language: text/javascript
 order: 7000

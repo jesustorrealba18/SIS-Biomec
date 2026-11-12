@@ -1,5 +1,4 @@
 $kind: http-request
-description: ""
 url: http://localhost/ProyectoPiscinaBolivariana/SIS-Biomec/index.php?p=cargaBienestar&accion=registrar
 method: POST
 headers:

@@ -17,4 +17,5 @@ scripts:
           pm.expect(j).to.have.property('nombres');
           pm.expect(j).to.have.property('fecha_nacimiento');
       });
+    language: text/javascript
 order: 2000

@@ -1,0 +1,6 @@
+$kind: collection
+description: Colección completa de pruebas de API para el módulo de Representantes (RF-18).
+variables:
+  base_url: http://localhost/ProyectoPiscinaBolivariana/SIS-Biomec
+  PHPSESSID: PHPSESSID=olfk4d39f7nfe2k6i3o34qb4b5
+  id_representante_test: "12"

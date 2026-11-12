@@ -1,0 +1,25 @@
+$kind: http-request
+name: CP-API-18.07 — POST eliminar (Ya inactivo -> 400)
+url: "{{base_url}}/index.php?p=representante"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: representante
+body:
+  type: urlencoded
+  content:
+    accion: eliminar
+    id_representante: "{{id_representante_test}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-18.07: Debería rechazar si ya está inactivo', () => {
+          // Nota: Dependiendo de tu implementación actual, esto podría dar 200 o 400.
+          // Según la matriz, el resultado esperado es error.
+          const j = pm.response.json();
+          pm.expect(j.status).to.eql('error');
+      });
+    language: text/javascript
+order: 8000

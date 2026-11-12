@@ -15,4 +15,5 @@ scripts:
       pm.test('CP-API-06.02: objeto splits presente', () => pm.expect(j).to.have.property('splits'));
       pm.test('CP-API-06.02: objeto swolf_data presente', () => pm.expect(j).to.have.property('swolf_data'));
       pm.test('CP-API-06.02: historial_evolucion presente', () => pm.expect(j).to.have.property('historial_evolucion'));
+    language: text/javascript
 order: 2000

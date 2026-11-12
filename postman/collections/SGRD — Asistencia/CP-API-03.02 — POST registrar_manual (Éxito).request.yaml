@@ -23,4 +23,5 @@ scripts:
           const jsonData = pm.response.json();
           pm.expect(jsonData.status).to.eql('success');
       });
+    language: text/javascript
 order: 2000

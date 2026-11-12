@@ -1,0 +1,20 @@
+$kind: http-request
+name: CP-API-18.04a — GET obtener ficha (Inexistente -> 404)
+url: "{{base_url}}/index.php?p=representante&accion=obtenerRepresentante&id=999999"
+method: GET
+headers:
+  Cookie: "{{PHPSESSID}}"
+queryParams:
+  p: representante
+  accion: obtenerRepresentante
+  id: "999999"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-18.04a: HTTP 404 Not Found', () => pm.response.to.have.status(404));
+      pm.test('CP-API-18.04a: JSON de error', () => {
+          const j = pm.response.json();
+          pm.expect(j.status).to.eql('error');
+      });
+    language: text/javascript
+order: 4000

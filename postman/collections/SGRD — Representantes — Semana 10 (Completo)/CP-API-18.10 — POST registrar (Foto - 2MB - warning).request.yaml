@@ -1,0 +1,66 @@
+$kind: http-request
+name: CP-API-18.10 — POST registrar (Foto > 2MB -> warning)
+url: "{{base_url}}/index.php?p=representante"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+queryParams:
+  p: representante
+body:
+  type: formdata
+  content:
+    - type: text
+      key: accion
+      value: guardar
+      disabled: false
+    - type: text
+      key: cedula
+      value: V-99887766
+      disabled: false
+    - type: text
+      key: nombres
+      value: Test
+      disabled: false
+    - type: text
+      key: apellidos
+      value: Tamaño
+      disabled: false
+    - type: text
+      key: fecha_nacimiento
+      value: 1985-05-20
+      disabled: false
+    - type: text
+      key: parentesco
+      value: Padre
+      disabled: false
+    - type: text
+      key: telefono_principal
+      value: "04141234567"
+      disabled: false
+    - type: text
+      key: correo
+      value: test@example.com
+      disabled: false
+    - type: text
+      key: direccion_residencia
+      value: Calle Falsa 123
+      disabled: false
+    - type: text
+      key: atletas_ids[]
+      value: "20"
+      disabled: false
+    - type: file
+      key: foto
+      src:
+        - /C:/Users/admin/Desktop/Screenshot 2026-06-02 004633.png
+      disabled: false
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-18.10: Rechaza archivo > 2MB', () => {
+          const j = pm.response.json();
+          pm.expect(j.status).to.eql('warning');
+          pm.expect(JSON.stringify(j)).to.include('2MB');
+      });
+    language: text/javascript
+order: 11000

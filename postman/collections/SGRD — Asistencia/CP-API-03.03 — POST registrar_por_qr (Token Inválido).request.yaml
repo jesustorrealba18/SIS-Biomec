@@ -22,4 +22,5 @@ scripts:
           // Verifica que el mensaje contenga la alerta de seguridad
           pm.expect(jsonData.message).to.include('Acceso denegado');
       });
+    language: text/javascript
 order: 3000
