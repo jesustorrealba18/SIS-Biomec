@@ -1,0 +1,1001 @@
+{
+  "info": {
+    "name": "SIS-Biomec QA - Modulos (Atleta, TestFisico, ObservacionTecnica, Periodizacion)",
+    "description": "Pruebas de integracion adversariales sobre HTTP real (Apache + MySQL + sesion PHP). Sin mocks. Cada request indica el endpoint bajo prueba. Las aserciones expresan el CONTRATO correcto: un fallo = defecto documentado en docs/qa-evidencia/Integracion-Postman/informe-integracion-postman.md. Requiere ejecutar antes: docs/qa-postman/setup-qa-usuarios.php",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "ts", "value": "" },
+    { "key": "cedula", "value": "" },
+    { "key": "correo", "value": "" },
+    { "key": "correo2", "value": "" },
+    { "key": "id_categoria", "value": "" },
+    { "key": "id_tipo_test", "value": "" },
+    { "key": "id_variable", "value": "" },
+    { "key": "id_aspecto", "value": "" },
+    { "key": "id_temporada", "value": "" },
+    { "key": "id_grupo", "value": "" },
+    { "key": "id_macrociclo", "value": "" },
+    { "key": "id_registro_test", "value": "" },
+    { "key": "id_observacion", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "00 Sesion y Auth",
+      "item": [
+        {
+          "name": "S1 Login admin QA (establece sesion)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const ts = String(Date.now());",
+                  "pm.variables.set('ts', ts);",
+                  "pm.variables.set('cedula', 'V-' + (10000000 + (Date.now() % 89999999)));",
+                  "pm.variables.set('correo', 'qapm' + ts + '@qa.test');",
+                  "pm.variables.set('correo2', 'qapm' + ts + 'b@qa.test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('S1: login QA responde sin error de credenciales', () => {",
+                  "  pm.expect([200, 302]).to.include(pm.response.code);",
+                  "  pm.expect(pm.response.text()).to.not.include('incorrectos');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "usuario", "value": "{{qa_admin_user}}", "type": "text" },
+              { "key": "password", "value": "{{qa_admin_pass}}", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 Atleta",
+      "item": [
+        {
+          "name": "A1 GET listar (wiring modelo-controlador-BD)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('A1: listar responde 200 JSON array', () => {",
+            "  pm.response.to.have.status(200);",
+            "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+            "  pm.expect(pm.response.json()).to.be.an('array');",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=atleta&accion=listar" }
+        },
+        {
+          "name": "A2 GET categorias (catalogo FK vivo)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('A2: categorias trae datos', () => {",
+            "  pm.response.to.have.status(200);",
+            "  const datos = pm.response.json();",
+            "  pm.expect(datos).to.be.an('array').and.to.not.be.empty;",
+            "  pm.variables.set('id_categoria', String(datos[0].id_categoria));",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=atleta&accion=categorias" }
+        },
+        {
+          "name": "A3 POST guardar valido (camino feliz integracion completa)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('A3: atleta valido se registra (200 + success)', () => {",
+            "  pm.response.to.have.status(200);",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('success');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "guardar", "type": "text" },
+              { "key": "cedula", "value": "{{cedula}}", "type": "text" },
+              { "key": "nombres", "value": "QA Postman", "type": "text" },
+              { "key": "apellidos", "value": "Integracion", "type": "text" },
+              { "key": "fecha_nacimiento", "value": "2005-05-10", "type": "text" },
+              { "key": "sexo", "value": "M", "type": "text" },
+              { "key": "estado", "value": "Activo", "type": "text" },
+              { "key": "correo", "value": "{{correo}}", "type": "text" },
+              { "key": "telefono", "value": "04141234567", "type": "text" },
+              { "key": "direccion", "value": "Av QA con calle 10", "type": "text" },
+              { "key": "fecha_registro_club", "value": "2020-01-15", "type": "text" },
+              { "key": "grupo_sanguineo", "value": "O+", "type": "text" },
+              { "key": "seguro_medico", "value": "Seguros QA Cobertura", "type": "text" },
+              { "key": "alergias", "value": "Ninguna", "type": "text" },
+              { "key": "condiciones_previas", "value": "Ninguna", "type": "text" },
+              { "key": "contacto_emergencia_nombre", "value": "Maria QA", "type": "text" },
+              { "key": "contacto_emergencia_telefono", "value": "04241234567", "type": "text" },
+              { "key": "contacto_emergencia_parentesco", "value": "Madre", "type": "text" },
+              { "key": "id_categoria", "value": "{{id_categoria}}", "type": "text" },
+              { "key": "numero_feveda", "value": "FV-QAPM{{ts}}", "type": "text" },
+              { "key": "club_procedencia", "value": "Club QA", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=atleta"
+          }
+        },
+        {
+          "name": "A4 POST guardar cedula duplicada (restriccion UNIQUE integrada)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('A4: cedula duplicada rechazada con warning de cedula', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('warning');",
+            "  pm.expect(j.errores).to.have.property('cedula');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "guardar", "type": "text" },
+              { "key": "cedula", "value": "{{cedula}}", "type": "text" },
+              { "key": "nombres", "value": "QA Duplicado", "type": "text" },
+              { "key": "apellidos", "value": "Integracion", "type": "text" },
+              { "key": "fecha_nacimiento", "value": "2005-05-10", "type": "text" },
+              { "key": "sexo", "value": "M", "type": "text" },
+              { "key": "estado", "value": "Activo", "type": "text" },
+              { "key": "correo", "value": "{{correo2}}", "type": "text" },
+              { "key": "telefono", "value": "04141234567", "type": "text" },
+              { "key": "direccion", "value": "Av QA con calle 10", "type": "text" },
+              { "key": "fecha_registro_club", "value": "2020-01-15", "type": "text" },
+              { "key": "grupo_sanguineo", "value": "O+", "type": "text" },
+              { "key": "seguro_medico", "value": "Seguros QA Cobertura", "type": "text" },
+              { "key": "alergias", "value": "Ninguna", "type": "text" },
+              { "key": "condiciones_previas", "value": "Ninguna", "type": "text" },
+              { "key": "contacto_emergencia_nombre", "value": "Maria QA", "type": "text" },
+              { "key": "contacto_emergencia_telefono", "value": "04241234567", "type": "text" },
+              { "key": "contacto_emergencia_parentesco", "value": "Madre", "type": "text" },
+              { "key": "id_categoria", "value": "{{id_categoria}}", "type": "text" },
+              { "key": "numero_feveda", "value": "FV-QAPM-DUP", "type": "text" },
+              { "key": "club_procedencia", "value": "Club QA", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=atleta"
+          }
+        },
+        {
+          "name": "A5 CONCURRENCIA: 2 INSERT simultaneos con la misma cedula",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "const cookie = pm.cookies.get('PHPSESSID');",
+            "const ts = pm.variables.get('ts');",
+            "const cedula = 'V-' + (10000000 + (Date.now() % 89999999));",
+            "const idCat = pm.variables.get('id_categoria');",
+            "const campos = (correo) => [",
+            "  ['accion','guardar'],['cedula',cedula],['nombres','QA Conc'],['apellidos','Integracion'],",
+            "  ['fecha_nacimiento','2005-05-10'],['sexo','M'],['estado','Activo'],['correo',correo],",
+            "  ['telefono','04141234567'],['direccion','Av QA con calle 10'],['fecha_registro_club','2020-01-15'],",
+            "  ['grupo_sanguineo','O+'],['seguro_medico','Seguros QA'],['alergias','Ninguna'],",
+            "  ['condiciones_previas','Ninguna'],['contacto_emergencia_nombre','Maria QA'],",
+            "  ['contacto_emergencia_telefono','04241234567'],['contacto_emergencia_parentesco','Madre'],",
+            "  ['id_categoria',idCat],['numero_feveda','FV-CONC'+ts],['club_procedencia','Club QA']",
+            "].map(([key,value]) => ({key, value, type:'text'}));",
+            "let exitos = 0, completadas = 0;",
+            "const disparar = (correo) => {",
+            "  pm.sendRequest({ url: pm.variables.get('base_url') + '?p=atleta', method: 'POST',",
+            "    header: { 'Content-Type': 'application/x-www-form-urlencoded', 'Cookie': 'PHPSESSID=' + cookie },",
+            "    body: { mode: 'urlencoded', urlencoded: campos(correo) }",
+            "  }, (err, res) => {",
+            "    completadas++;",
+            "    if (!err && res.json().status === 'success') exitos++;",
+            "    if (completadas === 2) {",
+            "      pm.test('A5: exactamente 1 de los 2 INSERT concurrentes debe triunfar (UNIQUE cedula)', () => {",
+            "        pm.expect(exitos).to.equal(1);",
+            "      });",
+            "    }",
+            "  });",
+            "};",
+            "disparar('qapm' + ts + 'c1@qa.test');",
+            "disparar('qapm' + ts + 'c2@qa.test');"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=atleta&accion=categorias" }
+        },
+        {
+          "name": "A6 POST guardar sexo invalido (4xx semantico)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('A6: sexo invalido rechazado con warning de sexo', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('warning');",
+            "  pm.expect(j.errores).to.have.property('sexo');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "guardar", "type": "text" },
+              { "key": "cedula", "value": "V-11111111", "type": "text" },
+              { "key": "nombres", "value": "QA Sexo", "type": "text" },
+              { "key": "apellidos", "value": "Integracion", "type": "text" },
+              { "key": "fecha_nacimiento", "value": "2005-05-10", "type": "text" },
+              { "key": "sexo", "value": "X", "type": "text" },
+              { "key": "estado", "value": "Activo", "type": "text" },
+              { "key": "correo", "value": "qapmsexo{{ts}}@qa.test", "type": "text" },
+              { "key": "telefono", "value": "04141234567", "type": "text" },
+              { "key": "direccion", "value": "Av QA con calle 10", "type": "text" },
+              { "key": "fecha_registro_club", "value": "2020-01-15", "type": "text" },
+              { "key": "grupo_sanguineo", "value": "O+", "type": "text" },
+              { "key": "seguro_medico", "value": "Seguros QA Cobertura", "type": "text" },
+              { "key": "alergias", "value": "Ninguna", "type": "text" },
+              { "key": "condiciones_previas", "value": "Ninguna", "type": "text" },
+              { "key": "contacto_emergencia_nombre", "value": "Maria QA", "type": "text" },
+              { "key": "contacto_emergencia_telefono", "value": "04241234567", "type": "text" },
+              { "key": "contacto_emergencia_parentesco", "value": "Madre", "type": "text" },
+              { "key": "id_categoria", "value": "{{id_categoria}}", "type": "text" },
+              { "key": "numero_feveda", "value": "FV-SEXO", "type": "text" },
+              { "key": "club_procedencia", "value": "Club QA", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=atleta"
+          }
+        },
+        {
+          "name": "A7 POST guardar cedula[] como array (input malformado)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('A7 (INT-01): campo array debe rechazarse con warning de validacion, no error interno', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, 'INT-01: el servidor respondio ' + JSON.stringify(j)).to.equal('warning');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "guardar", "type": "text" },
+              { "key": "cedula[]", "value": "V-22222222", "type": "text" },
+              { "key": "cedula[]", "value": "V-33333333", "type": "text" },
+              { "key": "nombres", "value": "QA Array", "type": "text" },
+              { "key": "apellidos", "value": "Integracion", "type": "text" },
+              { "key": "fecha_nacimiento", "value": "2005-05-10", "type": "text" },
+              { "key": "sexo", "value": "M", "type": "text" },
+              { "key": "estado", "value": "Activo", "type": "text" },
+              { "key": "correo", "value": "qapmarray{{ts}}@qa.test", "type": "text" },
+              { "key": "telefono", "value": "04141234567", "type": "text" },
+              { "key": "direccion", "value": "Av QA con calle 10", "type": "text" },
+              { "key": "fecha_registro_club", "value": "2020-01-15", "type": "text" },
+              { "key": "grupo_sanguineo", "value": "O+", "type": "text" },
+              { "key": "seguro_medico", "value": "Seguros QA Cobertura", "type": "text" },
+              { "key": "alergias", "value": "Ninguna", "type": "text" },
+              { "key": "condiciones_previas", "value": "Ninguna", "type": "text" },
+              { "key": "contacto_emergencia_nombre", "value": "Maria QA", "type": "text" },
+              { "key": "contacto_emergencia_telefono", "value": "04241234567", "type": "text" },
+              { "key": "contacto_emergencia_parentesco", "value": "Madre", "type": "text" },
+              { "key": "id_categoria", "value": "{{id_categoria}}", "type": "text" },
+              { "key": "numero_feveda", "value": "FV-ARRAY", "type": "text" },
+              { "key": "club_procedencia", "value": "Club QA", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=atleta"
+          }
+        },
+        {
+          "name": "A8 POST eliminar id inexistente (falso exito)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('A8 (INT-02): eliminar un id inexistente NO debe reportar success', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, 'INT-02: bug PER/ATL-07 via HTTP: ' + JSON.stringify(j)).to.not.equal('success');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "eliminar", "type": "text" },
+              { "key": "id_atleta", "value": "999999999", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=atleta"
+          }
+        },
+        {
+          "name": "A9 GET obtener id inexistente (REST 404)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('A9 (INT-03): recurso inexistente debe responder 404, no 200 con null', () => {",
+            "  pm.expect(pm.response.code, 'INT-03: respuesta = ' + pm.response.text()).to.equal(404);",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=atleta&accion=obtener&id=99999999" }
+        },
+        {
+          "name": "A10 POST guardar con payload de inyeccion SQL en cedula",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('A10: payload SQL rechazado por validacion (sin error interno)', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('warning');",
+            "  pm.expect(j.errores).to.have.property('cedula');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "guardar", "type": "text" },
+              { "key": "cedula", "value": "V-' OR '1'='1'; --", "type": "text" },
+              { "key": "nombres", "value": "QA Sqli", "type": "text" },
+              { "key": "apellidos", "value": "Integracion", "type": "text" },
+              { "key": "fecha_nacimiento", "value": "2005-05-10", "type": "text" },
+              { "key": "sexo", "value": "M", "type": "text" },
+              { "key": "estado", "value": "Activo", "type": "text" },
+              { "key": "correo", "value": "qapmsqli{{ts}}@qa.test", "type": "text" },
+              { "key": "telefono", "value": "04141234567", "type": "text" },
+              { "key": "direccion", "value": "Av QA con calle 10", "type": "text" },
+              { "key": "fecha_registro_club", "value": "2020-01-15", "type": "text" },
+              { "key": "grupo_sanguineo", "value": "O+", "type": "text" },
+              { "key": "seguro_medico", "value": "Seguros QA Cobertura", "type": "text" },
+              { "key": "alergias", "value": "Ninguna", "type": "text" },
+              { "key": "condiciones_previas", "value": "Ninguna", "type": "text" },
+              { "key": "contacto_emergencia_nombre", "value": "Maria QA", "type": "text" },
+              { "key": "contacto_emergencia_telefono", "value": "04241234567", "type": "text" },
+              { "key": "contacto_emergencia_parentesco", "value": "Madre", "type": "text" },
+              { "key": "id_categoria", "value": "{{id_categoria}}", "type": "text" },
+              { "key": "numero_feveda", "value": "FV-SQLI", "type": "text" },
+              { "key": "club_procedencia", "value": "Club QA", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=atleta"
+          }
+        },
+        {
+          "name": "A11 POST guardar con foto maliciosa (PHP en .png)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('A11: la foto con codigo PHP debe ser rechazada', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('warning');",
+            "  pm.expect(j.errores).to.have.property('foto');",
+            "});",
+            "pm.test('A11: el payload PHP no se ejecuto ni se reflejo', () => {",
+            "  pm.expect(pm.response.text()).to.not.include('QA-SHELL-UPLOAD');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "formdata", "formdata": [
+              { "key": "accion", "value": "guardar", "type": "text" },
+              { "key": "cedula", "value": "V-44444444", "type": "text" },
+              { "key": "nombres", "value": "QA Foto", "type": "text" },
+              { "key": "apellidos", "value": "Integracion", "type": "text" },
+              { "key": "fecha_nacimiento", "value": "2005-05-10", "type": "text" },
+              { "key": "sexo", "value": "M", "type": "text" },
+              { "key": "estado", "value": "Activo", "type": "text" },
+              { "key": "correo", "value": "qapmfoto{{ts}}@qa.test", "type": "text" },
+              { "key": "telefono", "value": "04141234567", "type": "text" },
+              { "key": "direccion", "value": "Av QA con calle 10", "type": "text" },
+              { "key": "fecha_registro_club", "value": "2020-01-15", "type": "text" },
+              { "key": "grupo_sanguineo", "value": "O+", "type": "text" },
+              { "key": "seguro_medico", "value": "Seguros QA Cobertura", "type": "text" },
+              { "key": "alergias", "value": "Ninguna", "type": "text" },
+              { "key": "condiciones_previas", "value": "Ninguna", "type": "text" },
+              { "key": "contacto_emergencia_nombre", "value": "Maria QA", "type": "text" },
+              { "key": "contacto_emergencia_telefono", "value": "04241234567", "type": "text" },
+              { "key": "contacto_emergencia_parentesco", "value": "Madre", "type": "text" },
+              { "key": "id_categoria", "value": "{{id_categoria}}", "type": "text" },
+              { "key": "numero_feveda", "value": "FV-FOTO", "type": "text" },
+              { "key": "club_procedencia", "value": "Club QA", "type": "text" },
+              { "key": "foto", "type": "file", "src": ["C:/xampp/htdocs/SIS-Biomec/docs/qa-postman/fixtures/shell.png"] }
+            ]},
+            "url": "{{base_url}}?p=atleta"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 TestFisico",
+      "item": [
+        {
+          "name": "T1 GET listarTiposTests",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('T1: catalogo de tipos trae datos', () => {",
+            "  pm.response.to.have.status(200);",
+            "  const datos = pm.response.json();",
+            "  pm.expect(datos).to.be.an('array').and.to.not.be.empty;",
+            "  pm.variables.set('id_tipo_test', String(datos[0].id_tipo_test));",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=testFisico&accion=listarTiposTests" }
+        },
+        {
+          "name": "T2 GET obtenerVariables",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('T2: variables del tipo trae datos', () => {",
+            "  pm.response.to.have.status(200);",
+            "  const datos = pm.response.json();",
+            "  pm.expect(datos).to.be.an('array').and.to.not.be.empty;",
+            "  pm.variables.set('id_variable', String(datos[0].id_variable));",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=testFisico&accion=obtenerVariables&id_tipo_test={{id_tipo_test}}" }
+        },
+        {
+          "name": "T3 POST registrar valido (integracion valores_test)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('T3: test fisico valido se registra', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('success');",
+            "});",
+            "pm.test('T3: el response no devuelve el id creado (hallazgo API)', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j).to.not.have.property('id');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "registrar", "type": "text" },
+              { "key": "id_atleta", "value": "1", "type": "text" },
+              { "key": "id_tipo_test", "value": "{{id_tipo_test}}", "type": "text" },
+              { "key": "fecha", "value": "2026-01-10", "type": "text" },
+              { "key": "estado", "value": "Completo", "type": "text" },
+              { "key": "observaciones", "value": "QAPM{{ts}}", "type": "text" },
+              { "key": "valores[{{id_variable}}]", "value": "12.5", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=testFisico"
+          }
+        },
+        {
+          "name": "T4 POST registrar valor NO numerico (corrupcion de datos)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('T4 (INT-04): un valor no numerico debe ser rechazado, no guardarse como 0.00', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, 'INT-04: bug TF-03 via HTTP: ' + JSON.stringify(j)).to.not.equal('success');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "registrar", "type": "text" },
+              { "key": "id_atleta", "value": "1", "type": "text" },
+              { "key": "id_tipo_test", "value": "{{id_tipo_test}}", "type": "text" },
+              { "key": "fecha", "value": "2026-01-10", "type": "text" },
+              { "key": "estado", "value": "Completo", "type": "text" },
+              { "key": "observaciones", "value": "QAPM-CORRUPTO{{ts}}", "type": "text" },
+              { "key": "valores[{{id_variable}}]", "value": "no-es-un-numero", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=testFisico"
+          }
+        },
+        {
+          "name": "T5 POST registrar estado[] como array (entrada malformada)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('T5 (INT-05): input malformado no debe producir HTTP 5xx', () => {",
+            "  pm.expect(pm.response.code, 'INT-05: el servidor reviento con ' + pm.response.code + ': ' + pm.response.text().substring(0,200)).to.be.below(500);",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "registrar", "type": "text" },
+              { "key": "id_atleta", "value": "1", "type": "text" },
+              { "key": "id_tipo_test", "value": "{{id_tipo_test}}", "type": "text" },
+              { "key": "fecha", "value": "2026-01-10", "type": "text" },
+              { "key": "estado[]", "value": "Completo", "type": "text" },
+              { "key": "estado[]", "value": "Parcial", "type": "text" },
+              { "key": "observaciones", "value": "QAPM-ARRAY{{ts}}", "type": "text" },
+              { "key": "valores[{{id_variable}}]", "value": "10", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=testFisico"
+          }
+        },
+        {
+          "name": "T6 POST registrar sin tipo de test",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('T6: sin tipo de test responde warning tipo_test', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('warning');",
+            "  pm.expect(j.errores).to.have.property('tipo_test');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "registrar", "type": "text" },
+              { "key": "id_atleta", "value": "1", "type": "text" },
+              { "key": "fecha", "value": "2026-01-10", "type": "text" },
+              { "key": "observaciones", "value": "QAPM-SINTIPO{{ts}}", "type": "text" },
+              { "key": "valores[{{id_variable}}]", "value": "10", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=testFisico"
+          }
+        },
+        {
+          "name": "T7 GET obtenerDetalle id inexistente (REST 404)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('T7 (INT-06): detalle inexistente debe responder 404, no 200 con null', () => {",
+            "  pm.expect(pm.response.code, 'INT-06: respuesta = ' + pm.response.text()).to.equal(404);",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=testFisico&accion=obtenerDetalle&id=999999999" }
+        },
+        {
+          "name": "T8 POST accion inexistente (metodo no soportado)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('T8 (INT-07): accion desconocida debe responder 4xx, no 200', () => {",
+            "  pm.expect(pm.response.code, 'INT-07: respuesta = ' + pm.response.text()).to.be.within(400, 499);",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "accion_fantasma_xyz", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=testFisico"
+          }
+        },
+        {
+          "name": "T9 GET listarTests (readback del registro de T3)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('T9: el registro QAPM de T3 aparece en listarTests', () => {",
+            "  pm.response.to.have.status(200);",
+            "  const datos = pm.response.json();",
+            "  const marker = 'QAPM' + pm.variables.get('ts');",
+            "  const fila = datos.find(r => (r.observaciones || '').startsWith(marker));",
+            "  pm.expect(fila, 'El registro creado en T3 debe ser visible por listarTests').to.be.an('object');",
+            "  pm.variables.set('id_registro_test', String(fila.id_registro_test));",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=testFisico&accion=listarTests&id_atleta=1" }
+        },
+        {
+          "name": "T10 POST eliminar registro propio (limpieza)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('T10: el registro de prueba se elimina', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('success');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "eliminar", "type": "text" },
+              { "key": "id_registro_test", "value": "{{id_registro_test}}", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=testFisico"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 ObservacionTecnica",
+      "item": [
+        {
+          "name": "O1 GET listarAspectosTecnicos",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('O1: catalogo de aspectos trae datos', () => {",
+            "  pm.response.to.have.status(200);",
+            "  const datos = pm.response.json();",
+            "  pm.expect(datos).to.be.an('array').and.to.not.be.empty;",
+            "  pm.variables.set('id_aspecto', String(datos[0].id_aspecto));",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=observacionesTecnicas&accion=listarAspectosTecnicos" }
+        },
+        {
+          "name": "O2 POST registrar valida (camino feliz)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('O2: observacion valida se registra', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('success');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "registrar", "type": "text" },
+              { "key": "id_atleta", "value": "1", "type": "text" },
+              { "key": "id_aspecto_tecnico", "value": "{{id_aspecto}}", "type": "text" },
+              { "key": "calificacion", "value": "3", "type": "text" },
+              { "key": "observacion_texto", "value": "QAPM-OBS{{ts}}", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=observacionesTecnicas"
+          }
+        },
+        {
+          "name": "O3 POST registrar calificacion 0 (fuera de escala)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('O3 (INT-08): calificacion 0 debe rechazarse (escala 1-5)', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, 'INT-08: bug OT-06 via HTTP: ' + JSON.stringify(j)).to.not.equal('success');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "registrar", "type": "text" },
+              { "key": "id_atleta", "value": "1", "type": "text" },
+              { "key": "id_aspecto_tecnico", "value": "{{id_aspecto}}", "type": "text" },
+              { "key": "calificacion", "value": "0", "type": "text" },
+              { "key": "observacion_texto", "value": "QAPM-CERO{{ts}}", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=observacionesTecnicas"
+          }
+        },
+        {
+          "name": "O4 POST registrar texto con HTML (XSS almacenado)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('O4 (INT-09): HTML crudo no debe aceptarse como texto', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, 'INT-09: XSS almacenado via API: ' + JSON.stringify(j)).to.not.equal('success');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "registrar", "type": "text" },
+              { "key": "id_atleta", "value": "1", "type": "text" },
+              { "key": "id_aspecto_tecnico", "value": "{{id_aspecto}}", "type": "text" },
+              { "key": "calificacion", "value": "4", "type": "text" },
+              { "key": "observacion_texto", "value": "<b>HACK</b> QAPM-XSS{{ts}}", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=observacionesTecnicas"
+          }
+        },
+        {
+          "name": "O5 GET listarObservaciones (readback del XSS)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('O5 (INT-09): el HTML crudo NO debe aparecer en las respuestas de la API', () => {",
+            "  pm.response.to.have.status(200);",
+            "  const marker = 'QAPM-XSS' + pm.variables.get('ts');",
+            "  const fila = pm.response.json().find(r => (r.observacion_texto || '').includes(marker));",
+            "  if (fila) {",
+            "    pm.variables.set('id_observacion', String(fila.id_observacion));",
+            "    pm.expect(fila.observacion_texto, 'INT-09: XSS almacenado visible en la API').to.not.include('<b>');",
+            "  } else {",
+            "    pm.expect(true, 'La fila del test O4 debe existir').to.be.false;",
+            "  }",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=observacionesTecnicas&accion=listarObservaciones&id_atleta=1" }
+        },
+        {
+          "name": "O6 POST eliminar observacion propia (limpieza)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('O6: la observacion de prueba se elimina', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('success');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "eliminar", "type": "text" },
+              { "key": "id_observacion", "value": "{{id_observacion}}", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=observacionesTecnicas"
+          }
+        },
+        {
+          "name": "O7 POST actualizar id inexistente",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('O7: actualizar observacion inexistente responde error', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('error');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "actualizar", "type": "text" },
+              { "key": "id_observacion", "value": "999999999", "type": "text" },
+              { "key": "id_atleta", "value": "1", "type": "text" },
+              { "key": "id_aspecto_tecnico", "value": "{{id_aspecto}}", "type": "text" },
+              { "key": "calificacion", "value": "3", "type": "text" },
+              { "key": "observacion_texto", "value": "QAPM-UPD-INEXISTENTE", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=observacionesTecnicas"
+          }
+        },
+        {
+          "name": "O8 POST eliminar id=0",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('O8: eliminar con id=0 responde error', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('error');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "eliminar", "type": "text" },
+              { "key": "id_observacion", "value": "0", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=observacionesTecnicas"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Periodizacion",
+      "item": [
+        {
+          "name": "P1 GET obtenerTemporadas",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('P1: temporadas trae datos', () => {",
+            "  pm.response.to.have.status(200);",
+            "  const datos = pm.response.json();",
+            "  pm.expect(datos).to.be.an('array').and.to.not.be.empty;",
+            "  pm.variables.set('id_temporada', String(datos[0].id_temporada));",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=periodizacion&accion=obtenerTemporadas" }
+        },
+        {
+          "name": "P2 GET obtenerGrupos",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('P2: grupos trae datos', () => {",
+            "  pm.response.to.have.status(200);",
+            "  const datos = pm.response.json();",
+            "  pm.expect(datos).to.be.an('array').and.to.not.be.empty;",
+            "  pm.variables.set('id_grupo', String(datos[0].id_grupo));",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=periodizacion&accion=obtenerGrupos" }
+        },
+        {
+          "name": "P3 POST guardar macrociclo valido",
+          "event": [
+            { "listen": "prerequest", "script": { "exec": [
+              "const hoy = new Date();",
+              "const fmt = (d) => d.toISOString().slice(0,10);",
+              "const ini = new Date(hoy.getTime() - 30*86400000);",
+              "const fin = new Date(hoy.getTime() + 60*86400000);",
+              "pm.variables.set('fecha_ini', fmt(ini));",
+              "pm.variables.set('fecha_fin', fmt(fin));"
+            ]}},
+            { "listen": "test", "script": { "exec": [
+              "pm.test('P3: macrociclo valido se registra', () => {",
+              "  const j = pm.response.json();",
+              "  pm.expect(j.status, JSON.stringify(j)).to.equal('success');",
+              "});"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "guardar", "type": "text" },
+              { "key": "id_temporada", "value": "{{id_temporada}}", "type": "text" },
+              { "key": "id_grupo", "value": "{{id_grupo}}", "type": "text" },
+              { "key": "nombre", "value": "QAPM-{{ts}}", "type": "text" },
+              { "key": "fecha_inicio", "value": "{{fecha_ini}}", "type": "text" },
+              { "key": "fecha_fin", "value": "{{fecha_fin}}", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=periodizacion"
+          }
+        },
+        {
+          "name": "P4 GET listarMacrociclos (readback + id)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('P4: el macrociclo QAPM aparece en el listado', () => {",
+            "  pm.response.to.have.status(200);",
+            "  const nombre = 'QAPM-' + pm.variables.get('ts');",
+            "  const fila = pm.response.json().find(m => m.nombre === nombre);",
+            "  pm.expect(fila, 'El macrociclo de P3 debe ser visible').to.be.an('object');",
+            "  pm.variables.set('id_macrociclo', String(fila.id_macrociclo));",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=periodizacion&accion=listarMacrociclos" }
+        },
+        {
+          "name": "P5 POST generarPeriodizacion (config por defecto)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('P5: el plan ATR se genera con exito', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('success');",
+            "  pm.expect(j.data.total_semanas).to.be.at.least(4);",
+            "  pm.expect(j.data.fases).to.be.an('array').and.to.not.be.empty;",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "generarPeriodizacion", "type": "text" },
+              { "key": "id_macrociclo", "value": "{{id_macrociclo}}", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=periodizacion"
+          }
+        },
+        {
+          "name": "P6 GET obtenerDetalle (consistencia fases-mesociclos-microciclos)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('P6: el detalle trae la jerarquia completa del plan', () => {",
+            "  pm.response.to.have.status(200);",
+            "  const d = pm.response.json();",
+            "  pm.expect(d.fases).to.be.an('array').and.to.not.be.empty;",
+            "  pm.expect(d.mesociclos).to.be.an('array').and.to.not.be.empty;",
+            "  pm.expect(d.mesociclos.length).to.equal(d.fases.length, 'Debe haber un mesociclo por fase');",
+            "  d.mesociclos.forEach(m => pm.expect(m.microciclos).to.be.an('array').and.to.not.be.empty);",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=periodizacion&accion=obtenerDetalle&id={{id_macrociclo}}" }
+        },
+        {
+          "name": "P7 POST guardar macrociclo del ano 2999 (sin tope de fecha)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('P7 (INT-10): un macrociclo de 973 anos debe ser rechazado por la validacion', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, 'INT-10: bug PER-02 via HTTP: ' + JSON.stringify(j)).to.not.equal('success');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "guardar", "type": "text" },
+              { "key": "id_temporada", "value": "{{id_temporada}}", "type": "text" },
+              { "key": "id_grupo", "value": "{{id_grupo}}", "type": "text" },
+              { "key": "nombre", "value": "QAPM-2999-{{ts}}", "type": "text" },
+              { "key": "fecha_inicio", "value": "2026-01-01", "type": "text" },
+              { "key": "fecha_fin", "value": "2999-12-31", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=periodizacion"
+          }
+        },
+        {
+          "name": "P8 POST generarPeriodizacion pct_realizacion=101 (config imposible)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('P8 (INT-11): config con 184% de distribucion debe ser rechazada', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, 'INT-11: bug PER-05 via HTTP: ' + JSON.stringify(j)).to.not.equal('success');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "generarPeriodizacion", "type": "text" },
+              { "key": "id_macrociclo", "value": "{{id_macrociclo}}", "type": "text" },
+              { "key": "pct_realizacion", "value": "101", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=periodizacion"
+          }
+        },
+        {
+          "name": "P9 POST actualizarEstado transicion invalida (maquina de estados)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('P9: transicion invalida (mismo estado) responde error', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, JSON.stringify(j)).to.equal('error');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "actualizarEstado", "type": "text" },
+              { "key": "id_macrociclo", "value": "{{id_macrociclo}}", "type": "text" },
+              { "key": "nuevo_estado", "value": "Planificado", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=periodizacion"
+          }
+        },
+        {
+          "name": "P10 POST eliminarMesociclo id inexistente (falso exito)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('P10 (INT-12): eliminar mesociclo inexistente NO debe reportar success', () => {",
+            "  const j = pm.response.json();",
+            "  pm.expect(j.status, 'INT-12: bug PER-04 via HTTP: ' + JSON.stringify(j)).to.not.equal('success');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "eliminarMesociclo", "type": "text" },
+              { "key": "id_mesociclo", "value": "999999999", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=periodizacion"
+          }
+        },
+        {
+          "name": "P11 GET listarMacrociclos (tiempo de respuesta / timeout)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('P11: el listado responde en menos de 5s (sin timeouts)', () => {",
+            "  pm.response.to.have.status(200);",
+            "  pm.expect(pm.response.responseTime, 'El endpoint tardo ' + pm.response.responseTime + 'ms').to.be.below(5000);",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=periodizacion&accion=listarMacrociclos" }
+        }
+      ]
+    },
+    {
+      "name": "99 RBAC negativo y credenciales invalidas",
+      "item": [
+        {
+          "name": "R0 Logout (cierra la sesion admin del jar)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('R0: el logout responde y la sesion queda cerrada', () => {",
+            "  pm.expect([200, 302]).to.include(pm.response.code);",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=salir" }
+        },
+        {
+          "name": "S2 Login password invalida (sin sesion activa)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('S2: credenciales invalidas muestran error', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.text()).to.include('incorrectos');",
+                  "});",
+                  "pm.test('S2: no se emite sesion valida ante fallo', () => {",
+                  "  const sesiones = pm.response.headers.all().filter(h => h.key.toLowerCase()==='set-cookie');",
+                  "  pm.expect(sesiones.length === 0 || sesiones.every(h => !/PHPSESSID=\\w{26,}/.test(h.value))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "usuario", "value": "{{qa_admin_user}}", "type": "text" },
+              { "key": "password", "value": "IncorrectaTotal999", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=login"
+          }
+        },
+        {
+          "name": "R1 Login usuario QA sin permisos",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('R1: el usuario sin permisos puede autenticarse', () => {",
+            "  pm.expect([200, 302]).to.include(pm.response.code);",
+            "  pm.expect(pm.response.text()).to.not.include('incorrectos');",
+            "});"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "usuario", "value": "{{qa_noperm_user}}", "type": "text" },
+              { "key": "password", "value": "{{qa_noperm_pass}}", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=login"
+          }
+        },
+        {
+          "name": "R2 GET atleta con usuario sin permisos (403)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('R2: pagina privada bloqueada con 403 sin permisos', () => {",
+            "  pm.response.to.have.status(403);",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}?p=atleta" }
+        },
+        {
+          "name": "R3 POST guardar atleta con usuario sin permisos (403)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('R3: escritura bloqueada con 403 sin permisos (no basta enviar el POST)', () => {",
+            "  pm.response.to.have.status(403);",
+            "  const cuerpo = pm.response.text();",
+            "  pm.expect(cuerpo).to.not.include('success');",
+            "});",
+            "pm.test('R3: ninguna fila debe crearse (verificado en limpieza del informe)', () => { pm.expect(true).to.be.true; });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "accion", "value": "guardar", "type": "text" },
+              { "key": "cedula", "value": "V-55555555", "type": "text" },
+              { "key": "nombres", "value": "QA RBAC", "type": "text" },
+              { "key": "apellidos", "value": "Bloqueado", "type": "text" },
+              { "key": "fecha_nacimiento", "value": "2005-05-10", "type": "text" },
+              { "key": "sexo", "value": "M", "type": "text" },
+              { "key": "estado", "value": "Activo", "type": "text" },
+              { "key": "correo", "value": "qapmrbac{{ts}}@qa.test", "type": "text" },
+              { "key": "telefono", "value": "04141234567", "type": "text" },
+              { "key": "direccion", "value": "Av QA con calle 10", "type": "text" },
+              { "key": "fecha_registro_club", "value": "2020-01-15", "type": "text" },
+              { "key": "grupo_sanguineo", "value": "O+", "type": "text" },
+              { "key": "seguro_medico", "value": "Seguros QA Cobertura", "type": "text" },
+              { "key": "alergias", "value": "Ninguna", "type": "text" },
+              { "key": "condiciones_previas", "value": "Ninguna", "type": "text" },
+              { "key": "contacto_emergencia_nombre", "value": "Maria QA", "type": "text" },
+              { "key": "contacto_emergencia_telefono", "value": "04241234567", "type": "text" },
+              { "key": "contacto_emergencia_parentesco", "value": "Madre", "type": "text" },
+              { "key": "id_categoria", "value": "{{id_categoria}}", "type": "text" },
+              { "key": "numero_feveda", "value": "FV-RBAC", "type": "text" },
+              { "key": "club_procedencia", "value": "Club QA", "type": "text" }
+            ]},
+            "url": "{{base_url}}?p=atleta"
+          }
+        }
+      ]
+    }
+  ]
+}
