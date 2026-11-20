@@ -287,6 +287,7 @@ async function cargarDatosEdicion(id_medicion) {
     document.getElementById('envergadura').value = data.envergadura;
     document.getElementById('perimetro_abdominal').value = data.perimetro_abdominal;
     document.getElementById('grasa_corporal').value = data.porcentaje_grasa || '';
+     document.getElementById('justificacion').value = data.motivo_edicion || '';
     
     document.getElementById('accion').value = 'editar';
     document.getElementById('modalMedicionTitulo').innerHTML = `

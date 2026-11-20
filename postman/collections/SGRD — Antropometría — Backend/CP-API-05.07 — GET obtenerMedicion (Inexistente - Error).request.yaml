@@ -1,0 +1,20 @@
+$kind: http-request
+name: CP-API-05.07 — GET obtenerMedicion (Inexistente -> Error)
+url: "{{base_url}}/index.php?p=antropometria&accion=obtenerMedicion&id=999999"
+method: GET
+headers:
+  Cookie: "{{PHPSESSID}}"
+queryParams:
+  p: antropometria
+  accion: obtenerMedicion
+  id: "999999"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-05.07: Devuelve mensaje de error', () => {
+          const j = pm.response.json();
+          pm.expect(j.status).to.eql('error');
+          pm.expect(j.message).to.include('no encontrada');
+      });
+    language: text/javascript
+order: 7000

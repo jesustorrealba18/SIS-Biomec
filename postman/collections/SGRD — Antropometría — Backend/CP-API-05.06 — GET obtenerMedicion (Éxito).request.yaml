@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=antropometria&accion=obtenerMedicion&id={{id_medicion_test}}"
+method: GET
+headers:
+  Cookie: "{{PHPSESSID}}"
+queryParams:
+  p: antropometria
+  accion: obtenerMedicion
+  id: "{{id_medicion_test}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-05.06: Devuelve datos de la medición', () => {
+          const j = pm.response.json();
+          pm.expect(j).to.have.property('peso_kg');
+          pm.expect(j).to.have.property('imc');
+      });
+    language: text/javascript
+order: 6000

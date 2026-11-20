@@ -18,12 +18,12 @@ class MedicionAntropometrica extends Conexion {
         'id_medicion', 'id_atleta', 'fecha', 'peso_kg', 'talla_cm',
         'envergadura_cm', 'perimetro_abdominal_cm',
         'imc', 'porcentaje_grasa', 'responsable',
-       
+       'motivo_edicion',
         'filtro_id_atleta', 'filtro_fecha_inicio', 'filtro_fecha_fin'
     ];
 
    
-    public function setDatos(array $datosExternos): void {
+  /*   public function setDatos(array $datosExternos): void {
         foreach ($this->camposPermitidos as $campo) {
             if (isset($datosExternos[$campo]) && $datosExternos[$campo] !== '') {
                 $this->datos[$campo] = $datosExternos[$campo];
@@ -31,7 +31,22 @@ class MedicionAntropometrica extends Conexion {
                 $this->datos[$campo] = null; 
             }
         }
+    } */
+
+public function setDatos(array $datosExternos): void {
+    foreach ($this->camposPermitidos as $campo) {
+        if (isset($datosExternos[$campo]) && $datosExternos[$campo] !== '') {
+            // Si es un array, lo ignoramos (ya que no hay campos legítimos que sean arrays aquí)
+            if (is_array($datosExternos[$campo])) {
+                $this->datos[$campo] = null; 
+            } else {
+                $this->datos[$campo] = $datosExternos[$campo];
+            }
+        } elseif (!array_key_exists($campo, $this->datos)) {
+            $this->datos[$campo] = null; 
+        }
     }
+}
 
      
 
@@ -47,7 +62,17 @@ class MedicionAntropometrica extends Conexion {
     private function validarDatos(): bool {
         $this->resetearErrores();
 
-        $this->requerido((string)($this->datos['id_atleta'] ?? ''), 'id_atleta');
+        /* $this->requerido((string)($this->datos['id_atleta'] ?? ''), 'id_atleta'); */
+        // Validar ID del atleta estrictamente
+        $idAtleta = (int)($this->datos['id_atleta'] ?? 0);
+        if ($idAtleta <= 0) {
+            $this->agregarError('id_atleta', 'El identificador del atleta debe ser un entero positivo mayor a 0.');
+        }
+
+        // Validar si llegó un array camuflado
+        if (is_array($this->datos['id_atleta'] ?? null)) {
+            $this->agregarError('id_atleta', 'Formato de id_atleta inválido: se esperaba un valor escalar.');
+        }
         $this->requerido((string)($this->datos['fecha'] ?? ''), 'fecha');
         $this->requerido((string)($this->datos['peso_kg'] ?? ''), 'peso_kg');
         $this->requerido((string)($this->datos['talla_cm'] ?? ''), 'talla_cm');
@@ -81,7 +106,7 @@ class MedicionAntropometrica extends Conexion {
         } */
 
         // --- BLINDAJE CONTRA F12: LÍMITES BIOLÓGICOS LÓGICOS ---
-        if (!empty($this->datos['peso_kg']) && ((float)$this->datos['peso_kg'] < 20 || (float)$this->datos['peso_kg'] > 200)) {
+       /*  if (!empty($this->datos['peso_kg']) && ((float)$this->datos['peso_kg'] < 20 || (float)$this->datos['peso_kg'] > 200)) {
             $this->agregarError('peso_kg', 'El peso debe ser congruente (entre 20 kg y 200 kg).');
         }
         if (!empty($this->datos['talla_cm']) && ((float)$this->datos['talla_cm'] < 100 || (float)$this->datos['talla_cm'] > 250)) {
@@ -95,6 +120,68 @@ class MedicionAntropometrica extends Conexion {
         }
         if (!empty($this->datos['porcentaje_grasa']) && ((float)$this->datos['porcentaje_grasa'] < 3 || (float)$this->datos['porcentaje_grasa'] > 50)) {
             $this->agregarError('porcentaje_grasa', 'El porcentaje de grasa debe ser congruente (entre 3% y 50%).');
+        } */
+
+                    // --- BLINDAJE CONTRA F12: LÍMITES BIOLÓGICOS LÓGICOS ---
+        
+        // 1. Peso (20kg a 200kg)
+        if (!empty($this->datos['peso_kg'])) {
+            if (!is_numeric($this->datos['peso_kg'])) {
+                $this->agregarError('peso_kg', 'El peso debe ser un número válido.');
+            } else {
+                $peso = (float)$this->datos['peso_kg'];
+                if ($peso < 20 || $peso > 200) {
+                    $this->agregarError('peso_kg', 'El peso debe ser congruente (entre 20 kg y 200 kg).');
+                }
+            }
+        }
+
+        // 2. Talla (100cm a 250cm)
+        if (!empty($this->datos['talla_cm'])) {
+            if (!is_numeric($this->datos['talla_cm'])) {
+                $this->agregarError('talla_cm', 'La talla debe ser un número válido.');
+            } else {
+                $talla = (float)$this->datos['talla_cm'];
+                if ($talla < 100 || $talla > 250) {
+                    $this->agregarError('talla_cm', 'La talla debe ser congruente (entre 100 cm y 250 cm).');
+                }
+            }
+        }
+
+        // 3. Envergadura (100cm a 250cm)
+        if (!empty($this->datos['envergadura_cm'])) {
+            if (!is_numeric($this->datos['envergadura_cm'])) {
+                $this->agregarError('envergadura_cm', 'La envergadura debe ser un número válido.');
+            } else {
+                $envergadura = (float)$this->datos['envergadura_cm'];
+                if ($envergadura < 100 || $envergadura > 250) {
+                    $this->agregarError('envergadura_cm', 'La envergadura debe ser congruente (entre 100 cm y 250 cm).');
+                }
+            }
+        }
+
+        // 4. Perímetro Abdominal (40cm a 150cm)
+        if (!empty($this->datos['perimetro_abdominal_cm'])) {
+            if (!is_numeric($this->datos['perimetro_abdominal_cm'])) {
+                $this->agregarError('perimetro_abdominal_cm', 'El perímetro abdominal debe ser un número válido.');
+            } else {
+                $perimetro = (float)$this->datos['perimetro_abdominal_cm'];
+                if ($perimetro < 40 || $perimetro > 150) {
+                    $this->agregarError('perimetro_abdominal_cm', 'El perímetro abdominal debe ser congruente (entre 40 cm y 150 cm).');
+                }
+            }
+        }
+
+        // 5. Porcentaje de Grasa (3% a 50%)
+        if (!empty($this->datos['porcentaje_grasa'])) {
+            if (!is_numeric($this->datos['porcentaje_grasa'])) {
+                $this->agregarError('porcentaje_grasa', 'El porcentaje de grasa debe ser un número válido.');
+            } else {
+                $grasa = (float)$this->datos['porcentaje_grasa'];
+                if ($grasa < 3 || $grasa > 50) {
+                    $this->agregarError('porcentaje_grasa', 'El porcentaje de grasa debe ser congruente (entre 3% y 50%).');
+                }
+            }
         }
 
         return empty($this->obtenerErrores());
@@ -122,6 +209,22 @@ class MedicionAntropometrica extends Conexion {
         $this->setDatos($datos);
         
         $this->datos['id_medicion'] = $id_medicion;
+
+        // --- BLINDAJE NUEVO: Validar que el atleta sea dueño de la medición ---
+        try {
+            $stmt = $this->pdo->prepare("SELECT id_atleta FROM mediciones_antropometricas WHERE id_medicion = :id");
+            $stmt->execute([':id' => $id_medicion]);
+            $atletaReal = $stmt->fetchColumn();
+            
+            if (!$atletaReal || (int)$atletaReal !== (int)$this->datos['id_atleta']) {
+                $this->agregarError('id_atleta', 'Violación de Seguridad: El atleta no corresponde a la medición que intenta editar.');
+                return false;
+            }
+        } catch (PDOException $e) {
+            error_log("Error validando dueño de medición: " . $e->getMessage());
+            return false;
+        }
+        // ----------------------------------------------------------------------
 
         if (!$this->validarDatos()) {
             return false;
@@ -173,6 +276,7 @@ class MedicionAntropometrica extends Conexion {
 
         if ($esActualizacion) {
             $mapa[':id_medicion'] = ['id_medicion', PDO::PARAM_INT];
+             $mapa[':motivo_edicion'] = ['motivo_edicion', PDO::PARAM_STR];
         } else {
             // Solo en inserción se asigna el atleta (no se debe cambiar al editar)
             $mapa[':id_atleta'] = ['id_atleta', PDO::PARAM_INT];
@@ -255,7 +359,7 @@ class MedicionAntropometrica extends Conexion {
             $sql = "UPDATE mediciones_antropometricas SET
                         fecha = :fecha, peso_kg = :peso_kg, talla_cm = :talla_cm,
                         envergadura_cm = :envergadura_cm, perimetro_abdominal_cm = :perimetro_abdominal_cm,
-                        imc = :imc, porcentaje_grasa = :porcentaje_grasa, responsable = :responsable
+                        imc = :imc, porcentaje_grasa = :porcentaje_grasa, responsable = :responsable, motivo_edicion = :motivo_edicion
                     WHERE id_medicion = :id_medicion";
             $stmt = $this->pdo->prepare($sql);
             $this->autoBind($stmt, $this->obtenerMapaParametros(true), $this->datos);

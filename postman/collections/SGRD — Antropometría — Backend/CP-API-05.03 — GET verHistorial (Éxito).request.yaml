@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=antropometria&accion=verHistorial&id_atleta={{id_atleta_test}}"
+method: GET
+headers:
+  Cookie: "{{PHPSESSID}}"
+queryParams:
+  p: antropometria
+  accion: verHistorial
+  id_atleta: "{{id_atleta_test}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-05.03: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-05.03: Devuelve array de datos', () => {
+          const j = pm.response.json();
+          pm.expect(j.status).to.eql('success');
+          pm.expect(j.data).to.be.an('array');
+      });
+    language: text/javascript
+order: 3000

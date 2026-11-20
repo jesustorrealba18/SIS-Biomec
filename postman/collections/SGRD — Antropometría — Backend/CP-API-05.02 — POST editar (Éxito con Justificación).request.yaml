@@ -1,0 +1,29 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=antropometria&accion=editar"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: antropometria
+  accion: editar
+body:
+  type: urlencoded
+  content:
+    accion: editar
+    id_medicion: "{{id_medicion_test}}"
+    id_atleta: "{{id_atleta_test}}"
+    fecha: "{{fecha_hoy}}"
+    peso: "76"
+    talla: "180"
+    envergadura: "180"
+    perimetro_abdominal: "80"
+    grasa_corporal: "21"
+    justificacion: Corrección de peso por error de tipeo
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-05.02: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-05.02: status=success', () => pm.expect(pm.response.json().status).to.eql('success'));
+    language: text/javascript
+order: 2000

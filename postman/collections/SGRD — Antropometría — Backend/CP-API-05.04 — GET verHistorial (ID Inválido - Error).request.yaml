@@ -1,0 +1,20 @@
+$kind: http-request
+name: CP-API-05.04 — GET verHistorial (ID Inválido -> Error)
+url: "{{base_url}}/index.php?p=antropometria&accion=verHistorial&id_atleta=0"
+method: GET
+headers:
+  Cookie: "{{PHPSESSID}}"
+queryParams:
+  p: antropometria
+  accion: verHistorial
+  id_atleta: "0"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-05.04: Rechaza ID inválido', () => {
+          const j = pm.response.json();
+          pm.expect(j.status).to.eql('error');
+          pm.expect(j.message).to.include('inválido');
+      });
+    language: text/javascript
+order: 4000

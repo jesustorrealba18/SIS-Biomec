@@ -1,0 +1,8 @@
+$kind: collection
+description: Colección completa de pruebas de API para el módulo de Antropometría (RF-05). Basado 100% en el Grupo 6 de la Matriz de Trazabilidad.
+variables:
+  base_url: http://localhost/ProyectoPiscinaBolivariana/SIS-Biomec
+  PHPSESSID: PHPSESSID=olfk4d39f7nfe2k6i3o34qb4b5
+  id_atleta_test: "5"
+  id_medicion_test: "7"
+  fecha_hoy: 2026-11-12

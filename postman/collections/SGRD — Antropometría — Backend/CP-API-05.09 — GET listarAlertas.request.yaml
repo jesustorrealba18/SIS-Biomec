@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=antropometria&accion=listarAlertas"
+method: GET
+headers:
+  Cookie: "{{PHPSESSID}}"
+queryParams:
+  p: antropometria
+  accion: listarAlertas
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-05.09: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-05.09: Devuelve array de atletas', () => {
+          const j = pm.response.json();
+          pm.expect(j).to.be.an('array');
+      });
+    language: text/javascript
+order: 9000

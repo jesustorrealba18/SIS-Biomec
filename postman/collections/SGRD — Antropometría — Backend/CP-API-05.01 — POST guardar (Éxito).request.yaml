@@ -1,0 +1,30 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=antropometria&accion=guardar"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: antropometria
+  accion: guardar
+body:
+  type: urlencoded
+  content:
+    accion: guardar
+    id_atleta: "{{id_atleta_test}}"
+    fecha: "{{fecha_hoy}}"
+    peso: "75"
+    talla: "180"
+    envergadura: "180"
+    perimetro_abdominal: "80"
+    grasa_corporal: "20"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-05.01: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-05.01: status=success', () => {
+          const j = pm.response.json();
+          pm.expect(j.status).to.eql('success');
+      });
+    language: text/javascript
+order: 1000

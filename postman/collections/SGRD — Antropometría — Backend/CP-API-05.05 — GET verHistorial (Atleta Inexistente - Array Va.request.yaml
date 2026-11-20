@@ -1,0 +1,20 @@
+$kind: http-request
+name: CP-API-05.05 — GET verHistorial (Atleta Inexistente -> Array Vacío)
+url: "{{base_url}}/index.php?p=antropometria&accion=verHistorial&id_atleta=999999"
+method: GET
+headers:
+  Cookie: "{{PHPSESSID}}"
+queryParams:
+  p: antropometria
+  accion: verHistorial
+  id_atleta: "999999"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-05.05: HTTP 200 con array vacío', () => {
+          const j = pm.response.json();
+          pm.expect(j.status).to.eql('success');
+          pm.expect(j.data).to.be.an('array').that.is.empty;
+      });
+    language: text/javascript
+order: 5000

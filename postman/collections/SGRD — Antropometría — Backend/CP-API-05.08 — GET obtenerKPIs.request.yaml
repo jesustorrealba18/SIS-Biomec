@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=antropometria&accion=obtenerKPIs"
+method: GET
+headers:
+  Cookie: "{{PHPSESSID}}"
+queryParams:
+  p: antropometria
+  accion: obtenerKPIs
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-05.08: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-05.08: Devuelve KPIs', () => {
+          const j = pm.response.json();
+          pm.expect(j).to.have.property('pendientes');
+          pm.expect(j).to.have.property('imc_promedio');
+      });
+    language: text/javascript
+order: 8000

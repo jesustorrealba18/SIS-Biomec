@@ -185,8 +185,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'envergadura_cm'         => $_POST['envergadura'] ?? null,
         'perimetro_abdominal_cm' => $_POST['perimetro_abdominal'] ?? null,
         'porcentaje_grasa'       => $_POST['grasa_corporal'] ?? null,
+        'motivo_edicion'       => $_POST['justificacion'] ?? null,
         'responsable'            => $_SESSION['nombre'] ?? $_SESSION['id'] ?? 'Sistema'
     ];
+    
 
     // -----------------------------------------------------------------
     // Ruta E: Guardar Nueva Medición (RF-05.1)

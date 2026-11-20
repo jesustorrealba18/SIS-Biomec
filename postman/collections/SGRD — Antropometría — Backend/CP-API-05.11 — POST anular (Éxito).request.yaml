@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=antropometria&accion=anular"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: antropometria
+  accion: anular
+body:
+  type: urlencoded
+  content:
+    accion: anular
+    id_medicion: "{{id_medicion_test}}"
+    motivo: Error en la toma del peso, se repite
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-API-05.11: HTTP 200', () => pm.response.to.have.status(200));
+      pm.test('CP-API-05.11: status=success', () => pm.expect(pm.response.json().status).to.eql('success'));
+    language: text/javascript
+order: 11000
