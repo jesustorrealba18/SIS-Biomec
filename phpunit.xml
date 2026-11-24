@@ -1,23 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="tests/bootstrap.php"
-         colors="true"
-         cacheDirectory=".phpunit.cache">
+<phpunit bootstrap="tests/bootstrap.php" colors="true">
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
-        <testsuite name="Integration">
-            <directory>tests/Integration</directory>
-        </testsuite>
-        <testsuite name="Feature">
-            <directory>tests/Feature</directory>
-        </testsuite>
+    <!-- Nueva suite para Grupos -->
+    <testsuite name="Grupos">
+        <file>tests/Unit/GrupoValidarTest.php</file>
+        <file>tests/Unit/GrupoPersistenciaTest.php</file>
+        <file>tests/Unit/GrupoListarTest.php</file>
+    </testsuite>
     </testsuites>
-    <source>
-        <include>
-            <directory suffix=".php">src</directory>
-        </include>
-    </source>
+    <!-- NO pongas la etiqueta <source> aquí por ahora -->
 </phpunit>

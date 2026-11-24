@@ -56,9 +56,9 @@ class Grupo extends Conexion {
         $descripcion   = $this->datos['descripcion'] ?? '';
         $id_entrenador = $this->datos['id_entrenador'] ?? '';
 
-        $this->requerido($nombre, 'nombre');
-
-        if (!empty($nombre)) {
+        if ($nombre === '' || $nombre === null) {
+            $this->agregarError('nombre', 'El nombre es obligatorio.');
+        } else {
             if (strlen($nombre) > 50) {
                 $this->agregarError('nombre', 'El nombre no puede tener más de 50 caracteres.');
             } elseif (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s0-9\-]+$/', $nombre)) {
@@ -70,8 +70,21 @@ class Grupo extends Conexion {
             $this->agregarError('descripcion', 'La descripción no puede tener más de 255 caracteres.');
         }
 
-        if (!empty($id_entrenador) && (!is_numeric($id_entrenador) || (int)$id_entrenador <= 0)) {
-            $this->agregarError('id_entrenador', 'Entrenador inválido.');
+        if ($id_entrenador !== '' && $id_entrenador !== null) {
+            if (!is_numeric($id_entrenador) || (int)$id_entrenador <= 0) {
+                $this->agregarError('id_entrenador', 'Entrenador inválido.');
+            } else {
+                $conex = $this->getConex1();
+                try {
+                    $stmt = $conex->prepare("SELECT COUNT(*) FROM entrenador WHERE id_entrenador = :id");
+                    $stmt->execute([':id' => (int)$id_entrenador]);
+                    if ($stmt->fetchColumn() == 0) {
+                        $this->agregarError('id_entrenador', 'El entrenador seleccionado no existe.');
+                    }
+                } catch (PDOException $e) {
+                    error_log("Error verificando entrenador: " . $e->getMessage());
+                }
+            }
         }
 
         return $this->obtenerErrores();
@@ -620,15 +633,6 @@ public function listarAtletasPorCategoria(int $id_categoria): array {
             $atletas  = $this->datosAsignacion['atletas'];
             $fecha_asignacion = date('Y-m-d H:i:s');
 
-            $sqlActuales = "SELECT id_atleta FROM grupo_atleta WHERE id_grupo = ?";
-            $stmtActuales = $conex->prepare($sqlActuales);
-            $stmtActuales->execute([$id_grupo]);
-            $atletasActuales = $stmtActuales->fetchAll(PDO::FETCH_COLUMN);
-
-            $sqlEliminar = "DELETE FROM grupo_atleta WHERE id_grupo = ?";
-            $stmtEliminar = $conex->prepare($sqlEliminar);
-            $stmtEliminar->execute([$id_grupo]);
-
             $sqlInsert = "INSERT INTO grupo_atleta (id_grupo, id_atleta, fecha_asignacion) 
                           VALUES (?, ?, ?)";
             $stmtInsert = $conex->prepare($sqlInsert);
@@ -637,8 +641,29 @@ public function listarAtletasPorCategoria(int $id_categoria): array {
             foreach ($atletas as $id_atleta) {
                 $id_atleta = (int)$id_atleta;
                 if ($id_atleta > 0) {
-                    $stmtInsert->execute([$id_grupo, $id_atleta, $fecha_asignacion]);
-                    $insertados[] = $id_atleta;
+        
+                    $sqlCheck = "SELECT ga.id_grupo, g.nombre 
+                                 FROM grupo_atleta ga 
+                                 INNER JOIN grupos_entrenamiento g ON ga.id_grupo = g.id_grupo 
+                                 WHERE ga.id_atleta = ? AND g.activo = 1 AND ga.id_grupo != ?";
+                    $stmtCheck = $conex->prepare($sqlCheck);
+                    $stmtCheck->execute([$id_atleta, $id_grupo]);
+                    $asignacionExistente = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+                    if ($asignacionExistente) {
+                        $conex->rollBack();
+                        $this->setUltimoError("El atleta (ID: {$id_atleta}) ya pertenece al grupo '{$asignacionExistente['nombre']}'. Debe desasignarlo antes de moverlo.");
+                        return false;
+                    }
+
+                    $sqlCheckMismo = "SELECT COUNT(*) FROM grupo_atleta WHERE id_grupo = ? AND id_atleta = ?";
+                    $stmtCheckMismo = $conex->prepare($sqlCheckMismo);
+                    $stmtCheckMismo->execute([$id_grupo, $id_atleta]);
+                    
+                    if ($stmtCheckMismo->fetchColumn() == 0) {
+                        $stmtInsert->execute([$id_grupo, $id_atleta, $fecha_asignacion]);
+                        $insertados[] = $id_atleta;
+                    }
                 }
             }
 
@@ -655,14 +680,9 @@ public function listarAtletasPorCategoria(int $id_categoria): array {
                     'atletas'  => $insertados,
                     'nombre'   => $grupoInfo['nombre'] ?? 'Grupo de entrenamiento',
                 ]);
-
-                $removidos = array_diff($atletasActuales, $insertados);
-                if (!empty($removidos)) {
-                    $this->notificarAtletasRemovidos($removidos, $grupoInfo['nombre'] ?? 'el grupo');
-                }
             }
 
-            return !empty($insertados);
+            return true; 
         } catch (PDOException $e) {
             if ($conex->inTransaction()) {
                 $conex->rollBack();
@@ -672,7 +692,6 @@ public function listarAtletasPorCategoria(int $id_categoria): array {
             return false;
         }
     }
-
     private function desasignarAtletasP(array $ids): bool {
         $conex = $this->getConex1();
         try {

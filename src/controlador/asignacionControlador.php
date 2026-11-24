@@ -173,14 +173,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $objAsignacion->notificarAsignacionGrupo($asignacionCompleta);
                 }
             }
-
             echo json_encode(['status' => 'success', 'message' => 'Asignación guardada con éxito.']);
         } else {
-            echo json_encode(['status' => 'error', 'message' => 'Error en base de datos al guardar.']);
+            $errorReal = $objAsignacion->obtenerUltimoError();
+            if ($errorReal && (strpos($errorReal, '1062') !== false || strpos($errorReal, 'Duplicate entry') !== false)) {
+                echo json_encode([
+                    'status' => 'warning', 
+                    'errores' => ['asignacion' => 'El carril ya está ocupado en ese horario y fechas. Por favor, seleccione otro.']
+                ]);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'Error en base de datos al guardar.']);
+            }
         }
     } catch (Exception $e) {
         error_log("EXCEPCIÓN en asignacion: " . $e->getMessage());
-        error_log($e->getTraceAsString());
         echo json_encode(['status' => 'error', 'message' => 'Error interno: ' . $e->getMessage()]);
     }
     exit;
