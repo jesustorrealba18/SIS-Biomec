@@ -1,5 +1,5 @@
 <?php
-namespace GrupoProyecto\SisBiomec\modelo;
+/* namespace GrupoProyecto\SisBiomec\modelo;
 
 use PDO;
 
@@ -48,6 +48,47 @@ if (!class_exists(Conexion::class, false)) {
             }, -1);
         }
         
+        public function getConex1(): PDO {
+            return $this->conex1;
+        }
+    }
+} */
+
+
+namespace GrupoProyecto\SisBiomec\modelo;
+
+use PDO;
+
+if (!class_exists(Conexion::class, false)) {
+    class Conexion {
+        protected ?PDO $pdo = null;
+        protected ?PDO $conex1 = null;
+
+        public function __construct(string $db = '') {
+            $this->conex1 = new PDO('sqlite::memory:');
+            $this->conex1->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $this->conex1->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+
+            // Sincroniza $this->pdo para modelos que heredan la propiedad directamente
+            $this->pdo = $this->conex1;
+
+            // Emulación de funciones MySQL en SQLite
+            $this->conex1->sqliteCreateFunction('NOW', fn() => date('Y-m-d H:i:s'), 0);
+            $this->conex1->sqliteCreateFunction('CURDATE', fn() => date('Y-m-d'), 0);
+            $this->conex1->sqliteCreateFunction('CONCAT', fn(...$args) => implode('', $args), -1);
+            $this->conex1->sqliteCreateFunction('TIMESTAMPDIFF', function ($unit, $start, $end) {
+                if (strtoupper($unit) === 'YEAR') {
+                    return (new \DateTime($end))->format('Y') - (new \DateTime($start))->format('Y');
+                }
+                return 0;
+            }, 3);
+            $this->conex1->sqliteCreateFunction('FIELD', function (...$args) {
+                $valor = array_shift($args);
+                $indice = array_search($valor, $args);
+                return $indice !== false ? $indice + 1 : 0;
+            }, -1);
+        }
+
         public function getConex1(): PDO {
             return $this->conex1;
         }

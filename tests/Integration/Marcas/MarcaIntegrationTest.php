@@ -186,6 +186,5 @@ class MarcaIntegrationTest extends TestCase
         $this->assertEquals('Activo', $resultado['estado'], 'FALLO: La marca no volvió a estado Activo.');
         $this->assertEquals(1, $resultado['es_pb'], 'FALLO: La marca reactivada no recuperó el PB.');
     }
-
    
 }

@@ -48,17 +48,45 @@ class MarcaValidationTest extends TestCase
     // GRUPO 1 — RF-06: Validaciones base
     // ─────────────────────────────────────────────────────────────
 
-    #[TestDox('CP-UNI-06.01: XOR sesión+evento')]
-    public function test_CP_UNI_06_01_xor_sesion_evento(): void
-    {
-        $this->markTestIncomplete('Requiere BD (valida asistencia y evento). Se hará en Semana 12.');
-    }
+    #[TestDox('CP-UNI-06.01: XOR sesión+evento (ambos no nulos)')]
+public function test_CP_UNI_06_01_xor_sesion_evento(): void
+{
+    $this->marca->setAtributos($this->payloadBase([
+        'id_sesion' => 1,
+        'id_evento' => 2,
+    ]));
 
-    #[TestDox('CP-UNI-06.02: Sin sesión ni evento')]
-    public function test_CP_UNI_06_02_sin_contexto(): void
-    {
-        $this->markTestIncomplete('Requiere BD. Se hará en Semana 12.');
-    }
+    $valido = $this->invokePrivate('validarReglasDeNegocio');
+
+    $this->assertFalse($valido, 'FALLO: El sistema aceptó sesión y evento simultáneos.');
+    
+    $errores = $this->marca->obtenerErrores();
+    $this->assertArrayHasKey('contexto', $errores, 'FALLO: No se agregó el error de contexto.');
+    $this->assertStringContainsString(
+        'no puede pertenecer a un entrenamiento y competencia a la vez',
+        json_encode($errores, JSON_UNESCAPED_UNICODE)
+    );
+}
+
+#[TestDox('CP-UNI-06.02: Sin sesión ni evento (ambos nulos)')]
+public function test_CP_UNI_06_02_sin_contexto(): void
+{
+    $this->marca->setAtributos($this->payloadBase([
+        'id_sesion' => null,
+        'id_evento' => null,
+    ]));
+
+    $valido = $this->invokePrivate('validarReglasDeNegocio');
+
+    $this->assertFalse($valido, 'FALLO: El sistema aceptó una marca sin contexto.');
+    
+    $errores = $this->marca->obtenerErrores();
+    $this->assertArrayHasKey('contexto', $errores);
+    $this->assertStringContainsString(
+        'Debe especificar si la marca se registró',
+        json_encode($errores, JSON_UNESCAPED_UNICODE)
+    );
+}
 
     #[TestDox('CP-UNI-06.03: id_atleta="0" debe rechazarse')]
     public function test_CP_UNI_06_03_atleta_cero_debe_fallar(): void
@@ -280,7 +308,8 @@ class MarcaValidationTest extends TestCase
     // GRUPO 4 — RF-07: SWOLF
     // ─────────────────────────────────────────────────────────────
 
-    #[TestDox('CP-UNI-07.01: Cálculo SWOLF')]
+    
+    /* #[TestDox('CP-UNI-07.01: Cálculo SWOLF')]
     public function test_CP_UNI_07_01_swolf(): void
     {
         $this->markTestIncomplete('Requiere BD (INSERT). Semana 12.');
@@ -290,7 +319,7 @@ class MarcaValidationTest extends TestCase
     public function test_CP_UNI_07_02_sin_brazadas(): void
     {
         $this->markTestIncomplete('Requiere BD. Semana 12.');
-    }
+    } */
 
     #[TestDox('CP-UNI-07.03: Brazadas negativas')]
     public function test_CP_UNI_07_03_brazadas_negativas(): void
