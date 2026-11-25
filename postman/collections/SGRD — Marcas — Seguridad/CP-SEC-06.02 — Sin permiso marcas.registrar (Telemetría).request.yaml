@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=marcas&accion=sync_telemetria"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: marcas
+  accion: sync_telemetria
+body:
+  type: urlencoded
+  content:
+    id_atleta: "5"
+    estado_carrera: cancelado
+scripts:
+  - type: afterResponse
+    code: "pm.test('CP-SEC-06.02: HTTP 403 Forbidden', () => pm.response.to.have.status(403));"
+    language: text/javascript
+order: 2000

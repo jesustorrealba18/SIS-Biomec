@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=marcas&accion=actualizar"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID}}"
+  Content-Type: application/x-www-form-urlencoded
+queryParams:
+  p: marcas
+  accion: actualizar
+body:
+  type: urlencoded
+  content:
+    id_marca: "1"
+scripts:
+  - type: afterResponse
+    code: "pm.test('CP-SEC-06.04: HTTP 403 Forbidden', () => pm.response.to.have.status(403));"
+    language: text/javascript
+order: 4000

@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=marcas&accion=listarMarcas"
+method: GET
+headers:
+  Cookie: "{{PHPSESSID2}}"
+queryParams:
+  p: marcas
+  accion: listarMarcas
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-SEC-06.06: HTTP 200 OK', () => pm.response.to.have.status(200));
+      pm.test('CP-SEC-06.06: No refleja el script crudo (XSS mitigado)', () => {
+          const responseText = pm.response.text();
+          pm.expect(responseText).to.not.include('<script>fetch');
+      });
+    language: text/javascript
+order: 6000
