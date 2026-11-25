@@ -97,6 +97,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $objSesiones->setSeries(is_array($series) ? $series : []);
 
             $errores = $objSesiones->validarDatos();
+
+            $seriesDecodificadas = is_array($series) ? $series : [];
+            foreach ($seriesDecodificadas as $i => $serie) {
+                if (!is_array($serie)) continue;
+                $errSerie = $objSesiones->validarSerie($serie);
+                foreach ($errSerie as $campo => $msg) {
+                    $errores["series.{$i}.{$campo}"] = $msg;
+                }
+            }
+
             if ($errores) {
                 return ['status' => 'warning', 'errores' => $errores];
             }
@@ -121,6 +131,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $objSesiones->setSeries(is_array($series) ? $series : []);
 
             $errores = $objSesiones->validarDatos($id_sesion);
+
+            $seriesDecodificadas = is_array($series) ? $series : [];
+            foreach ($seriesDecodificadas as $i => $serie) {
+                if (!is_array($serie)) continue;
+                $errSerie = $objSesiones->validarSerie($serie);
+                foreach ($errSerie as $campo => $msg) {
+                    $errores["series.{$i}.{$campo}"] = $msg;
+                }
+            }
+
             if ($errores) {
                 return ['status' => 'warning', 'errores' => $errores];
             }
@@ -140,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Bitacora::registrar($id_entrenador_sesion, 'Modulo Sesiones', 'UPDATE', $id_sesion, 'estado', 'Planificada', 'Parcial');
                 return ['status' => 'success', 'message' => 'Sesión iniciada.'];
             }
-            return ['status' => 'error', 'message' => 'Error al iniciar sesión.'];
+            return ['status' => 'error', 'message' => 'No se pudo iniciar la sesión. Verifique que esté en estado Planificada.'];
         },
         'completarSesion' => function() use ($objSesiones, $id_entrenador_sesion) {
             Autorizacion::exigir('sesiones', 'editar');
@@ -164,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Bitacora::registrar($id_entrenador_sesion, 'Modulo Sesiones', 'DELETE_LOGIC', $id_sesion, 'estado', null, 'Cancelada');
                 return ['status' => 'success', 'message' => 'Sesión cancelada exitosamente.'];
             }
-            return ['status' => 'error', 'message' => 'Error al cancelar la sesión.'];
+            return ['status' => 'error', 'message' => 'No se pudo cancelar la sesión. Verifique que esté Planificada o Parcial.'];
         },
     ];
 

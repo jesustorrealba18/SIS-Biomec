@@ -51,14 +51,19 @@ class Sesiones extends Conexion {
         $this->resetearErrores();
 
         $id_entrenador = $this->datos['id_entrenador'] ?? '';
-        $this->requerido($id_entrenador, 'id_entrenador');
-        if (!empty($id_entrenador)) {
+        if ($id_entrenador === '' || $id_entrenador === null) {
+            $this->agregarError('id_entrenador', 'El ID del entrenador es obligatorio.');
+        } else {
             $this->soloNumeros($id_entrenador, 'id_entrenador');
+            if ((int)$id_entrenador <= 0) {
+                $this->agregarError('id_entrenador', 'El ID del entrenador debe ser un número válido mayor a 0.');
+            }
         }
 
         $id_grupo = $this->datos['id_grupo'] ?? '';
-        $this->requerido($id_grupo, 'id_grupo');
-        if (!empty($id_grupo)) {
+        if ($id_grupo === '' || $id_grupo === null) {
+            $this->agregarError('id_grupo', 'El ID del grupo es obligatorio.');
+        } else {
             $this->soloNumeros($id_grupo, 'id_grupo');
             if ((int)$id_grupo <= 0) {
                 $this->agregarError('id_grupo', 'El ID del grupo debe ser un número válido mayor a 0.');
@@ -76,8 +81,25 @@ class Sesiones extends Conexion {
         $this->requerido($fecha, 'fecha');
         if (!empty($fecha)) {
             $this->fechaValida($fecha, 'fecha');
-            if ($excluirId === null && $fecha < date('Y-m-d')) {
-                $this->agregarError('fecha', 'No se permite planificar sesiones para fechas pasadas.');
+
+            if ($fecha < date('Y-m-d')) {
+                $permitir = false;
+
+                if ($excluirId !== null) {
+                    try {
+                        $conex = $this->getConex1();
+                        $stmt = $conex->prepare("SELECT fecha FROM sesiones WHERE id_sesion = :id");
+                        $stmt->execute([':id' => (int)$excluirId]);
+                        $fechaOriginal = $stmt->fetchColumn();
+                        $permitir = ($fechaOriginal !== false && $fechaOriginal === $fecha);
+                    } catch (PDOException $e) {
+                        error_log("Error verificando fecha original: " . $e->getMessage());
+                    }
+                }
+
+                if (!$permitir) {
+                    $this->agregarError('fecha', 'No se permite planificar sesiones para fechas pasadas.');
+                }
             }
         }
 
@@ -148,8 +170,9 @@ class Sesiones extends Conexion {
         }
 
         $repeticiones = $serie['repeticiones'] ?? '';
-        $this->requerido($repeticiones, 'repeticiones');
-        if (!empty($repeticiones)) {
+        if ($repeticiones === '' || $repeticiones === null) {
+            $this->agregarError('repeticiones', 'Las repeticiones son obligatorias.');
+        } else {
             $this->soloNumeros($repeticiones, 'repeticiones');
             if ((int)$repeticiones < 1) {
                 $this->agregarError('repeticiones', 'Las repeticiones mínimas deben ser 1.');
@@ -160,8 +183,9 @@ class Sesiones extends Conexion {
         }
 
         $distancia = $serie['distancia_m'] ?? '';
-        $this->requerido($distancia, 'distancia_m');
-        if (!empty($distancia)) {
+        if ($distancia === '' || $distancia === null) {
+            $this->agregarError('distancia_m', 'La distancia es obligatoria.');
+        } else {
             $this->soloNumeros($distancia, 'distancia_m');
             if ((int)$distancia < 25) {
                 $this->agregarError('distancia_m', 'La distancia mínima por repetición es de 25 metros.');
@@ -172,8 +196,9 @@ class Sesiones extends Conexion {
         }
 
         $descanso = $serie['descanso_seg'] ?? '';
-        $this->requerido($descanso, 'descanso_seg');
-        if (!empty($descanso)) {
+        if ($descanso === '' || $descanso === null) {
+            $this->agregarError('descanso_seg', 'El descanso es obligatorio.');
+        } else {
             $this->soloNumeros($descanso, 'descanso_seg');
             if ((int)$descanso > 600) {
                 $this->agregarError('descanso_seg', 'El descanso máximo es de 600 segundos (10 minutos).');
@@ -399,6 +424,7 @@ class Sesiones extends Conexion {
         return $this->validarDatos();
     }
 
+    // FIX #1: solo true si realmente se actualizó la fila
     private function iniciarSesionP(): bool {
         $conex = $this->getConex1();
         try {
@@ -407,23 +433,26 @@ class Sesiones extends Conexion {
             $sql = "UPDATE sesiones SET estado = 'Parcial', fecha_modificacion = NOW()
                     WHERE id_sesion = :id_sesion AND estado = 'Planificada'";
             $stmt = $conex->prepare($sql);
-            $resultado = $stmt->execute([':id_sesion' => $id_sesion]);
+            $stmt->execute([':id_sesion' => $id_sesion]);
 
-            if ($resultado) {
-                $sqlInfo = "SELECT id_grupo FROM sesiones WHERE id_sesion = :id_sesion";
-                $stmtInfo = $conex->prepare($sqlInfo);
-                $stmtInfo->execute([':id_sesion' => $id_sesion]);
-                $sesion = $stmtInfo->fetch(PDO::FETCH_ASSOC);
-
-                if ($sesion) {
-                    $this->notificarEventoSesion('iniciar_sesion', [
-                        'id_sesion' => $id_sesion,
-                        'id_grupo'  => $sesion['id_grupo'],
-                    ]);
-                }
+            if ($stmt->rowCount() === 0) {
+                error_log("iniciarSesionP: la sesión {$id_sesion} no está en estado 'Planificada' o no existe.");
+                return false;
             }
 
-            return $resultado;
+            $sqlInfo = "SELECT id_grupo FROM sesiones WHERE id_sesion = :id_sesion";
+            $stmtInfo = $conex->prepare($sqlInfo);
+            $stmtInfo->execute([':id_sesion' => $id_sesion]);
+            $sesion = $stmtInfo->fetch(PDO::FETCH_ASSOC);
+
+            if ($sesion) {
+                $this->notificarEventoSesion('iniciar_sesion', [
+                    'id_sesion' => $id_sesion,
+                    'id_grupo'  => $sesion['id_grupo'],
+                ]);
+            }
+
+            return true;
         } catch (PDOException $e) {
             error_log("Error en iniciarSesionP: " . $e->getMessage());
             return false;
@@ -435,36 +464,44 @@ class Sesiones extends Conexion {
         try {
             $id_sesion = (int)$this->datos['id_sesion'];
 
+            $estadoPermitido = in_array($this->datos['estado'] ?? '', ['Completada', 'Parcial'], true)
+                ? $this->datos['estado']
+                : 'Completada';
+
             $sql = "UPDATE sesiones SET
                         volumen_ejecutado = :volumen_ejecutado,
                         estado = :estado,
                         observaciones = :observaciones,
                         fecha_modificacion = NOW()
-                    WHERE id_sesion = :id_sesion";
+                    WHERE id_sesion = :id_sesion
+                      AND estado IN ('Parcial', 'Planificada')";
             $stmt = $conex->prepare($sql);
-            $resultado = $stmt->execute([
+            $stmt->execute([
                 ':volumen_ejecutado' => (int)($this->datos['volumen_ejecutado'] ?? 0),
-                ':estado'            => $this->datos['estado'] ?? 'Completada',
+                ':estado'            => $estadoPermitido,
                 ':observaciones'     => $this->datos['observaciones'] ?? null,
                 ':id_sesion'         => $id_sesion,
             ]);
 
-            if ($resultado) {
-                $sqlInfo = "SELECT id_grupo FROM sesiones WHERE id_sesion = :id_sesion";
-                $stmtInfo = $conex->prepare($sqlInfo);
-                $stmtInfo->execute([':id_sesion' => $id_sesion]);
-                $sesion = $stmtInfo->fetch(PDO::FETCH_ASSOC);
-
-                if ($sesion) {
-                    $this->notificarEventoSesion('completar_sesion', [
-                        'id_sesion'         => $id_sesion,
-                        'id_grupo'          => $sesion['id_grupo'],
-                        'volumen_ejecutado' => (int)($this->datos['volumen_ejecutado'] ?? 0),
-                    ]);
-                }
+            if ($stmt->rowCount() === 0) {
+                error_log("completarSesionP: la sesión {$id_sesion} no existe o ya estaba Completada/Cancelada.");
+                return false;
             }
 
-            return $resultado;
+            $sqlInfo = "SELECT id_grupo FROM sesiones WHERE id_sesion = :id_sesion";
+            $stmtInfo = $conex->prepare($sqlInfo);
+            $stmtInfo->execute([':id_sesion' => $id_sesion]);
+            $sesion = $stmtInfo->fetch(PDO::FETCH_ASSOC);
+
+            if ($sesion) {
+                $this->notificarEventoSesion('completar_sesion', [
+                    'id_sesion'         => $id_sesion,
+                    'id_grupo'          => $sesion['id_grupo'],
+                    'volumen_ejecutado' => (int)($this->datos['volumen_ejecutado'] ?? 0),
+                ]);
+            }
+
+            return true;
         } catch (PDOException $e) {
             error_log("Error en completarSesionP: " . $e->getMessage());
             return false;
@@ -480,11 +517,17 @@ class Sesiones extends Conexion {
             $sesion = $stmtInfo->fetch(PDO::FETCH_ASSOC);
 
             $sql = "UPDATE sesiones SET estado = 'Cancelada', fecha_modificacion = NOW()
-                    WHERE id_sesion = :id_sesion";
+                    WHERE id_sesion = :id_sesion
+                      AND estado IN ('Planificada', 'Parcial')";
             $stmt = $conex->prepare($sql);
-            $resultado = $stmt->execute([':id_sesion' => $id_sesion]);
+            $stmt->execute([':id_sesion' => $id_sesion]);
 
-            if ($resultado && $sesion) {
+            if ($stmt->rowCount() === 0) {
+                error_log("cancelarSesionP: la sesión {$id_sesion} no existe o ya está Completada/Cancelada.");
+                return false;
+            }
+
+            if ($sesion) {
                 $this->notificarEventoSesion('cancelar_sesion', [
                     'id_sesion' => $id_sesion,
                     'id_grupo'  => $sesion['id_grupo'],
@@ -492,7 +535,7 @@ class Sesiones extends Conexion {
                 ]);
             }
 
-            return $resultado;
+            return true;
         } catch (PDOException $e) {
             error_log("Error en cancelarSesionP: " . $e->getMessage());
             return false;
@@ -572,7 +615,7 @@ class Sesiones extends Conexion {
                         id_entrenador = :id_entrenador,
                         duracion_minutos = :duracion_minutos,
                         fecha_modificacion = NOW()
-                    WHERE id_sesion = :id_sesion";
+                    WHERE id_sesion = :id_sesion AND estado IN ('Planificada', 'Parcial')";
             $stmt = $conex->prepare($sql);
             $stmt->execute([
                 ':id_microciclo'       => !empty($this->datos['id_microciclo']) ? (int)$this->datos['id_microciclo'] : null,

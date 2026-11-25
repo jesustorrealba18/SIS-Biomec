@@ -8,11 +8,9 @@ use PDOException;
 class Asignacion extends Conexion {
     use ValidacionesTrait;
 
-    private const CAMPOS_PERMITIDOS = ['id_asignacion', 'id_carril', 'id_bloque_horario', 'id_grupo', 'dia_especifico', 'fecha_vigencia_inicio',
-        'fecha_vigencia_fin', 'activa',
-    ];
-
+    private const CAMPOS_PERMITIDOS = ['id_asignacion', 'id_carril', 'id_bloque_horario', 'id_grupo', 'fecha_vigencia_inicio', 'fecha_vigencia_fin', 'activa'];
     private array $datos = [];
+    private ?string $ultimoError = null;
 
     public function __construct() {
         parent::__construct('sis_natacion');
@@ -26,25 +24,31 @@ class Asignacion extends Conexion {
         $this->datos['id_asignacion'] = $id;
     }
 
+    public function obtenerUltimoError(): ?string {
+        return $this->ultimoError;
+    }
+
     public function validarDatos(?string $excluirId = null): array {
         $this->resetearErrores();
 
         $id_carril         = $this->datos['id_carril'] ?? '';
         $id_bloque_horario = $this->datos['id_bloque_horario'] ?? '';
         $id_grupo          = $this->datos['id_grupo'] ?? '';
-        $dia_especifico    = $this->datos['dia_especifico'] ?? '';
         $fecha_vigencia_inicio = $this->datos['fecha_vigencia_inicio'] ?? '';
         $fecha_vigencia_fin    = $this->datos['fecha_vigencia_fin'] ?? '';
         $activa            = $this->datos['activa'] ?? '';
 
-        $this->requerido($id_carril, 'id_carril');
-        $this->soloNumeros($id_carril, 'id_carril');
+        if ($id_carril === '' || $id_carril === null || !is_numeric($id_carril) || (int)$id_carril <= 0) {
+            $this->agregarError('id_carril', 'El carril es inválido.');
+        }
 
-        $this->requerido($id_bloque_horario, 'id_bloque_horario');
-        $this->soloNumeros($id_bloque_horario, 'id_bloque_horario');
+        if ($id_bloque_horario === '' || $id_bloque_horario === null || !is_numeric($id_bloque_horario) || (int)$id_bloque_horario <= 0) {
+            $this->agregarError('id_bloque_horario', 'El bloque horario es inválido.');
+        }
 
-        $this->requerido($id_grupo, 'id_grupo');
-        $this->soloNumeros($id_grupo, 'id_grupo');
+        if ($id_grupo === '' || $id_grupo === null || !is_numeric($id_grupo) || (int)$id_grupo <= 0) {
+            $this->agregarError('id_grupo', 'El grupo es inválido.');
+        }
 
         $this->requerido($fecha_vigencia_inicio, 'fecha_vigencia_inicio');
 
@@ -55,100 +59,44 @@ class Asignacion extends Conexion {
         $this->requerido($activa, 'activa');
         $this->soloNumeros($activa, 'activa');
 
+        // VALIDACIÓN: Choque de horarios (Matemática pura en PHP)
         if (empty($this->errores)) {
             $conex = $this->getConex1();
             if ($conex) {
                 try {
-                    $diaEspecificoValue = empty($dia_especifico) ? null : $dia_especifico;
-
+                    $sqlCheck = "SELECT id_asignacion, fecha_vigencia_inicio, fecha_vigencia_fin 
+                                 FROM asignacion_carril 
+                                 WHERE id_carril = :id_carril 
+                                 AND id_bloque_horario = :id_bloque_horario 
+                                 AND activa = 1
+                                 AND (estado IS NULL OR estado != 'completada')";
+                    
                     if ($excluirId !== null) {
-                        $sqlDuplicado = "SELECT COUNT(*) FROM asignacion_carril 
-                                         WHERE id_asignacion != :id 
-                                         AND id_carril = :id_carril 
-                                         AND id_bloque_horario = :id_bloque_horario 
-                                         AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL)) 
-                                         AND activa = 1";
-                        $stmtDuplicado = $conex->prepare($sqlDuplicado);
-                        $stmtDuplicado->bindParam(':id', $excluirId, PDO::PARAM_INT);
+                        $sqlCheck .= " AND id_asignacion != :id";
+                        $stmtCheck = $conex->prepare($sqlCheck);
+                        $stmtCheck->bindParam(':id', $excluirId, PDO::PARAM_INT);
                     } else {
-                        $sqlDuplicado = "SELECT COUNT(*) FROM asignacion_carril 
-                                         WHERE id_carril = :id_carril 
-                                         AND id_bloque_horario = :id_bloque_horario 
-                                         AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL)) 
-                                         AND activa = 1";
-                        $stmtDuplicado = $conex->prepare($sqlDuplicado);
+                        $stmtCheck = $conex->prepare($sqlCheck);
                     }
 
-                    $stmtDuplicado->bindParam(':id_carril', $id_carril, PDO::PARAM_INT);
-                    $stmtDuplicado->bindParam(':id_bloque_horario', $id_bloque_horario, PDO::PARAM_INT);
+                    $stmtCheck->bindParam(':id_carril', $id_carril, PDO::PARAM_INT);
+                    $stmtCheck->bindParam(':id_bloque_horario', $id_bloque_horario, PDO::PARAM_INT);
+                    $stmtCheck->execute();
+                    
+                    $existentes = $stmtCheck->fetchAll(PDO::FETCH_ASSOC);
+                    $fechaFinNueva = !empty($fecha_vigencia_fin) ? $fecha_vigencia_fin : '9999-12-31';
 
-                    if ($diaEspecificoValue === null) {
-                        $stmtDuplicado->bindValue(':dia_especifico', null, PDO::PARAM_NULL);
-                    } else {
-                        $stmtDuplicado->bindParam(':dia_especifico', $diaEspecificoValue, PDO::PARAM_STR);
-                    }
+                    foreach ($existentes as $row) {
+                        $fechaInicioExistente = $row['fecha_vigencia_inicio'];
+                        $fechaFinExistente = !empty($row['fecha_vigencia_fin']) ? $row['fecha_vigencia_fin'] : '9999-12-31';
 
-                    $stmtDuplicado->execute();
-                    $existe = $stmtDuplicado->fetchColumn();
-
-                    if ($existe > 0) {
-                        $this->errores['asignacion'] = 'Ya existe una asignación activa para este carril, horario y día';
+                        if ($fechaInicioExistente <= $fechaFinNueva && $fechaFinExistente >= $fecha_vigencia_inicio) {
+                            $this->errores['fechas_cruce'] = 'El carril ya está ocupado en este horario para las fechas seleccionadas.';
+                            break;
+                        }
                     }
                 } catch (PDOException $e) {
-                    error_log("Error validando duplicado: " . $e->getMessage());
-                }
-            }
-        }
-
-        // ===== VALIDACIÓN DE CHOQUE DE FECHAS =====
-        if (empty($this->errores) && $fecha_vigencia_inicio) {
-            $conex = $this->getConex1();
-            if ($conex) {
-                try {
-                    $diaEspecificoValue = empty($dia_especifico) ? null : $dia_especifico;
-                    $fechaFinVal = !empty($fecha_vigencia_fin) ? $fecha_vigencia_fin : '9999-12-31';
-
-                    if ($excluirId !== null) {
-                        $sqlCruce = "SELECT COUNT(*) FROM asignacion_carril 
-                                     WHERE id_asignacion != :id 
-                                     AND id_carril = :id_carril 
-                                     AND id_bloque_horario = :id_bloque_horario 
-                                     AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL))
-                                     AND activa = 1
-                                     AND (estado IS NULL OR estado != 'completada')
-                                     AND (fecha_vigencia_inicio <= :fecha_fin_val 
-                                          AND (fecha_vigencia_fin IS NULL OR fecha_vigencia_fin >= :fecha_inicio_val))";
-                        $stmtCruce = $conex->prepare($sqlCruce);
-                        $stmtCruce->bindParam(':id', $excluirId, PDO::PARAM_INT);
-                    } else {
-                        $sqlCruce = "SELECT COUNT(*) FROM asignacion_carril 
-                                     WHERE id_carril = :id_carril 
-                                     AND id_bloque_horario = :id_bloque_horario 
-                                     AND (dia_especifico = :dia_especifico OR (dia_especifico IS NULL AND :dia_especifico IS NULL))
-                                     AND activa = 1
-                                     AND (estado IS NULL OR estado != 'completada')
-                                     AND (fecha_vigencia_inicio <= :fecha_fin_val 
-                                          AND (fecha_vigencia_fin IS NULL OR fecha_vigencia_fin >= :fecha_inicio_val))";
-                        $stmtCruce = $conex->prepare($sqlCruce);
-                    }
-
-                    $stmtCruce->bindParam(':id_carril', $id_carril, PDO::PARAM_INT);
-                    $stmtCruce->bindParam(':id_bloque_horario', $id_bloque_horario, PDO::PARAM_INT);
-                    $stmtCruce->bindParam(':fecha_inicio_val', $fecha_vigencia_inicio, PDO::PARAM_STR);
-                    $stmtCruce->bindParam(':fecha_fin_val', $fechaFinVal, PDO::PARAM_STR);
-
-                    if ($diaEspecificoValue === null) {
-                        $stmtCruce->bindValue(':dia_especifico', null, PDO::PARAM_NULL);
-                    } else {
-                        $stmtCruce->bindParam(':dia_especifico', $diaEspecificoValue, PDO::PARAM_STR);
-                    }
-
-                    $stmtCruce->execute();
-                    if ($stmtCruce->fetchColumn() > 0) {
-                        $this->errores['fechas_cruce'] = 'Las fechas de vigencia chocan con otra asignación activa en el mismo carril, horario y día';
-                    }
-                } catch (PDOException $e) {
-                    error_log("Error validando cruce de fechas: " . $e->getMessage());
+                    error_log("Error validando choque de fechas: " . $e->getMessage());
                 }
             }
         }
@@ -158,81 +106,49 @@ class Asignacion extends Conexion {
 
     public function registrarAsignacion(): bool {
         $errores = $this->validarDatos();
-        if (!empty($errores)) {
-            return false;
-        }
+        if (!empty($errores)) return false;
         return $this->registrarAsignacionP();
     }
 
     public function editarAsignacion(): bool {
-        if (empty($this->datos['id_asignacion'])) {
-            return false;
-        }
+        if (empty($this->datos['id_asignacion'])) return false;
         $errores = $this->validarDatos((string)$this->datos['id_asignacion']);
-        if (!empty($errores)) {
-            return false;
-        }
+        if (!empty($errores)) return false;
         return $this->editarAsignacionP();
     }
 
     public function eliminarAsignacion(): bool {
         $id = (int)($this->datos['id_asignacion'] ?? 0);
-        if ($id <= 0) {
-            return false;
-        }
+        if ($id <= 0) return false;
         return $this->eliminarAsignacionP($id);
     }
 
     public function desactivarAsignacion(int $id): bool {
-        if ($id <= 0) {
-            return false;
-        }
+        if ($id <= 0) return false;
         return $this->desactivarAsignacionP($id);
     }
 
     public function reactivarAsignacion(int $id): bool {
-        if ($id <= 0) {
-            return false;
-        }
+        if ($id <= 0) return false;
         return $this->reactivarAsignacionP($id);
     }
 
     public function completarAsignacion(int $id): bool {
-        if ($id <= 0) {
-            return false;
-        }
+        if ($id <= 0) return false;
         return $this->completarAsignacionP($id);
     }
 
     public function cambiarEstadoAsignacion(int $id, string $estado): bool {
-        if ($id <= 0) {
-            return false;
-        }
+        if ($id <= 0) return false;
         $estadosValidos = ['pendiente', 'en_progreso', 'completada', 'cancelada'];
-        if (!in_array($estado, $estadosValidos, true)) {
-            return false;
-        }
+        if (!in_array($estado, $estadosValidos, true)) return false;
         return $this->cambiarEstadoAsignacionP($id, $estado);
     }
 
     public function listarAsignaciones(int $activa = 1): array {
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT 
-                        a.id_asignacion,
-                        a.id_carril,
-                        a.id_bloque_horario,
-                        a.id_grupo,
-                        a.dia_especifico,
-                        a.fecha_vigencia_inicio,
-                        a.fecha_vigencia_fin,
-                        a.activa,
-                        c.numero as carril_numero,
-                        c.capacidad_maxima,
-                        bh.dia_semana,
-                        bh.hora_inicio,
-                        bh.hora_fin,
-                        g.nombre as grupo_nombre
+            $sql = "SELECT a.id_asignacion, a.id_carril, a.id_bloque_horario, a.id_grupo, a.fecha_vigencia_inicio, a.fecha_vigencia_fin, a.activa, c.numero as carril_numero, c.capacidad_maxima, bh.dia_semana, bh.hora_inicio, bh.hora_fin, g.nombre as grupo_nombre
                     FROM asignacion_carril a
                     LEFT JOIN carriles c ON a.id_carril = c.id_carril
                     LEFT JOIN bloques_horarios bh ON a.id_bloque_horario = bh.id_bloque
@@ -249,26 +165,10 @@ class Asignacion extends Conexion {
     }
 
     public function obtenerAsignacionPorId(int $id): ?array {
-        if ($id <= 0) {
-            return null;
-        }
+        if ($id <= 0) return null;
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT 
-                        a.id_asignacion,
-                        a.id_carril,
-                        a.id_bloque_horario,
-                        a.id_grupo,
-                        a.dia_especifico,
-                        a.fecha_vigencia_inicio,
-                        a.fecha_vigencia_fin,
-                        a.activa,
-                        c.numero as carril_numero,
-                        c.capacidad_maxima,
-                        bh.dia_semana,
-                        bh.hora_inicio,
-                        bh.hora_fin,
-                        g.nombre as grupo_nombre
+            $sql = "SELECT a.id_asignacion, a.id_carril, a.id_bloque_horario, a.id_grupo, a.fecha_vigencia_inicio, a.fecha_vigencia_fin, a.activa, c.numero as carril_numero, c.capacidad_maxima, bh.dia_semana, bh.hora_inicio, bh.hora_fin, g.nombre as grupo_nombre
                     FROM asignacion_carril a
                     LEFT JOIN carriles c ON a.id_carril = c.id_carril
                     LEFT JOIN bloques_horarios bh ON a.id_bloque_horario = bh.id_bloque
@@ -287,12 +187,7 @@ class Asignacion extends Conexion {
     public function listarGrupos(int $estado = 1): array {
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT 
-                        g.id_grupo, 
-                        g.nombre, 
-                        g.descripcion, 
-                        g.activo,
-                        CONCAT(e.nombres, ' ', e.apellidos) as entrenador_nombre
+            $sql = "SELECT g.id_grupo, g.nombre, g.descripcion, g.activo, CONCAT(e.nombres, ' ', e.apellidos) as entrenador_nombre
                     FROM grupos_entrenamiento g
                     LEFT JOIN entrenador e ON g.id_entrenador = e.id_entrenador
                     WHERE g.activo = :estado 
@@ -307,18 +202,10 @@ class Asignacion extends Conexion {
     }
 
     public function obtenerGrupoPorId(int $id): ?array {
-        if ($id <= 0) {
-            return null;
-        }
+        if ($id <= 0) return null;
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT 
-                        g.id_grupo, 
-                        g.nombre, 
-                        g.descripcion, 
-                        g.activo,
-                        CONCAT(e.nombres, ' ', e.apellidos) as entrenador_nombre,
-                        e.cedula as entrenador_cedula
+            $sql = "SELECT g.id_grupo, g.nombre, g.descripcion, g.activo, CONCAT(e.nombres, ' ', e.apellidos) as entrenador_nombre, e.cedula as entrenador_cedula
                     FROM grupos_entrenamiento g
                     LEFT JOIN entrenador e ON g.id_entrenador = e.id_entrenador
                     WHERE g.id_grupo = :id";
@@ -335,10 +222,7 @@ class Asignacion extends Conexion {
     public function listarTodosLosGrupos(): array {
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT id_grupo, nombre 
-                    FROM grupos_entrenamiento 
-                    WHERE activo = 1
-                    ORDER BY nombre ASC";
+            $sql = "SELECT id_grupo, nombre FROM grupos_entrenamiento WHERE activo = 1 ORDER BY nombre ASC";
             $stmt = $conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -351,10 +235,7 @@ class Asignacion extends Conexion {
     public function listarCarrilesActivos(): array {
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT id_carril, numero, capacidad_maxima 
-                    FROM carriles 
-                    WHERE activo = 1 
-                    ORDER BY numero ASC";
+            $sql = "SELECT id_carril, numero, capacidad_maxima FROM carriles WHERE activo = 1 ORDER BY numero ASC";
             $stmt = $conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -365,14 +246,10 @@ class Asignacion extends Conexion {
     }
 
     public function obtenerCarrilPorId(int $id): ?array {
-        if ($id <= 0) {
-            return null;
-        }
+        if ($id <= 0) return null;
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT id_carril, numero, capacidad_maxima, activo 
-                    FROM carriles 
-                    WHERE id_carril = :id";
+            $sql = "SELECT id_carril, numero, capacidad_maxima, activo FROM carriles WHERE id_carril = :id";
             $stmt = $conex->prepare($sql);
             $stmt->execute([':id' => $id]);
             $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -386,9 +263,7 @@ class Asignacion extends Conexion {
     public function listarHorariosActivos(): array {
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT id_bloque, dia_semana, hora_inicio, hora_fin 
-                    FROM bloques_horarios 
-                    ORDER BY FIELD(dia_semana, 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'), hora_inicio";
+            $sql = "SELECT id_bloque, dia_semana, hora_inicio, hora_fin FROM bloques_horarios ORDER BY FIELD(dia_semana, 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'), hora_inicio";
             $stmt = $conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -399,14 +274,10 @@ class Asignacion extends Conexion {
     }
 
     public function obtenerHorarioPorId(int $id): ?array {
-        if ($id <= 0) {
-            return null;
-        }
+        if ($id <= 0) return null;
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT id_bloque, dia_semana, hora_inicio, hora_fin 
-                    FROM bloques_horarios 
-                    WHERE id_bloque = :id";
+            $sql = "SELECT id_bloque, dia_semana, hora_inicio, hora_fin FROM bloques_horarios WHERE id_bloque = :id";
             $stmt = $conex->prepare($sql);
             $stmt->execute([':id' => $id]);
             $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -420,21 +291,7 @@ class Asignacion extends Conexion {
     public function listarAsignacionesCompletadas(): array {
         $conex = $this->getConex1();
         try {
-            $sql = "SELECT 
-                        a.id_asignacion,
-                        a.id_carril,
-                        a.id_bloque_horario,
-                        a.id_grupo,
-                        a.dia_especifico,
-                        a.fecha_vigencia_inicio,
-                        a.fecha_vigencia_fin,
-                        a.fecha_completacion,
-                        a.estado,
-                        c.numero as carril_numero,
-                        bh.dia_semana,
-                        bh.hora_inicio,
-                        bh.hora_fin,
-                        g.nombre as grupo_nombre
+            $sql = "SELECT a.id_asignacion, a.id_carril, a.id_bloque_horario, a.id_grupo, a.fecha_vigencia_inicio, a.fecha_vigencia_fin, a.fecha_completacion, a.estado, c.numero as carril_numero, bh.dia_semana, bh.hora_inicio, bh.hora_fin, g.nombre as grupo_nombre
                     FROM asignacion_carril a
                     LEFT JOIN carriles c ON a.id_carril = c.id_carril
                     LEFT JOIN bloques_horarios bh ON a.id_bloque_horario = bh.id_bloque
@@ -463,7 +320,6 @@ class Asignacion extends Conexion {
                         WHERE a.id_carril = c.id_carril
                         AND a.activa = 1
                         AND (a.estado IS NULL OR a.estado != 'completada')";
-
             if ($diaSemana) {
                 $sql .= " AND b.dia_semana = :diaSemana";
                 $params[':diaSemana'] = $diaSemana;
@@ -473,9 +329,7 @@ class Asignacion extends Conexion {
                 $params[':horaInicio'] = $horaInicio;
                 $params[':horaFin'] = $horaFin;
             }
-
             $sql .= ") ORDER BY c.numero ASC";
-
             $stmt = $conex->prepare($sql);
             $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -493,9 +347,7 @@ class Asignacion extends Conexion {
             $stmtC->execute();
             $carriles = $stmtC->fetchAll(PDO::FETCH_ASSOC);
 
-            $sqlAsig = "SELECT a.id_asignacion, a.id_carril, a.id_grupo, 
-                               a.fecha_vigencia_inicio, a.fecha_vigencia_fin,
-                               a.dia_especifico, g.nombre as grupo_nombre
+            $sqlAsig = "SELECT a.id_asignacion, a.id_carril, a.id_grupo, a.fecha_vigencia_inicio, a.fecha_vigencia_fin, g.nombre as grupo_nombre
                         FROM asignacion_carril a
                         LEFT JOIN grupos_entrenamiento g ON a.id_grupo = g.id_grupo
                         WHERE a.id_bloque_horario = :id_bloque 
@@ -504,10 +356,7 @@ class Asignacion extends Conexion {
             $params = [':id_bloque' => $idBloque];
 
             if ($fechaInicio && $fechaFin) {
-                $sqlAsig .= " AND (
-                    (a.fecha_vigencia_inicio <= :fecha_fin 
-                     AND (a.fecha_vigencia_fin IS NULL OR a.fecha_vigencia_fin >= :fecha_inicio))
-                )";
+                $sqlAsig .= " AND ((a.fecha_vigencia_inicio <= :fecha_fin AND (a.fecha_vigencia_fin IS NULL OR a.fecha_vigencia_fin >= :fecha_inicio)))";
                 $params[':fecha_inicio'] = $fechaInicio;
                 $params[':fecha_fin'] = $fechaFin;
             }
@@ -522,8 +371,7 @@ class Asignacion extends Conexion {
                     'id_asignacion' => (int)$a['id_asignacion'],
                     'grupo_nombre' => $a['grupo_nombre'],
                     'fecha_inicio' => $a['fecha_vigencia_inicio'],
-                    'fecha_fin' => $a['fecha_vigencia_fin'],
-                    'dia_especifico' => $a['dia_especifico']
+                    'fecha_fin' => $a['fecha_vigencia_fin']
                 ];
             }
 
@@ -549,9 +397,7 @@ class Asignacion extends Conexion {
         $conex = $this->getConex1();
         try {
             $id = $conex->lastInsertId();
-            if ($id && $id > 0) {
-                return (int) $id;
-            }
+            if ($id && $id > 0) return (int) $id;
             $sql = "SELECT MAX(id_asignacion) as id FROM asignacion_carril";
             $stmt = $conex->prepare($sql);
             $stmt->execute();
@@ -567,19 +413,13 @@ class Asignacion extends Conexion {
         $conex = $this->getConex1();
         $contador = 0;
         try {
-            $sql = "SELECT id_asignacion FROM asignacion_carril 
-                    WHERE activa = 1 
-                    AND fecha_vigencia_fin IS NOT NULL 
-                    AND fecha_vigencia_fin < CURDATE()
-                    AND (estado IS NULL OR estado != 'completada')";
+            $sql = "SELECT id_asignacion FROM asignacion_carril WHERE activa = 1 AND fecha_vigencia_fin IS NOT NULL AND fecha_vigencia_fin < CURDATE() AND (estado IS NULL OR estado != 'completada')";
             $stmt = $conex->prepare($sql);
             $stmt->execute();
             $vencidas = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
             foreach ($vencidas as $id) {
-                if ($this->completarAsignacion((int)$id)) {
-                    $contador++;
-                }
+                if ($this->completarAsignacion((int)$id)) $contador++;
             }
             return $contador;
         } catch (PDOException $e) {
@@ -596,7 +436,6 @@ class Asignacion extends Conexion {
             $hora_inicio = $asignacion['hora_inicio'] ?? '';
             $hora_fin = $asignacion['hora_fin'] ?? '';
             $fecha_inicio = $asignacion['fecha_vigencia_inicio'] ?? '';
-
             $titulo = "Asignación de Carril";
             $mensaje = "Tu grupo ha sido asignado al Carril {$carril_numero} los {$dia_semana} de {$hora_inicio} a {$hora_fin} (vigente desde {$fecha_inicio}).";
             $icono = "fa-bell";
@@ -604,41 +443,25 @@ class Asignacion extends Conexion {
             $enlace = "?p=asignacion";
 
             $conexNegocio = $this->getConex1();
-
-            $sqlAtletas = "SELECT a.id_atleta, a.cedula, CONCAT(a.nombres, ' ', a.apellidos) as nombre_completo
-                           FROM grupo_atleta ga
-                           INNER JOIN atletas a ON ga.id_atleta = a.id_atleta
-                           WHERE ga.id_grupo = :id_grupo AND a.cedula IS NOT NULL AND a.cedula != ''";
+            $sqlAtletas = "SELECT a.id_atleta, a.cedula, CONCAT(a.nombres, ' ', a.apellidos) as nombre_completo FROM grupo_atleta ga INNER JOIN atletas a ON ga.id_atleta = a.id_atleta WHERE ga.id_grupo = :id_grupo AND a.cedula IS NOT NULL AND a.cedula != ''";
             $stmt = $conexNegocio->prepare($sqlAtletas);
             $stmt->execute([':id_grupo' => $id_grupo]);
             $atletas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $conexSeguridad = new Conexion('sis_seguridad');
-
             foreach ($atletas as $atleta) {
                 if (!empty($atleta['cedula'])) {
                     $sqlUser = "SELECT id_usuario FROM usuarios WHERE cedula = :cedula AND activo = 1";
                     $stmtUser = $conexSeguridad->getConex1()->prepare($sqlUser);
                     $stmtUser->execute([':cedula' => $atleta['cedula']]);
                     $usuario = $stmtUser->fetch(PDO::FETCH_ASSOC);
-
                     if ($usuario && !empty($usuario['id_usuario'])) {
-                        Notificacion::enviar(
-                            $usuario['id_usuario'],
-                            $titulo,
-                            "{$atleta['nombre_completo']}, {$mensaje}",
-                            $icono,
-                            $color,
-                            $enlace
-                        );
+                        Notificacion::enviar($usuario['id_usuario'], $titulo, "{$atleta['nombre_completo']}, {$mensaje}", $icono, $color, $enlace);
                     }
                 }
             }
 
-            $sqlEntrenador = "SELECT e.id_entrenador, e.cedula, CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo
-                              FROM grupos_entrenamiento g
-                              INNER JOIN entrenador e ON g.id_entrenador = e.id_entrenador
-                              WHERE g.id_grupo = :id_grupo AND e.cedula IS NOT NULL AND e.cedula != ''";
+            $sqlEntrenador = "SELECT e.id_entrenador, e.cedula, CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo FROM grupos_entrenamiento g INNER JOIN entrenador e ON g.id_entrenador = e.id_entrenador WHERE g.id_grupo = :id_grupo AND e.cedula IS NOT NULL AND e.cedula != ''";
             $stmtEnt = $conexNegocio->prepare($sqlEntrenador);
             $stmtEnt->execute([':id_grupo' => $id_grupo]);
             $entrenador = $stmtEnt->fetch(PDO::FETCH_ASSOC);
@@ -648,16 +471,8 @@ class Asignacion extends Conexion {
                 $stmtUserEnt = $conexSeguridad->getConex1()->prepare($sqlUserEnt);
                 $stmtUserEnt->execute([':cedula' => $entrenador['cedula']]);
                 $usuarioEnt = $stmtUserEnt->fetch(PDO::FETCH_ASSOC);
-
                 if ($usuarioEnt && !empty($usuarioEnt['id_usuario'])) {
-                    Notificacion::enviar(
-                        $usuarioEnt['id_usuario'],
-                        "Nueva Asignación de Carril",
-                        "Tu grupo ha sido asignado al Carril {$carril_numero} los {$dia_semana} de {$hora_inicio} a {$hora_fin}.",
-                        $icono,
-                        "purple",
-                        $enlace
-                    );
+                    Notificacion::enviar($usuarioEnt['id_usuario'], "Nueva Asignación de Carril", "Tu grupo ha sido asignado al Carril {$carril_numero} los {$dia_semana} de {$hora_inicio} a {$hora_fin}.", $icono, "purple", $enlace);
                 }
             }
         } catch (PDOException $e) {
@@ -669,7 +484,6 @@ class Asignacion extends Conexion {
         try {
             $id_grupo = $asignacion['id_grupo'];
             $carril_numero = $asignacion['carril_numero'] ?? 'desconocido';
-
             $titulo = "Asignación Finalizada";
             $mensaje = "La asignación del Carril {$carril_numero} para tu grupo ha finalizado.";
             $icono = "fa-flag-checkered";
@@ -677,41 +491,25 @@ class Asignacion extends Conexion {
             $enlace = "?p=asignacion";
 
             $conexNegocio = $this->getConex1();
-
-            $sqlAtletas = "SELECT a.id_atleta, a.cedula, CONCAT(a.nombres, ' ', a.apellidos) as nombre_completo
-                           FROM grupo_atleta ga
-                           INNER JOIN atletas a ON ga.id_atleta = a.id_atleta
-                           WHERE ga.id_grupo = :id_grupo AND a.cedula IS NOT NULL AND a.cedula != ''";
+            $sqlAtletas = "SELECT a.id_atleta, a.cedula, CONCAT(a.nombres, ' ', a.apellidos) as nombre_completo FROM grupo_atleta ga INNER JOIN atletas a ON ga.id_atleta = a.id_atleta WHERE ga.id_grupo = :id_grupo AND a.cedula IS NOT NULL AND a.cedula != ''";
             $stmt = $conexNegocio->prepare($sqlAtletas);
             $stmt->execute([':id_grupo' => $id_grupo]);
             $atletas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $conexSeguridad = new Conexion('sis_seguridad');
-
             foreach ($atletas as $atleta) {
                 if (!empty($atleta['cedula'])) {
                     $sqlUser = "SELECT id_usuario FROM usuarios WHERE cedula = :cedula AND activo = 1";
                     $stmtUser = $conexSeguridad->getConex1()->prepare($sqlUser);
                     $stmtUser->execute([':cedula' => $atleta['cedula']]);
                     $usuario = $stmtUser->fetch(PDO::FETCH_ASSOC);
-
                     if ($usuario && !empty($usuario['id_usuario'])) {
-                        Notificacion::enviar(
-                            $usuario['id_usuario'],
-                            $titulo,
-                            "{$atleta['nombre_completo']}, {$mensaje}",
-                            $icono,
-                            $color,
-                            $enlace
-                        );
+                        Notificacion::enviar($usuario['id_usuario'], $titulo, "{$atleta['nombre_completo']}, {$mensaje}", $icono, $color, $enlace);
                     }
                 }
             }
 
-            $sqlEntrenador = "SELECT e.id_entrenador, e.cedula, CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo
-                              FROM grupos_entrenamiento g
-                              INNER JOIN entrenador e ON g.id_entrenador = e.id_entrenador
-                              WHERE g.id_grupo = :id_grupo AND e.cedula IS NOT NULL AND e.cedula != ''";
+            $sqlEntrenador = "SELECT e.id_entrenador, e.cedula, CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo FROM grupos_entrenamiento g INNER JOIN entrenador e ON g.id_entrenador = e.id_entrenador WHERE g.id_grupo = :id_grupo AND e.cedula IS NOT NULL AND e.cedula != ''";
             $stmtEnt = $conexNegocio->prepare($sqlEntrenador);
             $stmtEnt->execute([':id_grupo' => $id_grupo]);
             $entrenador = $stmtEnt->fetch(PDO::FETCH_ASSOC);
@@ -721,10 +519,8 @@ class Asignacion extends Conexion {
                 $stmtUserEnt = $conexSeguridad->getConex1()->prepare($sqlUserEnt);
                 $stmtUserEnt->execute([':cedula' => $entrenador['cedula']]);
                 $usuarioEnt = $stmtUserEnt->fetch(PDO::FETCH_ASSOC);
-
                 if ($usuarioEnt && !empty($usuarioEnt['id_usuario'])) {
-                    Notificacion::enviar($usuarioEnt['id_usuario'], "Fin de Asignación", "La asignación del Carril {$carril_numero} para tu grupo ha finalizado.", $icono, "purple", $enlace
-                    );
+                    Notificacion::enviar($usuarioEnt['id_usuario'], "Fin de Asignación", "La asignación del Carril {$carril_numero} para tu grupo ha finalizado.", $icono, "purple", $enlace);
                 }
             }
         } catch (PDOException $e) {
@@ -736,32 +532,19 @@ class Asignacion extends Conexion {
         $conex = $this->getConex1();
         try {
             $conex->beginTransaction();
-
             $idCarril    = (int)($this->datos['id_carril'] ?? 0);
             $idBloque    = (int)($this->datos['id_bloque_horario'] ?? 0);
             $idGrupo     = (int)($this->datos['id_grupo'] ?? 0);
-            $diaEsp      = !empty($this->datos['dia_especifico']) ? $this->datos['dia_especifico'] : null;
             $fechaInicio = $this->datos['fecha_vigencia_inicio'] ?? null;
             $fechaFin    = !empty($this->datos['fecha_vigencia_fin']) ? $this->datos['fecha_vigencia_fin'] : null;
             $activa      = (int)($this->datos['activa'] ?? 1);
 
-            $sql = "INSERT INTO asignacion_carril (
-                id_carril, id_bloque_horario, id_grupo, dia_especifico,
-                fecha_vigencia_inicio, fecha_vigencia_fin, activa
-            ) VALUES (
-                :id_carril, :id_bloque_horario, :id_grupo, :dia_especifico,
-                :fecha_vigencia_inicio, :fecha_vigencia_fin, :activa
-            )";
-
+            $sql = "INSERT INTO asignacion_carril (id_carril, id_bloque_horario, id_grupo, fecha_vigencia_inicio, fecha_vigencia_fin, activa) 
+                    VALUES (:id_carril, :id_bloque_horario, :id_grupo, :fecha_vigencia_inicio, :fecha_vigencia_fin, :activa)";
             $stmt = $conex->prepare($sql);
             $resultado = $stmt->execute([
-                ':id_carril'             => $idCarril,
-                ':id_bloque_horario'     => $idBloque,
-                ':id_grupo'              => $idGrupo,
-                ':dia_especifico'        => $diaEsp,
-                ':fecha_vigencia_inicio' => $fechaInicio,
-                ':fecha_vigencia_fin'    => $fechaFin,
-                ':activa'                => $activa,
+                ':id_carril' => $idCarril, ':id_bloque_horario' => $idBloque, ':id_grupo' => $idGrupo,
+                ':fecha_vigencia_inicio' => $fechaInicio, ':fecha_vigencia_fin' => $fechaFin, ':activa' => $activa,
             ]);
 
             $idAsignacion = (int)$conex->lastInsertId();
@@ -771,20 +554,18 @@ class Asignacion extends Conexion {
                 $asignacion = $this->obtenerAsignacionPorId($idAsignacion);
                 if ($asignacion) {
                     $this->notificarEventoAsignacion('crear_asignacion', [
-                        'id_asignacion' => $idAsignacion,
-                        'id_grupo'      => $idGrupo,
+                        'id_asignacion' => $idAsignacion, 'id_grupo' => $idGrupo,
                         'carril_numero' => $asignacion['carril_numero'] ?? $idCarril,
-                        'dia_semana'    => $asignacion['dia_semana'] ?? $diaEsp ?? 'día asignado',
-                        'hora_inicio'   => $asignacion['hora_inicio'] ?? '',
-                        'hora_fin'      => $asignacion['hora_fin'] ?? '',
+                        'dia_semana'    => $asignacion['dia_semana'] ?? 'día asignado',
+                        'hora_inicio'   => $asignacion['hora_inicio'] ?? '', 'hora_fin' => $asignacion['hora_fin'] ?? '',
                         'fecha_inicio'  => $fechaInicio,
                     ]);
                 }
             }
-
             return $resultado;
         } catch (PDOException $e) {
             $conex->rollBack();
+            $this->ultimoError = $e->getMessage();
             error_log("Error registrando asignación: " . $e->getMessage());
             return false;
         }
@@ -794,57 +575,38 @@ class Asignacion extends Conexion {
         $conex = $this->getConex1();
         try {
             $conex->beginTransaction();
-
             $idAsignacion = (int)($this->datos['id_asignacion'] ?? 0);
             $idCarril     = (int)($this->datos['id_carril'] ?? 0);
             $idBloque     = (int)($this->datos['id_bloque_horario'] ?? 0);
             $idGrupo      = (int)($this->datos['id_grupo'] ?? 0);
-            $diaEsp       = !empty($this->datos['dia_especifico']) ? $this->datos['dia_especifico'] : null;
             $fechaInicio  = $this->datos['fecha_vigencia_inicio'] ?? null;
             $fechaFin     = !empty($this->datos['fecha_vigencia_fin']) ? $this->datos['fecha_vigencia_fin'] : null;
             $activa       = (int)($this->datos['activa'] ?? 1);
 
-            $sql = "UPDATE asignacion_carril SET 
-                id_carril = :id_carril,
-                id_bloque_horario = :id_bloque_horario,
-                id_grupo = :id_grupo,
-                dia_especifico = :dia_especifico,
-                fecha_vigencia_inicio = :fecha_vigencia_inicio,
-                fecha_vigencia_fin = :fecha_vigencia_fin,
-                activa = :activa
-            WHERE id_asignacion = :id_asignacion";
-
+            $sql = "UPDATE asignacion_carril SET id_carril = :id_carril, id_bloque_horario = :id_bloque_horario, id_grupo = :id_grupo, fecha_vigencia_inicio = :fecha_vigencia_inicio, fecha_vigencia_fin = :fecha_vigencia_fin, activa = :activa WHERE id_asignacion = :id_asignacion";
             $stmt = $conex->prepare($sql);
             $resultado = $stmt->execute([
-                ':id_asignacion'         => $idAsignacion,
-                ':id_carril'             => $idCarril,
-                ':id_bloque_horario'     => $idBloque,
-                ':id_grupo'              => $idGrupo,
-                ':dia_especifico'        => $diaEsp,
-                ':fecha_vigencia_inicio' => $fechaInicio,
-                ':fecha_vigencia_fin'    => $fechaFin,
-                ':activa'                => $activa,
+                ':id_asignacion' => $idAsignacion, ':id_carril' => $idCarril, ':id_bloque_horario' => $idBloque,
+                ':id_grupo' => $idGrupo, ':fecha_vigencia_inicio' => $fechaInicio,
+                ':fecha_vigencia_fin' => $fechaFin, ':activa' => $activa,
             ]);
-
             $conex->commit();
 
             if ($resultado) {
                 $asignacionDespues = $this->obtenerAsignacionPorId($idAsignacion);
                 if ($asignacionDespues) {
                     $this->notificarEventoAsignacion('editar_asignacion', [
-                        'id_asignacion' => $idAsignacion,
-                        'id_grupo'      => $idGrupo,
+                        'id_asignacion' => $idAsignacion, 'id_grupo' => $idGrupo,
                         'carril_numero' => $asignacionDespues['carril_numero'] ?? $idCarril,
-                        'dia_semana'    => $asignacionDespues['dia_semana'] ?? $diaEsp ?? 'día asignado',
-                        'hora_inicio'   => $asignacionDespues['hora_inicio'] ?? '',
-                        'hora_fin'      => $asignacionDespues['hora_fin'] ?? '',
+                        'dia_semana'    => $asignacionDespues['dia_semana'] ?? 'día asignado',
+                        'hora_inicio'   => $asignacionDespues['hora_inicio'] ?? '', 'hora_fin' => $asignacionDespues['hora_fin'] ?? '',
                     ]);
                 }
             }
-
             return $resultado;
         } catch (PDOException $e) {
             $conex->rollBack();
+            $this->ultimoError = $e->getMessage();
             error_log("Error editando asignación: " . $e->getMessage());
             return false;
         }
@@ -857,6 +619,7 @@ class Asignacion extends Conexion {
             $stmt = $conex->prepare($sql);
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) {
+            $this->ultimoError = $e->getMessage();
             error_log("Error eliminando asignación: " . $e->getMessage());
             return false;
         }
@@ -869,6 +632,7 @@ class Asignacion extends Conexion {
             $stmt = $conex->prepare($sql);
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) {
+            $this->ultimoError = $e->getMessage();
             error_log("Error desactivando asignación: " . $e->getMessage());
             return false;
         }
@@ -877,25 +641,21 @@ class Asignacion extends Conexion {
     private function reactivarAsignacionP(int $id): bool {
         $conex = $this->getConex1();
         try {
-            // Verificar que la fecha de fin no haya pasado
             $sqlCheck = "SELECT fecha_vigencia_fin FROM asignacion_carril WHERE id_asignacion = :id";
             $stmtCheck = $conex->prepare($sqlCheck);
             $stmtCheck->execute([':id' => $id]);
             $row = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
-            if (!$row) {
-                return false;
-            }
+            if (!$row) return false;
 
             $fechaFin = $row['fecha_vigencia_fin'];
-            if (!empty($fechaFin) && $fechaFin < date('Y-m-d')) {
-                return false;
-            }
+            if (!empty($fechaFin) && $fechaFin < date('Y-m-d')) return false;
 
             $sql = "UPDATE asignacion_carril SET activa = 1, estado = NULL WHERE id_asignacion = :id";
             $stmt = $conex->prepare($sql);
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) {
+            $this->ultimoError = $e->getMessage();
             error_log("Error reactivando asignación: " . $e->getMessage());
             return false;
         }
@@ -905,28 +665,21 @@ class Asignacion extends Conexion {
         $conex = $this->getConex1();
         try {
             $asignacion = $this->obtenerAsignacionPorId($id);
+            if (!$asignacion || $asignacion['activa'] == 0) return false;
 
-            if (!$asignacion || $asignacion['activa'] == 0) {
-                return false;
-            }
-
-            $sql = "UPDATE asignacion_carril SET 
-                    activa = 0,
-                    fecha_completacion = NOW(),
-                    estado = 'completada'
-                    WHERE id_asignacion = :id";
+            $sql = "UPDATE asignacion_carril SET activa = 0, fecha_completacion = NOW(), estado = 'completada' WHERE id_asignacion = :id";
             $stmt = $conex->prepare($sql);
             $resultado = $stmt->execute([':id' => $id]);
 
             if ($resultado && $asignacion) {
                 $this->notificarEventoAsignacion('finalizar_asignacion', [
                     'id_grupo'      => $asignacion['id_grupo'],
-                    'carril_numero' => $asignacion['carril_numero'] ?? 'desconocido',
+                    'carril_numero' => (int)($asignacion['carril_numero'] ?? 0),
                 ]);
             }
-
             return $resultado;
         } catch (PDOException $e) {
+            $this->ultimoError = $e->getMessage();
             error_log("Error completando asignación: " . $e->getMessage());
             return false;
         }
@@ -939,6 +692,7 @@ class Asignacion extends Conexion {
             $stmt = $conex->prepare($sql);
             return $stmt->execute([':id' => $id, ':estado' => $estado]);
         } catch (PDOException $e) {
+            $this->ultimoError = $e->getMessage();
             error_log("Error cambiando estado: " . $e->getMessage());
             return false;
         }
@@ -946,43 +700,29 @@ class Asignacion extends Conexion {
 
     private function notificarEventoAsignacion(string $evento, array $datos): void {
         try {
-            if (!class_exists('\GrupoProyecto\SisBiomec\modelo\Notificacion')) {
-                return;
-            }
+            if (!class_exists('\GrupoProyecto\SisBiomec\modelo\Notificacion')) return;
 
             switch ($evento) {
                 case 'crear_asignacion':
                     if (!empty($datos['id_grupo']) && !empty($datos['id_asignacion'])) {
                         \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarAsignacionCarrilCreada(
-                            $datos['id_asignacion'],
-                            $datos['id_grupo'],
-                            $datos['carril_numero'],
-                            $datos['dia_semana'],
-                            $datos['hora_inicio'],
-                            $datos['hora_fin'],
-                            $datos['fecha_inicio']
+                            $datos['id_asignacion'], $datos['id_grupo'], $datos['carril_numero'],
+                            $datos['dia_semana'], $datos['hora_inicio'], $datos['hora_fin'], $datos['fecha_inicio']
                         );
                     }
                     break;
-
                 case 'finalizar_asignacion':
                     if (!empty($datos['id_grupo']) && !empty($datos['carril_numero'])) {
                         \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarAsignacionCarrilFinalizada(
-                            $datos['id_grupo'],
-                            $datos['carril_numero']
+                            $datos['id_grupo'], $datos['carril_numero']
                         );
                     }
                     break;
-
                 case 'editar_asignacion':
                     if (!empty($datos['id_grupo']) && !empty($datos['id_asignacion'])) {
                         \GrupoProyecto\SisBiomec\modelo\Notificacion::notificarAsignacionCarrilEditada(
-                            $datos['id_asignacion'],
-                            $datos['id_grupo'],
-                            $datos['carril_numero'],
-                            $datos['dia_semana'],
-                            $datos['hora_inicio'],
-                            $datos['hora_fin']
+                            $datos['id_asignacion'], $datos['id_grupo'], $datos['carril_numero'],
+                            $datos['dia_semana'], $datos['hora_inicio'], $datos['hora_fin']
                         );
                     }
                     break;
