@@ -89,7 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     header('Content-Type: application/json');
    // $accionPost = $_POST['accion'] ?? '';
-    $accionPost = $_GET['accion'] ?? $_POST['accion'] ?? '';
+    //$accionPost = $_GET['accion'] ?? $_POST['accion'] ?? '';
+    $accionPost = $_POST['accion'] ?? $_GET['accion'] ?? '';
 
     $id_usuario = $_SESSION['id'] ?? 0;
 
@@ -136,6 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // TELEMETRÍA EN VIVO (Latidos del Cronómetro)
     // =====================================================================
     if ($accionPost === 'sync_telemetria') {
+        Autorizacion::exigir('marcas', 'registrar'); 
         // 1. Encapsulamiento: Cargamos los datos al estado interno del objeto
         $objMarca->setAtributos($_POST);
         

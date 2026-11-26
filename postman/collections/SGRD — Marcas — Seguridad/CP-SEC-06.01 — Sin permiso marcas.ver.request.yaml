@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=marcas&accion=listarMarcas&estado=Activo"
+method: GET
+headers: {}
+queryParams:
+  p: marcas
+  accion: listarMarcas
+  estado: Activo
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-SEC-06.01: Bloquea acceso y redirige al login', () => {
+          // Verificamos que el cuerpo de la respuesta sea la página de login
+          pm.expect(pm.response.text()).to.include('Login | SGRD');
+      });
+    language: text/javascript
+order: 1000

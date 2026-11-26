@@ -398,6 +398,21 @@ class Marca extends Conexion {
             return false;
         }
 
+        // FIX DE SEGURIDAD (Detección de Tampering): CP-SEC-06.05 — Tampering de id_atleta
+        // Buscamos el id_atleta real en la BD
+        $infoMarca = $this->obtenerInfoBasicaMarca($id);
+        
+        if (!empty($infoMarca) && isset($infoMarca['id_atleta'])) {
+            $id_real = (int)$infoMarca['id_atleta'];
+            $id_enviado = (int)($this->datos['id_atleta'] ?? 0);
+
+            // Si el cliente intentó cambiar el dueño de la marca, abortamos la misión
+            if ($id_enviado !== $id_real && $id_enviado !== 0) {
+                $this->agregarError('id_atleta', 'Alerta de Seguridad: Intento de manipulación detectado. El atleta no coincide con el dueño original del registro.');
+                return false;
+            }
+        }
+
         if (!$this->validarAtributosInternos()) {
             return false; 
         }

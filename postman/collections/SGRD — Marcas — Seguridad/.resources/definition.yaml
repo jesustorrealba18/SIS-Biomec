@@ -1,0 +1,6 @@
+$kind: collection
+description: Colección de pruebas de seguridad (Caja Blanca/Negra) basada en el Grupo 8 de la Matriz de Trazabilidad.
+variables:
+  base_url: http://localhost/GrupoProyecto/SIS-Biomec
+  PHPSESSID: PHPSESSID=mffcfgo24fedegh0apgq2k6s9s
+  PHPSESSID2: PHPSESSID=nquib5mk2pspc0qeb8576dg6ea

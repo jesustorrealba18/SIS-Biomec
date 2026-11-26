@@ -1,0 +1,52 @@
+$kind: http-request
+url: "{{base_url}}/index.php?p=marcas&accion=actualizar"
+method: POST
+headers:
+  Cookie: "{{PHPSESSID2}}"
+  Content-Type: "application/x-www-form-urlencoded"
+queryParams:
+  p: marcas
+  accion: actualizar
+body:
+  type: urlencoded
+  content:
+    - key: id_marca
+      value: "1"
+    - key: id_atleta
+      value: "999"
+    - key: id_sesion
+      value: "8"
+    - key: estilo
+      value: "Libre"
+    - key: distancia_m
+      value: "100"
+    - key: tipo_piscina
+      value: "50m"
+    - key: tiempo_final_seg
+      value: "58.00"
+    - key: fecha
+      value: "2026-11-10"
+    - key: splits[25]
+      value: "14.50"
+    - key: splits[50]
+      value: "14.50"
+    - key: splits[75]
+      value: "14.50"
+    - key: splits[100]
+      value: "14.50"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('CP-SEC-06.05: Backend DETECTA y rechaza el tampering', () => {
+          pm.response.to.have.status(200); // HTTP OK, pero con estatus de error lógico
+          const j = pm.response.json();
+          
+          // Validamos que NO nos deje actualizar
+          pm.expect(j.status).to.be.oneOf(['error', 'warning']);
+          
+          // Validamos que el mensaje sea claro (puede variar según cómo devuelvas el error)
+          const mensaje = j.message || JSON.stringify(j.errores);
+          pm.expect(mensaje).to.include('manipulación');
+      });
+    language: text/javascript
+order: 1004
