@@ -1,15 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="tests/bootstrap.php" colors="true">
+<phpunit bootstrap="tests/bootstrap.php" colors="true" cacheResult="false">
     <testsuites>
+        <!-- Suites existentes -->
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
-    <!-- Nueva suite para Grupos -->
-    <testsuite name="Grupos">
-        <file>tests/Unit/GrupoValidarTest.php</file>
-        <file>tests/Unit/GrupoPersistenciaTest.php</file>
-        <file>tests/Unit/GrupoListarTest.php</file>
-    </testsuite>
+
+        <!-- Suite para Grupos (Unitarias) -->
+        <testsuite name="Grupos">
+            <file>tests/Unit/GrupoValidarTest.php</file>
+            <file>tests/Unit/GrupoPersistenciaTest.php</file>
+            <file>tests/Unit/GrupoListarTest.php</file>
+        </testsuite>
+
+        <!-- Suite para Sesiones (Unitarias) -->
+        <testsuite name="Sesiones">
+            <file>tests/Unit/Sesiones/SesionesCalcularVolumenTest.php</file>
+            <file>tests/Unit/Sesiones/SesionesCrearTest.php</file>
+            <file>tests/Unit/Sesiones/SesionesPersistenciaTest.php</file>
+            <file>tests/Unit/Sesiones/SesionesSettersTest.php</file>
+            <file>tests/Unit/Sesiones/SesionesValidarDatosTest.php</file>
+            <file>tests/Unit/Sesiones/SesionesValidarSerieTest.php</file>
+        </testsuite>
+
+        <!-- NUEVA Suite para Integración (conexión real a MySQL) -->
+        <testsuite name="Integration">
+            <!-- Al apuntar a la carpeta raíz de Integration, 
+                 PHPUnit buscará automáticamente en sesiones/ y grupo/ -->
+            <directory>tests/Integration</directory>
+        </testsuite>
     </testsuites>
-    <!-- NO pongas la etiqueta <source> aquí por ahora -->
+
+    <!-- IMPORTANTE: Quitamos el USE_REAL_DB=0 forzado de aquí -->
 </phpunit>

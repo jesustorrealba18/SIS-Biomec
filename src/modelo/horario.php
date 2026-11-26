@@ -15,32 +15,26 @@ class horario extends Conexion {
         'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo',
     ];
 
-    private const DIAS_NORMALIZAR = [
-        'Miércoles' => 'Miercoles',
-        'Sábado'    => 'Sabado',
-    ];
-
     private array $datos = [];
 
-    public function __construct() {
-        parent::__construct('sis_natacion');
+    public function __construct(?string $nombreBD = null) {
+        parent::__construct($nombreBD ?? 'sis_natacion');
     }
 
     public function setDatos(array $datos): void {
         $this->datos = array_intersect_key($datos, array_flip(self::CAMPOS_PERMITIDOS));
-        // Normalizar día
+        // Normalizar día (quitar tildes si el usuario las envía)
         if (isset($this->datos['dia_semana'])) {
-            $this->datos['dia_semana'] = $this->normalizarDia($this->datos['dia_semana']);
+            $this->datos['dia_semana'] = str_replace(
+                ['Miércoles', 'Sábado'], 
+                ['Miercoles', 'Sabado'], 
+                trim($this->datos['dia_semana'])
+            );
         }
     }
 
     public function setIdEliminar(int $id): void {
         $this->datos['id_bloque'] = $id;
-    }
-
-    private function normalizarDia(string $dia): string {
-        $dia = trim($dia);
-        return self::DIAS_NORMALIZAR[$dia] ?? $dia;
     }
 
     public function validarDatos(?int $excluirId = null): array {
@@ -50,12 +44,13 @@ class horario extends Conexion {
         $hora_inicio = trim($this->datos['hora_inicio'] ?? '');
         $hora_fin    = trim($this->datos['hora_fin'] ?? '');
 
-        if (!empty($hora_inicio)) $hora_inicio = substr($hora_inicio, 0, 5);
-        if (!empty($hora_fin))    $hora_fin    = substr($hora_fin, 0, 5);
+        // Aseguramos formato HH:MM
+        if (strlen($hora_inicio) > 5) $hora_inicio = substr($hora_inicio, 0, 5);
+        if (strlen($hora_fin) > 5)    $hora_fin    = substr($hora_fin, 0, 5);
 
         $this->requerido($dia_semana, 'dia_semana');
-        if (!empty($dia_semana)) {
-            $this->enEnum($dia_semana, 'dia_semana', self::DIAS_VALIDOS);
+        if (!empty($dia_semana) && !in_array($dia_semana, self::DIAS_VALIDOS, true)) {
+            $this->errores['dia_semana'] = 'Día inválido.';
         }
 
         $this->requerido($hora_inicio, 'hora_inicio');
@@ -68,15 +63,13 @@ class horario extends Conexion {
             $this->errores['hora_fin'] = 'Formato de hora inválido (debe ser HH:MM)';
         }
 
-        if (
-            empty($this->errores['hora_inicio']) &&
-            empty($this->errores['hora_fin']) &&
-            !empty($hora_inicio) && !empty($hora_fin) &&
-            strtotime($hora_inicio) >= strtotime($hora_fin)
-        ) {
-            $this->errores['hora_fin'] = 'La hora de fin debe ser mayor a la hora de inicio';
+        if (empty($this->errores['hora_inicio']) && empty($this->errores['hora_fin']) && !empty($hora_inicio) && !empty($hora_fin)) {
+            if (strtotime($hora_inicio) >= strtotime($hora_fin)) {
+                $this->errores['hora_fin'] = 'La hora de fin debe ser mayor a la hora de inicio';
+            }
         }
 
+        // Verificamos solapamiento solo si no hay errores previos
         if (empty($this->errores)) {
             if ($this->existeSolapamiento($dia_semana, $hora_inicio, $hora_fin, $excluirId)) {
                 $this->errores['horario'] = 'Ya existe un bloque activo que se cruza con este en el mismo día';
@@ -87,12 +80,12 @@ class horario extends Conexion {
     }
 
     public function registrarHorario(): bool {
-        if (!$this->validarDatos()) return false;
+        if (!empty($this->validarDatos())) return false;
 
         $idNuevo = $this->registrarHorarioP();
         if ($idNuevo === false) return false;
 
-        Bitacora::registrar($_SESSION['id'] ?? 0, 'horario', 'INSERT', (int)$idNuevo, null, null,
+        Bitacora::registrar($_SESSION['id'] ?? 1, 'horario', 'INSERT', (int)$idNuevo, null, null,
             "{$this->datos['dia_semana']} {$this->datos['hora_inicio']}-{$this->datos['hora_fin']}"
         );
 
@@ -106,15 +99,14 @@ class horario extends Conexion {
         $anterior = $this->obtenerPorId($id);
         if (!$anterior) return false;
 
-        if (!$this->validarDatos($id)) return false;
+        if (!empty($this->validarDatos($id))) return false;
 
         if (!$this->editarHorarioP()) return false;
 
         $valorAnt = "{$anterior['dia_semana']} {$anterior['hora_inicio']}-{$anterior['hora_fin']}";
         $valorNue = "{$this->datos['dia_semana']} {$this->datos['hora_inicio']}-{$this->datos['hora_fin']}";
 
-        Bitacora::registrar($_SESSION['id'] ?? 0, 'horario', 'UPDATE', $id, 'horario', $valorAnt, $valorNue
-        );
+        Bitacora::registrar($_SESSION['id'] ?? 1, 'horario', 'UPDATE', $id, 'horario', $valorAnt, $valorNue);
 
         return true;
     }
@@ -128,8 +120,7 @@ class horario extends Conexion {
 
         if (!$this->cambiarEstado($id, 'Inactivo')) return false;
 
-        Bitacora::registrar($_SESSION['id'] ?? 0, 'horario', 'DESACTIVAR', $id, 'estado', $anterior['estado'] ?? 'Activo', 'Inactivo'
-        );
+        Bitacora::registrar($_SESSION['id'] ?? 1, 'horario', 'DESACTIVAR', $id, 'estado', $anterior['estado'] ?? 'Activo', 'Inactivo');
 
         return true;
     }
@@ -147,9 +138,7 @@ class horario extends Conexion {
 
         if (!$this->cambiarEstado($id, 'Activo')) return false;
 
-        Bitacora::registrar(
-            $_SESSION['id'] ?? 0, 'horario', 'REACTIVAR', $id, 'estado', 'Inactivo', 'Activo'
-        );
+        Bitacora::registrar($_SESSION['id'] ?? 1, 'horario', 'REACTIVAR', $id, 'estado', 'Inactivo', 'Activo');
 
         return true;
     }
@@ -161,9 +150,7 @@ class horario extends Conexion {
                     TIME_FORMAT(hora_inicio, '%H:%i') as hora_inicio,
                     TIME_FORMAT(hora_fin, '%H:%i') as hora_fin
                     FROM bloques_horarios
-                    ORDER BY 
-                        FIELD(dia_semana, 'Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'),
-                        hora_inicio";
+                    ORDER BY FIELD(dia_semana, 'Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'), hora_inicio";
             $stmt = $conex->query($sql);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -182,8 +169,7 @@ class horario extends Conexion {
                     FROM bloques_horarios WHERE id_bloque = :id";
             $stmt = $conex->prepare($sql);
             $stmt->execute([':id' => $id_bloque]);
-            $r = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $r ?: null;
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
         } catch (PDOException $e) {
             error_log("Error en obtenerPorId: " . $e->getMessage());
             return null;
@@ -193,12 +179,16 @@ class horario extends Conexion {
     private function existeSolapamiento(string $dia, string $inicio, string $fin, ?int $excluirId = null): bool {
         $conex = $this->getConex1();
         try {
+            // Convertimos a formato HH:MM:SS para comparar con TIME de MySQL
+            $inicioSQL = strlen($inicio) === 5 ? $inicio . ':00' : $inicio;
+            $finSQL    = strlen($fin) === 5 ? $fin . ':00' : $fin;
+
             $sql = "SELECT COUNT(*) FROM bloques_horarios
                     WHERE dia_semana = :dia
                     AND estado = 'Activo'
                     AND hora_inicio < :fin
                     AND hora_fin > :inicio";
-            $params = [':dia' => $dia, ':inicio' => $inicio, ':fin' => $fin];
+            $params = [':dia' => $dia, ':inicio' => $inicioSQL, ':fin' => $finSQL];
 
             if ($excluirId !== null) {
                 $sql .= " AND id_bloque != :id";

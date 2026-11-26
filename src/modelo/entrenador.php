@@ -18,10 +18,11 @@ class entrenador extends Conexion {
 
     private array $datos = [];
     private ?array $archivoCurriculum = null;
-
-    public function __construct() {
-        parent::__construct('sis_natacion');
-    }
+    
+    public function __construct(?string $dbName = null) {
+    $dbName = $dbName ?? ($_ENV['DB_NAME_NATACION'] ?? 'sis_natacion');
+    parent::__construct($dbName);
+   }
 
     public function setDatos(array $datos): void {
         $this->datos = array_intersect_key($datos, array_flip(self::CAMPOS_PERMITIDOS));
