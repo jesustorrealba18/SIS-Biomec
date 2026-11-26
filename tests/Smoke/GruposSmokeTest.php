@@ -7,14 +7,11 @@ class GruposSmokeTest extends TestCase
 {
     private string $baseUrl = 'http://localhost/SIS-Biomec';
 
-    /**
-     * Helper para simular una petición GET.
-     */
     private function get(string $ruta): array
     {
         $ch = curl_init($this->baseUrl . $ruta);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // Seguir redirecciones (ej. al login)
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); 
         curl_setopt($ch, CURLOPT_HEADER, true);
         
         $response = curl_exec($ch);
@@ -24,9 +21,6 @@ class GruposSmokeTest extends TestCase
         return ['code' => $httpCode, 'body' => $response];
     }
 
-    /**
-     * Helper para simular una petición POST.
-     */
     private function post(string $ruta, array $datos): array
     {
         $ch = curl_init($this->baseUrl . $ruta);
@@ -42,8 +36,6 @@ class GruposSmokeTest extends TestCase
         
         return ['code' => $httpCode, 'body' => $response];
     }
-
-    // --- PRUEBAS DE HUMO GET ---
 
     public function testVistaGruposCargaSinErroresFatales(): void
     {
@@ -87,8 +79,6 @@ class GruposSmokeTest extends TestCase
         $this->assertNotEquals(500, $res['code']);
         $this->assertStringNotContainsString('Fatal error', $res['body']);
     }
-
-    // --- PRUEBAS DE HUMO POST ---
 
     public function testAccionGuardarGrupoConDatosVaciosNoRompeElServidor(): void
     {

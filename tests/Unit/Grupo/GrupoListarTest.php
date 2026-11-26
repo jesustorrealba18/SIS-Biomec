@@ -14,12 +14,10 @@ class GrupoListarTest extends TestCase
         $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $this->pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
 
-        // Le enseñamos a SQLite a usar CONCAT (para unir nombres y apellidos)
         $this->pdo->sqliteCreateFunction('CONCAT', function (...$args) { 
             return implode('', $args); 
         }, -1);
 
-        // Creamos las tablas con TODAS las columnas que usa el modelo real
         $this->pdo->exec("
             CREATE TABLE grupos_entrenamiento (
                 id_grupo INTEGER PRIMARY KEY, 
@@ -48,8 +46,7 @@ class GrupoListarTest extends TestCase
     private function grupo(): Grupo
     {
         $obj = new Grupo();
-        
-        // Inyectamos el PDO de SQLite en la clase Conexion usando Reflexión
+
         $ref = new \ReflectionClass(\GrupoProyecto\SisBiomec\modelo\Conexion::class);
         $prop = $ref->getProperty('conex1');
         $prop->setAccessible(true);

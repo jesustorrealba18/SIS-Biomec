@@ -16,7 +16,6 @@ class SesionesPersistenciaTest extends TestCase
         $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $this->pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
 
-        // LA MAGIA: Le decimos a SQLite que entienda la función NOW() de MySQL
         $this->pdo->sqliteCreateFunction('NOW', function () {
             return date('Y-m-d H:i:s');
         }, 0);
@@ -63,7 +62,6 @@ class SesionesPersistenciaTest extends TestCase
     {
         $obj = new Sesiones();
 
-        // Usamos Reflexión para inyectar nuestro PDO de SQLite directamente en la clase Conexion
         $ref = new \ReflectionClass(\GrupoProyecto\SisBiomec\modelo\Conexion::class);
         $prop = $ref->getProperty('conex1');
         $prop->setAccessible(true);

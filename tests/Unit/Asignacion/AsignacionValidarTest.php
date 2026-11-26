@@ -15,7 +15,6 @@ class AsignacionValidarTest extends TestCase
         $pdo = new \PDO('sqlite::memory:');
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         
-        // Creamos la tabla con TODAS las columnas que usa el modelo
         $pdo->exec("
             CREATE TABLE asignacion_carril (
                 id_asignacion INTEGER PRIMARY KEY AUTOINCREMENT,

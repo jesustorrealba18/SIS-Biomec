@@ -7,9 +7,6 @@ class EntrenadoresSmokeTest extends TestCase
 {
     private string $baseUrl = 'http://localhost/SIS-Biomec';
 
-    /**
-     * Helper para simular una petición GET.
-     */
     private function get(string $ruta): array
     {
         $ch = curl_init($this->baseUrl . $ruta);
@@ -24,9 +21,6 @@ class EntrenadoresSmokeTest extends TestCase
         return ['code' => $httpCode, 'body' => $response];
     }
 
-    /**
-     * Helper para simular una petición POST.
-     */
     private function post(string $ruta, array $datos): array
     {
         $ch = curl_init($this->baseUrl . $ruta);
@@ -42,8 +36,6 @@ class EntrenadoresSmokeTest extends TestCase
         
         return ['code' => $httpCode, 'body' => $response];
     }
-
-    // --- PRUEBAS DE HUMO GET ---
 
     public function testVistaEntrenadoresCargaSinErroresFatales(): void
     {
@@ -74,17 +66,14 @@ class EntrenadoresSmokeTest extends TestCase
         
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true);
-        // ¡LA CLAVE ESTÁ AQUÍ! Le decimos que NO siga la redirección
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false); 
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
-        // El servidor NO debe dar un error 500
+
         $this->assertNotEquals(500, $httpCode, 'El servidor falló al intentar descargar un CV inexistente.');
         
-        // Si no hay sesión, el controlador redirige (302). Si hay sesión, da error 404.
         $esRedireccion = ($httpCode === 302);
         $esErrorControlado = ($httpCode === 404);
         

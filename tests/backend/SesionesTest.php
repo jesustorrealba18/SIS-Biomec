@@ -7,10 +7,7 @@ use GrupoProyecto\SisBiomec\modelo\Sesiones;
 
 class SesionesTest extends TestCase
 {
-    /**
-     * Helper para crear una instancia de Sesiones con datos base válidos.
-     * Así cada prueba solo modifica el campo que quiere evaluar.
-     */
+
     private function crearSesionConDatos(array $overrides = []): Sesiones
     {
         $sesion = new Sesiones();
@@ -23,12 +20,8 @@ class SesionesTest extends TestCase
         ];
         $sesion->setDatos(array_merge($datosBase, $overrides));
         return $sesion;
-    }
 
-    // ---------------------------------------------------------
-    // Pruebas de validarDatos()
-    // ---------------------------------------------------------
-
+        }
     public function testDatosValidosNoGeneranErrores()
     {
         $sesion = $this->crearSesionConDatos();
@@ -41,7 +34,7 @@ class SesionesTest extends TestCase
         $sesion = $this->crearSesionConDatos([
             'fecha' => date('Y-m-d', strtotime('-1 day')),
         ]);
-        $errores = $sesion->validarDatos(); // Sin excluir ID => modo creación
+        $errores = $sesion->validarDatos();
         $this->assertArrayHasKey('fecha', $errores);
     }
 
@@ -50,7 +43,7 @@ class SesionesTest extends TestCase
         $sesion = $this->crearSesionConDatos([
             'fecha' => date('Y-m-d', strtotime('-1 day')),
         ]);
-        $errores = $sesion->validarDatos(123); // Con ID => modo edición
+        $errores = $sesion->validarDatos(123);
         $this->assertArrayNotHasKey('fecha', $errores);
     }
 
@@ -88,11 +81,6 @@ class SesionesTest extends TestCase
         $errores = $sesion->validarDatos();
         $this->assertArrayHasKey('id_entrenador', $errores);
     }
-
-    // ---------------------------------------------------------
-    // Pruebas de validarSerie()
-    // ---------------------------------------------------------
-
     private function serieValida(array $overrides = []): array
     {
         return array_merge([
@@ -156,10 +144,6 @@ class SesionesTest extends TestCase
         ]));
         $this->assertArrayHasKey('ejercicio_descripcion', $errores);
     }
-
-    // ---------------------------------------------------------
-    // Pruebas de validarCierreSesion()
-    // ---------------------------------------------------------
 
     public function testCierreRechazaVolumenEjecutadoMayorAlPlanificado()
     {

@@ -14,7 +14,6 @@ class AsignacionPersistenciaTest extends TestCase
         $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $this->pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
 
-        // Emulamos funciones de MySQL
         $this->pdo->sqliteCreateFunction('NOW', function () { return date('Y-m-d H:i:s'); }, 0);
         $this->pdo->sqliteCreateFunction('CURDATE', function () { return date('Y-m-d'); }, 0);
         $this->pdo->sqliteCreateFunction('CONCAT', function (...$args) { return implode('', $args); }, -1);
@@ -24,7 +23,6 @@ class AsignacionPersistenciaTest extends TestCase
             return $indice !== false ? $indice + 1 : 0;
         }, -1);
 
-        // Creamos las tablas con las columnas que usa el modelo
         $this->pdo->exec("
             CREATE TABLE asignacion_carril (
                 id_asignacion INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,11 +102,9 @@ class AsignacionPersistenciaTest extends TestCase
         $this->pdo->exec("INSERT INTO asignacion_carril (id_asignacion, id_carril, activa) VALUES (1, 1, 1)");
         $a = $this->asignacion();
 
-        // Desactivar
         $this->assertTrue($a->desactivarAsignacion(1));
         $this->assertSame(0, (int)$this->pdo->query("SELECT activa FROM asignacion_carril WHERE id_asignacion=1")->fetchColumn());
 
-        // Reactivar
         $this->assertTrue($a->reactivarAsignacion(1));
         $this->assertSame(1, (int)$this->pdo->query("SELECT activa FROM asignacion_carril WHERE id_asignacion=1")->fetchColumn());
     }
@@ -126,7 +122,6 @@ class AsignacionPersistenciaTest extends TestCase
 
     public function testVerificarAsignacionesVencidas(): void
     {
-        // Insertamos una asignación que ya venció ayer
         $ayer = date('Y-m-d', strtotime('-1 day'));
         $this->pdo->exec("INSERT INTO asignacion_carril (id_asignacion, id_grupo, activa, fecha_vigencia_fin, estado) 
                           VALUES (1, 1, 1, '$ayer', 'pendiente')");

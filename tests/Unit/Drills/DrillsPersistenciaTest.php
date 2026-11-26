@@ -11,9 +11,6 @@ class DrillsPersistenciaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
-        // Simulamos que hay un usuario logueado en la sesión
-        // Esto evita problemas si Bitacora intenta leer $_SESSION['id']
         if (session_status() === PHP_SESSION_NONE) {
             $_SESSION = ['id' => 1];
         }
@@ -22,12 +19,10 @@ class DrillsPersistenciaTest extends TestCase
         $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $this->pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
 
-        // CONCAT para las consultas que unen nombres de atletas
         $this->pdo->sqliteCreateFunction('CONCAT', function (...$args) { 
             return implode('', $args); 
         }, -1);
 
-        // Creamos las tablas con TODAS las columnas que usa el modelo
         $this->pdo->exec("
             CREATE TABLE drills (
                 id_drill INTEGER PRIMARY KEY AUTOINCREMENT,

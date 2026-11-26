@@ -7,9 +7,6 @@ class AsignacionesSmokeTest extends TestCase
 {
     private string $baseUrl = 'http://localhost/SIS-Biomec';
 
-    /**
-     * Helper para simular una petición GET.
-     */
     private function get(string $ruta): array
     {
         $ch = curl_init($this->baseUrl . $ruta);
@@ -24,9 +21,6 @@ class AsignacionesSmokeTest extends TestCase
         return ['code' => $httpCode, 'body' => $response];
     }
 
-    /**
-     * Helper para simular una petición POST.
-     */
     private function post(string $ruta, array $datos): array
     {
         $ch = curl_init($this->baseUrl . $ruta);
@@ -42,8 +36,6 @@ class AsignacionesSmokeTest extends TestCase
         
         return ['code' => $httpCode, 'body' => $response];
     }
-
-    // --- PRUEBAS DE HUMO GET ---
 
     public function testVistaAsignacionesCargaSinErroresFatales(): void
     {
@@ -101,8 +93,6 @@ class AsignacionesSmokeTest extends TestCase
         $this->assertNotEquals(500, $res['code']);
         $this->assertStringNotContainsString('Fatal error', $res['body']);
     }
-
-    // --- PRUEBAS DE HUMO POST ---
 
     public function testAccionGuardarAsignacionVaciaNoRompeElServidor(): void
     {
